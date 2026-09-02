@@ -7,7 +7,7 @@ import { SessionRestoreError, ensureSession, getMatchRequestsSafe, getMyProfile,
 import { getMyGymId } from '@/lib/roles';
 import { useDb } from '@/store/db';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { syncTrainingHistory } from '@/lib/trainingSync';
+import { syncSocial, syncTrainingHistory } from '@/lib/trainingSync';
 
 export interface Profile {
   name: string;
@@ -58,6 +58,10 @@ interface AppState {
   toggleBookmark: (gymId: string) => void;
   toggleSavedVideo: (id: string) => void;
   toggleFollow: (name: string) => void;
+  /** Replace the social lists with what the server holds (F-19). The server is
+   *  the authority: a follow this device recorded but never sent is not a follow
+   *  anybody received. */
+  setSocialFromServer: (v: { following: string[]; joinedChallenges: string[] }) => void;
   toggleLikedPost: (id: string) => void;
   joinChallenge: (id: string) => void;
   toggleBlocked: (id: string) => void;
@@ -158,6 +162,9 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           savedVideos: s.savedVideos.includes(id) ? s.savedVideos.filter((x) => x !== id) : [...s.savedVideos, id],
         })),
+      setSocialFromServer: (v) =>
+        set({ following: v.following, joinedChallenges: v.joinedChallenges }),
+
       toggleFollow: (name) =>
         set((s) => ({
           following: s.following.includes(name) ? s.following.filter((x) => x !== name) : [...s.following, name],
@@ -206,6 +213,9 @@ export const useAppStore = create<AppState>()(
         // One training history, not two: pull what the server holds, then hand
         // up whatever only this device knows (src/lib/trainingSync.ts).
         void syncTrainingHistory();
+        void syncSocial().then((v) => {
+          if (v) get().setSocialFromServer(v);
+        });
         void getMatchRequestsSafe().then((rows) => {
           if (rows) useDb.getState().reconcileMatches(rows);
         });

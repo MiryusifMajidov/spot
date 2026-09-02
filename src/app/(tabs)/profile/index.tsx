@@ -45,8 +45,14 @@ export default function Profile() {
   // The user's REAL content — nothing is rendered unless they actually published it.
   const allVideos = useFeedVideos();
   const allPosts = useCommunityPosts();
-  const myVideos = profile.name ? allVideos.filter((v) => v.author === profile.name) : [];
-  const myPosts = profile.name ? allPosts.filter((p) => p.author === profile.name) : [];
+  /* Matched on the author's PROFILE ID, not their display name. By name, two
+     people called «Yusif» each saw the other's videos as their own, and renaming
+     yourself detached you from everything you had posted. `authorId` was already
+     on the row (schema29 made it mandatory) and simply was not used. Rows whose
+     author is null predate that and belong to nobody, so they match nobody. */
+  const myProfileId = useAppStore((s) => s.profileId);
+  const myVideos = myProfileId ? allVideos.filter((v) => v.authorId === myProfileId) : [];
+  const myPosts = myProfileId ? allPosts.filter((p) => p.authorId === myProfileId) : [];
 
   const volumeT = (stats.volumeKg / 1000).toFixed(1);
 

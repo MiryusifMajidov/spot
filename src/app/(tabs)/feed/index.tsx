@@ -27,6 +27,7 @@ import { findProgram, gymById } from '@/store/db';
 import { actionSheet, openComments, toast, useUi } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 import { azLower } from '@/lib/az';
+import { likeVideo, unlikeVideo } from '@/lib/social';
 
 type Mode = 'video' | 'community';
 
@@ -479,7 +480,27 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
         </View>
 
         <View style={styles.rail}>
-          <RailBtn icon="heart" active={liked} activeColor={palette.red} onPress={() => gate(() => toggleLike(videoKey(v.id)), 'Bəyənmək üçün')} />
+          <RailBtn
+            icon="heart"
+            active={liked}
+            activeColor={palette.red}
+            onPress={() =>
+              gate(() => {
+                /* The device flag flips first so the heart answers the finger,
+                   then the server row decides whether it is real. A like that
+                   only this phone knows about is the bug schema43 fixed — the
+                   author would never learn about it — so a failed write puts the
+                   heart back rather than leaving it filled. */
+                const next = !liked;
+                toggleLike(videoKey(v.id));
+                if (!hasSupabaseConfig) return;
+                (next ? likeVideo(v.id) : unlikeVideo(v.id)).catch(() => {
+                  toggleLike(videoKey(v.id));
+                  toast('Bəyənmə göndərilmədi — yenidən cəhd et', 'error');
+                });
+              }, 'Bəyənmək üçün')
+            }
+          />
           {/* The only text left is a real count — never a word for the state. */}
           <RailBtn icon="msg" count={commentCount} onPress={onOpenComments} />
           <RailBtn

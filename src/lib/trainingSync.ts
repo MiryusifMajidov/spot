@@ -23,6 +23,7 @@
  */
 import { getMyPRs, getMyProgress, getMyWorkouts, logWeight, logWorkout } from './api';
 import { isUuid, newId } from './ids';
+import { myChallenges, myFollowing } from './social';
 import { hasSupabaseConfig } from './supabase';
 import { useDb, type Workout } from '@/store/db';
 
@@ -120,5 +121,32 @@ export async function syncTrainingHistory(): Promise<void> {
     await pushLocalHistory();
   } catch {
     /* retried next launch */
+  }
+}
+
+/**
+ * Bring the social state in from the server too (F-19).
+ *
+ * Likes, follows and challenge membership used to be device-only, so they
+ * differed on every phone and vanished on reinstall. The store keys are kept as
+ * they are (`video:<id>`, `post:<id>`) — the screens read them directly — but
+ * their CONTENTS now come from `video_likes`, `post_likes`, `follows` and
+ * `challenge_members`.
+ *
+ * Replaces rather than merges: the server is the authority here. A follow this
+ * device recorded but never managed to send is not a follow anybody received.
+ *
+ * Returns the data instead of writing it, so this module never imports
+ * `appStore` — which imports this one. That cycle would leave `useAppStore`
+ * undefined at module-eval time and take the whole app down at the first render.
+ */
+export async function syncSocial(): Promise<{ following: string[]; joinedChallenges: string[] } | null> {
+  if (!hasSupabaseConfig) return null;
+  try {
+    const [following, challenges] = await Promise.all([myFollowing(), myChallenges()]);
+    return { following: [...following], joinedChallenges: [...challenges] };
+  } catch {
+    // The device copy stays; it is simply not confirmed yet.
+    return null;
   }
 }
