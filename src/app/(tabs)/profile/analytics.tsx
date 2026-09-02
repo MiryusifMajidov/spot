@@ -16,6 +16,11 @@ export default function Analytics() {
   const plannedDays = useAppStore((s) => s.profile.days.length);
   const hasData = workouts.length > 0;
 
+  /* Workouts restored from the server carry their volume and set count but no
+     per-set detail, so they cannot be split by muscle group. Counting them as
+     zero without saying so would quietly understate every bar — and «disbalans»
+     would then be reported about a picture that is missing sessions. */
+  const summaryOnly = workouts.filter((w) => w.summaryOnly).length;
   const rawMuscles = computeMuscleVolume(workouts);
   const maxVol = Math.max(1, ...rawMuscles.map((m) => m.kg));
   const nonZero = rawMuscles.filter((m) => m.kg > 0);
@@ -99,6 +104,14 @@ export default function Analytics() {
               </AppText>
             </View>
           )}
+          {summaryOnly > 0 ? (
+            <View style={[styles.warn, { backgroundColor: palette.grouped, marginTop: 8 }]}>
+              <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary }}>
+                {summaryOnly} məşq başqa cihazdan bərpa olunub — onların həcmi ümumi statistikaya
+                daxildir, amma hansı əzələ qrupuna düşdüyü saxlanılmadığı üçün bu qrafikə düşmür.
+              </AppText>
+            </View>
+          ) : null}
           </>
           )}
         </View>

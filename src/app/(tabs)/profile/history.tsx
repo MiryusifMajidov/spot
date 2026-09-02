@@ -127,7 +127,10 @@ export default function History() {
           <View style={{ gap: 10 }}>
             {sessions.map((s) => {
               const d = new Date(s.at);
-              const setsN = s.exercises.reduce((a, e) => a + e.sets.length, 0);
+              // A workout restored from the server has no per-set detail, so
+              // counting `exercises` would print «0 set» for a real session.
+              // `setsDone` is the number that was actually recorded.
+              const setsN = s.setsDone ?? s.exercises.reduce((a, e) => a + e.sets.length, 0);
               const partner = s.partnerId ? seedById(s.partnerId) : null;
               return (
                 <View key={s.id} style={styles.session}>

@@ -7,6 +7,7 @@ import { SessionRestoreError, ensureSession, getMatchRequestsSafe, getMyProfile,
 import { getMyGymId } from '@/lib/roles';
 import { useDb } from '@/store/db';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { syncTrainingHistory } from '@/lib/trainingSync';
 
 export interface Profile {
   name: string;
@@ -202,6 +203,9 @@ export const useAppStore = create<AppState>()(
         // Bring the device's partner-request state back in line with the server.
         // Guarded inside `getMatchRequestsSafe`: on a read failure nothing is
         // reconciled, because an empty result would erase real local records.
+        // One training history, not two: pull what the server holds, then hand
+        // up whatever only this device knows (src/lib/trainingSync.ts).
+        void syncTrainingHistory();
         void getMatchRequestsSafe().then((rows) => {
           if (rows) useDb.getState().reconcileMatches(rows);
         });

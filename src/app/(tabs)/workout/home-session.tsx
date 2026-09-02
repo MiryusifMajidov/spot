@@ -88,9 +88,9 @@ export default function HomeSession() {
     const title = `Evdə · ${plan.circuit.length} hərəkət`;
     const clean = exercises.map(({ name, muscle, sets }) => ({ name, muscle, sets }));
 
-    useDb.getState().logWorkout({ title, exercises: clean, volumeKg, durationMin });
+    const workoutId = useDb.getState().logWorkout({ title, exercises: clean, volumeKg, durationMin });
     if (hasSupabaseConfig) {
-      logWorkoutApi({ title, durationSec: elapsed, volumeKg, setsDone }).catch(() => {});
+      logWorkoutApi({ id: workoutId, title, durationSec: elapsed, volumeKg, setsDone }).catch(() => {});
     }
     router.replace({
       pathname: '/(tabs)/workout/summary',

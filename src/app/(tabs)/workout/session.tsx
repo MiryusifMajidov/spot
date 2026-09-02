@@ -269,7 +269,9 @@ export default function Session() {
     const durationMin = Math.max(1, Math.round(elapsed / 60));
     const clean = exercises.map(({ name, muscle, sets }) => ({ name, muscle, sets }));
 
-    logWorkout({
+    // The id the engine assigns is the id the server row gets — that shared key
+    // is what makes the two copies one history (src/lib/trainingSync.ts).
+    const workoutId = logWorkout({
       programId: params.programId || undefined,
       dayIndex,
       title,
@@ -281,7 +283,7 @@ export default function Session() {
 
     // Mirror to Supabase (best-effort) so the trainer / gym / admin panels see it.
     if (hasSupabaseConfig) {
-      logWorkoutApi({ programId: params.programId || null, title, durationSec: elapsed, volumeKg, setsDone }).catch(() => {});
+      logWorkoutApi({ id: workoutId, programId: params.programId || null, title, durationSec: elapsed, volumeKg, setsDone }).catch(() => {});
       for (const { lift, test } of LIFTS) {
         const best = clean
           .filter((e) => test(e.name))

@@ -842,19 +842,89 @@ export interface WorkoutLog {
 }
 
 /** Persist a finished workout for the current user. */
-export async function logWorkout(w: WorkoutLog): Promise<void> {
+/**
+ * Mirror a workout to the server under the SAME id the device engine used.
+ *
+ * The shared id is the whole point: without it the two copies could never be
+ * matched, so the server rows were written and never read, and the profile
+ * showed «0 məşq» for an account the server knew had two. `onConflict: 'id'`
+ * makes a retry after a lost response idempotent instead of a duplicate.
+ *
+ * Only the SUMMARY travels — the per-set detail stays on the device. That is
+ * deliberate: `progress`, `prs` and set-by-set numbers are the private training
+ * data the privacy rule keeps off every other surface, and a summary is enough
+ * for the count, the volume and the streak.
+ */
+export async function logWorkout(w: WorkoutLog & { id?: string; at?: string }): Promise<void> {
   const me = await getMyProfile();
   if (!me) throw new Error('no profile');
-  const { error } = await supabase.from('workouts').insert({
-    profile_id: me.id,
-    program_id: w.programId ?? null,
-    title: w.title,
-    duration_sec: Math.round(w.durationSec),
-    volume_kg: Math.round(w.volumeKg),
-    sets_done: w.setsDone,
-    rpe: w.rpe ?? null,
-  });
+  const { error } = await supabase.from('workouts').upsert(
+    {
+      ...(w.id ? { id: w.id } : {}),
+      profile_id: me.id,
+      program_id: w.programId ?? null,
+      title: w.title,
+      duration_sec: Math.round(w.durationSec),
+      volume_kg: Math.round(w.volumeKg),
+      sets_done: w.setsDone,
+      rpe: w.rpe ?? null,
+      ...(w.at ? { created_at: w.at } : {}),
+    },
+    { onConflict: 'id' }
+  );
   if (error) throw error;
+}
+
+/** Every workout summary the server holds for me, newest first. */
+export interface ServerWorkout {
+  id: string;
+  at: string;
+  title: string;
+  programId: string | null;
+  volumeKg: number;
+  durationMin: number;
+  setsDone: number;
+  rpe: string | null;
+}
+
+export async function getMyWorkouts(limit = 200): Promise<ServerWorkout[]> {
+  const me = await getMyProfile();
+  if (!me) return [];
+  const { data, error } = await supabase
+    .from('workouts')
+    .select('id,program_id,title,duration_sec,volume_kg,sets_done,rpe,created_at')
+    .eq('profile_id', me.id)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return ((data ?? []) as {
+    id: string; program_id: string | null; title: string | null; duration_sec: number | null;
+    volume_kg: number | null; sets_done: number | null; rpe: string | null; created_at: string;
+  }[]).map((r) => ({
+    id: r.id,
+    at: r.created_at,
+    title: r.title ?? 'Məşq',
+    programId: r.program_id,
+    volumeKg: Number(r.volume_kg ?? 0),
+    durationMin: Math.round(Number(r.duration_sec ?? 0) / 60),
+    setsDone: Number(r.sets_done ?? 0),
+    rpe: r.rpe,
+  }));
+}
+
+/** Bodyweight history with ids, so it can be reconciled like workouts. */
+export async function getMyProgress(limit = 200): Promise<{ id: string; at: string; kg: number }[]> {
+  const me = await getMyProfile();
+  if (!me) return [];
+  const { data, error } = await supabase
+    .from('progress')
+    .select('id,weight,created_at')
+    .eq('profile_id', me.id)
+    .order('created_at')
+    .limit(limit);
+  if (error) throw error;
+  return ((data ?? []) as { id: string; weight: number | null; created_at: string }[])
+    .map((r) => ({ id: r.id, at: r.created_at, kg: Number(r.weight ?? 0) }));
 }
 
 export async function logPR(lift: string, value: number, delta?: string): Promise<void> {
@@ -864,10 +934,13 @@ export async function logPR(lift: string, value: number, delta?: string): Promis
 }
 
 /** Log a bodyweight entry (kg) to the progress table. */
-export async function logWeight(kg: number): Promise<void> {
+export async function logWeight(kg: number, id?: string, at?: string): Promise<void> {
   const me = await getMyProfile();
   if (!me) throw new Error('no profile');
-  const { error } = await supabase.from('progress').insert({ profile_id: me.id, weight: kg });
+  const { error } = await supabase.from('progress').upsert(
+    { ...(id ? { id } : {}), profile_id: me.id, weight: kg, ...(at ? { created_at: at } : {}) },
+    { onConflict: 'id' }
+  );
   if (error) throw error;
 }
 

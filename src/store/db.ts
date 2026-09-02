@@ -15,6 +15,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { gyms as seedGyms, programs as seedPrograms } from '@/data/mock';
 import { DAILY_TARGET, meals as mealsData } from '@/data/nutrition';
 import { Gym, Level, Partner, Program } from '@/data/types';
+import { newId } from '@/lib/ids';
 
 export const LEVEL_ORDER: Level[] = ['Başlanğıc', 'Orta', 'İrəli'];
 
@@ -61,6 +62,15 @@ export interface Workout {
   durationMin: number;
   partnerId?: string;
   rpe?: number;
+  /** How many sets were completed. Normally derivable from `exercises`, but a
+   *  workout restored from the server has no per-set detail (the `workouts`
+   *  table stores the summary only), and there `exercises` is empty while this
+   *  still holds the real number. Screens must prefer it over counting. */
+  setsDone?: number;
+  /** True when this row came back from the server without its set detail.
+   *  Progressive overload and muscle volume need the sets, so they simply skip
+   *  these rows rather than treating «no detail» as «no work». */
+  summaryOnly?: boolean;
 }
 export interface CheckIn {
   id: string;
@@ -68,6 +78,9 @@ export interface CheckIn {
   at: string; // ISO
 }
 export interface WeightLog {
+  /** Shared with `progress.id` on the server. Optional because rows written
+   *  before this existed have none — the sync pushes those up under a new id. */
+  id?: string;
   at: string; // ISO
   kg: number;
 }
@@ -311,8 +324,18 @@ interface DbState {
   updateProgram: (id: string, patch: Partial<Program>) => void;
   deleteProgram: (id: string) => void;
   checkIn: (gymId: string) => void;
-  logWorkout: (w: Omit<Workout, 'id' | 'at'> & { at?: string }) => void;
-  logWeight: (kg: number) => void;
+  logWorkout: (w: Omit<Workout, 'id' | 'at'> & { at?: string; id?: string }) => string;
+  logWeight: (kg: number, at?: string, id?: string) => string;
+  /** PRs the server holds. A workout restored from another device has no set
+   *  detail, so a record set there cannot be recomputed here — it is read from
+   *  the `prs` table instead of being lost. */
+  serverPRs: { lift: string; value: number; delta?: string }[];
+  setServerPRs: (rows: { lift: string; value: number; delta?: string }[]) => void;
+  /** Bring server-stored history into the device engine — see the implementation. */
+  mergeFromServer: (incoming: { workouts: Workout[]; weights: WeightLog[] }) => void;
+  /** Adopt the id the server accepted, for a row written before ids were shared. */
+  renameWorkout: (oldId: string, newId: string) => void;
+  renameWeight: (at: string, id: string) => void;
   toggleSavedProgram: (id: string) => void;
   sendMatchRequest: (partnerId: string, question?: string) => void;
   /** Bring the device's match state back in line with the server. See the
@@ -335,6 +358,7 @@ export const useDb = create<DbState>()(
       installedAt: new Date().toISOString(),
       checkIns: [],
       workouts: [],
+      serverPRs: [],
       weights: [],
       matches: {},
       threads: {},
@@ -377,12 +401,48 @@ export const useDb = create<DbState>()(
       checkIn: (gymId) =>
         set((s) => ({ checkIns: [{ id: `c-${Date.now()}`, gymId, at: new Date().toISOString() }, ...s.checkIns] })),
 
-      logWorkout: (w) =>
+      // Returns the id so the caller can write the SAME id to the server — that
+      // shared key is what lets the two copies be reconciled instead of counted
+      // twice or ignored.
+      logWorkout: (w) => {
+        const id = w.id ?? newId();
         set((s) => ({
-          workouts: [{ ...w, id: `w-${Date.now()}`, at: w.at ?? new Date().toISOString() }, ...s.workouts],
-        })),
+          workouts: [{ ...w, id, at: w.at ?? new Date().toISOString() }, ...s.workouts],
+        }));
+        return id;
+      },
 
-      logWeight: (kg) => set((s) => ({ weights: [...s.weights, { at: new Date().toISOString(), kg }] })),
+      logWeight: (kg, at, id) => {
+        const rowId = id ?? newId();
+        set((s) => ({
+          weights: [...s.weights, { id: rowId, at: at ?? new Date().toISOString(), kg }],
+        }));
+        return rowId;
+      },
+
+      setServerPRs: (rows) => set({ serverPRs: rows }),
+
+      renameWorkout: (oldId, id) =>
+        set((s) => ({ workouts: s.workouts.map((w) => (w.id === oldId ? { ...w, id } : w)) })),
+
+      renameWeight: (at, id) =>
+        set((s) => ({ weights: s.weights.map((w) => (w.at === at && !w.id ? { ...w, id } : w)) })),
+
+      /** Merge rows pulled from the server. Server rows the device already has
+       *  (same id) are left alone — the local copy carries the set detail the
+       *  server does not store, so overwriting it would LOSE information. */
+      mergeFromServer: (incoming) =>
+        set((s) => {
+          const have = new Set(s.workouts.map((w) => w.id));
+          const added = incoming.workouts.filter((w) => !have.has(w.id));
+          const haveW = new Set(s.weights.map((w) => w.id).filter(Boolean) as string[]);
+          const addedW = incoming.weights.filter((w) => !w.id || !haveW.has(w.id));
+          if (!added.length && !addedW.length) return {};
+          return {
+            workouts: [...added, ...s.workouts].sort((a, b) => b.at.localeCompare(a.at)),
+            weights: [...s.weights, ...addedW].sort((a, b) => a.at.localeCompare(b.at)),
+          };
+        }),
 
       toggleSavedProgram: (id) =>
         set((s) => ({
@@ -554,7 +614,7 @@ const LIFT_MATCHERS: { lift: string; test: (name: string) => boolean }[] = [
   { lift: 'Deadlift', test: (n) => n.toLowerCase().includes('deadlift') && !n.toLowerCase().includes('romanian') },
 ];
 
-export function computeStats(s: Pick<DbState, 'checkIns' | 'workouts' | 'installedAt'>): Stats {
+export function computeStats(s: Pick<DbState, 'checkIns' | 'workouts' | 'installedAt'> & { serverPRs?: Stats['prs'] }): Stats {
   const count = s.workouts.length;
   const volumeKg = s.workouts.reduce((a, w) => a + w.volumeKg, 0);
   const streakDays = computeStreak(s.checkIns, s.workouts);
@@ -568,7 +628,16 @@ export function computeStats(s: Pick<DbState, 'checkIns' | 'workouts' | 'install
     }
     return { lift, value: best };
   }).filter((p) => p.value > 0);
-  return { count, volumeKg, streakDays, sinceDays, prs };
+
+  // A record set on another device lives in `prs` on the server; the local sets
+  // that produced it were never uploaded, so it cannot be recomputed here. Take
+  // whichever number is higher — the device's or the server's — per lift.
+  const byLift = new Map(prs.map((p) => [p.lift, p]));
+  for (const sp of s.serverPRs ?? []) {
+    const cur = byLift.get(sp.lift);
+    if (!cur || sp.value > cur.value) byLift.set(sp.lift, sp);
+  }
+  return { count, volumeKg, streakDays, sinceDays, prs: [...byLift.values()] };
 }
 
 // A day's title → a sensible exercise list from the library (real, focused workouts).
@@ -721,7 +790,11 @@ export function useStats(): Stats {
   const checkIns = useDb((s) => s.checkIns);
   const workouts = useDb((s) => s.workouts);
   const installedAt = useDb((s) => s.installedAt);
-  return useMemo(() => computeStats({ checkIns, workouts, installedAt }), [checkIns, workouts, installedAt]);
+  const serverPRs = useDb((s) => s.serverPRs);
+  return useMemo(
+    () => computeStats({ checkIns, workouts, installedAt, serverPRs }),
+    [checkIns, workouts, installedAt, serverPRs]
+  );
 }
 
 const MUSCLE_DISPLAY: Record<string, string> = {

@@ -23,10 +23,12 @@ export default function WeightLog() {
     if (!val || saving) return;
     gate(async () => {
       setSaving(true);
-      useDb.getState().logWeight(val); // local engine (authoritative)
+      // Same shared id as the workout path: the engine assigns it, the server
+      // row carries it, so the two copies are one entry.
+      const weightId = useDb.getState().logWeight(val);
       if (hasSupabaseConfig) {
         try {
-          await logWeight(val);
+          await logWeight(val, weightId);
         } catch {
           /* keep going; graceful */
         }
