@@ -15,6 +15,7 @@ import { seedById, timeAgoAz, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { useDiscoverPrefs } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
+import { getMyThreads, type ThreadSummary } from '@/lib/chat';
 
 type Row = {
   id: string;
@@ -79,6 +80,21 @@ export default function Chats() {
     }, [partnerIdsKey])
   );
 
+  /* `null` while the read is in flight or after it failed — the screen must not
+     say «Hələ söhbət yoxdur» about a list it could not fetch. */
+  const [serverThreads, setServerThreads] = useState<ThreadSummary[]>([]);
+  const [threadsFailed, setThreadsFailed] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      if (!hasSupabaseConfig) return;
+      getMyThreads()
+        .then((t) => { if (alive) { setServerThreads(t); setThreadsFailed(false); } })
+        .catch(() => alive && setThreadsFailed(true));
+      return () => { alive = false; };
+    }, [])
+  );
+
   const chats: Row[] = useMemo(() => {
     const build = (id: string, name: string, kind: Row['kind']): Row => {
       const thread = threads[id] ?? [];
@@ -107,8 +123,27 @@ export default function Chats() {
       .filter((id) => !partnerIds.has(id) && !blocked.includes(id) && (threads[id]?.length ?? 0) > 0)
       .map((id) => build(id, trainers.find((t) => t.id === id)?.name ?? seedById(id)?.name ?? names[id] ?? 'Adı göstərilmir', 'trainer'));
 
-    return [...partnerRows, ...otherRows].sort((a, b) => b.at.localeCompare(a.at));
-  }, [matches, threads, lastRead, trainers, blocked, names]);
+    /* Server threads (schema42) are the real conversations — a message that
+       reached the other person. They replace the device-only row for the same
+       counterpart, because that row's preview came from a message nobody
+       received. Anything the server does not know about still shows from the
+       local store, with its own honest state. */
+    const serverRows: Row[] = serverThreads
+      .filter((t) => !blocked.includes(t.otherProfileId))
+      .map((t) => ({
+        id: t.otherProfileId,
+        name: t.otherName ?? names[t.otherProfileId] ?? 'Adı göstərilmir',
+        kind: 'partner' as const,
+        last: t.lastBody ? (t.lastMine ? `Sən: ${t.lastBody}` : t.lastBody) : 'Söhbətə başla',
+        at: t.lastAt ?? '',
+        time: t.lastAt ? timeAgoAz(t.lastAt) : '',
+        unread: t.unread > 0,
+      }));
+
+    const fromServer = new Set(serverRows.map((r) => r.id));
+    return [...serverRows, ...partnerRows.filter((r) => !fromServer.has(r.id)), ...otherRows.filter((r) => !fromServer.has(r.id))]
+      .sort((a, b) => b.at.localeCompare(a.at));
+  }, [matches, threads, lastRead, trainers, blocked, names, serverThreads]);
 
   return (
     <Screen>
@@ -143,10 +178,12 @@ export default function Chats() {
           <View style={styles.empty}>
             <Icon name="msg" size={28} color={palette.tertiary} />
             <AppText variant="headline" style={{ marginTop: 12 }}>
-              Hələ söhbət yoxdur
+              {threadsFailed ? 'Söhbətlər yüklənmədi' : 'Hələ söhbət yoxdur'}
             </AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, maxWidth: 260, lineHeight: 21 }}>
-              Yoldaşa məşq təklif et və ya müəllimə yaz — söhbət qarşı tərəf qəbul edəndə burada açılacaq.
+              {threadsFailed
+                ? 'Söhbətləri gətirmək alınmadı — neçəsi olduğunu bilmirik. İnternet qayıdanda yenidən aç.'
+                : 'Yoldaşa məşq təklif et və ya müəllimə yaz — söhbət qarşı tərəf qəbul edəndə burada açılacaq.'}
             </AppText>
           </View>
         ) : (

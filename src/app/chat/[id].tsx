@@ -12,9 +12,18 @@ import { Screen } from '@/components/ui/Screen';
 import { usePartner, useTrainers } from '@/lib/hooks';
 import { showModerationSheet } from '@/lib/moderation';
 import { gymById, timeAgoAz, useDb } from '@/store/db';
+import {
+  ChatError, chatRefusalText, findThread, getMessages, markThreadRead,
+  openThread, sendMessage, subscribeToThread, type ChatMessageRow,
+} from '@/lib/chat';
+
+/** Only a real profile row has a server thread; seed ids never will. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import { useDiscoverPrefs } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
+import { hasSupabaseConfig } from '@/lib/supabase';
+import { toast } from '@/store/ui';
 
 const QUICK = ['Yoldayam 👍', 'Gecikirəm 10 dəq', 'Sabaha keçirək'];
 
@@ -28,13 +37,23 @@ export default function Conversation() {
   // or a trainer's student. Both resolve through the same lookup.
   const partner = usePartner(trainer ? '' : id);
 
-  const thread = useDb((s) => s.threads[id]);
   const match = useDb((s) => s.matches[id]);
-  const sendMessage = useDb((s) => s.sendMessage);
   const acceptInvite = useDb((s) => s.acceptInvite);
-  const markThreadRead = useDiscoverPrefs((s) => s.markThreadRead);
+  const localThread = useDb((s) => s.threads[id]);
+  const markThreadReadLocal = useDiscoverPrefs((s) => s.markThreadRead);
+
+  /* The conversation now lives on the server (schema42). `threadId` is null until
+     `open_thread` confirms the two people are actually allowed to talk — an
+     accepted match or trainer link, and no block. `state` separates «still
+     asking» from «asked and there is nothing», so an empty screen is never shown
+     over a read that failed. */
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [serverMsgs, setServerMsgs] = useState<ChatMessageRow[]>([]);
+  const [chatState, setChatState] = useState<'loading' | 'ready' | 'unavailable' | 'failed'>('loading');
+  const [refusal, setRefusal] = useState<string | null>(null);
 
   const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   // Never invent a name: when nobody could be resolved we say so instead of
@@ -46,9 +65,50 @@ export default function Conversation() {
   // Opening the thread is what marks it read — never "who wrote last".
   useFocusEffect(
     useCallback(() => {
-      if (id) markThreadRead(id);
-    }, [id, markThreadRead])
+      if (id) markThreadReadLocal(id);
+    }, [id, markThreadReadLocal])
   );
+
+  // Find the server thread (never create one here: opening a screen is not
+  // consent to start a conversation — `openThread` runs when a message is sent).
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      if (!hasSupabaseConfig || !UUID.test(id ?? '')) {
+        setChatState('unavailable');
+        return;
+      }
+      setChatState('loading');
+      findThread(id)
+        .then(async (t) => {
+          if (!alive) return;
+          setThreadId(t);
+          if (!t) {
+            setServerMsgs([]);
+            setChatState('ready');
+            return;
+          }
+          const ms = await getMessages(t);
+          if (!alive) return;
+          setServerMsgs(ms);
+          setChatState('ready');
+          void markThreadRead(t).catch(() => {});
+        })
+        .catch(() => alive && setChatState('failed'));
+      return () => { alive = false; };
+    }, [id])
+  );
+
+  // Live: without this the other side only appears on a reopen, which is exactly
+  // how the old device-only chat felt.
+  useEffect(() => {
+    if (!threadId) return;
+    return subscribeToThread(threadId, (m) => {
+      setServerMsgs((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+      if (!m.mine) void markThreadRead(threadId).catch(() => {});
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    });
+  }, [threadId]);
 
   /* Scroll the newest message back into view when the composer rises. The lift
      itself comes from the shared `useKeyboardLift` — this file used to carry its
@@ -66,15 +126,39 @@ export default function Conversation() {
   const composerLift = Platform.OS === 'android' ? lift : 0;
 
   // db.threads is keyed by an arbitrary id, so partner and trainer threads use one path.
-  const send = (body: string) => {
-    if (!body.trim() || !id) return;
+  const send = async (body: string) => {
+    const text = body.trim();
+    if (!text || !id || sending) return;
     tapFeedback();
-    sendMessage(id, body.trim());
-    setText('');
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    if (!hasSupabaseConfig || !UUID.test(id)) {
+      toast('Mesaj göndərilə bilmir — bu söhbətin serverdə qarşı tərəfi yoxdur', 'error');
+      return;
+    }
+    setSending(true);
+    setRefusal(null);
+    try {
+      // The thread is opened on the FIRST message, not when the screen opens:
+      // `open_thread` is what checks the relationship and the block, so a refusal
+      // arrives with a reason instead of a blank screen.
+      const t = threadId ?? (await openThread(id));
+      if (!threadId) setThreadId(t);
+      const m = await sendMessage(t, text);
+      setServerMsgs((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+      setText('');
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    } catch (e) {
+      const code = e instanceof ChatError ? e.code : 'unknown';
+      setRefusal(chatRefusalText(code));
+      toast(chatRefusalText(code), 'error');
+    } finally {
+      setSending(false);
+    }
   };
 
-  const messages = thread ?? [];
+  // Server messages are the conversation. The device copy is kept only for the
+  // workout-invite cards, which are still a local construct.
+  const messages = serverMsgs;
+  const invites = (localThread ?? []).filter((m) => m.kind === 'invite');
 
   return (
     <Screen edges={['top', 'bottom']}>
@@ -97,11 +181,23 @@ export default function Conversation() {
           <View style={styles.privacyNote}>
             <Icon name="lock" size={13} color={palette.caption} />
             <AppText variant="caption" color={palette.caption} style={{ flex: 1, lineHeight: 17 }}>
-              Mesajlar hazırda yalnız bu cihazda saxlanılır — qarşı tərəf onları hələ görmür. Vaxtı zalda dəqiqləşdirin.
+              {chatState === 'unavailable'
+                ? 'Bu söhbətin serverdə qarşı tərəfi yoxdur — yazdıqların göndərilmir.'
+                : 'Mesajlar qarşı tərəfə çatır. Cavab gələnə qədər bir mesaj göndərmək olur — vaxtı zalda dəqiqləşdirin.'}
             </AppText>
           </View>
 
-          {messages.length === 0 ? (
+          {chatState === 'loading' ? (
+            <View style={styles.startNote}>
+              <AppText variant="footnote" color={palette.caption} center>Yüklənir…</AppText>
+            </View>
+          ) : chatState === 'failed' ? (
+            <View style={styles.startNote}>
+              <AppText variant="footnote" color={palette.caption} center style={{ lineHeight: 19 }}>
+                Söhbət yüklənmədi — neçə mesaj olduğunu bilmirik. İnternet qayıdanda yenidən aç.
+              </AppText>
+            </View>
+          ) : messages.length === 0 && invites.length === 0 ? (
             <View style={styles.startNote}>
               <AppText variant="footnote" color={palette.caption} center style={{ lineHeight: 19 }}>
                 {!resolvedName
@@ -116,8 +212,8 @@ export default function Conversation() {
               </AppText>
             </View>
           ) : (
-            messages.map((m) =>
-              m.kind === 'invite' ? (
+            <>
+              {invites.map((m) => (
                 <InviteCard
                   key={m.id}
                   when={m.invite?.when ?? ''}
@@ -125,19 +221,26 @@ export default function Conversation() {
                   accepted={!!m.invite?.accepted}
                   onAccept={() => acceptInvite(id, m.id)}
                 />
-              ) : (
-                <View key={m.id} style={[styles.bubbleWrap, m.from === 'me' ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }]}>
-                  <View style={[styles.bubble, m.from === 'me' ? styles.mine : styles.theirs]}>
-                    <AppText variant="body" color={m.from === 'me' ? palette.white : palette.inkText}>
-                      {m.text}
+              ))}
+              {messages.map((m) => (
+                <View key={m.id} style={[styles.bubbleWrap, m.mine ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }]}>
+                  <View style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}>
+                    <AppText variant="body" color={m.mine ? palette.white : palette.inkText}>
+                      {m.body}
                     </AppText>
                   </View>
                   <AppText variant="caption" color={palette.tertiary} style={{ marginTop: 3, marginHorizontal: 4 }}>
-                    {timeAgoAz(m.at)}
+                    {timeAgoAz(m.createdAt)}
+                    {m.mine && m.read ? ' · oxundu' : ''}
                   </AppText>
                 </View>
-              )
-            )
+              ))}
+              {refusal ? (
+                <View style={styles.startNote}>
+                  <AppText variant="footnote" color={palette.red} center style={{ lineHeight: 19 }}>{refusal}</AppText>
+                </View>
+              ) : null}
+            </>
           )}
         </ScrollView>
 
