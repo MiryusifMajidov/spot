@@ -41,3 +41,14 @@ example
 # generated native folders
 /ios
 /android
+
+# Debug screenshots and scratch output from device testing (adb screencap).
+# These are throwaway artefacts of a session, not project files.
+/*.png
+/build.log
+/export.log
+/bundle_test.js
+/b2.js
+/audit_fixes.json
+/bugs.json
+/rules.json
