@@ -5,7 +5,7 @@ import { ScrollView, Share, StyleSheet, Switch } from 'react-native';
 import { ListGroup, ListRow } from '@/components/ui/ListGroup';
 import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
-import { ensureSession, updateMyProfile } from '@/lib/api';
+import { ensureSession, updateMyProfile, deleteMyAccount } from '@/lib/api';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { useDb } from '@/store/db';
@@ -134,7 +134,56 @@ export default function PrivacyDetails() {
     return sessionReady;
   };
 
+  /**
+   * Really delete the account — the store requirement, and the thing the old
+   * «Hesabı bu cihazdan sil» could not do. Files first, then the rows
+   * (`deleteMyAccount` in src/lib/api.ts explains why that order is not
+   * optional), then the device copy. Two confirmations, because it is final and
+   * because the first one is easy to tap by mistake in a list of red rows.
+   */
   const deleteAccount = () =>
+    confirm(
+      'Hesabı tamamilə sil',
+      'Profilin, videoların, şərhlərin, şəkillərin, check-inlərin və məşq tarixçən həm bu telefondan, həm də serverdən silinir. İstifadəçi adın boşalır. Bu addım geri qaytarıla bilməz.',
+      [
+        { label: 'Ləğv et', style: 'cancel' },
+        {
+          label: 'Davam et',
+          style: 'destructive',
+          onPress: () =>
+            confirm(
+              'Əminsən?',
+              'Son təsdiq. «Sil» düyməsindən sonra hesab geri qaytarılmır.',
+              [
+                { label: 'Ləğv et', style: 'cancel' },
+                {
+                  label: 'Sil',
+                  style: 'destructive',
+                  onPress: async () => {
+                    if (!hasSupabaseConfig) {
+                      toast('Server bağlantısı yoxdur — hesab silinmədi', 'error');
+                      return;
+                    }
+                    try {
+                      await deleteMyAccount();
+                    } catch {
+                      // Nothing partial is reported as done: if the server refused,
+                      // the account is still there and the person must know it.
+                      toast('Hesab silinmədi — internet yoxlanılsın, sonra yenidən cəhd et', 'error');
+                      return;
+                    }
+                    await wipeDevice();
+                    toast('Hesabın silindi');
+                    router.replace('/onboarding/welcome');
+                  },
+                },
+              ]
+            ),
+        },
+      ]
+    );
+
+  const wipeDeviceOnly = () =>
     confirm(
       'Hesabı bu cihazdan sil',
       'Məşq, çəki, check-in, qidalanma, rəy, saxlanılanlar və profil datan bu telefondan tamamilə silinir və sessiyadan çıxılır. Serverdə yazılmış sətirlər (post, video, şərh, rəy, check-in) bu düymə ilə silinmir — şərhlərini bir-bir özün silə bilərsən, qalanları üçün Parametrlər → Kömək və dəstək bölməsindən bizə yaz. Bu addım geri qaytarıla bilməz.',
@@ -184,7 +233,7 @@ export default function PrivacyDetails() {
 
         <ListGroup
           header="Sənin datan"
-          footer="Silmə bu cihazdakı datanı təmizləyir və sessiyanı bağlayır. Serverdəki köhnə sətirlər üçün dəstəyə yaz. Silməzdən əvvəl datanı özünə göndərməyi məsləhət görürük.">
+          footer="«Bu cihazdan sil» yalnız telefonundakı nüsxəni təmizləyir — hesabın serverdə qalır. Hesabı tamamilə silmək üçün aşağıdakı sonuncu sətri işlət. Silməzdən əvvəl datanı özünə göndərməyi məsləhət görürük.">
           <ListRow
             icon="arrowU"
             iconBg={palette.blue}
@@ -196,7 +245,16 @@ export default function PrivacyDetails() {
             icon="x"
             iconBg={palette.red}
             title="Datanı bu cihazdan sil"
-            subtitle="Hər şey silinir və çıxış edilir"
+            subtitle="Yalnız telefondakı nüsxə — hesabın serverdə qalır"
+            danger
+            chevron={false}
+            onPress={wipeDeviceOnly}
+          />
+          <ListRow
+            icon="x"
+            iconBg={palette.red}
+            title="Hesabı tamamilə sil"
+            subtitle="Profil, videolar, şərhlər, şəkillər — geri qaytarmaq olmur"
             danger
             chevron={false}
             onPress={deleteAccount}

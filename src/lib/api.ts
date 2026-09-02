@@ -1056,3 +1056,44 @@ export async function getMyPRs(): Promise<MyPR[]> {
   }
   return [...latest.values()];
 }
+
+// -------------------- account deletion --------------------
+/**
+ * Delete this account for good.
+ *
+ * Order matters and is not an implementation detail: the FILES go first, then
+ * the rows. Supabase forbids deleting `storage.objects` from SQL, so the RPC
+ * cannot do it — and if the rows went first, the account that owns the files
+ * would be gone and `owner = auth.uid()` would never match again, leaving the
+ * avatar, the gym photos and the videos in a public bucket with nobody able to
+ * remove them.
+ *
+ * A failure at any step throws, so the settings screen can say the account is
+ * still there rather than reporting a deletion that half happened.
+ */
+export async function deleteMyAccount(): Promise<void> {
+  const uid = await getUserId();
+  if (!uid) throw new Error('not-signed-in');
+
+  // Every bucket the app writes to. `owner = auth.uid()` in the storage policies
+  // (schema33) means a `remove()` only ever takes this account's own files.
+  for (const bucket of ['avatars', 'gyms', 'videos', 'certs'] as const) {
+    const { data, error } = await supabase.storage.from(bucket).list('', { limit: 1000 });
+    if (error) throw error;
+    const mine: string[] = [];
+    for (const f of (data ?? []) as { name: string; owner?: string | null }[]) {
+      // `list` returns the whole bucket; only the rows this account owns are
+      // removable, and asking for the others would fail the whole call.
+      if (f.owner === uid) mine.push(f.name);
+    }
+    if (mine.length) {
+      const { error: rmErr } = await supabase.storage.from(bucket).remove(mine);
+      if (rmErr) throw rmErr;
+    }
+  }
+
+  const { error } = await supabase.rpc('delete_my_account');
+  if (error) throw error;
+  // The session belongs to a user that no longer exists.
+  await supabase.auth.signOut().catch(() => {});
+}

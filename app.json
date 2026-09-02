@@ -1,14 +1,22 @@
 {
   "expo": {
     "name": "SPOT",
-    "slug": "miri",
+    "slug": "spot",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "spot",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.spot.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Check-in üçün zalın 150 metr radiusunda olduğunu yoxlayırıq. Yerin saxlanılmır.",
+        "NSCameraUsageDescription": "Texnika videosu çəkmək və profil şəkli əlavə etmək üçün kameradan istifadə olunur.",
+        "NSPhotoLibraryUsageDescription": "Profil şəkli, zal fotosu və texnika videosu seçmək üçün qalereyaya baxırıq.",
+        "NSMicrophoneUsageDescription": "Texnika videosu səsi ilə çəkildikdə mikrofon işlədilir."
+      }
     },
     "android": {
       "package": "com.spot.app",
@@ -19,7 +27,13 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "output": "static",
