@@ -90,6 +90,21 @@ function slotMatches(usualTime: string, slot: string): boolean {
  *   the flag is persisted, so anybody who turned it on before the switch was
  *   restricted would otherwise keep a women-only list with no way to clear it.
  */
+/**
+ * May THIS viewer's women-only filter be honoured?
+ *
+ * The switch is only rendered for women (partner-filter.tsx), so nobody else can
+ * turn it on. But `viewerIsWoman = gender === 'qadın'` also made the filter
+ * silently vanish for anyone whose gender field is blank — including a woman who
+ * cleared it after setting the filter — and a safety filter that quietly stops
+ * applying is worse than one that was never offered. So the rule is «not a man»:
+ * a man is still excluded (he cannot turn it on and it is not honoured for him),
+ * and an unstated gender errs toward the safer side.
+ */
+export function womenOnlyAllowed(gender: string | null | undefined): boolean {
+  return (gender ?? '').trim() !== 'kişi';
+}
+
 export function applyPartnerFilter(list: Partner[], f: PartnerFilter, viewerIsWoman = false): Partner[] {
   return list.filter((p) => {
     if (f.womenOnly && viewerIsWoman && p.gender !== 'qadın') return false;

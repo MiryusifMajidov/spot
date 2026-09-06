@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { supabase } from '../lib/supabase';
-import { audit } from '../lib/audit';
 import { toast } from '../ui/toast';
 import { useAuth, atLeast } from '../lib/auth';
 import { Icon } from '../ui/icons';
@@ -112,14 +111,25 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
   useEffect(() => { setNote(selected?.internal_note ?? ''); }, [selId, selected?.internal_note]);
 
   // ---- actions (ops+ only) --------------------------------------------------
+  /* All three go through SECURITY DEFINER RPCs (schema50/56).
+     `trainer_verifications.status`, `internal_note` and `reject_reason` are not
+     in the client UPDATE grant — schema55 narrowed it to the three evidence
+     columns so a TRAINER could attach their own certificate without also being
+     handed `status`. The admin panel signs in with the same publishable key and
+     the same `authenticated` role, so a plain `.update()` here is refused just
+     as it is for everybody else. The RPC asks «is this an admin» itself, moves
+     the queue row and the trainer's badge in one statement, and writes the audit
+     entry — so the request can no longer leave the queue without the badge
+     following it. */
   async function saveNote() {
     if (!selected || !canDecide) return;
     setSavingNote(true);
-    const { error } = await supabase.from('trainer_verifications')
-      .update({ internal_note: note || null }).eq('id', selected.id);
+    const { error } = await supabase.rpc('admin_set_verification_note', {
+      p_verification: selected.id,
+      p_note: note || null,
+    });
     setSavingNote(false);
-    if (error) { toast('Qeyd saxlanmadı'); return; }
-    await audit('trainer_verify_note', 'trainer_verification', selected.id, undefined, { trainer_id: selected.trainer_id });
+    if (error) { toast(`Qeyd saxlanmadı: ${error.message}`); return; }
     toast('Qeyd saxlanıldı');
     setPending((rows) => rows.map((r) => (r.id === selected.id ? { ...r, internal_note: note || null } : r)));
   }
@@ -127,33 +137,20 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
   async function approve() {
     if (!selected || !canDecide || busy) return;
     setBusy(true);
-    const { error: ve } = await supabase.from('trainer_verifications')
-      .update({ status: 'approved', internal_note: note || selected.internal_note }).eq('id', selected.id);
-    if (ve) { setBusy(false); toast('Xəta baş verdi'); return; }
-    if (selected.trainer_id) {
-      // This is the ONLY write in the product that grants the badge. `.select('id')`
-      // is required: an RLS-blocked or missing-row update returns no error and zero
-      // rows, so an error check alone would still report a badge that was not given.
-      const { data: tr, error: te } = await supabase.from('trainers')
-        .update({ verify_status: 'approved', verified: true })
-        .eq('id', selected.trainer_id)
-        .select('id');
-      if (te || !tr?.length) {
-        // Roll the verification back to pending, otherwise the request leaves the
-        // queue and the admin can never see or retry it while the trainer keeps
-        // reading «Nişan aktiv deyil».
-        await supabase.from('trainer_verifications').update({ status: 'pending' }).eq('id', selected.id);
-        setBusy(false);
-        toast(te ? `Nişan verilmədi: ${te.message}` : 'Nişan verilmədi — təsdiq geri qaytarıldı');
-        refreshCounts();
-        await load();
-        return;
-      }
-    }
-    const auditErr = await audit('trainer_verify_approve', 'trainer_verification', selected.id,
-      note || undefined, { trainer_id: selected.trainer_id });
+    const { error } = await supabase.rpc('admin_decide_verification', {
+      p_verification: selected.id,
+      p_status: 'approved',
+      p_note: note || null,
+      p_reason: null,
+    });
     setBusy(false);
-    toast(auditErr ? `Müəllim doğrulandı, amma audit qeydi yazılmadı: ${auditErr}` : 'Müəllim doğrulandı');
+    if (error) {
+      toast(`Nişan verilmədi: ${error.message}`);
+      refreshCounts();
+      await load();
+      return;
+    }
+    toast('Müəllim doğrulandı');
     refreshCounts();
     await load();
   }
@@ -163,29 +160,22 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
     const reason = rejectReason.trim();
     if (!reason) { toast('Səbəb mütləqdir'); return; }
     setBusy(true);
-    const { error: ve } = await supabase.from('trainer_verifications')
-      .update({ status: 'rejected', reject_reason: reason }).eq('id', selected.id);
-    if (ve) { setBusy(false); toast('Xəta baş verdi'); return; }
-    if (selected.trainer_id) {
-      const { data: tr, error: te } = await supabase.from('trainers')
-        .update({ verify_status: 'rejected' })
-        .eq('id', selected.trainer_id)
-        .select('id');
-      if (te || !tr?.length) {
-        await supabase.from('trainer_verifications').update({ status: 'pending' }).eq('id', selected.id);
-        setBusy(false);
-        toast(te ? `Rədd yazılmadı: ${te.message}` : 'Rədd yazılmadı — müraciət növbədə qaldı');
-        refreshCounts();
-        await load();
-        return;
-      }
-    }
-    const auditErr = await audit('trainer_verify_reject', 'trainer_verification', selected.id, reason,
-      { trainer_id: selected.trainer_id, notify_trainer: sendReason });
+    const { error } = await supabase.rpc('admin_decide_verification', {
+      p_verification: selected.id,
+      p_status: 'rejected',
+      p_note: note || null,
+      p_reason: reason,
+    });
     setBusy(false);
+    if (error) {
+      toast(`Rədd yazılmadı: ${error.message}`);
+      refreshCounts();
+      await load();
+      return;
+    }
     setRejectOpen(false);
     setRejectReason('');
-    toast(auditErr ? `Müraciət rədd edildi, amma audit qeydi yazılmadı: ${auditErr}` : 'Müraciət rədd edildi');
+    toast('Müraciət rədd edildi');
     refreshCounts();
     await load();
   }

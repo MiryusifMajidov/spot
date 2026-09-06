@@ -1,15 +1,20 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
+import { VideoPoster } from '@/components/VideoPoster';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
+import type { FeedVideo } from '@/data/feed';
 import { displayAuthor, isPlaceholderName } from '@/lib/authorName';
+import { useAuthGate } from '@/lib/authGate';
 import { useFeedVideos, useTrainers } from '@/lib/hooks';
+import { followProfile, unfollowProfile } from '@/lib/social';
+import { hasSupabaseConfig } from '@/lib/supabase';
+import { toast } from '@/store/ui';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
 import { azLower } from '@/lib/az';
@@ -31,11 +36,33 @@ export default function Creator() {
   const videos = useFeedVideos().filter((v) => (authorId ? v.authorId === authorId : v.author === name));
   const trainer = useTrainers().find((t) => (authorId ? t.id === authorId : t.name === name));
   const isTrainer = params.isTrainer === '1' || !!trainer;
-  const following = useAppStore((s) => s.following.includes(name));
+  /* Keyed by profile id, not by the display name that used to be in this array:
+     the launch-time `syncSocial` replaces the store with the server's ids, so a
+     name-keyed flag was erased on every restart. */
+  const following = useAppStore((s) => (authorId ? s.following.includes(authorId) : false));
   const toggleFollow = useAppStore((s) => s.toggleFollow);
   /* Is this page my own profile? Resolved by id when the route carries one, and
      only otherwise by a trimmed case-insensitive name compare. A guest is nobody,
      so nothing is ever "theirs": they keep the normal follow / booking buttons. */
+  const gate = useAuthGate();
+
+  const onFollow = () =>
+    gate(() => {
+      // `followProfile` (schema43) is the real record; the store is the instant
+      // answer and is rolled back when the write is refused.
+      if (!authorId) {
+        toast('Bu profilin kimliyi qeyd olunmayıb — izləmək mümkün deyil', 'error');
+        return;
+      }
+      const next = !following;
+      toggleFollow(authorId);
+      if (!hasSupabaseConfig) return;
+      (next ? followProfile(authorId) : unfollowProfile(authorId)).catch(() => {
+        toggleFollow(authorId);
+        toast('İzləmə göndərilmədi — yenidən cəhd et', 'error');
+      });
+    }, 'İzləmək üçün');
+
   const guest = useAppStore((s) => s.guest);
   const onboarded = useAppStore((s) => s.onboarded);
   const myName = useAppStore((s) => s.profile.name);
@@ -101,7 +128,7 @@ export default function Creator() {
                   <Button title="Profili redaktə et" variant="secondary" icon="edit" full onPress={() => router.push('/(tabs)/profile/edit')} style={{ flex: 1 }} />
                 ) : unknownAuthor ? null : (
                   <>
-                    <Button title={following ? 'İzlənir' : 'İzlə'} variant={following ? 'secondary' : 'primary'} full onPress={() => toggleFollow(name)} style={{ flex: 1 }} />
+                    <Button title={following ? 'İzlənir' : 'İzlə'} variant={following ? 'secondary' : 'primary'} full onPress={() => onFollow()} style={{ flex: 1 }} />
                     {trainer ? (
                       <Button title="Rezervasiya" variant="volt" full onPress={() => router.push({ pathname: '/(tabs)/discover/reserve/[id]', params: { id: trainer.id } })} style={{ flex: 1 }} />
                     ) : null}
@@ -114,17 +141,7 @@ export default function Creator() {
             </AppText>
           </View>
         }
-        renderItem={({ item }) => (
-          <View style={styles.tile}>
-            <LinearGradient colors={item.gradient} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={StyleSheet.absoluteFill} />
-            <View style={styles.tilePlay}>
-              <Icon name="play" size={16} color="rgba(255,255,255,0.9)" />
-            </View>
-            <AppText numberOfLines={2} style={styles.tileCaption}>
-              {item.caption}
-            </AppText>
-          </View>
-        )}
+        renderItem={({ item }) => <VideoTile v={item} />}
         ListEmptyComponent={
           <AppText variant="body" color={palette.textSecondary} center style={{ paddingTop: 30 }}>
             Hələ video paylaşılmayıb.
@@ -141,6 +158,23 @@ function Stat({ value, label }: { value: string; label: string }) {
       <AppText variant="title3">{value}</AppText>
       <AppText variant="caption" color={palette.caption} style={{ marginTop: 3 }}>
         {label}
+      </AppText>
+    </View>
+  );
+}
+
+/** One video in the grid. The gradient is the FALLBACK, not the picture: a real
+ *  frame from the clip is drawn over it as soon as the device has made one
+ *  (see lib/videoPoster). Without it every tile in the grid looked the same. */
+function VideoTile({ v }: { v: FeedVideo }) {
+  return (
+    <View style={styles.tile}>
+      <VideoPoster id={v.id} videoUrl={v.videoUrl} gradient={v.gradient} />
+      <View style={styles.tilePlay}>
+        <Icon name="play" size={16} color="rgba(255,255,255,0.9)" />
+      </View>
+      <AppText numberOfLines={2} style={styles.tileCaption}>
+        {v.caption}
       </AppText>
     </View>
   );

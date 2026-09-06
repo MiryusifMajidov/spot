@@ -15,6 +15,9 @@ export interface FeedVideo {
   linkedProgramId: string;
   gradient: [string, string];
   videoUrl: string;
+  /** Clip length in seconds, from the picker at upload time. Null on rows
+   *  uploaded before it was recorded — shown as nothing, never as «0 san». */
+  durationSec?: number | null;
 }
 
 export interface CommunityPost {

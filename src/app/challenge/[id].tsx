@@ -9,6 +9,8 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { useAuthGate } from '@/lib/authGate';
 import { useChallenge } from '@/lib/hooks';
+import { joinChallenge as joinChallengeOnServer, leaveChallenge as leaveChallengeOnServer } from '@/lib/social';
+import { hasSupabaseConfig } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { gymById, useChallengeProgress } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
@@ -38,7 +40,16 @@ export default function ChallengeDetail() {
         style: 'destructive',
         onPress: () => {
           useAppStore.setState((s) => ({ joinedChallenges: s.joinedChallenges.filter((x) => x !== id) }));
-          toast('Challenge-dən çıxdın', 'info');
+          if (!hasSupabaseConfig) {
+            toast('Challenge-dən çıxdın (yalnız bu cihazda)', 'info');
+            return;
+          }
+          leaveChallengeOnServer(id)
+            .then(() => toast('Challenge-dən çıxdın', 'info'))
+            .catch(() => {
+              useAppStore.setState((s) => ({ joinedChallenges: [...s.joinedChallenges, id] }));
+              toast('Çıxmaq alınmadı — yenidən cəhd et', 'error');
+            });
         },
       },
     ]);
@@ -120,8 +131,24 @@ export default function ChallengeDetail() {
               return;
             }
             gate(() => {
+              /* `joinChallenge` (schema43) is the row that makes it real. It was
+                 written and never called: the toast said «qoşuldun» while only
+                 this device knew, the participant count could never move, and
+                 the next launch's `syncSocial` replaced the local list with the
+                 server's empty one — so the challenge quietly un-joined itself. */
               join(id);
-              toast(`"${c.title}" challenge-inə qoşuldun`);
+              if (!hasSupabaseConfig) {
+                toast('Serverə yazılmadı — qoşulma yalnız bu cihazdadır', 'error');
+                return;
+              }
+              joinChallengeOnServer(id)
+                .then(() => toast(`"${c.title}" challenge-inə qoşuldun`))
+                .catch(() => {
+                  useAppStore.setState((st) => ({
+                    joinedChallenges: st.joinedChallenges.filter((x) => x !== id),
+                  }));
+                  toast('Qoşulmaq alınmadı — yenidən cəhd et', 'error');
+                });
             }, 'Challenge-ə qoşulmaq üçün');
           }}
         />

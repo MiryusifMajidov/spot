@@ -1,6 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { successFeedback, tapFeedback } from '@/lib/feedback';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,7 +26,7 @@ import {
   useDb,
   useLatestWeight,
 } from '@/store/db';
-import { confirm } from '@/store/ui';
+import { confirm, toast } from '@/store/ui';
 import { dark, palette } from '@/theme';
 import { resolveDayExercises } from './day';
 
@@ -144,14 +146,77 @@ export default function Session() {
     if (!touched.current) setLogs(initial);
   }, [initial]);
   const [ci, setCi] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
   const [rest, setRest] = useState<number | null>(null);
   const restRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  /* Duration from a START TIMESTAMP, not from counting ticks.
+     `setInterval(() => setElapsed(e => e + 1), 1000)` only fires while the JS
+     thread is awake: lock the phone or take a call in the middle of a set and
+     the timer silently stops, so a 62-minute workout was logged as 40. The
+     stamp is also what makes the session survivable — see the persistence
+     below. */
+  const [startedAt, setStartedAt] = useState<number>(() => Date.now());
+  const [now, setNow] = useState<number>(() => Date.now());
   useEffect(() => {
-    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+  const elapsed = Math.max(0, Math.floor((now - startedAt) / 1000));
+
+  /* The whole session, on disk.
+     It used to live only in React state, so Android killing the app in the
+     background — routine on a phone with the camera or a call in front — threw
+     away every set of an hour's work with no warning and no way back. The
+     draft is written on every change and cleared the moment the workout is
+     saved or deliberately abandoned. */
+  const draftKey = `spot-session:${params.programId || 'free'}:${dayIndex}:${title}`;
+  const [restored, setRestored] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    AsyncStorage.getItem(draftKey)
+      .then((raw) => {
+        if (!alive || !raw) {
+          if (alive) setRestored(true);
+          return;
+        }
+        try {
+          const d = JSON.parse(raw) as { logs: ExLog[]; ci: number; startedAt: number };
+          // A draft older than 12 hours is not a workout somebody is still in.
+          if (!d?.logs?.length || Date.now() - d.startedAt > 12 * 3600 * 1000) {
+            AsyncStorage.removeItem(draftKey).catch(() => {});
+            setRestored(true);
+            return;
+          }
+          touched.current = true;
+          setLogs(d.logs);
+          setCi(Math.min(d.ci ?? 0, d.logs.length - 1));
+          setStartedAt(d.startedAt);
+          toast('Yarımçıq məşqin bərpa olundu', 'info');
+        } catch {
+          AsyncStorage.removeItem(draftKey).catch(() => {});
+        }
+        setRestored(true);
+      })
+      .catch(() => alive && setRestored(true));
+    return () => {
+      alive = false;
+    };
+  }, [draftKey]);
+
+  useEffect(() => {
+    // Only after the restore has run, or an empty first render would overwrite
+    // the draft it is about to load.
+    if (!restored || !touched.current) return;
+    AsyncStorage.setItem(draftKey, JSON.stringify({ logs, ci, startedAt })).catch(() => {});
+  }, [restored, logs, ci, startedAt, draftKey]);
+
+  /* The screen stays awake while the workout is open: between sets the phone
+     used to lock, and unlocking with chalked hands mid-set is exactly when a
+     rep gets miscounted. */
+  useKeepAwake();
+
+  const clearDraft = () => AsyncStorage.removeItem(draftKey).catch(() => {});
   useEffect(() => () => { if (restRef.current) clearInterval(restRef.current); }, []);
 
   /* The set list is where the workout is actually logged, and Android edge-to-edge does
@@ -297,6 +362,7 @@ export default function Session() {
       }
     }
 
+    clearDraft();
     router.replace({
       pathname: '/(tabs)/workout/summary',
       params: { title, durationSec: String(elapsed), volumeKg: String(volumeKg), setsDone: String(setsDone), maxKg: String(maxKg) },
@@ -316,13 +382,18 @@ export default function Session() {
 
   const quit = () => {
     if (doneCount === 0) {
+      clearDraft();
       router.back();
       return;
     }
-    confirm('Məşqi dayandır?', `${doneCount} set qeyd etmisən. Yadda saxlamadan çıxsan itəcək.`, [
+    // Leaving no longer means losing it: the draft is kept and offered back the
+    // next time this workout is opened, so «Məşqə davam et» is a real option
+    // even after the phone kills the app.
+    confirm('Məşqi dayandır?', `${doneCount} set qeyd etmisən. İndi saxlamasan, məşqi növbəti dəfə açanda qaldığın yerdən davam edə bilərsən.`, [
       { label: 'Bitir və yadda saxla', style: 'primary', onPress: () => gate(save, 'Məşqi yadda saxlamaq üçün') },
       { label: 'Məşqə davam et', style: 'cancel' },
-      { label: 'Saxlamadan çıx', style: 'destructive', onPress: () => router.back() },
+      { label: 'Sonra davam edərəm', onPress: () => router.back() },
+      { label: 'Sil və çıx', style: 'destructive', onPress: () => { clearDraft(); router.back(); } },
     ]);
   };
 

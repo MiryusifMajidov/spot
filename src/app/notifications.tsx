@@ -26,6 +26,13 @@ import { palette, spacing } from '@/theme';
  *  failed → we could not ask, which is not the same as «bildiriş yoxdur». */
 type State = 'loading' | 'ready' | 'failed';
 
+/* Every type the DATABASE can write, not just the ones this screen was first
+   built for. The map used to hold eight keys while the table accepted twelve,
+   and the row renderer read `.name` straight off the lookup — so the first
+   `message`, `video_like`, `post_like` or `follow` row crashed the inbox for
+   everyone who had one. A missing key now falls back instead of throwing. */
+const FALLBACK_ICON = { name: 'bell' as IconName, tint: palette.tertiary };
+
 const ICON: Record<NotifType, { name: IconName; tint: string }> = {
   comment_like: { name: 'heart', tint: palette.red },
   comment_reply: { name: 'msg', tint: palette.blue },
@@ -35,6 +42,10 @@ const ICON: Record<NotifType, { name: IconName; tint: string }> = {
   trainer_request: { name: 'users', tint: palette.blue },
   trainer_decided: { name: 'check', tint: palette.voltDeep },
   review_reply: { name: 'star', tint: palette.voltDeep },
+  message: { name: 'msg', tint: palette.blue },
+  video_like: { name: 'heart', tint: palette.red },
+  post_like: { name: 'heart', tint: palette.red },
+  follow: { name: 'users', tint: palette.voltDeep },
 };
 
 export default function Notifications() {
@@ -67,6 +78,8 @@ export default function Notifications() {
     const t = notifTarget(n);
     if (!t) return;
     if (t.kind === 'comments') openComments(t.key);
+    else if (t.kind === 'chat') router.push({ pathname: '/chat/[id]', params: { id: t.profileId } });
+    else if (t.kind === 'profile') router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: t.profileId } });
     else router.push('/chat/requests');
   };
 
@@ -118,7 +131,7 @@ export default function Notifications() {
           </View>
         ) : (
           rows.map((n) => {
-            const ic = ICON[n.type];
+            const ic = ICON[n.type] ?? FALLBACK_ICON;
             return (
               <PressableScale key={n.id} activeScale={0.98} onPress={() => open(n)}>
                 <View style={[styles.row, !n.read && styles.rowUnread]}>

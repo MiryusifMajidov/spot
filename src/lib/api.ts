@@ -622,10 +622,24 @@ export async function getPartner(id: string): Promise<Partner | null> {
   return mapPartner(data as DbProfile, me, here.has((data as DbProfile).id), gap);
 }
 
-export async function sendMatchRequest(toProfileId: string): Promise<void> {
+/**
+ * Ask somebody to train together.
+ *
+ * `note` is the proposed time and gym, in the sender's words. It used to be
+ * dropped on the floor: the match screen made the sender pick a slot, wrote it
+ * to the DEVICE store and sent the id alone, so the recipient saw «Birlikdə məşq
+ * etmək istəyir» with no time in it while the sender believed they had proposed
+ * Wednesday 19:00. schema54 added the column.
+ */
+export async function sendMatchRequest(toProfileId: string, note?: string): Promise<void> {
   const me = await getMyProfile();
   if (!me) throw new Error('no profile');
-  const { error } = await supabase.from('match_requests').insert({ from_profile: me.id, to_profile: toProfileId });
+  const clean = (note ?? '').trim().slice(0, 200);
+  const { error } = await supabase.from('match_requests').insert({
+    from_profile: me.id,
+    to_profile: toProfileId,
+    ...(clean ? { note: clean } : {}),
+  });
   if (error) throw error;
 }
 
@@ -645,8 +659,10 @@ export async function createCommunityPost(p: { author: string; gym: string; body
     time_ago: 'indi',
     type: 'text',
     body: p.body,
-    likes: 0,
-    comments: 0,
+    // No `likes: 0` / `comments: 0`: schema45 revoked INSERT on the counter
+    // columns, so naming them here would make Postgres refuse the whole row
+    // («permission denied for column likes»). They default to 0 and from then on
+    // only the triggers move them.
   });
   if (error) throw error;
   // The feed caches the community list for a minute; without this the user is
@@ -680,7 +696,10 @@ export async function becomeTrainer(input: { specialty: string; bio: string; pri
     name: input.name || me.name || 'Müəllim',
     gym_id: input.homeGymId,
     specialty: input.specialty,
-    response_time: '~1 saat',
+    /* No `response_time`. It used to write «~1 saat» on every new trainer —
+       a promise about how fast a person answers, invented at the moment their
+       account was created, before they had ever received a message. Nothing
+       measures it, so nothing states it. */
     price_from: input.priceFrom,
     bio: input.bio,
     certifications: [],
@@ -796,7 +815,21 @@ export async function buyDayPass(gymId: string, price: number): Promise<{ code: 
 
 /** Upload a picked video to Supabase Storage and publish it as a feed video.
  *  Requires schema3.sql (creates the public `videos` bucket + policies). */
-export async function uploadFeedVideo(input: { uri: string; caption: string; author: string; linkedProgramTitle: string; linkedProgramId: string }): Promise<void> {
+/** The videos bucket's own ceiling (schema33). Stated here so the client can
+ *  refuse a file before spending the person's data on an upload that storage
+ *  will reject at the end. */
+export const VIDEO_MAX_BYTES = 100 * 1024 * 1024;
+
+export async function uploadFeedVideo(input: {
+  uri: string;
+  caption: string;
+  author: string;
+  linkedProgramTitle: string;
+  linkedProgramId: string;
+  /** From the picker, when it reports them. Recorded, not guessed. */
+  durationSec?: number | null;
+  sizeBytes?: number | null;
+}): Promise<void> {
   const me = await getMyProfile();
   // Checked BEFORE the upload: schema29 refuses an authorless video, so without
   // this the file would be pushed to storage and the row rejected afterwards —
@@ -804,9 +837,28 @@ export async function uploadFeedVideo(input: { uri: string; caption: string; aut
   if (!me?.id) throw new Error('no profile');
   const id = `uv-${Date.now().toString(36)}`;
   const path = `${id}.mp4`;
-  const arraybuffer = await (await fetch(input.uri)).arrayBuffer();
-  const { error: upErr } = await supabase.storage.from('videos').upload(path, arraybuffer, { contentType: 'video/mp4', upsert: true });
+
+  const res = await fetch(input.uri);
+  if (!res.ok) throw new Error('video-read-failed');
+
+  /* The size is checked once more here, from the response itself. The picker's
+     `fileSize` is absent on some Android providers, and this is the last point
+     before the whole clip is pulled into JS memory as an ArrayBuffer — which is
+     what made a long 4K recording kill the app instead of reporting a limit. */
+  const blob = await res.blob();
+  const bytes = blob.size || input.sizeBytes || 0;
+  if (bytes > VIDEO_MAX_BYTES) {
+    const err = new Error('video-too-large') as Error & { sizeBytes: number };
+    err.sizeBytes = bytes;
+    throw err;
+  }
+
+  const arraybuffer = await new Response(blob).arrayBuffer();
+  const { error: upErr } = await supabase.storage
+    .from('videos')
+    .upload(path, arraybuffer, { contentType: 'video/mp4', upsert: true });
   if (upErr) throw upErr;
+
   const videoUrl = supabase.storage.from('videos').getPublicUrl(path).data.publicUrl;
   const { error } = await supabase.from('feed_videos').insert({
     id,
@@ -814,16 +866,23 @@ export async function uploadFeedVideo(input: { uri: string; caption: string; aut
     // Identity, so the feed can tell whose video this is without guessing from
     // the display name. FK to profiles(id) — never the auth uid.
     author_id: me.id,
-    verified: false,
-    is_trainer: me?.role === 'trainer',
+    // `verified` and `is_trainer` are NOT sent: schema47 revoked INSERT on them
+    // and stamps both from the author's own profile. They were client-supplied
+    // until now, which meant any account could put a verification badge on its
+    // own video by sending `verified: true`.
     caption: input.caption,
     hashtags: [],
-    likes: 0,
-    comments: 0,
+    // `likes`/`comments`/`saves` are deliberately absent — schema45 revoked
+    // INSERT on them, and the triggers own them from here.
     linked_program_title: input.linkedProgramTitle,
     linked_program_id: input.linkedProgramId,
     gradient: ['#3A3A44', '#101014'],
     video_url: videoUrl,
+    duration_sec: input.durationSec ?? null,
+    size_bytes: bytes || null,
+    // `ord` was the feed's sort key and every upload wrote 0, so the order was
+    // arbitrary. schema46 sorts by `created_at`; `ord` now only orders the
+    // seeded catalogue.
     ord: 0,
   });
   if (error) throw error;
@@ -1065,6 +1124,9 @@ export interface MatchRequestRow {
   otherProfileId: string;
   status: 'pending' | 'accepted' | 'declined';
   iSent: boolean;
+  /** The workout the sender proposed («Ç.a 19:00 · Iron Bay»), or null on rows
+   *  written before schema54 added the column. */
+  note: string | null;
 }
 
 export async function getMyMatchRequests(): Promise<MatchRequestRow[]> {
@@ -1072,15 +1134,17 @@ export async function getMyMatchRequests(): Promise<MatchRequestRow[]> {
   if (!me) return [];
   const { data, error } = await supabase
     .from('match_requests')
-    .select('from_profile,to_profile,status')
+    .select('from_profile,to_profile,status,note')
     .or(`from_profile.eq.${me.id},to_profile.eq.${me.id}`);
   // A read failure is NOT «no requests»: the caller reconciles local state against
   // this, and an empty array would wipe the device's record of real requests.
   if (error) throw error;
-  return ((data ?? []) as { from_profile: string; to_profile: string; status: string | null }[]).map((r) => {
+  return (
+    (data ?? []) as { from_profile: string; to_profile: string; status: string | null; note: string | null }[]
+  ).map((r) => {
     const iSent = r.from_profile === me.id;
     const st = r.status === 'accepted' || r.status === 'declined' ? r.status : 'pending';
-    return { otherProfileId: iSent ? r.to_profile : r.from_profile, status: st, iSent };
+    return { otherProfileId: iSent ? r.to_profile : r.from_profile, status: st, iSent, note: r.note ?? null };
   });
 }
 
@@ -1148,21 +1212,33 @@ export async function deleteMyAccount(): Promise<void> {
   const uid = await getUserId();
   if (!uid) throw new Error('not-signed-in');
 
-  // Every bucket the app writes to. `owner = auth.uid()` in the storage policies
-  // (schema33) means a `remove()` only ever takes this account's own files.
-  for (const bucket of ['avatars', 'gyms', 'videos', 'certs'] as const) {
-    const { data, error } = await supabase.storage.from(bucket).list('', { limit: 1000 });
-    if (error) throw error;
-    const mine: string[] = [];
-    for (const f of (data ?? []) as { name: string; owner?: string | null }[]) {
-      // `list` returns the whole bucket; only the rows this account owns are
-      // removable, and asking for the others would fail the whole call.
-      if (f.owner === uid) mine.push(f.name);
-    }
-    if (mine.length) {
-      const { error: rmErr } = await supabase.storage.from(bucket).remove(mine);
-      if (rmErr) throw rmErr;
-    }
+  /* WHICH FILES ARE MINE — from the database, not from `list()`.
+     This used to call `storage.from(b).list()` and keep the rows where
+     `f.owner === uid`. The Storage list endpoint does not return `owner` at all
+     (name, id, timestamps and metadata only); the hand-written type said it
+     might, so it compiled, `f.owner` was `undefined` for every row, and the
+     filtered list was ALWAYS empty. Nothing was ever deleted — and then the RPC
+     removed the auth user, after which `owner = auth.uid()` could never match
+     again and the files became permanently unremovable: an avatar, the person's
+     face in every video, and the ID document they uploaded for trainer
+     verification, all in a public bucket, forever.
+     `my_storage_objects()` (schema51) reads `storage.objects` directly and is
+     pinned to `auth.uid()`. */
+  const { data: files, error: listErr } = await supabase.rpc('my_storage_objects');
+  if (listErr) throw listErr;
+
+  const byBucket = new Map<string, string[]>();
+  for (const f of (files ?? []) as { bucket_id: string; name: string }[]) {
+    const arr = byBucket.get(f.bucket_id) ?? [];
+    arr.push(f.name);
+    byBucket.set(f.bucket_id, arr);
+  }
+  for (const [bucket, names] of byBucket) {
+    const { error: rmErr } = await supabase.storage.from(bucket).remove(names);
+    // A file that will not delete must stop the whole thing: the rows are what
+    // keeps `owner = auth.uid()` matching, so removing them first would strand
+    // the file for good.
+    if (rmErr) throw rmErr;
   }
 
   const { error } = await supabase.rpc('delete_my_account');

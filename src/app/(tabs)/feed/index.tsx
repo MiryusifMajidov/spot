@@ -27,7 +27,7 @@ import { findProgram, gymById } from '@/store/db';
 import { actionSheet, openComments, toast, useUi } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 import { azLower } from '@/lib/az';
-import { likeVideo, unlikeVideo } from '@/lib/social';
+import { likeVideo, unlikeVideo, myVideoLikes, myVideoSaves, saveVideo, unsaveVideo, videoSaveCount, likePost, unlikePost, myPostLikes, followProfile, unfollowProfile } from '@/lib/social';
 
 type Mode = 'video' | 'community';
 
@@ -217,16 +217,43 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
       };
     }, [])
   );
-  const allVideos = useFeedVideos();
-  // Followed creators come first. The follow list is snapshotted on mount so tapping
-  // "İzlə" never reorders the feed under the user's thumb mid-scroll.
-  const [followedAtMount] = useState(() => useAppStore.getState().following);
-  const videos = useMemo(
-    () => [...allVideos].sort((a, b) => Number(followedAtMount.includes(b.author)) - Number(followedAtMount.includes(a.author))),
-    [allVideos, followedAtMount]
-  );
+  /* Ordering is done in `useFeedVideos` now: followed authors first (by profile
+     id, from the `follows` table), then newest first.
+
+     What was here before sorted by `s.following.includes(v.author)` — the
+     device's list, keyed by DISPLAY NAME. Two people called «Yusif» were the
+     same person to it, a rename silently broke the link, and it was reordering
+     a list the server had already returned in an arbitrary order anyway, since
+     every row's sort key was `ord: 0`. */
+  const videos = useFeedVideos();
   const commentKeys = useMemo(() => videos.map((v) => videoKey(v.id)), [videos]);
   const commentCounts = useCommentCounts(commentKeys);
+
+  /* What the SERVER says this account liked and saved.
+     The hearts and bookmarks are drawn from the device store so they answer the
+     finger instantly, but nothing ever checked that store against the server:
+     a like the server refused stayed filled in forever, and on a second device
+     every video you had already liked came up empty. */
+  useEffect(() => {
+    if (!hasSupabaseConfig || !videos.length) return;
+    let alive = true;
+    const ids = videos.map((v) => v.id);
+    Promise.all([myVideoLikes(ids), myVideoSaves(ids)])
+      .then(([likes, saves]) => {
+        if (!alive) return;
+        useAppStore.getState().reconcileSocial(
+          ids.map(videoKey),
+          [...likes].map(videoKey),
+          [...saves]
+        );
+      })
+      // A failed check leaves the cached flags as they are. Clearing them would
+      // claim the account liked nothing, which is not what a failed read means.
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [videos]);
   const [h, setH] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [muted, setMuted] = useState(false);
@@ -322,7 +349,7 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
   const [dragRatio, setDragRatio] = useState<number | null>(null);
   const gate = useAuthGate();
 
-  const following = useAppStore((s) => s.following.includes(v.author));
+  const following = useAppStore((s) => (v.authorId ? s.following.includes(v.authorId) : false));
   const toggleFollow = useAppStore((s) => s.toggleFollow);
   // Your own video: nobody follows themselves, so the control is not shown at all.
   const me = useMyIdentity();
@@ -334,6 +361,25 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
   const liked = useAppStore((s) => s.likedPosts.includes(videoKey(v.id)));
   const toggleLike = useAppStore((s) => s.toggleLikedPost);
   const linkedProgram = v.linkedProgramId ? findProgram(v.linkedProgramId) : undefined;
+
+  /* The like count as the server last reported it, plus this device's own
+     un-acknowledged tap. Without the adjustment the number sits still while the
+     heart fills — the video would say «12» to someone who just became the 13th.
+     `v.likes` is trigger-maintained (schema43/44); nothing here writes it. */
+  const [likedAtLoad] = useState(liked);
+  const likeCount = Math.max(0, (v.likes ?? 0) + (liked === likedAtLoad ? 0 : liked ? 1 : -1));
+
+  /* Save count: the author's own number, fetched only on the author's own
+     video. `video_save_count` returns null for anyone else, and null draws
+     nothing rather than a «0» that would read as «nobody saved it». */
+  const [saveCount, setSaveCount] = useState<number | null>(null);
+  const refreshSaveCount = useCallback(() => {
+    if (!isMine || !hasSupabaseConfig) return;
+    videoSaveCount(v.id).then(setSaveCount).catch(() => {});
+  }, [isMine, v.id]);
+  useEffect(() => {
+    refreshSaveCount();
+  }, [refreshSaveCount]);
 
   const share = () => {
     Share.share({ message: `${displayAuthor(v.author)}: ${v.caption}\n\n${v.videoUrl}` }).catch(() => {});
@@ -448,7 +494,27 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
             {isMine ? null : (
               <PressableScale
                 activeScale={0.92}
-                onPress={() => gate(() => toggleFollow(v.author), 'İzləmək üçün')}
+                onPress={() =>
+                  gate(() => {
+                    /* The follow row is what makes it real: `followProfile` was
+                       written in schema43 and never called from anywhere, so
+                       «İzlə» only ever touched the device store — the author
+                       never learned, the feed's followed-first ordering had an
+                       empty set to work with, and the next launch's `syncSocial`
+                       wiped the flag. */
+                    if (!v.authorId) {
+                      toast('Bu videonun müəllifi qeyd olunmayıb — izləmək mümkün deyil', 'error');
+                      return;
+                    }
+                    const next = !following;
+                    toggleFollow(v.authorId);
+                    if (!hasSupabaseConfig) return;
+                    (next ? followProfile(v.authorId) : unfollowProfile(v.authorId)).catch(() => {
+                      toggleFollow(v.authorId!);
+                      toast('İzləmə göndərilmədi — yenidən cəhd et', 'error');
+                    });
+                  }, 'İzləmək üçün')
+                }
                 style={[styles.follow, following && { backgroundColor: palette.volt, borderColor: palette.volt }]}>
                 <AppText style={{ fontSize: 12, fontWeight: '600', color: following ? palette.inkText : palette.white }}>{following ? 'İzlənir' : 'İzlə'}</AppText>
               </PressableScale>
@@ -484,6 +550,7 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
             icon="heart"
             active={liked}
             activeColor={palette.red}
+            count={likeCount}
             onPress={() =>
               gate(() => {
                 /* The device flag flips first so the heart answers the finger,
@@ -507,7 +574,28 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
             icon={saved ? 'bookmarkOn' : 'bookmark'}
             active={saved}
             activeColor={palette.volt}
-            onPress={() => gate(() => toggleSaved(v.id), 'Saxlamaq üçün')}
+            /* Only the author sees how many people saved it — see social.ts.
+               On everybody else's video this is null and no number is drawn. */
+            count={saveCount}
+            onPress={() =>
+              gate(() => {
+                /* Same shape as the heart: the device flag flips first, the
+                   server row decides. Saving used to write ONLY to the device
+                   store, so a reinstall emptied the shelf and the author never
+                   learned the clip was worth keeping (schema45). */
+                const next = !saved;
+                toggleSaved(v.id);
+                if (!hasSupabaseConfig) return;
+                (next ? saveVideo(v.id) : unsaveVideo(v.id))
+                  .then(() => {
+                    if (isMine) refreshSaveCount();
+                  })
+                  .catch(() => {
+                    toggleSaved(v.id);
+                    toast('Saxlanılmadı — yenidən cəhd et', 'error');
+                  });
+              }, 'Saxlamaq üçün')
+            }
           />
           <RailBtn icon="share" onPress={share} />
         </View>
@@ -577,6 +665,24 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
   const visible = useMemo(() => posts.filter((p) => !hidden.includes(p.id)), [posts, hidden]);
   const commentKeys = useMemo(() => visible.map((p) => postKey(p.id)), [visible]);
   const commentCounts = useCommentCounts(commentKeys);
+
+  // Same reconcile as the video feed: the server decides which of these this
+  // account really liked, and a failed read changes nothing.
+  useEffect(() => {
+    if (!hasSupabaseConfig || !visible.length) return;
+    let alive = true;
+    const ids = visible.map((p) => p.id);
+    myPostLikes(ids)
+      .then((likes) => {
+        if (!alive) return;
+        useAppStore.getState().reconcileSocial(ids.map(postKey), [...likes].map(postKey));
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [visible]);
+
   const swipeBack = Gesture.Fling()
     .direction(Directions.LEFT)
     .onEnd(() => runOnJS(setMode)('video'));
@@ -641,6 +747,24 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
   const gate = useAuthGate();
   const liked = useAppStore((s) => s.likedPosts.includes(postKey(post.id)));
   const toggleLike = useAppStore((s) => s.toggleLikedPost);
+  const [likedAtLoad] = useState(liked);
+  const likeCount = Math.max(0, (post.likes ?? 0) + (liked === likedAtLoad ? 0 : liked ? 1 : -1));
+
+  /* This used to call `toggleLike` and stop there — the like was written to the
+     device store and nowhere else, so the author never learned about it and it
+     vanished on reinstall. `post_likes` (schema43) is the real record; the
+     counter on the row follows from a trigger. */
+  const onLike = () =>
+    gate(() => {
+      const next = !liked;
+      toggleLike(postKey(post.id));
+      if (!hasSupabaseConfig) return;
+      (next ? likePost(post.id) : unlikePost(post.id)).catch(() => {
+        toggleLike(postKey(post.id));
+        toast('Bəyənmə göndərilmədi — yenidən cəhd et', 'error');
+      });
+    }, 'Bəyənmək üçün');
+
   const onMore = () =>
     actionSheet({
       title: post.author,
@@ -720,8 +844,15 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
 
       <View style={styles.postActions}>
         {/* Colour, not a word — same reason as the video rail. */}
-        <PressableScale activeScale={0.9} onPress={() => gate(() => toggleLike(postKey(post.id)), 'Bəyənmək üçün')} style={styles.postAction}>
+        <PressableScale activeScale={0.9} onPress={onLike} style={styles.postAction}>
           <Icon name="heart" size={20} color={liked ? palette.red : palette.textSecondary} />
+          {/* A real count only. Zero shows nothing — «0 bəyənmə» under someone's
+              first post is a verdict nobody asked for. */}
+          {likeCount ? (
+            <AppText variant="subhead" color={palette.textSecondary}>
+              {likeCount}
+            </AppText>
+          ) : null}
         </PressableScale>
         <PressableScale activeScale={0.9} haptic={false} onPress={onOpenComments} style={styles.postAction}>
           <Icon name="msg" size={19} color={palette.textSecondary} />

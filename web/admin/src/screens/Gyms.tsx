@@ -49,6 +49,28 @@ export function Gyms({ search }: ScreenProps) {
   const [dialog, setDialog] = useState<ReasonState | null>(null);
   const [reason, setReason] = useState('');
 
+  /** Publish or hide a gym in Kəşf. Goes through `admin_set_gym_listed`
+   *  (schema50) because `gyms.listed` is not in any client UPDATE grant — a
+   *  plain table update is refused, including for an admin. */
+  const [publishing, setPublishing] = useState<string | null>(null);
+
+  async function setListed(g: Gym) {
+    const next = g.listed === false;
+    setPublishing(g.id);
+    const { error } = await supabase.rpc('admin_set_gym_listed', {
+      p_gym: g.id,
+      p_listed: next,
+      p_reason: null,
+    });
+    setPublishing(null);
+    if (error) {
+      toast(`Dəyişmədi: ${error.message}`);
+      return;
+    }
+    toast(next ? `${g.name} Kəşfdə göstərilir` : `${g.name} Kəşfdən gizlədildi`);
+    await load();
+  }
+
   async function load() {
     setLoading(true);
     const [g, c] = await Promise.all([
@@ -143,13 +165,17 @@ export function Gyms({ search }: ScreenProps) {
 
         // Grant ownership FIRST; only mark the claim approved if that succeeded,
         // otherwise the claim would leave the pending queue without ownership.
-        const { data: gRows, error: gErr } = await supabase
-          .from('gyms')
-          .update({ claim_status: 'claimed', owner_id: ownerProfileId })
-          .eq('id', claim.gym_id)
-          .select('id');
+        /* Through an RPC — see the note in Trainers.tsx. `gyms.claim_status` and
+           `gyms.owner_id` are not in the client UPDATE grant (schema27/41), so
+           this table update was refused even for an admin, and no gym claim on
+           the platform could ever be approved. */
+        const { error: gErr } = await supabase.rpc('admin_set_gym_claim', {
+          p_gym: claim.gym_id,
+          p_status: 'claimed',
+          p_owner: ownerProfileId,
+          p_reason: null,
+        });
         if (gErr) throw gErr;
-        if (!gRows?.length) throw new Error('Zal yenilənmədi — sahiblik verilmədi');
 
         const { error: cErr } = await supabase
           .from('gym_claims')
@@ -391,6 +417,7 @@ export function Gyms({ search }: ScreenProps) {
             <th>Reytinq</th>
             <th>QR statusu</th>
             <th>Claim</th>
+            <th>Kəşfdə</th>
           </tr>
         </thead>
         <tbody>
@@ -425,12 +452,24 @@ export function Gyms({ search }: ScreenProps) {
                 <td>
                   <span className={'badge ' + cb.cls}>{cb.text}</span>
                 </td>
+                {/* schema41 makes a gym created inside the app start unlisted, and
+                    nothing in the product could ever publish it — the column is not
+                    in any client UPDATE grant. This is that control (schema50). */}
+                <td>
+                  <button
+                    className="btn small"
+                    disabled={publishing === g.id}
+                    onClick={() => setListed(g)}
+                    title={g.listed === false ? 'Kəşfdə göstər' : 'Kəşfdən gizlət'}>
+                    {publishing === g.id ? '…' : g.listed === false ? 'Dərc et' : 'Gizlət'}
+                  </button>
+                </td>
               </tr>
             );
           })}
           {filtered.length === 0 ? (
             <tr>
-              <td colSpan={6} className="empty">
+              <td colSpan={7} className="empty">
                 {gymsError
                   ? `Zal siyahısı yüklənmədi: ${gymsError}`
                   : gyms.length

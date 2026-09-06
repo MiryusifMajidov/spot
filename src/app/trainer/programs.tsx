@@ -78,6 +78,27 @@ export default function TrainerPrograms() {
     return Math.min(max, Math.max(min, Math.round(n)));
   };
 
+  /**
+   * Resize a program's week without throwing away what the trainer already
+   * wrote.
+   *
+   * This used to be `existing.daysPerWeek === daysPerWeek ? existing.days :
+   * buildDays(daysPerWeek)` — so changing 3 gün/həftə to 4 replaced EVERY day
+   * with an empty generated skeleton, and every exercise the trainer had typed
+   * into days 1-3 was gone. No warning, no undo, and the toast still said
+   * «Proqram yeniləndi».
+   *
+   * Growing keeps every existing day and appends new empty ones. Shrinking keeps
+   * the first N — and the caller asks first if any of the days being cut has
+   * exercises in it.
+   */
+  const resizeDays = (existingDays: Program['days'], daysPerWeek: number): Program['days'] => {
+    const kept = existingDays.slice(0, daysPerWeek);
+    if (kept.length === daysPerWeek) return kept;
+    const added = buildDays(daysPerWeek).slice(kept.length);
+    return [...kept, ...added];
+  };
+
   const submit = () => {
     if (!draft || !draft.title.trim()) return;
     const weeks = clamp(draft.weeks, 1, 52, 8);
@@ -88,10 +109,34 @@ export default function TrainerPrograms() {
 
     if (draft.id) {
       const existing = programs.find((p) => p.id === draft.id);
-      const days = existing && existing.daysPerWeek === daysPerWeek ? existing.days : buildDays(daysPerWeek);
-      updateProgram(draft.id, { title: draft.title.trim(), goal, weeks, daysPerWeek, minutes, level, days });
-      toast('Proqram yeniləndi');
-    } else {
+      const existingDays = existing?.days ?? [];
+      const days = resizeDays(existingDays, daysPerWeek);
+
+      // Days being cut that actually hold work. Deleting them is the trainer's
+      // call to make, not ours to make quietly.
+      const losing = existingDays.slice(daysPerWeek).filter((d) => (d.exercises?.length ?? 0) > 0);
+
+      const apply = () => {
+        updateProgram(draft.id!, { title: draft.title.trim(), goal, weeks, daysPerWeek, minutes, level, days });
+        toast('Proqram yeniləndi');
+        setDraft(null);
+      };
+
+      if (losing.length) {
+        confirm(
+          'Günlər silinsin?',
+          `${losing.length} günün hərəkətləri silinəcək: ${losing.map((d) => d.title).join(', ')}. Bu geri qaytarıla bilməz.`,
+          [
+            { label: 'Ləğv et', style: 'cancel' },
+            { label: 'Sil və yadda saxla', style: 'destructive', onPress: apply },
+          ]
+        );
+        return;
+      }
+      apply();
+      return;
+    }
+    {
       createProgram({
         title: draft.title.trim(),
         creatorName: myName || 'Müəllim',

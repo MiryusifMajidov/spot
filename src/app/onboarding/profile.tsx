@@ -19,12 +19,32 @@ export default function ProfileStep() {
   // Only follow the typed name while the person has not written their own handle.
   const [handleTouched, setHandleTouched] = useState(() => !!useAppStore.getState().profile.username);
   const [nameTouched, setNameTouched] = useState(false);
+  const [ageTouched, setAgeTouched] = useState(false);
   const [checking, setChecking] = useState(false);
   const [taken, setTaken] = useState<string | null>(null); // handle we know is somebody else's
 
   const handle = profile.username ?? '';
   const nameErr = displayNameError(profile.name);
   const handleErr = usernameError(handle);
+
+  /* Age, and the 16+ gate.
+     It was never asked anywhere in the app — not here, not in profile edit —
+     while the partner cards printed «Ad, yaş» and the terms say 16+. So the age
+     shown on a card came from nowhere, the age filter had nothing to filter on,
+     and nothing stopped a 13-year-old from being sent to meet strangers in a
+     gym. Asked once, here, and required. */
+  const [ageText, setAgeText] = useState(profile.age != null ? String(profile.age) : '');
+  const ageNum = Number(ageText);
+  const ageErr =
+    ageText.trim() === ''
+      ? 'Yaşını yaz'
+      : !Number.isFinite(ageNum) || !Number.isInteger(ageNum)
+        ? 'Yalnız rəqəm yaz'
+        : ageNum < 16
+          ? 'SPOT 16 yaşdan yuxarı istifadəçilər üçündür'
+          : ageNum > 100
+            ? 'Yaşı yoxla'
+            : null;
 
   useEffect(() => {
     if (handleTouched) return;
@@ -34,7 +54,8 @@ export default function ProfileStep() {
   const shownHandleErr = handleTouched || handle ? handleErr ?? (taken === handle.trim().toLowerCase() ? USERNAME_TAKEN_MSG : null) : null;
 
   const next = async () => {
-    if (nameErr || handleErr || checking) return;
+    if (nameErr || handleErr || ageErr || checking) return;
+    setProfile({ age: ageNum });
     setChecking(true);
     try {
       if (await isUsernameTaken(handle)) {
@@ -61,7 +82,7 @@ export default function ProfileStep() {
       subtitle="Bu, yoldaşların səni tanıması üçündür. Adını və bio-nu sonra da dəyişə bilərsən."
       onNext={next}
       nextLabel={checking ? 'Yoxlanılır…' : 'Davam et'}
-      nextDisabled={!!nameErr || !!handleErr || checking}>
+      nextDisabled={!!nameErr || !!handleErr || !!ageErr || checking}>
       <AppText variant="overline" color={palette.caption} style={styles.label}>
         Ad
       </AppText>
@@ -102,6 +123,26 @@ export default function ProfileStep() {
         />
       </View>
       <Hint text={shownHandleErr ?? 'Səni bu adla tapacaqlar. Sonra dəyişə bilərsən.'} bad={!!shownHandleErr} />
+
+      <AppText variant="overline" color={palette.caption} style={styles.label}>
+        Yaş
+      </AppText>
+      <TextInput
+        value={ageText}
+        onChangeText={(v) => {
+          setAgeTouched(true);
+          setAgeText(v.replace(/\D/g, '').slice(0, 3));
+        }}
+        placeholder="Məsələn 24"
+        placeholderTextColor={palette.caption}
+        keyboardType="number-pad"
+        maxLength={3}
+        style={styles.input}
+      />
+      <Hint
+        text={ageTouched && ageErr ? ageErr : 'Yaşın yoldaş kartında görünür. SPOT 16 yaşdan yuxarı istifadəçilər üçündür.'}
+        bad={ageTouched && !!ageErr}
+      />
 
       <AppText variant="overline" color={palette.caption} style={styles.label}>
         Cins

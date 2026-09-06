@@ -128,3 +128,66 @@ export async function myChallenges(): Promise<Set<string>> {
   if (error) throw error;
   return new Set(((data ?? []) as { challenge_id: string }[]).map((r) => r.challenge_id));
 }
+
+// -------------------------------------------------------------------- saves
+/**
+ * Saving a video. Until schema45 this lived only in `useAppStore.savedVideos`,
+ * so it survived nothing: reinstall the app and your shelf was empty, and the
+ * author could never know a clip was worth keeping.
+ *
+ * WHO SEES IT. Your saves are yours — `video_saves` is readable only as
+ * yourself, so nobody can page through what you bookmarked. The author gets the
+ * COUNT and no names, and only the author: that is Instagram's shape, and a
+ * public save count would turn a private bookmark into a broadcast.
+ */
+export async function saveVideo(videoId: string): Promise<void> {
+  const me = await myId();
+  const { error } = await supabase.from('video_saves').insert({ video_id: videoId, profile_id: me });
+  if (error && !String(error.message ?? '').includes('duplicate')) throw error;
+}
+
+export async function unsaveVideo(videoId: string): Promise<void> {
+  const me = await myId();
+  const { error } = await supabase
+    .from('video_saves').delete().eq('video_id', videoId).eq('profile_id', me);
+  if (error) throw error;
+}
+
+/** Which of these videos I have saved. */
+export async function myVideoSaves(videoIds: string[]): Promise<Set<string>> {
+  const me = await getMyProfile();
+  if (!me?.id || !videoIds.length) return new Set();
+  const { data, error } = await supabase
+    .from('video_saves').select('video_id').eq('profile_id', me.id).in('video_id', videoIds);
+  if (error) throw error;
+  return new Set(((data ?? []) as { video_id: string }[]).map((r) => r.video_id));
+}
+
+/**
+ * How many people saved this video — author only.
+ *
+ * Returns `null` when the answer is not ours to know (someone else's video) AND
+ * when the call fails. Both are «no number», and the caller shows nothing rather
+ * than a 0 that would read as «nobody saved it».
+ */
+export async function videoSaveCount(videoId: string): Promise<number | null> {
+  const { data, error } = await supabase.rpc('video_save_count', { v: videoId });
+  if (error) return null;
+  return typeof data === 'number' ? data : null;
+}
+
+/**
+ * Everything this account has saved, newest first — not filtered to a list of
+ * ids, because the saved shelf must show a video the feed window no longer
+ * reaches. Returns null when the read fails, so the shelf can say «yüklənmədi»
+ * instead of «hələ heç nə saxlamamısan».
+ */
+export async function allMyVideoSaves(): Promise<string[] | null> {
+  const me = await getMyProfile().catch(() => null);
+  if (!me?.id) return null;
+  const { data, error } = await supabase
+    .from('video_saves').select('video_id').eq('profile_id', me.id)
+    .order('created_at', { ascending: false });
+  if (error) return null;
+  return ((data ?? []) as { video_id: string }[]).map((r) => r.video_id);
+}

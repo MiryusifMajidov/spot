@@ -80,6 +80,11 @@ export function UiHost() {
                 {dialog.message}
               </AppText>
             ) : null}
+            {/* Two actions sit side by side; three or more stack. `flex: 1` is
+                applied ONLY in the row case — in a column the container has no
+                fixed height, so a flexed child collapses to nothing. With four
+                actions the buttons disappeared entirely and the dialog became a
+                question with no answers. */}
             <View style={[styles.dialogActions, dialog.actions.length === 2 ? { flexDirection: 'row' } : undefined]}>
               {dialog.actions.map((a) => {
                 const c = actionColors(a.style);
@@ -88,7 +93,11 @@ export function UiHost() {
                     key={a.label}
                     activeScale={0.97}
                     onPress={() => run(a)}
-                    style={[styles.dialogBtn, { backgroundColor: c.bg, borderColor: c.border, borderWidth: c.border === 'transparent' ? 0 : 1 }]}>
+                    style={[
+                      styles.dialogBtn,
+                      dialog.actions.length === 2 ? { flex: 1 } : null,
+                      { backgroundColor: c.bg, borderColor: c.border, borderWidth: c.border === 'transparent' ? 0 : 1 },
+                    ]}>
                     <AppText style={{ fontSize: 15.5, fontWeight: '600', color: c.text }}>{a.label}</AppText>
                   </PressableScale>
                 );
@@ -214,7 +223,7 @@ const styles = StyleSheet.create({
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(11,11,14,0.45)', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
   dialog: { width: '84%', maxWidth: 340, backgroundColor: palette.white, borderRadius: 22, padding: 22 },
   dialogActions: { gap: 9, marginTop: 20 },
-  dialogBtn: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  dialogBtn: { height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
   sheet: { position: 'absolute', left: 8, right: 8, bottom: 0, gap: 8 },
   sheetHeader: { alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 16 },
   sheetGroup: { backgroundColor: palette.white, borderRadius: 16, overflow: 'hidden' },

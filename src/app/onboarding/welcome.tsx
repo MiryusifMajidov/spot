@@ -53,8 +53,23 @@ export default function Welcome() {
             <AppText style={{ fontSize: 15, fontWeight: '600', color: palette.volt }}>Qonaq kimi bax</AppText>
             <Icon name="chevR" size={16} color={palette.volt} />
           </PressableScale>
+          {/* Both were plain words over documents that did not exist, so the
+              consent was consent to nothing — and both app stores require a
+              reachable privacy policy. They are links now. */}
           <AppText style={styles.terms}>
-            Davam etməklə İstifadə şərtləri və Məxfilik siyasəti ilə razılaşırsan.
+            Davam etməklə{' '}
+            <AppText
+              style={styles.termsLink}
+              onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'terms' } })}>
+              İstifadə şərtləri
+            </AppText>{' '}
+            və{' '}
+            <AppText
+              style={styles.termsLink}
+              onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'privacy' } })}>
+              Məxfilik siyasəti
+            </AppText>{' '}
+            ilə razılaşırsan. SPOT 16 yaşdan yuxarı istifadəçilər üçündür.
           </AppText>
         </View>
       </SafeAreaView>
@@ -75,5 +90,6 @@ const styles = StyleSheet.create({
   actions: { gap: 10, paddingBottom: 8 },
   btn: { height: 52, borderRadius: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   guestBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, height: 44 },
+  termsLink: { textDecorationLine: 'underline' as const, color: palette.volt },
   terms: { fontSize: 11.5, lineHeight: 17, color: dark.textTertiary, textAlign: 'center', marginTop: 4, paddingHorizontal: 20 },
 });

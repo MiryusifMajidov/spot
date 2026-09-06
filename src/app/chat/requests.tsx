@@ -20,7 +20,15 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** A real pending `match_requests` row addressed to me. `name` stays null when the
  *  sender's profile could not be read — we say so instead of inventing one. */
-type Incoming = { id: string; fromProfile: string; at: string; name: string | null };
+type Incoming = {
+  id: string;
+  fromProfile: string;
+  at: string;
+  name: string | null;
+  /** What the sender actually proposed («Ç.a 19:00 · Iron Bay»). Null on rows
+   *  written before schema54 gave the column a home. */
+  note: string | null;
+};
 
 /** loading → the server read is in flight; ready → the list below is the truth;
  *  offline → there is no backend on this build; error → the read failed, so we must
@@ -91,12 +99,12 @@ export default function Requests() {
       }
       const { data, error } = await supabase
         .from('match_requests')
-        .select('id,from_profile,created_at')
+        .select('id,from_profile,created_at,note')
         .eq('to_profile', me.id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      const rows = (data ?? []) as { id: string; from_profile: string; created_at: string }[];
+      const rows = (data ?? []) as { id: string; from_profile: string; created_at: string; note: string | null }[];
       const blockedIds = useAppStore.getState().blocked;
       const visible = rows.filter((r) => !blockedIds.includes(r.from_profile));
       const resolved = await Promise.all(
@@ -104,6 +112,7 @@ export default function Requests() {
           id: r.id,
           fromProfile: r.from_profile,
           at: r.created_at,
+          note: r.note ?? null,
           name:
             seedById(r.from_profile)?.name ??
             (await getPartner(r.from_profile)
@@ -314,6 +323,17 @@ export default function Requests() {
       <AppText variant="body" color={palette.text3} style={{ marginTop: 10, lineHeight: 21 }}>
         Birlikdə məşq etmək istəyir.
       </AppText>
+      {/* The time and gym the sender actually chose. Until schema54 this never
+          left their phone, so this card said «wants to train together» and
+          nothing else — the recipient had no proposal to answer. */}
+      {m.note ? (
+        <View style={styles.proposal}>
+          <Icon name="clock" size={14} color={palette.inkText} />
+          <AppText variant="subhead" style={{ fontWeight: '600', flex: 1 }}>
+            {m.note}
+          </AppText>
+        </View>
+      ) : null}
       <View style={styles.btns}>
         <PressableScale activeScale={0.97} onPress={() => decline(m)} style={styles.decline}>
           <AppText style={{ color: palette.textSecondary, fontWeight: '600', fontSize: 14 }}>Sil</AppText>
@@ -442,18 +462,12 @@ export default function Requests() {
                       Cavabı oxuya bilmədik — bu təklifin qəbul edilib-edilmədiyini bilmirik. Səhifəni yenidən aç.
                     </AppText>
                   ) : null}
-                  {/* The picked hour lives only on this phone: `match_requests` has no
-                      column for it, so it never travelled. Saying so beats showing it
-                      in the place where a delivered message would be. */}
+                  {/* The picked hour now travels with the request (schema54), so it
+                      is shown as what it is: the proposal the other person received. */}
                   {m.question ? (
-                    <>
-                      <AppText variant="body" color={palette.text3} style={{ marginTop: 10, lineHeight: 21 }}>
-                        {m.question}
-                      </AppText>
-                      <AppText variant="caption" color={palette.caption} style={{ marginTop: 4, lineHeight: 17 }}>
-                        Bu vaxt yalnız səndə qeyd olunub — təklifin içində getmir.
-                      </AppText>
-                    </>
+                    <AppText variant="body" color={palette.text3} style={{ marginTop: 10, lineHeight: 21 }}>
+                      {m.question}
+                    </AppText>
                   ) : null}
                   <View style={styles.btns}>
                     {st === 'declined' ? (
@@ -515,6 +529,16 @@ const styles = StyleSheet.create({
   card: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginBottom: 12 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pending: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: palette.grouped, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
+  proposal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+    backgroundColor: palette.grouped,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   btns: { flexDirection: 'row', gap: 9, marginTop: 14 },
   decline: { flex: 1, height: 42, borderRadius: 12, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
   secondary: { flex: 1, height: 42, borderRadius: 12, backgroundColor: palette.grouped, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },

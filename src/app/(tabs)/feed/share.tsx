@@ -22,10 +22,43 @@ export default function Share() {
   const [linked, setLinked] = useState<{ id: string; title: string } | null>(null);
   const [uri, setUri] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  /** What the picker reported about the chosen file — stored so the row can
+   *  record the real duration and size instead of leaving them null. */
+  const [meta, setMeta] = useState<{ durationSec: number | null; sizeBytes: number | null }>({
+    durationSec: null,
+    sizeBytes: null,
+  });
+
+  /** 100 MB is the videos bucket's own limit (schema33); refusing here means the
+   *  person is told before a long upload, not after it. */
+  const MAX_BYTES = 100 * 1024 * 1024;
+  const MAX_SECONDS = 60;
 
   const pick = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: 60 });
-    if (!res.canceled && res.assets[0]) setUri(res.assets[0].uri);
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: MAX_SECONDS });
+    if (res.canceled || !res.assets[0]) return;
+    const a = res.assets[0];
+
+    /* Checked from the PICKER's metadata, before the file is opened. The upload
+       used to do `fetch(uri).arrayBuffer()` straight away — a 4K clip from the
+       phone's camera is 200 MB+ and that call pulls the whole thing into JS
+       memory, which is how the app runs out of memory mid-upload. `videoMaxDuration`
+       only caps recording INSIDE the picker; a file chosen from the gallery is
+       not trimmed by it, so the length is checked here too. */
+    const secs = a.duration != null ? Math.round(a.duration / 1000) : null;
+    if (secs != null && secs > MAX_SECONDS) {
+      toast(`Video ${secs} saniyədir — ${MAX_SECONDS} saniyəyə qədər olmalıdır. Qısaldıb yenidən seç.`, 'error');
+      return;
+    }
+    if (a.fileSize != null && a.fileSize > MAX_BYTES) {
+      toast(
+        `Video ${Math.round(a.fileSize / 1048576)} MB-dır — ${Math.round(MAX_BYTES / 1048576)} MB-a qədər qəbul olunur. Telefonun kamera ayarından daha aşağı keyfiyyət seç.`,
+        'error'
+      );
+      return;
+    }
+    setUri(a.uri);
+    setMeta({ durationSec: secs, sizeBytes: a.fileSize ?? null });
   };
 
   // Real picker over the programs that actually exist (the user's own first, then the
@@ -62,10 +95,24 @@ export default function Share() {
         author: profile.name.trim(),
         linkedProgramTitle: linked?.title ?? '',
         linkedProgramId: linked?.id ?? '',
+        durationSec: meta.durationSec,
+        sizeBytes: meta.sizeBytes,
       });
-    } catch {
+    } catch (e) {
       setUploading(false);
-      toast('Video yüklənə bilmədi', 'error');
+      // The reason matters: «yüklənə bilmədi» over a 300 MB file sends the person
+      // to check their wifi over and over for a problem the network never had.
+      const msg = String((e as Error)?.message ?? '');
+      if (msg === 'video-too-large') {
+        const mb = Math.round(((e as { sizeBytes?: number }).sizeBytes ?? 0) / 1048576);
+        toast(`Video ${mb} MB-dır — 100 MB-a qədər qəbul olunur.`, 'error');
+      } else if (msg === 'video-read-failed') {
+        toast('Video faylı oxunmadı — başqa video seç.', 'error');
+      } else if (msg === 'no profile') {
+        toast('Profil yüklənmədi — video yalnız hesabla paylaşılır.', 'error');
+      } else {
+        toast('Video yüklənə bilmədi', 'error');
+      }
       return;
     }
     toast('Videon feed-ə əlavə olundu');

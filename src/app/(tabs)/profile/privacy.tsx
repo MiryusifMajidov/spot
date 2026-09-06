@@ -6,7 +6,7 @@ import { ListGroup, ListRow } from '@/components/ui/ListGroup';
 import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
 import { ensureSession, updateMyProfile, deleteMyAccount } from '@/lib/api';
-import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+import { hasSupabaseConfig } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { useDb } from '@/store/db';
 import { emptyGymFilter, emptyPartnerFilter, useDiscoverPrefs } from '@/store/discoverPrefs';
@@ -66,31 +66,23 @@ export default function PrivacyDetails() {
   };
 
   /**
-   * Device-local wipe. It clears every store and every AsyncStorage key this app
-   * writes on this phone, then signs the session out and immediately opens a brand-new
-   * anonymous one — without it the app would run session-less until the next cold start
-   * and re-onboarding could never be saved. The new identity is deliberately a different
-   * uid, so the rows already on the server stay detached from this device. It does NOT
-   * delete those rows — the confirm text says exactly that, and the toast afterwards
-   * claims only what actually happened.
+   * Device-local wipe — and ONLY that.
    *
-   * Returns true when the device ends up with a usable session again.
+   * It used to sign the session out and mint a fresh anonymous identity, so that
+   * «the rows already on the server stay detached from this device». With
+   * anonymous sign-in as the only identity the app has, that detachment is
+   * permanent: the old account has no phone number, no e-mail and no password,
+   * so nobody — not the person, not support — can ever reach it again. Their
+   * @username stays taken, their videos stay credited to a ghost, and the button
+   * that did it is labelled «yalnız telefondakı nüsxə».
+   *
+   * The session is now kept. The local caches are cleared, and the profile comes
+   * back from the server on the next bootstrap, which is what «clear the copy on
+   * this phone» should mean. Deleting the account for real is the button
+   * directly below this one.
    */
   const wipeDevice = async () => {
-    let sessionReady = !hasSupabaseConfig;
-    if (hasSupabaseConfig) {
-      try {
-        await supabase.auth.signOut();
-      } catch {
-        /* the local wipe must run regardless of the network */
-      }
-      try {
-        sessionReady = !!(await ensureSession());
-      } catch {
-        /* offline: the next app launch bootstraps a session */
-        sessionReady = false;
-      }
-    }
+    const sessionReady = !hasSupabaseConfig || !!(await ensureSession().catch(() => null));
 
     // Engine: the domain reset + the slices resetDomain() does not cover.
     useDb.getState().resetDomain();
@@ -144,7 +136,7 @@ export default function PrivacyDetails() {
   const deleteAccount = () =>
     confirm(
       'Hesabı tamamilə sil',
-      'Profilin, videoların, şərhlərin, şəkillərin, check-inlərin və məşq tarixçən həm bu telefondan, həm də serverdən silinir. İstifadəçi adın boşalır. Bu addım geri qaytarıla bilməz.',
+      'Profilin, videolarını, postlarını, şərhlərini, şəkillərini, check-inlərini və məşq tarixçəni həm bu telefondan, həm də serverdən silirik. İstifadəçi adın boşalır.\n\nZala yazdığın rəylər qalır, amma adın çıxarılır — başqaları həmin rəylərə baxıb qərar verib. Yaratdığın zal və proqramlar da qalır, çünki başqa üzvlər onlardan istifadə edir.\n\nBu addım geri qaytarıla bilməz.',
       [
         { label: 'Ləğv et', style: 'cancel' },
         {
@@ -185,8 +177,8 @@ export default function PrivacyDetails() {
 
   const wipeDeviceOnly = () =>
     confirm(
-      'Hesabı bu cihazdan sil',
-      'Məşq, çəki, check-in, qidalanma, rəy, saxlanılanlar və profil datan bu telefondan tamamilə silinir və sessiyadan çıxılır. Serverdə yazılmış sətirlər (post, video, şərh, rəy, check-in) bu düymə ilə silinmir — şərhlərini bir-bir özün silə bilərsən, qalanları üçün Parametrlər → Kömək və dəstək bölməsindən bizə yaz. Bu addım geri qaytarıla bilməz.',
+      'Bu cihazdakı nüsxəni sil',
+      'Məşq, çəki, check-in, qidalanma, saxlanılanlar və filtrlər bu telefondan silinir. Hesabın SİLİNMİR — serverdəki profilin, videoların və şərhlərin yerində qalır və tətbiqi yenidən açanda geri gəlir. Hesabı həmişəlik silmək üçün aşağıdakı «Hesabı tamamilə sil» düyməsindən istifadə et.',
       [
         { label: 'Ləğv et', style: 'cancel' },
         {
@@ -196,8 +188,8 @@ export default function PrivacyDetails() {
             const sessionReady = await wipeDevice();
             toast(
               sessionReady
-                ? 'Data bu cihazdan silindi'
-                : 'Data bu cihazdan silindi — yeni sessiya açılmadı, internetə qoşulub tətbiqi yenidən başlat',
+                ? 'Bu cihazdakı nüsxə silindi — hesabın yerindədir'
+                : 'Nüsxə silindi, amma serverə qoşula bilmədik — internetə qoşulub tətbiqi yenidən aç',
               sessionReady ? 'info' : 'error'
             );
             router.replace('/onboarding/welcome');
@@ -244,8 +236,8 @@ export default function PrivacyDetails() {
           <ListRow
             icon="x"
             iconBg={palette.red}
-            title="Datanı bu cihazdan sil"
-            subtitle="Yalnız telefondakı nüsxə — hesabın serverdə qalır"
+            title="Bu cihazdakı nüsxəni sil"
+            subtitle="Hesabın silinmir — serverdəki profilin qalır"
             danger
             chevron={false}
             onPress={wipeDeviceOnly}

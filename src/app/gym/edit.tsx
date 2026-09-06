@@ -7,6 +7,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'reac
 import { Icon } from '@/components/Icon';
 import { PlaceholderImage } from '@/components/PlaceholderImage';
 import { SpotMap } from '@/components/SpotMap';
+import { HoursField, composeHours, splitHours } from '@/components/HoursField';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
@@ -42,7 +43,9 @@ export default function GymEdit() {
 
   const [name, setName] = useState('');
   const [district, setDistrict] = useState('');
-  const [hours, setHours] = useState('');
+  /* Structured, not free text — see components/HoursField. */
+  const [hrs, setHrs] = useState({ always: false, open: '', close: '' });
+  const hours = composeHours(hrs.always, hrs.open, hrs.close);
   const [about, setAbout] = useState('');
   const [monthly, setMonthly] = useState('');
   const [daypass, setDaypass] = useState('');
@@ -77,7 +80,7 @@ export default function GymEdit() {
     if (!gym || dirtyRef.current) return;
     setName(gym.name);
     setDistrict(gym.district);
-    setHours(gym.hours);
+    setHrs(splitHours(gym.hours));
     setAbout(gym.about);
     setMonthly(gym.priceMonth ? String(gym.priceMonth) : '');
     setDaypass(gym.dayPass ? String(gym.dayPass) : '');
@@ -247,13 +250,19 @@ export default function GymEdit() {
       toast('Zalın adı boş ola bilməz', 'error');
       return;
     }
+    if (!hours) {
+      // An unreadable window drops the gym out of the «24 saat» filter and makes
+      // check-in fall back to «saatı oxuya bilmədik» — so it is not saved half-written.
+      toast('İş saatlarını tam yaz — məsələn 06:00 və 24:00', 'error');
+      return;
+    }
     setSaving(true);
     try {
       // Only columns the app actually reads back are written — no decorative settings.
       await updateMyGym(gym.id, {
         name: name.trim(),
         district: district.trim(),
-        hours: hours.trim(),
+        hours,
         about: about.trim(),
         price_month: Number(monthly) || 0,
         day_pass: Number(daypass) || 0,
@@ -365,7 +374,12 @@ export default function GymEdit() {
           <View style={styles.rowDiv} />
           <TextRow label="Rayon" value={district} onChange={mark(setDistrict)} placeholder="Məs: Nərimanov" />
           <View style={styles.rowDiv} />
-          <TextRow label="İş saatları" value={hours} onChange={mark(setHours)} placeholder="06:00 – 24:00" />
+          <HoursField
+            always={hrs.always}
+            open={hrs.open}
+            close={hrs.close}
+            onChange={mark(setHrs)}
+          />
         </View>
 
         {/* Prices */}

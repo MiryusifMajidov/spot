@@ -14,7 +14,7 @@ import { Partner } from '@/data/types';
 import { usePartnersForGym } from '@/lib/hooks';
 import { useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
-import { applyPartnerFilter, isoWeekKey, useDiscoverPrefs } from '@/store/discoverPrefs';
+import { applyPartnerFilter, isoWeekKey, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
 import { nameWithAge } from '@/lib/authorName';
 
@@ -28,7 +28,16 @@ export default function Weekly() {
   const setWeeklyPicks = useDiscoverPrefs((s) => s.setWeeklyPicks);
   const matches = useDb((s) => s.matches);
   const all = usePartnersForGym(homeGymId ?? '');
-  const candidates = useMemo(() => applyPartnerFilter(all, filter), [all, filter]);
+  /* The third argument was missing, so `viewerIsWoman` defaulted to false and
+     the women-only branch never ran: a woman who turned the safety filter on was
+     still shown men in her frozen weekly three — the one list the app pushes at
+     her. Kəşf and Kartlar both passed it; this screen did not. */
+  const gender = useAppStore((s) => s.profile.gender);
+  const canWomenOnly = womenOnlyAllowed(gender);
+  const candidates = useMemo(
+    () => applyPartnerFilter(all, filter, canWomenOnly),
+    [all, filter, canWomenOnly]
+  );
   const week = isoWeekKey();
 
   // Freeze the three names for the ISO week — they genuinely refresh on Monday,

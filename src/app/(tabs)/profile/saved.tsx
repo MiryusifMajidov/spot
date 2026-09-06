@@ -1,9 +1,9 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { GymCard } from '@/components/GymCard';
+import { VideoPoster } from '@/components/VideoPoster';
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +12,9 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
 import { useFeedVideos, useGyms } from '@/lib/hooks';
+import { displayAuthor } from '@/lib/authorName';
+import { allMyVideoSaves } from '@/lib/social';
+import { hasSupabaseConfig } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
 
@@ -23,7 +26,28 @@ export default function Saved() {
   const [seg, setSeg] = useState(0);
   const savedVideos = useAppStore((s) => s.savedVideos);
   const bookmarks = useAppStore((s) => s.bookmarks);
-  const videos = useFeedVideos().filter((v) => savedVideos.includes(v.id));
+
+  /* The shelf is the SERVER's list when the server answers.
+     It used to read `useAppStore.savedVideos` alone — a device list, so the
+     shelf was empty on a reinstall or on a second phone even though the saves
+     still existed. `video_saves` (schema45) is the real record; the device list
+     stays as the offline answer, and a failed read says so rather than showing
+     an empty shelf, which would claim nothing was ever saved. */
+  const [serverSaves, setServerSaves] = useState<string[] | null | 'failed'>(null);
+  useEffect(() => {
+    if (!hasSupabaseConfig) return;
+    let alive = true;
+    allMyVideoSaves().then((ids) => {
+      if (alive) setServerSaves(ids ?? 'failed');
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const savedIds = Array.isArray(serverSaves) ? serverSaves : savedVideos;
+  const savesFailed = serverSaves === 'failed' && savedVideos.length === 0;
+  const videos = useFeedVideos().filter((v) => savedIds.includes(v.id));
   const gyms = useGyms().filter((g) => bookmarks.includes(g.id));
 
   return (
@@ -34,7 +58,13 @@ export default function Saved() {
       </View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {seg === 0 ? (
-          videos.length === 0 ? (
+          savesFailed ? (
+            <Empty
+              icon="bookmark"
+              title="Saxlanılanlar yüklənmədi"
+              text="Siyahı serverdən gəlmədi. Bu, siyahının boş olduğu demək deyil — bağlantını yoxlayıb yenidən aç."
+            />
+          ) : videos.length === 0 ? (
             <Empty
               icon="bookmark"
               title="Saxlanılmış video yoxdur"
@@ -49,14 +79,14 @@ export default function Saved() {
                   activeScale={0.97}
                   onPress={() => router.push({ pathname: '/(tabs)/feed/creator', params: { name: v.author, verified: v.verified ? '1' : '', isTrainer: v.isTrainer ? '1' : '' } })}
                   style={styles.tile}>
-                  <LinearGradient colors={v.gradient} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={StyleSheet.absoluteFill} />
+                  <VideoPoster id={v.id} videoUrl={v.videoUrl} gradient={v.gradient} />
                   <View style={styles.tilePlay}>
                     <Icon name="play" size={15} color="rgba(255,255,255,0.9)" />
                   </View>
                   <AppText numberOfLines={2} style={styles.tileCaption}>
                     {v.caption}
                   </AppText>
-                  <AppText style={styles.tileAuthor}>{v.author}</AppText>
+                  <AppText style={styles.tileAuthor}>{displayAuthor(v.author)}</AppText>
                 </PressableScale>
               ))}
             </View>

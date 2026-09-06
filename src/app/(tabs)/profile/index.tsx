@@ -5,6 +5,7 @@ import { ScrollView, Share, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Icon } from '@/components/Icon';
+import { VideoPoster } from '@/components/VideoPoster';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -237,7 +238,7 @@ export default function Profile() {
                       activeScale={0.96}
                       onPress={() => router.push({ pathname: '/(tabs)/feed/creator', params: { name: v.author } })}
                       style={styles.gridItem}>
-                      <LinearGradient colors={v.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                      <VideoPoster id={v.id} videoUrl={v.videoUrl} gradient={v.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
                       <View style={styles.playBadge}>
                         <Icon name="play" size={12} color="rgba(255,255,255,0.95)" />
                       </View>

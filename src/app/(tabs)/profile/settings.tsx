@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Switch, View } from 'react-native';
-import { actionSheet, confirm, toast } from '@/store/ui';
+import { confirm } from '@/store/ui';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -8,9 +8,7 @@ import { ListGroup, ListRow } from '@/components/ui/ListGroup';
 import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
 import { accountCount, showAccountSwitcher } from '@/lib/accounts';
-import { createReport } from '@/lib/api';
 import { useAuthGate } from '@/lib/authGate';
-import { hasSupabaseConfig } from '@/lib/supabase';
 import { releaseSounds, successFeedback, tapFeedback } from '@/lib/feedback';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
@@ -26,28 +24,12 @@ export default function Settings() {
   const ownsGym = useAppStore((s) => s.ownsGym);
 
 
-  /** Real support path: the report lands in the `reports` table the admin panel reads. */
-  const sendReport = (category: 'safety' | 'spam' | 'other', note: string) => {
-    if (!hasSupabaseConfig) {
-      toast('Göndərilə bilmədi — server bağlantısı yoxdur', 'error');
-      return;
-    }
-    createReport({ targetType: 'support', targetId: 'app', category, note })
-      .then(() => toast('Göndərildi — komanda baxacaq'))
-      .catch(() => toast('Göndərilə bilmədi. Yenidən cəhd et.', 'error'));
-  };
-
-  const help = () =>
-    actionSheet({
-      title: 'Kömək və dəstək',
-      message: 'Mesajın SPOT komandasına göndərilir.',
-      actions: [
-        { label: 'Tətbiqdə problem var', onPress: () => sendReport('other', 'Tətbiqdə problem') },
-        { label: 'Təhlükəsizlik məsələsi', style: 'destructive', onPress: () => sendReport('safety', 'Təhlükəsizlik məsələsi') },
-        { label: 'Spam və ya saxta profil', onPress: () => sendReport('spam', 'Spam / saxta profil') },
-        { label: 'Ləğv et', style: 'cancel' },
-      ],
-    });
+  /* Support opens a screen with a text field instead of filing a canned report.
+     The three buttons that used to be here sent a fixed phrase as the whole
+     message — «Tətbiqdə problem» — so nobody could say what actually happened
+     and the team's queue was a wall of identical tickets. The report still lands
+     in the same `reports` table the admin panel reads (schema21). */
+  const help = () => router.push('/(tabs)/profile/support');
 
   /** Scope note: resetOnboarding() clears the profile + onboarding flag only —
    *  workouts, weights and check-ins stay. The confirm says exactly that. */
@@ -139,6 +121,33 @@ export default function Settings() {
           <ListRow icon="shield" iconBg={palette.voltDeep} title="Kömək və dəstək" subtitle="Problemi komandaya bildir" onPress={help} />
           <ListRow icon="share" iconBg="#8A8A93" title="Dil" value="Azərbaycanca" chevron={false} />
           <ListRow icon="star" iconBg={palette.streak} title="SPOT haqqında" value="v1.0" chevron={false} />
+        </ListGroup>
+
+        {/* Reachable AFTER onboarding too: the store review checks that a
+            privacy policy is available from inside the app, and somebody who
+            agreed on the welcome screen must be able to read what they agreed
+            to later. */}
+        <ListGroup header="Hüquqi">
+          <ListRow
+            icon="shield"
+            iconBg={palette.ink}
+            title="İstifadə şərtləri"
+            onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'terms' } })}
+          />
+          <ListRow
+            icon="shield"
+            iconBg={palette.blue}
+            title="Məxfilik siyasəti"
+            subtitle="Hansı məlumat toplanır, kim görür"
+            onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'privacy' } })}
+          />
+          <ListRow
+            icon="users"
+            iconBg={palette.voltDeep}
+            title="İcma qaydaları"
+            subtitle="Bu tanışlıq tətbiqi deyil"
+            onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'rules' } })}
+          />
         </ListGroup>
 
         <ListGroup footer="Bu, test üçün qeydiyyatı yenidən başladır.">

@@ -19,7 +19,7 @@ import { useGyms, usePartnersForGym, useTrainers } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
-import { applyGymFilter, applyPartnerFilter, gymFilterCount, partnerFilterCount, useDiscoverPrefs } from '@/store/discoverPrefs';
+import { applyGymFilter, applyPartnerFilter, gymFilterCount, partnerFilterCount, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
 import { searchKey } from '@/lib/az';
 import { getUnreadCount } from '@/lib/notifications';
@@ -37,7 +37,8 @@ export default function Discover() {
   // pinning the screen to a catalogue gym they never picked.
   const homeGymId = profile.homeGymId;
   // «Yalnız qadınlar» yalnız qadın üçün tətbiq olunur — bax discoverPrefs.ts.
-  const isWoman = profile.gender === 'qadın';
+  // «not a man», not «is a woman» — see womenOnlyAllowed.
+  const isWoman = womenOnlyAllowed(profile.gender);
   const matches = useDb((s) => s.matches);
   const threads = useDb((s) => s.threads);
   const lastRead = useDiscoverPrefs((s) => s.lastRead);

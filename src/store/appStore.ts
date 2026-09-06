@@ -39,7 +39,13 @@ interface AppState {
   ownsGym: boolean; // has a gym account (can switch to the gym panel)
   bookmarks: string[]; // gym ids
   savedVideos: string[]; // feed video ids
-  following: string[]; // creator names the user follows
+  /** PROFILE IDs the user follows.
+   *
+   *  This held DISPLAY NAMES. Two people called «Yusif» were the same person to
+   *  it, a rename broke the link, and — worse — `syncSocial()` replaced the
+   *  whole array with the server's profile ids on every launch, so the names
+   *  written by the follow button were wiped and every «İzlənir» pill reset. */
+  following: string[];
   likedPosts: string[]; // community post ids liked
   joinedChallenges: string[]; // challenge ids joined
   visibility: 'match-only' | 'everyone'; // who can message
@@ -57,11 +63,14 @@ interface AppState {
   setPrivacy: (patch: { visibility?: 'match-only' | 'everyone'; showInGymList?: boolean }) => void;
   toggleBookmark: (gymId: string) => void;
   toggleSavedVideo: (id: string) => void;
-  toggleFollow: (name: string) => void;
+  toggleFollow: (profileId: string) => void;
   /** Replace the social lists with what the server holds (F-19). The server is
    *  the authority: a follow this device recorded but never sent is not a follow
    *  anybody received. */
   setSocialFromServer: (v: { following: string[]; joinedChallenges: string[] }) => void;
+  /** Replace the cached like/save flags for the ids that were actually checked
+   *  against the server. `checked` holds the same keys as `likedPosts`. */
+  reconcileSocial: (checked: string[], likedKeys: string[], savedIds?: string[]) => void;
   toggleLikedPost: (id: string) => void;
   joinChallenge: (id: string) => void;
   toggleBlocked: (id: string) => void;
@@ -165,9 +174,27 @@ export const useAppStore = create<AppState>()(
       setSocialFromServer: (v) =>
         set({ following: v.following, joinedChallenges: v.joinedChallenges }),
 
-      toggleFollow: (name) =>
+      /* The server is the authority on what you liked and saved.
+         The device lists are an instant-feedback cache, and until now nothing
+         ever reconciled them: a like written on the phone but refused by the
+         server stayed filled in forever, and signing in on a second device
+         showed an empty heart on every video you had already liked. This
+         replaces the cached answer for the ids that were actually checked, and
+         leaves every other id alone — an id that was not in the query is
+         unknown, not unliked. */
+      reconcileSocial: (checked, likedKeys, savedIds) =>
         set((s) => ({
-          following: s.following.includes(name) ? s.following.filter((x) => x !== name) : [...s.following, name],
+          likedPosts: [...s.likedPosts.filter((k) => !checked.includes(k)), ...likedKeys],
+          savedVideos: savedIds
+            ? [...s.savedVideos.filter((id) => !checked.includes(`video:${id}`)), ...savedIds]
+            : s.savedVideos,
+        })),
+
+      toggleFollow: (profileId) =>
+        set((s) => ({
+          following: s.following.includes(profileId)
+            ? s.following.filter((x) => x !== profileId)
+            : [...s.following, profileId],
         })),
       toggleLikedPost: (id) =>
         set((s) => ({

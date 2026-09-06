@@ -7,6 +7,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'reac
 import { Icon } from '@/components/Icon';
 import { PlaceholderImage } from '@/components/PlaceholderImage';
 import { SpotMap } from '@/components/SpotMap';
+import { HoursField, composeHours } from '@/components/HoursField';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
@@ -32,7 +33,10 @@ export default function CreateGym() {
   const setMode = useAppStore((s) => s.setMode);
   const [name, setName] = useState('');
   const [district, setDistrict] = useState('');
-  const [hours, setHours] = useState('08:00–24:00');
+  /* Structured, not free text: both the check-in screen and the server parse
+     this string to decide whether the gym is open, and «Kəşf» filters on it. */
+  const [hrs, setHrs] = useState({ always: false, open: '08:00', close: '24:00' });
+  const hours = composeHours(hrs.always, hrs.open, hrs.close);
   const [priceMonth, setPriceMonth] = useState('');
   const [dayPass, setDayPass] = useState('');
   const [amenities, setAmenities] = useState<string[]>([]);
@@ -195,13 +199,19 @@ export default function CreateGym() {
       toast('Zal qeydiyyatı üçün internet bağlantısı lazımdır', 'error');
       return;
     }
+    if (!hours) {
+      // Refused rather than stored half-written: an unreadable window silently
+      // drops the gym out of the «24 saat» filter and breaks check-in.
+      toast('İş saatlarını tam yaz — məsələn 06:00 və 24:00', 'error');
+      return;
+    }
     setSaving(true);
     let gymId: string;
     try {
       gymId = await createGym({
         name: name.trim(),
         district: district.trim(),
-        hours: hours.trim(),
+        hours,
         priceMonth: Number(priceMonth) || 0,
         dayPass: Number(dayPass) || 0,
         amenities,
@@ -273,7 +283,7 @@ export default function CreateGym() {
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 15, fontWeight: '600' }}>{name.trim()} qeydə alındı</AppText>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.tertiary, marginTop: 3 }}>
-                Zal panelin açıqdır. Sahiblik hələ təsdiqlənməyib — bu ayrıca addımdır, VÖEN-i özün göndərməlisən.
+                Zal panelin açıqdır — amma zal HƏLƏ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, spam və saxta zalların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.
               </AppText>
             </View>
           </View>
@@ -385,7 +395,7 @@ export default function CreateGym() {
         <View style={{ height: 20 }} />
         <Field label="Zalın adı *" value={name} onChangeText={setName} placeholder="Məs: Titan Fitness" />
         <Field label="Rayon / ünvan" value={district} onChangeText={setDistrict} placeholder="Məs: Nərimanov" />
-        <Field label="İş saatları" value={hours} onChangeText={setHours} placeholder="08:00–24:00" />
+        <HoursField always={hrs.always} open={hrs.open} close={hrs.close} onChange={setHrs} />
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <Field label="Aylıq (₼)" value={priceMonth} onChangeText={setPriceMonth} placeholder="45" keyboardType="numeric" />

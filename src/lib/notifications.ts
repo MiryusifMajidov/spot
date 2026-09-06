@@ -13,6 +13,17 @@
 import { getMyProfile } from './api';
 import { supabase } from './supabase';
 
+/**
+ * Every type the DATABASE can write.
+ *
+ * This list had eight entries while the `notifications_type_check` constraint
+ * accepted twelve: schema42 added `message` and schema43 added `video_like`,
+ * `post_like` and `follow`, and neither updated the client. The inbox looked
+ * each row's type up in a Record with eight keys and read `.name` off the
+ * result, so the first message anyone received crashed the screen on open.
+ *
+ * Keep this in step with the CHECK constraint on `public.notifications.type`.
+ */
 export type NotifType =
   | 'comment_like'
   | 'comment_reply'
@@ -21,9 +32,13 @@ export type NotifType =
   | 'match_accepted'
   | 'trainer_request'
   | 'trainer_decided'
-  | 'review_reply';
+  | 'review_reply'
+  | 'message'
+  | 'video_like'
+  | 'post_like'
+  | 'follow';
 
-/** The eight types, in the order the settings screen lists them. */
+/** The types, in the order the settings screen lists them. */
 export const NOTIF_TYPES: { type: NotifType; label: string; hint: string }[] = [
   { type: 'comment_like', label: 'Şərhimi bəyənəndə', hint: 'Kimsə yazdığın şərhi bəyənir' },
   { type: 'comment_reply', label: 'Şərhimə cavab', hint: 'Kimsə şərhinin altına yazır' },
@@ -33,6 +48,10 @@ export const NOTIF_TYPES: { type: NotifType; label: string; hint: string }[] = [
   { type: 'trainer_request', label: 'Şagird sorğusu', hint: 'Kimsə səninlə işləmək istəyir (müəllim)' },
   { type: 'trainer_decided', label: 'Müəllim cavab verdi', hint: 'Göndərdiyin sorğuya cavab gəlir' },
   { type: 'review_reply', label: 'Rəyimə cavab', hint: 'Zal yazdığın rəyə cavab verir' },
+  { type: 'message', label: 'Yeni mesaj', hint: 'Yoldaşın sənə yazır' },
+  { type: 'video_like', label: 'Videomu bəyənəndə', hint: 'Kimsə paylaşdığın videonu bəyənir' },
+  { type: 'post_like', label: 'Postumu bəyənəndə', hint: 'Kimsə postunu bəyənir' },
+  { type: 'follow', label: 'Yeni izləyici', hint: 'Kimsə səni izləməyə başlayır' },
 ];
 
 export interface NotifRow {
@@ -165,11 +184,22 @@ export function notifText(n: NotifRow): string {
     case 'trainer_request': return `${who} şagirdin olmaq istəyir`;
     case 'trainer_decided': return `${who} sorğuna cavab verdi`;
     case 'review_reply': return `${who} rəyinə cavab yazdı`;
+    case 'message': return `${who} sənə mesaj yazdı`;
+    case 'video_like': return `${who} videonu bəyəndi`;
+    case 'post_like': return `${who} postunu bəyəndi`;
+    case 'follow': return `${who} səni izləməyə başladı`;
+    default:
+      // A type this build does not know about — a newer trigger against an older
+      // app. It is still a real event, so it is shown plainly rather than hidden
+      // or crashed on.
+      return `${who} səninlə bağlı bir hərəkət etdi`;
   }
 }
 
 /** Where tapping it should go, or null when there is nothing to open. */
-export function notifTarget(n: NotifRow): { kind: 'comments'; key: string } | { kind: 'requests' } | null {
+export function notifTarget(
+  n: NotifRow
+): { kind: 'comments'; key: string } | { kind: 'requests' } | { kind: 'chat'; profileId: string } | { kind: 'profile'; profileId: string } | null {
   switch (n.type) {
     case 'comment_like':
     case 'comment_reply':
@@ -180,6 +210,14 @@ export function notifTarget(n: NotifRow): { kind: 'comments'; key: string } | { 
     case 'trainer_request':
     case 'trainer_decided':
       return { kind: 'requests' };
+    case 'message':
+      return n.actorId ? { kind: 'chat', profileId: n.actorId } : null;
+    case 'follow':
+      return n.actorId ? { kind: 'profile', profileId: n.actorId } : null;
+    case 'video_like':
+    case 'post_like':
+      // The like is on my own content; there is no useful second screen for it.
+      return null;
     default:
       return null;
   }

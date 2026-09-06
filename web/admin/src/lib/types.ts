@@ -66,6 +66,9 @@ export interface Gym {
   rating: number | null;
   review_count: number | null;
   claim_status: 'unclaimed' | 'pending' | 'claimed';
+  /** schema41: a gym created inside the app starts false and is invisible in
+   *  Kəşf until an admin publishes it. Nothing could set it before schema50. */
+  listed: boolean | null;
   price_month: number | null;
   day_pass: number | null;
 }

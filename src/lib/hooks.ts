@@ -15,6 +15,7 @@ import { getPartner as apiGetPartner, byCompatibility, getGyms, getPartnersAtGym
 import { supabase, hasSupabaseConfig } from '@/lib/supabase';
 import { nonEmpty, useFocusFetch } from '@/lib/focusFetch';
 import { isPlaceholderName } from '@/lib/authorName';
+import { myFollowing } from '@/lib/social';
 
 /** Generic list hook: mock until Supabase configured, then live data (mock stays as fallback on error). */
 function useList<T>(fallback: T[], fetcher: () => Promise<T[]>, deps: unknown[] = []): T[] {
@@ -125,6 +126,7 @@ const mapVideo = (r: any): FeedVideo => ({
   linkedProgramTitle: r.linked_program_title, linkedProgramId: r.linked_program_id,
   gradient: (r.gradient ?? ['#3A3A44', '#101014']) as [string, string],
   videoUrl: r.video_url ?? '',
+  durationSec: r.duration_sec ?? null,
 });
 const mapPost = (r: any): CommunityPost => ({
   // Always compute the age from the real timestamp — the stored `time_ago`
@@ -323,12 +325,44 @@ export const useGymRanking = () =>
       .sort((a, b) => b.perMember - a.perMember);
   });
 
-/** Feed videos, reloaded on focus so a newly uploaded video shows up. */
+/**
+ * Feed videos, reloaded on focus so a newly uploaded video shows up.
+ *
+ * Order: people you follow first, then newest.
+ *
+ * It used to be `.order('ord')` while every upload wrote `ord: 0`, so all
+ * user videos shared one sort key and Postgres returned them in whatever order
+ * it liked — the feed genuinely reshuffled between openings. There was no
+ * `created_at` column to sort by instead; schema46 added one and recovered the
+ * real upload times from the ids.
+ *
+ * The follow pass is done here rather than in SQL because `follows` is readable
+ * only as yourself; if that read fails the feed still renders in date order
+ * instead of failing whole — a guest has no follows at all.
+ */
 export const useFeedVideos = () => {
   // local-first
   return useFocusFetch<FeedVideo[]>('feed_videos', mockVideos, async () => {
-    const { data } = await supabase.from('feed_videos').select('*').is('hidden_at', null).order('ord');
-    return nonEmpty((data ?? []).map(mapVideo));
+    const { data } = await supabase
+      .from('feed_videos')
+      .select('*')
+      .is('hidden_at', null)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    const rows = (data ?? []).map(mapVideo);
+
+    let following = new Set<string>();
+    try {
+      following = await myFollowing();
+    } catch {
+      // Not signed in, or the read failed. Date order is still a real order.
+    }
+    if (following.size) {
+      const followed = rows.filter((v) => v.authorId && following.has(v.authorId));
+      const rest = rows.filter((v) => !v.authorId || !following.has(v.authorId));
+      return nonEmpty([...followed, ...rest]);
+    }
+    return nonEmpty(rows);
   });
 };
 

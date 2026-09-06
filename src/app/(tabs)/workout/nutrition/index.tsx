@@ -18,7 +18,29 @@ import { useDb, useLatestWeight, useNutritionToday } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 
-const WATER_TARGET = 8;
+/**
+ * Water, in 250 ml glasses.
+ *
+ * This was a flat `8` shown to everyone as «sənin hədəfin» — a number nobody
+ * measured and nobody set, identical for a 52 kg and a 105 kg person. The usual
+ * clinical rule of thumb is ~35 ml per kg of body weight, and the app already
+ * knows the user's real logged weight (it is what the calorie target is built
+ * from), so the target is derived from the same evidence.
+ *
+ * With no logged weight there is nothing to derive it from, so the generic
+ * figure is used AND labelled as generic, rather than presented as personal.
+ */
+const GLASS_ML = 250;
+const ML_PER_KG = 35;
+const GENERIC_WATER_GLASSES = 8;
+
+function waterTargetFor(weightKg: number | null): { glasses: number; basis: string } {
+  if (!weightKg) {
+    return { glasses: GENERIC_WATER_GLASSES, basis: 'ümumi tövsiyə — çəkini qeyd et, hədəf sənə görə hesablansın' };
+  }
+  const glasses = Math.max(4, Math.min(16, Math.round((weightKg * ML_PER_KG) / GLASS_ML)));
+  return { glasses, basis: `${weightKg} kq × ${ML_PER_KG} ml` };
+}
 
 /* ------------------------------------------------------------------ *
  * Personal calorie target — derived from the user's OWN weight + goal.
@@ -132,6 +154,9 @@ export default function Nutrition() {
   const router = useRouter();
   const gate = useAuthGate();
   const meals = useMeals();
+  // The same logged weight the calorie target is built from — no second source.
+  const myWeight = useLatestWeight();
+  const mealsTotal = useMemo(() => meals.reduce((n, m) => n + (m.kcal ?? 0), 0), [meals]);
   const today = useNutritionToday();
   const custom = useCustomFoods();
   const summary = useNutritionSummary();
@@ -163,7 +188,8 @@ export default function Nutrition() {
   }, [adding]);
 
   const pct = summary.target ? Math.min(1, summary.consumed / summary.target) : 0;
-  const waterDots = Math.max(WATER_TARGET, summary.water);
+  const waterGoal = waterTargetFor(myWeight);
+  const waterDots = Math.max(waterGoal.glasses, summary.water);
 
   const eat = (id: string) =>
     gate(() => {
@@ -243,7 +269,10 @@ export default function Nutrition() {
         <View style={styles.water}>
           <View style={{ flex: 1 }}>
             <AppText variant="headline">
-              Su · {summary.water} / {WATER_TARGET} stəkan{summary.water >= WATER_TARGET ? ' ✓' : ''}
+              Su · {summary.water} / {waterGoal.glasses} stəkan{summary.water >= waterGoal.glasses ? ' ✓' : ''}
+            </AppText>
+            <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>
+              {waterGoal.basis}
             </AppText>
             <View style={styles.waterDots}>
               {Array.from({ length: waterDots }).map((_, i) => (
@@ -259,8 +288,21 @@ export default function Nutrition() {
           </PressableScale>
         </View>
 
-        <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 12 }}>
-          Bugünkü yeməklər
+        {/* These four meals are the SAME for everybody — one seeded example day.
+            They were headed «Bugünkü yeməklər», which reads as a plan built for
+            this person: it is not. It knows nothing about their weight, goal,
+            calorie target, allergies or whether they train today. So it is
+            labelled as what it is, and its total is put next to the person's own
+            target so the gap is visible instead of implied away. */}
+        <AppText variant="overline" color={palette.caption} style={{ marginTop: 20 }}>
+          Nümunə yeməklər
+        </AppText>
+        <AppText variant="caption" color={palette.caption} style={{ marginTop: 4, marginBottom: 12, lineHeight: 17 }}>
+          {mealsTotal > 0
+            ? summary.target
+              ? `Hamı üçün eyni nümunə gün · cəmi ${mealsTotal} kkal, sənin hədəfin ${summary.target} kkal. Yediyini işarələ və ya aşağıda öz yeməyini əlavə et.`
+              : `Hamı üçün eyni nümunə gün · cəmi ${mealsTotal} kkal. Yediyini işarələ və ya aşağıda öz yeməyini əlavə et.`
+            : 'Yediyini aşağıda əlavə edə bilərsən.'}
         </AppText>
         {meals.map((m) => (
           <MealRow

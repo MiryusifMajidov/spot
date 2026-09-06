@@ -20,7 +20,7 @@ import { useAuthGate } from '@/lib/authGate';
 import { usePartnerDeck } from '@/lib/hooks';
 import { gymById, seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
-import { applyPartnerFilter, partnerFilterCount, useDiscoverPrefs } from '@/store/discoverPrefs';
+import { applyPartnerFilter, partnerFilterCount, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
 import { toast } from '@/store/ui';
 import { palette } from '@/theme';
 import { nameWithAge } from '@/lib/authorName';
@@ -73,7 +73,8 @@ export default function Cards() {
   // Null until the user picks a gym — no catalogue gym is substituted, so the deck
   // is honestly empty instead of showing strangers from a gym they never chose.
   const homeGymId = useAppStore((s) => s.profile.homeGymId);
-  const isWoman = useAppStore((s) => s.profile.gender) === 'qadın';
+  // «not a man», not «is a woman» — see womenOnlyAllowed.
+  const isWoman = womenOnlyAllowed(useAppStore((s) => s.profile.gender));
   const gate = useAuthGate();
   const deck = usePartnerDeck(homeGymId ?? '');
   const filter = useDiscoverPrefs((s) => s.partnerFilter);

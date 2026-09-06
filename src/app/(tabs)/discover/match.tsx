@@ -181,9 +181,11 @@ export default function Match() {
       // A deliverable request is only recorded once the row really reached the other
       // side. There is no background retry queue, so a failure must stay a failure —
       // the user retries with the button, which is still enabled.
+      // The proposal text goes WITH the request; it is the whole content of it.
+      const proposal = `${slot.label}${gym ? ` · ${gym.name}` : ''}`;
       if (deliverable) {
         try {
-          await apiSendMatchRequest(partner.id);
+          await apiSendMatchRequest(partner.id, proposal);
         } catch {
           setSending(false);
           errorFeedback();
@@ -191,7 +193,7 @@ export default function Match() {
           return;
         }
       }
-      sendRequest(partner.id, `Məşq təklifi: ${slot.label}${gym ? ` · ${gym.name}` : ''}`);
+      sendRequest(partner.id, `Məşq təklifi: ${proposal}`);
       setSending(false);
       successFeedback();
       toast(deliverable ? 'Təklif göndərildi' : 'Təklif cihazında qeyd olundu — hələ göndərilməyib', deliverable ? 'success' : 'info');
