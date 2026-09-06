@@ -43,6 +43,45 @@ export class AuthSetupError extends Error {
   }
 }
 
+/**
+ * Which providers the PROJECT has switched on.
+ *
+ * `/auth/v1/settings` is a public endpoint that answers exactly this, and asking
+ * it first is the difference between an honest message and nothing happening at
+ * all. Without the check, tapping «Google» built an authorize URL client-side —
+ * supabase-js does not verify the provider is enabled — opened a browser that
+ * bounced straight back, and the result was indistinguishable from the person
+ * cancelling: no browser, no error, no explanation. Verified on the device.
+ *
+ * Cached for the session: it is a project setting, not per-request state. A
+ * failed read returns null and the caller proceeds — a network problem must not
+ * masquerade as «not configured».
+ */
+let providerCache: Record<string, boolean> | null = null;
+
+export async function enabledProviders(): Promise<Record<string, boolean> | null> {
+  if (providerCache) return providerCache;
+  const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+  const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+  if (!url || !key) return null;
+  try {
+    const res = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: key } });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { external?: Record<string, boolean> };
+    providerCache = json.external ?? {};
+    return providerCache;
+  } catch {
+    return null;
+  }
+}
+
+/** Throws `AuthSetupError` when we KNOW the provider is off. Silent when we
+ *  could not ask — an unreachable settings endpoint is not a verdict. */
+async function requireProvider(name: 'google' | 'phone' | 'email'): Promise<void> {
+  const p = await enabledProviders();
+  if (p && p[name] === false) throw new AuthSetupError(name);
+}
+
 /** Is the person currently signed in as an anonymous (device-only) user? */
 export async function isAnonymous(): Promise<boolean> {
   const { data } = await supabase.auth.getUser();
@@ -73,6 +112,7 @@ export async function currentIdentity(): Promise<{ kind: 'anonymous' | 'google' 
  * app, so nothing picks it up on its own.
  */
 export async function signInWithGoogle(): Promise<void> {
+  await requireProvider('google');
   const anon = await isAnonymous();
 
   const start = anon
@@ -149,6 +189,7 @@ async function completeFromUrl(url: string): Promise<void> {
 export async function sendEmailCode(email: string): Promise<{ linking: boolean }> {
   const clean = (email ?? '').trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(clean)) throw new Error('bad-email');
+  await requireProvider('email');
 
   const anon = await isAnonymous();
   const { error } = anon
@@ -206,6 +247,7 @@ export function normalizePhone(raw: string): string | null {
 export async function sendPhoneCode(phone: string): Promise<{ linking: boolean }> {
   const e164 = normalizePhone(phone);
   if (!e164) throw new Error('bad-phone');
+  await requireProvider('phone');
 
   const anon = await isAnonymous();
   const { error } = anon
