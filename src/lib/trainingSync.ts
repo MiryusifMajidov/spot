@@ -24,8 +24,8 @@
 import { getMyPRs, getMyProgress, getMyWorkouts, logWeight, logWorkout } from './api';
 import { isUuid, newId } from './ids';
 import { myChallenges, myFollowing } from './social';
-import { hasSupabaseConfig } from './supabase';
-import { useDb, type Workout } from '@/store/db';
+import { hasSupabaseConfig, supabase } from './supabase';
+import { setExerciseVideos, useDb, type Workout } from '@/store/db';
 
 /** Pull the server's history into the device engine. Additive: a row the device
  *  already has (same id) keeps its local copy, which is the richer one. */
@@ -148,5 +148,28 @@ export async function syncSocial(): Promise<{ following: string[]; joinedChallen
   } catch {
     // The device copy stays; it is simply not confirmed yet.
     return null;
+  }
+}
+
+/**
+ * Which movements have technique footage.
+ *
+ * Reads only `id` and `video_url` — the rest of the exercise (name, reps, the
+ * common mistake) is app content and ships with the build. Keeping the video as
+ * DATA means a clip added tomorrow shows up without an app release, which is the
+ * difference between «one release per video» and «upload and it is live».
+ *
+ * A failure leaves the map empty, and the exercise screen already draws that
+ * honestly: no player, no black rectangle, just the sets, the mistake and the
+ * substitutes.
+ */
+export async function loadExerciseVideos(): Promise<void> {
+  if (!hasSupabaseConfig) return;
+  try {
+    const { data, error } = await supabase.from('exercises').select('id,video_url').not('video_url', 'is', null);
+    if (error) return;
+    setExerciseVideos((data ?? []) as { id: string; video_url: string | null }[]);
+  } catch {
+    /* no footage this launch */
   }
 }

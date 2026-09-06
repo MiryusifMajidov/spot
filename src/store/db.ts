@@ -932,7 +932,39 @@ export function timeAgoAz(iso: string): string {
 export const seedById = (id: string) => partnerSeeds.find((p) => p.id === id) ?? null;
 export const gymById = (id: string): Gym | undefined => seedGyms.find((g) => g.id === id);
 export const programById = (id: string): Program | undefined => seedPrograms.find((p) => p.id === id);
-export const exerciseById = (id: string) => exerciseLibrary.find((e) => e.id === id) ?? null;
+/**
+ * Technique footage, filled in from the server.
+ *
+ * The library below is app content — names, target reps, the most common
+ * mistake — and it ships with the build. The VIDEO is not: it is a file that
+ * arrives later, and requiring an app release for each one would mean the
+ * catalogue stays empty forever. `public.exercises.video_url` is that slot, and
+ * this map is what the server put in it.
+ *
+ * Populated once at bootstrap (see `loadExerciseVideos`). Empty until then and
+ * empty when the read fails, which the exercise screen already renders honestly
+ * — «no footage» rather than a black player.
+ */
+const videoOverlay = new Map<string, string>();
+
+export function setExerciseVideos(rows: { id: string; video_url: string | null }[]): void {
+  videoOverlay.clear();
+  for (const r of rows) {
+    if (r.video_url) videoOverlay.set(r.id, r.video_url);
+  }
+}
+
+export const exerciseById = (id: string): LibExercise | null => {
+  const base = exerciseLibrary.find((e) => e.id === id) ?? null;
+  if (!base) return null;
+  const url = videoOverlay.get(id);
+  return url ? { ...base, videoUrl: url } : base;
+};
+
+/** How many of the library's movements actually have footage right now. Used by
+ *  the program screens, which must not claim «hər hərəkətin videosu var». */
+export const exercisesWithVideo = (): number =>
+  exerciseLibrary.filter((e) => e.videoUrl || videoOverlay.has(e.id)).length;
 
 // ------------------------------------------------------------------ programs
 /** All programs the user can run: the ones they created first, then the catalog. */

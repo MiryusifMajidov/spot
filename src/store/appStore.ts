@@ -7,7 +7,7 @@ import { SessionRestoreError, ensureSession, getMatchRequestsSafe, getMyProfile,
 import { getMyGymId } from '@/lib/roles';
 import { useDb } from '@/store/db';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { syncSocial, syncTrainingHistory } from '@/lib/trainingSync';
+import { loadExerciseVideos, syncSocial, syncTrainingHistory } from '@/lib/trainingSync';
 
 export interface Profile {
   name: string;
@@ -240,6 +240,8 @@ export const useAppStore = create<AppState>()(
         // One training history, not two: pull what the server holds, then hand
         // up whatever only this device knows (src/lib/trainingSync.ts).
         void syncTrainingHistory();
+        // Technique footage is data, not code — see loadExerciseVideos.
+        void loadExerciseVideos();
         void syncSocial().then((v) => {
           if (v) get().setSocialFromServer(v);
         });
