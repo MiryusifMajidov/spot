@@ -1,6 +1,7 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, View } from 'react-native';
-import { confirm } from '@/store/ui';
+import { confirm, toast } from '@/store/ui';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -9,6 +10,8 @@ import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
 import { accountCount, showAccountSwitcher } from '@/lib/accounts';
 import { useAuthGate } from '@/lib/authGate';
+import { currentIdentity, signOut } from '@/lib/auth';
+import { hasSupabaseConfig } from '@/lib/supabase';
 import { releaseSounds, successFeedback, tapFeedback } from '@/lib/feedback';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
@@ -22,6 +25,47 @@ export default function Settings() {
   const reset = useAppStore((s) => s.resetOnboarding);
   const role = useAppStore((s) => s.profile.role);
   const ownsGym = useAppStore((s) => s.ownsGym);
+
+  /* Which identity is behind the session right now. Read from the server, not
+     guessed: `is_anonymous` is the difference between «an account» and «a file
+     on this phone». */
+  const [ident, setIdent] = useState<{ kind: 'anonymous' | 'google' | 'phone' | 'email' | 'none'; label: string | null }>({
+    kind: 'none',
+    label: null,
+  });
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      if (!hasSupabaseConfig) return;
+      currentIdentity()
+        .then((i) => alive && setIdent(i))
+        .catch(() => {});
+      return () => {
+        alive = false;
+      };
+    }, [])
+  );
+
+  const signOutRow = () =>
+    confirm(
+      'Hesabdan çıx',
+      'Bu telefonda saxlanan məlumatlar silinir. Hesabın serverdə qalır — eyni Google hesabı və ya nömrə ilə yenidən girə bilərsən.',
+      [
+        { label: 'Ləğv et', style: 'cancel' },
+        {
+          label: 'Çıx',
+          style: 'destructive',
+          onPress: () => {
+            signOut()
+              .then(() => {
+                toast('Hesabdan çıxdın');
+                router.replace('/onboarding/welcome');
+              })
+              .catch(() => toast('Çıxmaq alınmadı — yenidən cəhd et', 'error'));
+          },
+        },
+      ]
+    );
 
 
   /* Support opens a screen with a text field instead of filing a canned report.
@@ -58,7 +102,36 @@ export default function Settings() {
             «PULSUZ (hazırda)» plan — a paid tier that was cancelled permanently — and its
             chevron led nowhere. Nothing in the app is gated by a plan, so nothing here
             may imply one. */}
-        <ListGroup header="Hesab">
+        {/* Identity comes first, because without it everything below belongs to a
+            single phone. An anonymous account is offered a way back in; a linked
+            one is told what it is linked to and can sign out — signing out of an
+            ANONYMOUS session would destroy it, so that is never offered. */}
+        <ListGroup
+          header="Hesab"
+          footer={
+            ident.kind === 'anonymous'
+              ? 'Hesabın yalnız bu telefondadır. Tətbiqi silsən və ya telefonu dəyişsən, məşq tarixçən və @adın qayıtmır.'
+              : undefined
+          }>
+          {ident.kind === 'anonymous' ? (
+            <ListRow
+              icon="shield"
+              iconBg={palette.red}
+              iconColor={palette.white}
+              title="Hesabını qoru"
+              subtitle="Google və ya nömrə ilə — heç nə itmir"
+              onPress={() => router.push('/auth/sign-in')}
+            />
+          ) : ident.kind !== 'none' ? (
+            <ListRow
+              icon="shield"
+              iconBg={palette.voltDeep}
+              title="Giriş"
+              value={ident.label ?? (ident.kind === 'google' ? 'Google' : 'Nömrə')}
+              chevron={false}
+              onPress={signOutRow}
+            />
+          ) : null}
           <ListRow icon="user" iconBg={palette.blue} title="Profili redaktə et" onPress={() => router.push('/(tabs)/profile/edit')} />
           <ListRow icon="lock" iconBg="#8A8A93" title="Məxfilik" subtitle="Görünürlük və data" onPress={() => router.push('/(tabs)/profile/privacy')} />
           <ListRow icon="bookmark" iconBg={palette.voltDeep} title="Saxlanılanlar" subtitle="Videolar və zallar" onPress={() => router.push('/(tabs)/profile/saved')} />
