@@ -14,6 +14,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppErrorBoundary } from '@/components/ui/AppErrorBoundary';
 import { UiHost } from '@/components/ui/UiHost';
 import { handleAuthDeepLink } from '@/lib/auth';
 import { successFeedback } from '@/lib/feedback';
@@ -74,15 +75,22 @@ export default function RootLayout() {
             never leave the user staring at a permanently blank screen; the system
             face is a fine fallback. */}
         {fontsLoaded || fontError ? (
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="trainer" />
-            <Stack.Screen name="gym" />
-            <Stack.Screen name="onboarding" />
-            <Stack.Screen name="chat" />
-            <Stack.Screen name="challenge" />
-          </Stack>
+          /* Nothing caught a render error before this. React unmounts the whole
+             tree when one escapes, so a single bad row anywhere turned the app
+             into a white screen with no tab bar and no way back — force-quit was
+             the only exit. `UiHost` stays OUTSIDE the boundary so a toast or a
+             dialog can still be shown while the boundary is what is on screen. */
+          <AppErrorBoundary>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="trainer" />
+              <Stack.Screen name="gym" />
+              <Stack.Screen name="onboarding" />
+              <Stack.Screen name="chat" />
+              <Stack.Screen name="challenge" />
+            </Stack>
+          </AppErrorBoundary>
         ) : (
           <View style={{ flex: 1, backgroundColor: palette.inkText }} />
         )}
