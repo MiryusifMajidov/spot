@@ -10,8 +10,11 @@
  * triggers, so a type that is off is never recorded rather than recorded and
  * hidden. Off means the app stopped keeping it.
  */
+import { router } from 'expo-router';
+
 import { getMyProfile } from './api';
 import { supabase } from './supabase';
+import { openComments } from '@/store/ui';
 
 /**
  * Every type the DATABASE can write.
@@ -221,4 +224,18 @@ export function notifTarget(
     default:
       return null;
   }
+}
+
+/** Open whatever a notification points at.
+ *
+ *  Shared on purpose: the notification centre and a tapped PUSH must land on the
+ *  same screen, or the same event means two different things depending on where
+ *  the person tapped it. `router` is imported here rather than passed in so the
+ *  push handler — which runs outside any component — can call it too. */
+export function openNotifTarget(t: ReturnType<typeof notifTarget>): void {
+  if (!t) return;
+  if (t.kind === 'comments') openComments(t.key);
+  else if (t.kind === 'chat') router.push({ pathname: '/chat/[id]', params: { id: t.profileId } });
+  else if (t.kind === 'profile') router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: t.profileId } });
+  else router.push('/chat/requests');
 }

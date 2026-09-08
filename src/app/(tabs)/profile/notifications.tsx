@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -9,6 +9,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { tapFeedback } from '@/lib/feedback';
 import { NOTIF_TYPES, getNotifPrefs, setNotifPref, type NotifType } from '@/lib/notifications';
+import { pushPermission, registerPush } from '@/lib/push';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -19,6 +20,10 @@ export default function NotificationSettings() {
   const [prefs, setPrefs] = useState<Record<string, boolean>>({});
   const [state, setState] = useState<State>('loading');
   const [busy, setBusy] = useState<NotifType | null>(null);
+  /* What the OS actually allows. Without this the switches below promise
+     notifications that Android or iOS is silently dropping — the app claiming
+     something only the system can grant. */
+  const [perm, setPerm] = useState<'granted' | 'denied' | 'undetermined' | 'unavailable' | null>(null);
 
   const load = useCallback(() => {
     if (!hasSupabaseConfig) {
@@ -34,7 +39,14 @@ export default function NotificationSettings() {
       .catch(() => setState('failed'));
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(
+    useCallback(() => {
+      load();
+      // Re-read on every focus: the person may have just come back from the
+      // system settings having changed it.
+      void pushPermission().then(setPerm);
+    }, [load])
+  );
 
   const toggle = async (type: NotifType, next: boolean) => {
     tapFeedback();
@@ -57,6 +69,26 @@ export default function NotificationSettings() {
       <NavBar title="Bildirişlər" />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        {perm === 'denied' || perm === 'undetermined' ? (
+          <PressableScale
+            activeScale={0.98}
+            onPress={() => {
+              // «undetermined» means the system will still show the dialog;
+              // «denied» means only the settings app can change it now.
+              if (perm === 'undetermined') void registerPush().then(() => pushPermission().then(setPerm));
+              else void Linking.openSettings();
+            }}
+            style={styles.permCard}>
+            <Icon name="bell" size={18} color={palette.streak} />
+            <View style={{ flex: 1 }}>
+              <AppText variant="subhead">Telefon bildirişləri bağlıdır</AppText>
+              <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3, lineHeight: 18 }}>
+                Aşağıdaki ayarlar işləyir, amma telefon SPOT-a bildiriş göstərməyə icazə vermir — mesaj və məşq
+                təklifi yalnız tətbiqi açanda görünəcək. {perm === 'undetermined' ? 'İcazə vermək üçün toxun.' : 'Telefon ayarlarını açmaq üçün toxun.'}
+              </AppText>
+            </View>
+          </PressableScale>
+        ) : null}
         {state === 'loading' ? (
           <AppText variant="body" color={palette.textSecondary} style={styles.note}>Yüklənir…</AppText>
         ) : state === 'failed' ? (
@@ -110,6 +142,17 @@ export default function NotificationSettings() {
 }
 
 const styles = StyleSheet.create({
+  permCard: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+    backgroundColor: palette.white,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: palette.streak,
+  },
   content: { paddingHorizontal: spacing.lg, paddingBottom: 28 },
   note: { textAlign: 'center', marginTop: 40 },
   failed: { alignItems: 'center', marginTop: 60, paddingHorizontal: 20 },

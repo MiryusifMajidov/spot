@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -14,12 +14,12 @@ import {
   markRead,
   notifText,
   notifTarget,
+  openNotifTarget,
   type NotifRow,
   type NotifType,
 } from '@/lib/notifications';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { timeAgoAz } from '@/store/db';
-import { openComments } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
 /** loading → the read is in flight; ready → the list IS the truth;
@@ -49,7 +49,6 @@ const ICON: Record<NotifType, { name: IconName; tint: string }> = {
 };
 
 export default function Notifications() {
-  const router = useRouter();
   const [rows, setRows] = useState<NotifRow[]>([]);
   const [state, setState] = useState<State>('loading');
 
@@ -75,12 +74,9 @@ export default function Notifications() {
     // load brings the dot back, which is the truthful outcome.
     void markRead(n.id).catch(() => {});
     setRows((rs) => rs.map((r) => (r.id === n.id ? { ...r, read: true } : r)));
-    const t = notifTarget(n);
-    if (!t) return;
-    if (t.kind === 'comments') openComments(t.key);
-    else if (t.kind === 'chat') router.push({ pathname: '/chat/[id]', params: { id: t.profileId } });
-    else if (t.kind === 'profile') router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: t.profileId } });
-    else router.push('/chat/requests');
+    // Shared with the push handler so a tapped notification lands on the same
+    // screen whether it came from the lock screen or from this list.
+    openNotifTarget(notifTarget(n));
   };
 
   const unread = rows.filter((r) => !r.read).length;

@@ -32,6 +32,7 @@ import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
+import { unregisterPush } from './push';
 import { supabase } from './supabase';
 
 /** Where the browser sends the person back to. `scheme: 'spot'` in app.json. */
@@ -335,6 +336,10 @@ export async function confirmPhoneCode(phone: string, code: string, linking: boo
  */
 export async function signOut(): Promise<void> {
   if (await isAnonymous()) throw new Error('anonymous-signout-blocked');
+  // Drop this device's push address FIRST, while the session still exists to
+  // authorise the delete. Otherwise the phone keeps buzzing for an account
+  // nobody on it is signed into any more.
+  await unregisterPush();
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }

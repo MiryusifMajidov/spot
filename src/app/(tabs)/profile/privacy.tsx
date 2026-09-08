@@ -6,6 +6,7 @@ import { ListGroup, ListRow } from '@/components/ui/ListGroup';
 import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
 import { ensureSession, updateMyProfile, deleteMyAccount } from '@/lib/api';
+import { unregisterPush } from '@/lib/push';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { useDb } from '@/store/db';
@@ -157,6 +158,10 @@ export default function PrivacyDetails() {
                       return;
                     }
                     try {
+                      // Take this device's push address out first, while the
+                      // session still exists to authorise it. The row would die
+                      // with the profile anyway, but not until the RPC finishes.
+                      await unregisterPush();
                       await deleteMyAccount();
                     } catch {
                       // Nothing partial is reported as done: if the server refused,

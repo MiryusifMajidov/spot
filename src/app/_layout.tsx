@@ -7,6 +7,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 import * as Linking from 'expo-linking';
+import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -18,6 +19,7 @@ import { AppErrorBoundary } from '@/components/ui/AppErrorBoundary';
 import { UiHost } from '@/components/ui/UiHost';
 import { handleAuthDeepLink } from '@/lib/auth';
 import { successFeedback } from '@/lib/feedback';
+import { openPush, registerPush } from '@/lib/push';
 import { toast } from '@/store/ui';
 import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
@@ -67,6 +69,40 @@ export default function RootLayout() {
       sub.remove();
     };
   }, [bootstrap]);
+
+  /* Push notifications.
+     `notify()` has written notification rows since schema35 and none of them
+     ever reached a phone that was not already open on the right screen — a match
+     request expired unseen, a trainer's answer waited days. schema61 sends the
+     push; this registers the address it goes to.
+
+     It runs only once the person is through onboarding: a permission dialog on
+     the very first screen, before they know what SPOT is, is the one moment they
+     are most likely to refuse — and on iOS a refusal cannot be asked about again.
+     The result is deliberately ignored: an emulator has no push service and a
+     refusal is a choice, neither being something to interrupt anyone with. */
+  const onboarded = useAppStore((s) => s.onboarded);
+  useEffect(() => {
+    if (onboarded) void registerPush();
+  }, [onboarded]);
+
+  /* Tapping a notification — from the lock screen, the tray, or while the app is
+     open — opens the same screen the notification centre opens for that row. */
+  useEffect(() => {
+    let alive = true;
+    void Notifications.getLastNotificationResponseAsync().then((r) => {
+      // The app was launched BY the notification: the tap that started this
+      // process is not delivered to the listener below.
+      if (alive && r) openPush(r.notification.request.content.data as Record<string, unknown>);
+    });
+    const sub = Notifications.addNotificationResponseReceivedListener((r) =>
+      openPush(r.notification.request.content.data as Record<string, unknown>)
+    );
+    return () => {
+      alive = false;
+      sub.remove();
+    };
+  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
