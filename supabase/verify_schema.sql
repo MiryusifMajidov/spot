@@ -87,10 +87,11 @@ expected_tables(t, why) as (values
   ('exercises',                   'src/lib/hooks.ts:238 useDayExercises'),
   ('programs',                    'src/lib/hooks.ts:128 usePrograms'),
   ('reviews',                     'src/lib/hooks.ts:322 useReviews'),
-  ('challenges',                  'src/lib/hooks.ts:247 useChallenges'),
+  ('challenges',                  'src/lib/hooks.ts useChallenges'),
+  ('challenge_members',           'src/lib/social.ts joinChallenge — the opt-in challenge_standings ranks'),
   ('feed_videos',                 'src/lib/hooks.ts:279 useFeedVideos'),
   ('community_posts',             'src/lib/hooks.ts:288 useCommunityPosts'),
-  ('chats',                       'src/lib/hooks.ts:295 useChats'),
+  ('chat_threads',                'schema42 open_thread — a thread exists only after an accepted match or trainer link'),
   ('messages',                    'src/lib/hooks.ts:301 useMessages'),
   ('prs',                         'src/lib/api.ts:420 logPR'),
   ('workouts',                    'src/lib/api.ts:405 logWorkout'),
@@ -101,12 +102,13 @@ expected_tables(t, why) as (values
   ('student_programs',            'src/lib/roles.ts:142 assignStudentProgram'),
   ('trainer_verifications',       'src/app/trainer/verify.tsx:71'),
   ('gym_claims',                  'src/lib/gymOwner.tsx:195 submitGymClaim'),
-  ('day_passes',                  'src/lib/api.ts:350 buyDayPass'),
+  ('day_passes',                  'src/lib/api.ts createDayPass / getMyDayPass; src/app/gym/pass.tsx redeem'),
   ('reports',                     'src/lib/api.ts:329 createReport'),
   ('admins',                      'web/admin/src/lib/auth.tsx:34'),
   ('audit_log',                   'web/admin/src/lib/audit.ts:18 — every admin action'),
   ('report_messages',             'web/admin/src/screens/Moderation.tsx:129'),
-  ('moderation_actions',          'web/admin/src/screens/Users.tsx:151')
+  ('moderation_actions',          'web/admin/src/screens/Users.tsx:151'),
+  ('push_tokens',                 'src/lib/push.ts registerPush — schema61; without it no notification ever leaves the database')
 ),
 
 expected_columns(t, c, why) as (values
@@ -132,10 +134,10 @@ expected_columns(t, c, why) as (values
   ('profiles','phone',                         'web/admin/src/screens/Users.tsx:214 + admin_unmask_phone'),
   ('profiles','status',                        'web/admin/src/screens/Users.tsx:149 write'),
   ('profiles','status_reason',                 'web/admin/src/screens/Users.tsx:149 write'),
-  ('profiles','reports_count',                 'web/admin/src/screens/Users.tsx:93 filter'),
-  ('profiles','requests_sent',                 'web/admin/src/screens/Users.tsx:516'),
-  ('profiles','requests_answered',             'web/admin/src/screens/Users.tsx:517'),
-  ('profiles','streak_current',                'web/admin/src/screens/Users.tsx:213'),
+  -- reports_count / requests_sent / requests_answered / streak_current are NOT
+  -- columns and must not become any: they are COUNTED by admin_profile_stats
+  -- (schema20) and merged in at Users.tsx:137. A stored counter is a number that
+  -- can drift away from the thing it claims to count.
   ('profiles','last_active_at',                'web/admin/src/screens/Users.tsx:569'),
   -- gyms -------------------------------------------------------------------
   ('gyms','id',                                'src/lib/api.ts:295 insert (TEXT id "usr-<b36>")'),
@@ -213,19 +215,12 @@ expected_columns(t, c, why) as (values
   ('shop_items','qty',                         'src/lib/hooks.ts:121'),
   ('shop_items','price',                       'src/lib/hooks.ts:121'),
   ('shop_items','ord',                         'src/lib/hooks.ts:313 ORDER BY'),
-  ('chats','id',                               'src/lib/hooks.ts:114'),
-  ('chats','name',                             'src/lib/hooks.ts:114'),
-  ('chats','type',                             'src/lib/hooks.ts:114'),
-  ('chats','verified',                         'src/lib/hooks.ts:114'),
-  ('chats','online',                           'src/lib/hooks.ts:114'),
-  ('chats','last',                             'src/lib/hooks.ts:115'),
-  ('chats','time',                             'src/lib/hooks.ts:115'),
-  ('chats','unread',                           'src/lib/hooks.ts:115'),
-  ('chats','faded',                            'src/lib/hooks.ts:115'),
-  ('chats','ord',                              'src/lib/hooks.ts:295 ORDER BY'),
+  ('chat_threads','id',                        'schema42 — open_thread returns it'),
+  ('chat_threads','a_profile',                 'schema42 — least(me, other); the pair is ordered so a thread is unique'),
+  ('chat_threads','b_profile',                 'schema42 — greatest(me, other)'),
   ('messages','id',                            'src/lib/hooks.ts:302'),
-  ('messages','chat_id',                       'src/lib/hooks.ts:301 .eq(chat_id)'),
-  ('messages','from_me',                       'src/lib/hooks.ts:302'),
+  ('messages','thread_id',                     'schema42 — src/lib/messages.ts; replaces the demo chat_id'),
+  ('messages','sender_id',                     'schema42 — «from_me» is derived, never stored: a stored flag would be true for everyone'),
   ('messages','body',                          'src/lib/hooks.ts:302'),
   ('messages','created_at',                    'src/lib/hooks.ts:301 ORDER BY'),
   -- programs ---------------------------------------------------------------
@@ -265,15 +260,18 @@ expected_columns(t, c, why) as (values
   ('challenges','title',                       'src/lib/hooks.ts:86'),
   ('challenges','scope',                       'src/lib/hooks.ts:86'),
   ('challenges','scope_label',                 'src/lib/hooks.ts:86'),
-  ('challenges','description',                 'src/lib/hooks.ts:86'),
-  ('challenges','progress',                    'src/lib/hooks.ts:87'),
-  ('challenges','target',                      'src/lib/hooks.ts:87'),
-  ('challenges','unit',                        'src/lib/hooks.ts:87'),
-  ('challenges','days_left',                   'src/lib/hooks.ts:87; admin Challenges.tsx:77 ORDER BY'),
-  ('challenges','reward',                      'src/lib/hooks.ts:87'),
-  ('challenges','participants',                'src/lib/hooks.ts:88'),
-  ('challenges','leaderboard',                 'src/lib/hooks.ts:88 (jsonb)'),
-  ('challenges','active',                      'admin Challenges.tsx:76 ORDER BY, :114 write'),
+  ('challenges','description',                 'src/lib/hooks.ts mapChallenge'),
+  ('challenges','target',                      'src/lib/hooks.ts mapChallenge'),
+  ('challenges','unit',                        'src/lib/hooks.ts mapChallenge; decides what challenge_standings counts'),
+  ('challenges','reward',                      'src/lib/hooks.ts mapChallenge'),
+  ('challenges','participants',                'schema43 trigger keeps it — never written by a client'),
+  ('challenges','active',                      'src/lib/hooks.ts useChallenges filter; admin Challenges.tsx toggle'),
+  ('challenges','starts_at',                   'schema60 — replaces days_left; the window challenge_standings counts inside'),
+  ('challenges','ends_at',                     'schema60 — the real deadline; admin Challenges.tsx date input'),
+  -- progress / days_left / leaderboard / day_cells are GONE on purpose (schema60):
+  -- a per-challenge «progress» belonged to nobody, days_left was an int nothing
+  -- decremented, and the two jsonb columns held seeded rankings the app refused
+  -- to draw. Do not add them back.
   -- feed_videos ------------------------------------------------------------
   ('feed_videos','id',                         'src/lib/api.ts:374 insert (TEXT id "uv-<b36>")'),
   ('feed_videos','author',                     'src/lib/api.ts:375'),
@@ -360,13 +358,18 @@ expected_columns(t, c, why) as (values
   ('gym_claims','sla_due_at',                  'admin Gyms.tsx:41 ORDER BY'),
   ('gym_claims','created_at',                  'src/lib/gymOwner.tsx:182 ORDER BY'),
   -- day_passes -------------------------------------------------------------
+  ('push_tokens','token',                      'schema61 PK — Expo push token; PK is the TOKEN so a handed-over phone moves owner'),
+  ('push_tokens','profile_id',                 'src/lib/push.ts registerPush; RLS owner check'),
+  ('push_tokens','platform',                   'ios | android | web'),
+  ('push_tokens','updated_at',                 'src/lib/push.ts upsert'),
   ('day_passes','id',                          'admin Payments.tsx:109 update key'),
-  ('day_passes','user_id',                     'src/lib/api.ts:351 insert (auth uid)'),
-  ('day_passes','gym_id',                      'src/lib/api.ts:352 insert; roles.ts:244 filter'),
-  ('day_passes','code',                        'src/lib/api.ts:353 insert'),
-  ('day_passes','price',                       'src/lib/api.ts:354 insert; roles.ts:244 select'),
-  ('day_passes','commission',                  'src/lib/api.ts:355 insert; admin Analytics.tsx:46'),
-  ('day_passes','status',                      'src/lib/api.ts:356 insert; roles.ts:244 .in filter'),
+  ('day_passes','user_id',                     'create_day_pass (schema59) — the client cannot insert here any more'),
+  ('day_passes','gym_id',                      'create_day_pass; roles.ts getGymDayPasses filter'),
+  ('day_passes','code',                        'create_day_pass — SERVER-generated; the client used to invent it'),
+  ('day_passes','price',                       'create_day_pass, copied from gyms.day_pass. Never summed anywhere.'),
+  ('day_passes','status',                      'active | used | refunded — redemption only; expiry lives in expires_at'),
+  ('day_passes','used_at',                     'schema59 redeem_day_pass — when reception honoured it'),
+  -- `commission` is GONE (schema27) and must stay gone: SPOT takes no money.
   ('day_passes','purchased_at',                'admin Payments.tsx:52 ORDER BY'),
   ('day_passes','expires_at',                  'src/lib/api.ts:357 insert'),
   ('day_passes','refunded_at',                 'admin Payments.tsx:108 write'),
@@ -442,7 +445,6 @@ expected_types(t, c, ty, why) as (values
   ('feed_videos','id','text',                  'src/lib/api.ts:366 mints "uv-<base36>", inserted at :374'),
   ('challenges','id','text',                   'admin Challenges.tsx:138 inserts a slugify() slug'),
   ('trainers','id','text',                     'src/lib/api.ts:263 upserts profiles.id into it'),
-  ('chats','id','text',                        'schema2 seed ids are slugs ("tural","elvin")'),
   ('exercises','id','text',                    'schema2 seed ids are slugs ("bench","ohp")'),
   ('meals','id','text',                        'schema2 seed ids are slugs ("m1".."m4")'),
   ('shop_items','id','text',                   'schema2 seed ids are slugs ("s1".."s7")'),
@@ -453,7 +455,6 @@ expected_types(t, c, ty, why) as (values
   ('gyms','lng','double precision',            'src/app/gym/edit.tsx:247 write'),
   ('gyms','schedule','jsonb',                  'src/lib/gymOwner.tsx:158 writes a JS array of {time,name,trainer}'),
   ('programs','days','jsonb',                  'create.tsx:161 writes [{title,focus,exercise_ids[]}]'),
-  ('challenges','leaderboard','jsonb',         'src/lib/hooks.ts:88 reads an array of LeaderRow'),
   ('community_posts','stats','jsonb',          'src/lib/hooks.ts:111'),
   ('community_posts','trainer_comment','jsonb','src/lib/hooks.ts:111'),
   ('audit_log','meta','jsonb',                 'web/admin/src/lib/audit.ts:25 passes an object'),
@@ -572,7 +573,14 @@ expected_rpcs(f, why) as (values
   ('owns_profile',             'schema6 tr_insert — requestTrainer'),
   ('owns_gym',                 'schema6 profiles_gym_owner_read / checkins_gym_owner_read — the gym roster'),
   ('sync_gym_location',        'schema8 trigger fn — turns owner-picked lat/lng into the PostGIS point gyms_near sorts by'),
-  ('handle_new_user',          'schema.sql:134 — auto-creates the profile row on anonymous sign-in')
+  ('handle_new_user',          'schema.sql:134 — auto-creates the profile row on anonymous sign-in'),
+  ('create_day_pass',          'schema59 — the ONLY way a day-pass row is created; code and price come from the server'),
+  ('check_day_pass',           'schema59 — src/app/gym/pass.tsx «Yoxla»; owner-only, changes nothing, reveals nothing about the visitor'),
+  ('redeem_day_pass',          'schema59 — src/app/gym/pass.tsx «Təsdiqlə»; one-way'),
+  ('challenge_standings',      'schema60 — src/lib/hooks.ts challengeStandings; the ranking, counted from real workout rows'),
+  ('push_text',                'schema61 — the Azerbaijani title/body per notification type. Never carries content.'),
+  ('push_send',                'schema61 — pg_net POST to Expo; called only by notify()'),
+  ('notify',                   'schema35/49/61 — the single funnel: block check, per-type preference, row, push')
 ),
 
 expected_triggers(trg, tbl, why) as (values
@@ -589,7 +597,9 @@ expected_policies(tbl, pol, why) as (values
   -- app write paths
   ('profiles','profiles_self_insert',           'schema5:14 — first-time profile upsert (api.ts:71)'),
   ('profiles','profiles_self_update',           'schema5:17 — profile save'),
-  ('check_ins','checkins_self_insert',          'schema5:24 — checkIn() (api.ts:143)'),
+  -- check_ins has NO insert policy on purpose: schema19 moved check-in behind
+  -- the check_in() RPC, which verifies the 150 m radius. A policy here would let
+  -- anybody POST «indi zalda» from anywhere in the world.
   ('match_requests','match_insert',             'schema.sql:116 — sendMatchRequest'),
   ('gyms','gyms_insert',                        'schema3:27 — createGym (api.ts:294)'),
   ('gyms','gyms_update',                        'schema3:29 — updateMyGym / lat-lng save'),
@@ -599,9 +609,12 @@ expected_policies(tbl, pol, why) as (values
   ('programs','programs_update',                'schema3:35'),
   ('reviews','reviews_insert',                  'schema2:169 — gym/[id].tsx:156'),
   ('reviews','reviews_owner_reply',             'schema7:24 — the owner reply (gymOwner.tsx:237)'),
-  ('community_posts','posts_insert',            'schema2:167 — createCommunityPost + gym announcements'),
-  ('feed_videos','feedvideos_insert',           'schema2:173 — uploadFeedVideo (api.ts:374)'),
-  ('day_passes','dp_user_insert',               'schema5:9 — buyDayPass'),
+  ('community_posts','community_posts_insert',  'schema29 — createCommunityPost + gym announcements'),
+  ('feed_videos','feed_videos_insert',          'schema29 — uploadFeedVideo'),
+  -- day_passes has NO insert policy: schema59 removed dp_user_insert so the code
+  -- and the price come from create_day_pass rather than from the visitor''s phone.
+  ('day_passes','dp_owner_read',                'schema9 — the gym reads its own passes; check_day_pass depends on it being owner-scoped'),
+  ('push_tokens','push_tokens_own',             'schema61 — a device address is readable only by the person it belongs to'),
   ('day_passes','dp_user_read',                 'schema4:244'),
   ('reports','reports_insert',                  'schema4:207 — createReport, the one failure users actually see'),
   ('trainer_verifications','tv_insert',         'schema4:226 — verify.tsx:177'),
