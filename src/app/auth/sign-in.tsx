@@ -86,7 +86,11 @@ export default function SignIn() {
       const r = channel === 'email' ? await sendEmailCode(to) : await sendPhoneCode(phone);
       setSent({ channel, to, linking: r.linking });
       setCode('');
-      toast(`${to} ünvanına kod göndərildi`);
+      toast(
+        channel === 'email'
+          ? `${to} ünvanına link göndərildi — poçtunu aç və linkə toxun`
+          : `${to} nömrəsinə kod göndərildi`
+      );
     } catch (e) {
       errorFeedback();
       const m = String((e as Error)?.message ?? '');
@@ -148,8 +152,22 @@ export default function SignIn() {
 
         {sent ? (
           <>
+            {sent.channel === 'email' ? (
+              /* Supabase's hosted mailer sends a LINK, not a code — adding
+                 `{{ .Token }}` to the template needs a paid SMTP provider. So the
+                 link is the main path and the code box is the fallback for when
+                 SMTP is configured later. Saying «kod gözlə» while a link arrives
+                 would be the app describing something that is not happening. */
+              <View style={styles.hero}>
+                <Icon name="msg" size={20} color={palette.voltDeep} />
+                <AppText variant="body" color={palette.text3} style={{ lineHeight: 22, flex: 1 }}>
+                  <AppText style={{ fontWeight: '700' }}>{sent.to}</AppText> ünvanına link göndərdik. Poçtunu aç və
+                  linkə toxun — tətbiq özü açılacaq və hesabın qorunacaq.
+                </AppText>
+              </View>
+            ) : null}
             <AppText variant="overline" color={palette.caption} style={styles.label}>
-              {sent.to} ÜNVANINA GƏLƏN KOD
+              {sent.channel === 'email' ? 'VƏ YA MƏKTUBDAKI KODU YAZ' : `${sent.to} NÖMRƏSİNƏ GƏLƏN KOD`}
             </AppText>
             <TextInput
               value={code}
@@ -168,6 +186,11 @@ export default function SignIn() {
               onPress={confirm}
               style={{ marginTop: 14 }}
             />
+            {sent.channel === 'email' ? (
+              <AppText variant="caption" color={palette.caption} style={{ marginTop: 10, lineHeight: 18 }}>
+                Məktubda yalnız link varsa, kod xanasını boş burax — linkə toxunmaq kifayətdir.
+              </AppText>
+            ) : null}
             <PressableScale haptic={false} onPress={() => setSent(null)} style={styles.backLink}>
               <AppText variant="subhead" color={palette.blue}>
                 Başqa üsulla

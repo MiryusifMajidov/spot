@@ -6,6 +6,7 @@ import {
   Inter_800ExtraBold,
   useFonts,
 } from '@expo-google-fonts/inter';
+import * as Linking from 'expo-linking';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -14,6 +15,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { UiHost } from '@/components/ui/UiHost';
+import { handleAuthDeepLink } from '@/lib/auth';
+import { successFeedback } from '@/lib/feedback';
+import { toast } from '@/store/ui';
 import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
 
@@ -33,6 +37,34 @@ export default function RootLayout() {
 
   useEffect(() => {
     bootstrap();
+  }, [bootstrap]);
+
+  /* E-poçt girişi burada bitir.
+     Supabase's hosted mailer sends a LINK (a code needs a paid SMTP provider to
+     edit the template), so the person taps it, the browser verifies and bounces
+     to `spot://auth-callback`, and the app is opened with the credentials on the
+     URL. This turns that into a session — for both a cold start and an app that
+     was already running.
+     A URL that carries nothing to exchange is ignored silently: not every
+     deep link into this app is a login. */
+  useEffect(() => {
+    let alive = true;
+    const finish = (url: string | null) => {
+      if (!alive || !url) return;
+      handleAuthDeepLink(url).then((ok) => {
+        if (ok && alive) {
+          successFeedback();
+          toast('Hesabın qorundu — indi başqa telefondan da girə bilərsən');
+          void bootstrap();
+        }
+      });
+    };
+    void Linking.getInitialURL().then(finish);
+    const sub = Linking.addEventListener('url', (e) => finish(e.url));
+    return () => {
+      alive = false;
+      sub.remove();
+    };
   }, [bootstrap]);
 
   return (

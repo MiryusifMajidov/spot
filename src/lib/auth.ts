@@ -148,7 +148,7 @@ export async function signInWithGoogle(): Promise<void> {
 /** Turn the redirect URL into a session. Handles both the PKCE `code` form and
  *  the older fragment form, because which one arrives depends on the project's
  *  flow setting and we do not control it from here. */
-async function completeFromUrl(url: string): Promise<void> {
+export async function completeFromUrl(url: string): Promise<void> {
   const parsed = Linking.parse(url);
   const code = (parsed.queryParams?.code as string | undefined) ?? undefined;
   if (code) {
@@ -192,9 +192,18 @@ export async function sendEmailCode(email: string): Promise<{ linking: boolean }
   await requireProvider('email');
 
   const anon = await isAnonymous();
+  /* `emailRedirectTo` is what makes the link in the e-mail come BACK into the
+     app instead of dead-ending on a web page. It matters more than it looks:
+     Supabase now refuses to let you edit the e-mail templates without a paid
+     custom SMTP provider, so `{{ .Token }}` cannot be added and the default
+     template sends a LINK and no code. The link is therefore the path that
+     works with zero configuration — see `handleAuthDeepLink`. */
   const { error } = anon
-    ? await supabase.auth.updateUser({ email: clean })
-    : await supabase.auth.signInWithOtp({ email: clean, options: { shouldCreateUser: true } });
+    ? await supabase.auth.updateUser({ email: clean }, { emailRedirectTo: AUTH_REDIRECT })
+    : await supabase.auth.signInWithOtp({
+        email: clean,
+        options: { shouldCreateUser: true, emailRedirectTo: AUTH_REDIRECT },
+      });
 
   if (error) {
     const m = String(error.message ?? '').toLowerCase();
@@ -304,4 +313,32 @@ export async function signOut(): Promise<void> {
   if (await isAnonymous()) throw new Error('anonymous-signout-blocked');
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
+}
+
+// ----------------------------------------------------------------- deep links
+/**
+ * The app was opened by a `spot://auth-callback…` URL.
+ *
+ * This is how e-mail sign-in finishes. Supabase's hosted mailer sends a link,
+ * not a code — editing the template to add `{{ .Token }}` requires a paid custom
+ * SMTP provider, which is not a reasonable thing to demand before the first
+ * login works. Tapping the link opens the browser for an instant, Supabase
+ * verifies the token and redirects to `spot://auth-callback`, and this turns
+ * that URL into a session.
+ *
+ * Returns true when a session really came out of it, so the caller can say
+ * «hesabın qorundu» only when it happened.
+ */
+export async function handleAuthDeepLink(url: string): Promise<boolean> {
+  if (!url || !url.includes('auth-callback')) return false;
+  // Nothing to exchange: not every deep link on this path carries credentials.
+  const hasCode = url.includes('code=');
+  const hasToken = url.includes('access_token=');
+  if (!hasCode && !hasToken) return false;
+  try {
+    await completeFromUrl(url);
+    return true;
+  } catch {
+    return false;
+  }
 }
