@@ -29,7 +29,10 @@ export default function Settings() {
   /* Which identity is behind the session right now. Read from the server, not
      guessed: `is_anonymous` is the difference between «an account» and «a file
      on this phone». */
-  const [ident, setIdent] = useState<{ kind: 'anonymous' | 'google' | 'phone' | 'email' | 'none'; label: string | null }>({
+  const [ident, setIdent] = useState<{
+    kind: 'anonymous' | 'google' | 'apple' | 'phone' | 'email' | 'none';
+    label: string | null;
+  }>({
     kind: 'none',
     label: null,
   });
@@ -127,7 +130,10 @@ export default function Settings() {
               icon="shield"
               iconBg={palette.voltDeep}
               title="Giriş"
-              value={ident.label ?? (ident.kind === 'google' ? 'Google' : 'Nömrə')}
+              value={
+                ident.label ??
+                (ident.kind === 'google' ? 'Google' : ident.kind === 'apple' ? 'Apple' : 'Nömrə')
+              }
               chevron={false}
               onPress={signOutRow}
             />

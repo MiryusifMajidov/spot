@@ -15,7 +15,8 @@ import {
   normalizePhone,
   sendEmailCode,
   sendPhoneCode,
-  signInWithGoogle,
+  SOCIAL_PROVIDER,
+  signInWithSocial,
 } from '@/lib/auth';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { hasSupabaseConfig } from '@/lib/supabase';
@@ -46,7 +47,7 @@ export default function SignIn() {
   const router = useRouter();
   const profileName = useAppStore((s) => s.profile.name);
 
-  const [busy, setBusy] = useState<null | 'google' | Channel>(null);
+  const [busy, setBusy] = useState<null | 'social' | Channel>(null);
   const [sent, setSent] = useState<{ channel: Channel; to: string; linking: boolean } | null>(null);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -55,24 +56,35 @@ export default function SignIn() {
   const e164 = normalizePhone(phone);
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
 
+  /* Android shows Google, iOS shows Apple — see SOCIAL_PROVIDER. The label is
+     derived from it so the two never drift apart. */
+  const socialLabel = SOCIAL_PROVIDER === 'apple' ? 'Apple' : 'Google';
+
   const setupMessage = (e: unknown): string | null => {
     if (!(e instanceof AuthSetupError)) return null;
-    const what = e.what === 'google' ? 'Google girişi' : e.what === 'phone' ? 'SMS ilə giriş' : 'E-poçt ilə giriş';
+    const what =
+      e.what === 'google'
+        ? 'Google girişi'
+        : e.what === 'apple'
+          ? 'Apple girişi'
+          : e.what === 'phone'
+            ? 'SMS ilə giriş'
+            : 'E-poçt ilə giriş';
     return `${what} hələ açılmayıb. Bu, tətbiqin deyil, serverin ayarıdır.`;
   };
 
-  const google = async () => {
+  const social = async () => {
     if (!hasSupabaseConfig) return toast('Server bağlantısı yoxdur', 'error');
-    setBusy('google');
+    setBusy('social');
     try {
-      await signInWithGoogle();
+      await signInWithSocial();
       successFeedback();
-      toast('Hesabın Google ilə qorundu');
+      toast(`Hesabın ${socialLabel} ilə qorundu`);
       router.back();
     } catch (e) {
       if (String((e as Error)?.message ?? '') === 'cancelled') return; // browser closed
       errorFeedback();
-      toast(setupMessage(e) ?? 'Google girişi alınmadı — yenidən cəhd et', 'error');
+      toast(setupMessage(e) ?? `${socialLabel} girişi alınmadı — yenidən cəhd et`, 'error');
     } finally {
       setBusy(null);
     }
@@ -221,14 +233,14 @@ export default function SignIn() {
             />
 
             <AppText variant="overline" color={palette.caption} style={styles.label}>
-              GOOGLE İLƏ
+              {socialLabel.toLocaleUpperCase('az')} İLƏ
             </AppText>
-            <PressableScale activeScale={0.98} onPress={google} disabled={!!busy} style={styles.googleBtn}>
-              {busy === 'google' ? (
+            <PressableScale activeScale={0.98} onPress={social} disabled={!!busy} style={styles.googleBtn}>
+              {busy === 'social' ? (
                 <ActivityIndicator color={palette.inkText} />
               ) : (
                 <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
-                  Google hesabı ilə davam et
+                  {socialLabel} hesabı ilə davam et
                 </AppText>
               )}
             </PressableScale>

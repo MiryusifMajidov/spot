@@ -29,6 +29,7 @@
  * rather than failing with a raw provider error.
  */
 import * as Linking from 'expo-linking';
+import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
 import { supabase } from './supabase';
@@ -37,7 +38,7 @@ import { supabase } from './supabase';
 export const AUTH_REDIRECT = Linking.createURL('auth-callback');
 
 export class AuthSetupError extends Error {
-  constructor(public readonly what: 'google' | 'phone' | 'email') {
+  constructor(public readonly what: 'google' | 'apple' | 'phone' | 'email') {
     super(`${what}-not-configured`);
     this.name = 'AuthSetupError';
   }
@@ -77,7 +78,7 @@ export async function enabledProviders(): Promise<Record<string, boolean> | null
 
 /** Throws `AuthSetupError` when we KNOW the provider is off. Silent when we
  *  could not ask — an unreachable settings endpoint is not a verdict. */
-async function requireProvider(name: 'google' | 'phone' | 'email'): Promise<void> {
+async function requireProvider(name: 'google' | 'apple' | 'phone' | 'email'): Promise<void> {
   const p = await enabledProviders();
   if (p && p[name] === false) throw new AuthSetupError(name);
 }
@@ -89,14 +90,14 @@ export async function isAnonymous(): Promise<boolean> {
 }
 
 /** The identity behind the current session, for the settings screen. */
-export async function currentIdentity(): Promise<{ kind: 'anonymous' | 'google' | 'phone' | 'email' | 'none'; label: string | null }> {
+export async function currentIdentity(): Promise<{ kind: 'anonymous' | 'google' | 'apple' | 'phone' | 'email' | 'none'; label: string | null }> {
   const { data } = await supabase.auth.getUser();
   const u = data.user;
   if (!u) return { kind: 'none', label: null };
   if (u.is_anonymous) return { kind: 'anonymous', label: null };
   if (u.phone) return { kind: 'phone', label: u.phone };
-  const google = (u.identities ?? []).find((i) => i.provider === 'google');
-  if (google) return { kind: 'google', label: u.email ?? null };
+  const social = (u.identities ?? []).find((i) => i.provider === 'google' || i.provider === 'apple');
+  if (social) return { kind: social.provider as 'google' | 'apple', label: u.email ?? null };
   if (u.email) return { kind: 'email', label: u.email };
   return { kind: 'anonymous', label: null };
 }
@@ -111,17 +112,40 @@ export async function currentIdentity(): Promise<{ kind: 'anonymous' | 'google' 
  * client runs with `detectSessionInUrl: false`, which is correct for a native
  * app, so nothing picks it up on its own.
  */
+/**
+ * The social provider THIS platform offers.
+ *
+ * Android shows Google, iOS shows Apple — a product decision, and on iOS also
+ * the simplest way to satisfy App Store guideline 4.8: an app that offers a
+ * third-party login must offer an equivalent alternative, and an app whose only
+ * social login IS Sign in with Apple has nothing to pair it with.
+ *
+ * E-mail stays on both platforms regardless. Without it an account created with
+ * Google on an Android phone could never be opened on an iPhone, which is the
+ * exact «account you cannot reach» problem this whole module exists to end.
+ */
+export const SOCIAL_PROVIDER: 'google' | 'apple' = Platform.OS === 'ios' ? 'apple' : 'google';
+
+/** Google on Android, Apple on iOS — same browser flow, same linking rules. */
+export async function signInWithSocial(): Promise<void> {
+  return signInWithProvider(SOCIAL_PROVIDER);
+}
+
 export async function signInWithGoogle(): Promise<void> {
-  await requireProvider('google');
+  return signInWithProvider('google');
+}
+
+async function signInWithProvider(provider: 'google' | 'apple'): Promise<void> {
+  await requireProvider(provider);
   const anon = await isAnonymous();
 
   const start = anon
     ? await supabase.auth.linkIdentity({
-        provider: 'google',
+        provider,
         options: { redirectTo: AUTH_REDIRECT, skipBrowserRedirect: true },
       })
     : await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider,
         options: { redirectTo: AUTH_REDIRECT, skipBrowserRedirect: true },
       });
 
@@ -130,11 +154,11 @@ export async function signInWithGoogle(): Promise<void> {
     // «provider is not enabled» / «manual linking is disabled» — a configuration
     // gap, not something the person did. Say which one.
     if (m.includes('not enabled') || m.includes('disabled') || m.includes('unsupported')) {
-      throw new AuthSetupError('google');
+      throw new AuthSetupError(provider);
     }
     throw start.error;
   }
-  if (!start.data?.url) throw new AuthSetupError('google');
+  if (!start.data?.url) throw new AuthSetupError(provider);
 
   const result = await WebBrowser.openAuthSessionAsync(start.data.url, AUTH_REDIRECT);
   if (result.type !== 'success' || !result.url) {
