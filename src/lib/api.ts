@@ -536,8 +536,11 @@ function mapPartner(p: DbProfile, me: DbProfile | null, hereNow: boolean, gymDis
     age: p.age ?? 0,
     gender: (p.gender as Partner['gender']) ?? 'kişi',
     gymId: p.home_gym_id ?? '',
-    // Never surface a raw stored value — see toLevel.
-    level: toLevel(p.level) ?? 'Orta',
+    /* Never surface a raw stored value — see toLevel — and never invent one.
+       This used to fall back to 'Orta', so a person who never answered the level
+       question was shown to everybody else as an intermediate lifter, and the
+       compatibility card could say «Yaxın səviyyə» about a number nobody gave. */
+    level: toLevel(p.level),
     goals: p.goals ?? [],
     types: p.types ?? [],
     usualTime: p.time_slot ?? '',

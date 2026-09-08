@@ -70,7 +70,10 @@ export interface Partner {
   age: number;
   gender: Gender;
   gymId: string;
-  level: Level;
+  /** null = this person never answered the level question. Render it as
+   *  «göstərilməyib», never as a guess — the matching card explains itself with
+   *  this field and an invented value becomes an invented reason. */
+  level: Level | null;
   goals: string[];
   types: string[];
   usualTime: string; // "Axşam 18:00–20:00"

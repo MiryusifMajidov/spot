@@ -140,7 +140,7 @@ export default function PartnerDetail() {
               )}
             </View>
             <AppText variant="callout" color={palette.textSecondary} style={{ marginTop: 2 }}>
-              {p.level} · {p.usualTime}
+              {[p.level ?? 'Səviyyə göstərilməyib', p.usualTime].filter(Boolean).join(' · ')}
             </AppText>
             {score === null ? (
               <PressableScale

@@ -343,7 +343,7 @@ function CardFace({ partner }: { partner: Partner }) {
       </View>
       <View style={styles.body}>
         <View style={styles.grid}>
-          <DataCell label="Səviyyə" value={partner.level} />
+          <DataCell label="Səviyyə" value={partner.level ?? 'göstərilməyib'} />
           <DataCell label="Məqsəd" value={partner.goals[0] ?? '—'} />
           <DataCell label="Qrafik" value={partner.usualTime.replace(/\s?\d.*/, '') || partner.usualTime} volt />
           <DataCell label="Tip" value={partner.types[0] ?? '—'} />

@@ -118,7 +118,7 @@ export default function Profile() {
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.topIcons}>
-          <PressableScale activeScale={0.9} onPress={() => Share.share({ message: `${name} — SPOT fitness profili. ${gym ? gym.name + ' · ' : ''}${profile.level} səviyyə.` }).catch(() => {})}>
+          <PressableScale activeScale={0.9} onPress={() => Share.share({ message: `${name} — SPOT fitness profili.${gym ? ` ${gym.name}.` : ''}${profile.level ? ` ${profile.level} səviyyə.` : ''}` }).catch(() => {})}>
             <Icon name="share" size={24} color={palette.inkText} />
           </PressableScale>
           <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/profile/settings')}>
@@ -139,7 +139,8 @@ export default function Profile() {
             {/* No home gym means the person simply has not picked one — never claim
                 "trains at home" on their behalf. */}
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 5 }}>
-              {gym ? gym.name : 'Zal seçilməyib'} · {azLower(profile.level)} səviyyə
+              {gym ? gym.name : 'Zal seçilməyib'}
+              {profile.level ? ` · ${azLower(profile.level)} səviyyə` : ' · səviyyə seçilməyib'}
             </AppText>
             <View style={styles.badges}>
               {profile.role === 'trainer' ? (

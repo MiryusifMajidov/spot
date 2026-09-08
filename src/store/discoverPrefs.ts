@@ -108,7 +108,10 @@ export function womenOnlyAllowed(gender: string | null | undefined): boolean {
 export function applyPartnerFilter(list: Partner[], f: PartnerFilter, viewerIsWoman = false): Partner[] {
   return list.filter((p) => {
     if (f.womenOnly && viewerIsWoman && p.gender !== 'qadın') return false;
-    if (f.levels.length && !f.levels.includes(p.level)) return false;
+    // A person with no stated level is not a match for a level filter — but they
+    // are not a mismatch either; excluding them is the honest reading of «show me
+    // beginners», since we do not know that they are one.
+    if (f.levels.length && (!p.level || !f.levels.includes(p.level))) return false;
     if (f.goals.length && !f.goals.some((g) => p.goals.includes(g))) return false;
     if (f.types.length && !f.types.some((t) => p.types.includes(t))) return false;
     if (f.slots.length && !f.slots.some((s) => slotMatches(p.usualTime, s))) return false;

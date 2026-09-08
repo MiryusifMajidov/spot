@@ -106,10 +106,12 @@ function toDbPatch(p: Profile) {
     gender: p.gender || null,
     age: p.age,
     home_gym_id: p.homeGymId,
-    level: p.level,
+    // Same rule as `username`: a field the person never answered is left alone,
+    // not overwritten with a default that would read as their choice.
+    ...(p.level ? { level: p.level } : {}),
     goals: p.goals,
     types: p.types,
-    time_slot: p.timeSlot,
+    ...(p.timeSlot ? { time_slot: p.timeSlot } : {}),
     bio: p.bio,
   };
 }
@@ -122,10 +124,19 @@ const emptyProfile: Profile = {
   // No gym until the person actually picks one — never claim a gym on their behalf.
   homeGymId: null,
   goals: [],
-  level: 'Orta',
+  /* NOT pre-chosen.
+     These three used to start as 'Orta', [0,2,4] and «Axşam 17–21», and
+     `saveProfile` sent them to the server unchanged — so anybody who tapped
+     «Keç» got a profile full of answers they never gave. Worse, the matching
+     engine then read them back and told two such strangers they had «Eyni saat»
+     and «Eyni səviyyə» in common: an invented reason on the one screen whose
+     whole job is to explain why these two people suit each other.
+     Empty means «not answered», and `saveProfile` omits an empty field rather
+     than writing a guess. */
+  level: '',
   types: [],
-  days: [0, 2, 4],
-  timeSlot: 'Axşam 17–21',
+  days: [],
+  timeSlot: '',
   bio: '',
   role: 'user',
   specialty: '',

@@ -58,7 +58,7 @@ export default function Done() {
           <View style={styles.sep} />
           <RecapRow icon="target" label="Məqsəd" value={profile.goals[0] ?? 'Seçilməyib'} />
           <View style={styles.sep} />
-          <RecapRow icon="flame" label="Səviyyə" value={profile.level} />
+          <RecapRow icon="flame" label="Səviyyə" value={profile.level || 'seçilməyib'} />
         </View>
       </View>
 

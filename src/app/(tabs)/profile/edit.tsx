@@ -258,7 +258,18 @@ export default function EditProfile() {
         <Segmented options={['Kişi', 'Qadın']} value={profile.gender === 'qadın' ? 1 : 0} onChange={(i) => setProfile({ gender: i === 0 ? 'kişi' : 'qadın' })} />
 
         <Label text="Səviyyə" />
-        <Segmented options={[...LEVELS]} value={Math.max(0, LEVELS.indexOf(profile.level as (typeof LEVELS)[number]))} onChange={(i) => setProfile({ level: LEVELS[i] })} />
+        {/* `Math.max(0, indexOf)` painted «Başlanğıc» as chosen for somebody who
+            never picked a level. The control now says so instead. */}
+        <Segmented
+          options={[...LEVELS]}
+          value={LEVELS.indexOf(profile.level as (typeof LEVELS)[number])}
+          onChange={(i) => setProfile({ level: LEVELS[i] })}
+        />
+        {!profile.level ? (
+          <AppText variant="caption" color={palette.caption} style={{ marginTop: 6 }}>
+            Səviyyə hələ seçilməyib — yoldaş uyğunluğunda «Səviyyə göstərilməyib» kimi görünürsən.
+          </AppText>
+        ) : null}
 
         <Label text="Əsas zal" />
         <PressableScale activeScale={0.98} onPress={pickGym} style={styles.pickRow}>
