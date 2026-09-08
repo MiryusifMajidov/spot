@@ -15,6 +15,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
 import { Partner } from '@/data/types';
 import { getPartner } from '@/lib/api';
+import { useFetchPhase } from '@/lib/focusFetch';
 import { useGyms, usePartnersForGym, useTrainers } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useDb } from '@/store/db';
@@ -77,6 +78,8 @@ export default function Discover() {
 
   const allPartners = usePartnersForGym(homeGymId ?? '');
   const trainers = useTrainers();
+  const trainerPhase = useFetchPhase('trainers');
+  const partnerPhase = useFetchPhase(homeGymId ? `partners:${homeGymId}` : '');
 
   const q = norm(query.trim());
   const visibleGyms = useMemo(() => {
@@ -314,9 +317,18 @@ export default function Discover() {
 
         {segment === 1 &&
           (visibleTrainers.length === 0 ? (
+            /* A read that never reached the server is not «there are none» —
+               see lib/focusFetch. Without this the app states a fact about the
+               world every time the connection wobbles. */
             <EmptyBlock
               icon="user"
-              text={q ? 'Bu ada uyğun müəllim tapılmadı.' : 'Hələ müəllim yoxdur. Zalını seç — müəllimlər orada görünəcək.'}
+              text={
+                trainerPhase === 'failed'
+                  ? 'Müəllimlər yüklənmədi — serverlə əlaqə alınmadı. Bu, müəllim olmadığı demək deyil.'
+                  : q
+                    ? 'Bu ada uyğun müəllim tapılmadı.'
+                    : 'Hələ müəllim yoxdur. Zalını seç — müəllimlər orada görünəcək.'
+              }
             />
           ) : (
             visibleTrainers.map((t) => (
@@ -393,11 +405,13 @@ export default function Discover() {
                   <EmptyBlock
                     icon="users"
                     text={
-                      q
-                        ? 'Bu axtarışa uyğun yoldaş yoxdur.'
-                        : partnerFilterN > 0
-                          ? 'Seçdiyin filtrə uyğun yoldaş yoxdur. Filtri yumşalt.'
-                          : 'Bu zalda hələ uyğun yoldaş yoxdur. Başqa zal seç və ya profilini tamamla.'
+                      partnerPhase === 'failed'
+                        ? 'Yoldaşlar yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda kimsə olmadığı demək deyil.'
+                        : q
+                          ? 'Bu axtarışa uyğun yoldaş yoxdur.'
+                          : partnerFilterN > 0
+                            ? 'Seçdiyin filtrə uyğun yoldaş yoxdur. Filtri yumşalt.'
+                            : 'Bu zalda hələ uyğun yoldaş yoxdur. Başqa zal seç və ya profilini tamamla.'
                     }
                   />
                 ) : (

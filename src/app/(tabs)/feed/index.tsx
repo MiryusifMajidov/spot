@@ -19,6 +19,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { CommunityPost, FeedVideo } from '@/data/feed';
 import { useAuthGate } from '@/lib/authGate';
+import { useFetchPhase } from '@/lib/focusFetch';
 import { useCommunityPosts, useFeedVideos, useGyms } from '@/lib/hooks';
 import { showReportReasons } from '@/lib/moderation';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
@@ -226,6 +227,7 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
      a list the server had already returned in an arbitrary order anyway, since
      every row's sort key was `ord: 0`. */
   const videos = useFeedVideos();
+  const videoPhase = useFetchPhase('feed_videos');
   const commentKeys = useMemo(() => videos.map((v) => videoKey(v.id)), [videos]);
   const commentCounts = useCommentCounts(commentKeys);
 
@@ -316,13 +318,22 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
             initialNumToRender={1}
             removeClippedSubviews
             ListEmptyComponent={
+              /* «Boş» ilə «oxuya bilmədik» eyni şey deyil. The fetch layer now
+                 reports which one it was (lib/focusFetch), so a failed read no
+                 longer claims nobody has ever posted anything. */
               <View style={[styles.videoEmpty, { height: h, paddingTop: insets.top + 80 }]}>
-                <Icon name="video" size={30} color="rgba(255,255,255,0.6)" />
-                <AppText style={{ color: palette.white, fontSize: 17, fontWeight: '700', marginTop: 14 }}>Hələ video yoxdur</AppText>
-                <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 8, maxWidth: 260 }}>
-                  Bu feed-də hələ heç nə paylaşılmayıb. Birinci sən ol — texnika videonu yüklə.
+                <Icon name={videoPhase === 'failed' ? 'x' : 'video'} size={30} color="rgba(255,255,255,0.6)" />
+                <AppText style={{ color: palette.white, fontSize: 17, fontWeight: '700', marginTop: 14 }}>
+                  {videoPhase === 'failed' ? 'Videolar yüklənmədi' : 'Hələ video yoxdur'}
                 </AppText>
-                <Button title="Video paylaş" variant="volt" icon="cam" onPress={openShare} style={{ marginTop: 20 }} />
+                <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 8, maxWidth: 260 }}>
+                  {videoPhase === 'failed'
+                    ? 'Serverlə əlaqə alınmadı — bu, feed-in boş olduğu demək deyil. İnterneti yoxlayıb yenidən aç.'
+                    : 'Bu feed-də hələ heç nə paylaşılmayıb. Birinci sən ol — texnika videonu yüklə.'}
+                </AppText>
+                {videoPhase === 'failed' ? null : (
+                  <Button title="Video paylaş" variant="volt" icon="cam" onPress={openShare} style={{ marginTop: 20 }} />
+                )}
               </View>
             }
           />
@@ -654,6 +665,7 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
   const router = useRouter();
   const gate = useAuthGate();
   const allPosts = useCommunityPosts();
+  const postPhase = useFetchPhase('community_posts');
   const [hidden, setHidden] = useState<string[]>([]);
   // With a home gym the tab shows THAT gym only — that is what "Zalım" promises.
   // Without one there is nothing to filter by, so we show every gym and the tab
@@ -725,16 +737,24 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
           )}
           ListEmptyComponent={
             <View style={styles.communityEmpty}>
-              <Icon name="msg" size={28} color={palette.tertiary} />
+              <Icon name={postPhase === 'failed' ? 'x' : 'msg'} size={28} color={palette.tertiary} />
               <AppText variant="headline" center style={{ marginTop: 14 }}>
-                {homeGymName ? `${homeGymName} zalında hələ post yoxdur` : 'Hələ post yoxdur'}
+                {postPhase === 'failed'
+                  ? 'Postlar yüklənmədi'
+                  : homeGymName
+                    ? `${homeGymName} zalında hələ post yoxdur`
+                    : 'Hələ post yoxdur'}
               </AppText>
               <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, lineHeight: 21, maxWidth: 270 }}>
-                {homeGymName
-                  ? 'Nailiyyətini, sualını və ya motivasiyanı yaz — zalındakılar görəcək. Digər zalların postları burada göstərilmir.'
-                  : 'İcmada hələ heç nə paylaşılmayıb. Birinci sən ol.'}
+                {postPhase === 'failed'
+                  ? 'Serverlə əlaqə alınmadı — burada post olmadığı demək deyil. İnterneti yoxlayıb yenidən aç.'
+                  : homeGymName
+                    ? 'Nailiyyətini, sualını və ya motivasiyanı yaz — zalındakılar görəcək. Digər zalların postları burada göstərilmir.'
+                    : 'İcmada hələ heç nə paylaşılmayıb. Birinci sən ol.'}
               </AppText>
-              <Button title="İlk postu yaz" icon="plus" onPress={openCompose} style={{ marginTop: 20 }} />
+              {postPhase === 'failed' ? null : (
+                <Button title="İlk postu yaz" icon="plus" onPress={openCompose} style={{ marginTop: 20 }} />
+              )}
             </View>
           }
         />

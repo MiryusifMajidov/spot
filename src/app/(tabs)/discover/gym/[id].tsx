@@ -47,14 +47,27 @@ interface GymReview {
   text: string;
 }
 
-/** Real reviews only. No fallback rows — an empty gym shows an empty state. */
+/** Real reviews only. No fallback rows — an empty gym shows an empty state.
+ *
+ *  «Loaded» used to be set to true by the catch handler as well, so a read that
+ *  THREW was indistinguishable from a gym with no reviews and the screen printed
+ *  «Hələ rəy yoxdur» over a question it never got to ask. A failed read is now
+ *  its own state, and the query's own `error` counts as a failure too — it does
+ *  not throw, it comes back in the result. */
 function useGymReviews(gymId: string) {
   const [rows, setRows] = useState<GymReview[]>([]);
   const [loaded, setLoaded] = useState(!hasSupabaseConfig);
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
     if (!hasSupabaseConfig || !gymId) return;
-    const { data } = await supabase.from('reviews').select('*').eq('gym_id', gymId).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('reviews').select('*').eq('gym_id', gymId).order('created_at', { ascending: false });
+    if (error) {
+      setFailed(true);
+      setLoaded(false);
+      return;
+    }
+    setFailed(false);
     setRows(
       (data ?? []).map((r: { id: string; name: string; tenure: string | null; rating: number; body: string }) => ({
         id: r.id,
@@ -69,11 +82,14 @@ function useGymReviews(gymId: string) {
 
   useFocusEffect(
     useCallback(() => {
-      load().catch(() => setLoaded(true));
+      load().catch(() => {
+        setFailed(true);
+        setLoaded(false);
+      });
     }, [load])
   );
 
-  return { rows, loaded, reload: load };
+  return { rows, loaded, failed, reload: load };
 }
 
 export default function GymDetail() {
@@ -126,7 +142,7 @@ export default function GymDetail() {
 
   const members = usePartnersForGym(id);
   const gymTrainers = useTrainersForGym(id);
-  const { rows: reviews, loaded: reviewsLoaded, reload: reloadReviews } = useGymReviews(id);
+  const { rows: reviews, loaded: reviewsLoaded, failed: reviewsFailed, reload: reloadReviews } = useGymReviews(id);
 
   // Presence is only ever claimed for people with a live check-in row.
   const [hereNow, setHereNow] = useState<Partner[]>([]);
@@ -663,7 +679,12 @@ export default function GymDetail() {
                     </View>
                   ))}
 
-                  {reviewsLoaded && totalReviews === 0 ? (
+                  {reviewsFailed ? (
+                    <EmptyState
+                      icon="x"
+                      text="Rəylər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda rəy olmadığı demək deyil."
+                    />
+                  ) : reviewsLoaded && totalReviews === 0 ? (
                     <EmptyState
                       icon="star"
                       text={
@@ -683,7 +704,7 @@ export default function GymDetail() {
   );
 }
 
-function EmptyState({ icon, text }: { icon: 'user' | 'users' | 'star'; text: string }) {
+function EmptyState({ icon, text }: { icon: 'user' | 'users' | 'star' | 'x'; text: string }) {
   return (
     <View style={styles.emptyState}>
       <Icon name={icon} size={24} color={palette.tertiary} />
