@@ -35,12 +35,12 @@ interface PanelData {
   now: number;
   today: number;
   byHour: number[];
-  // Day-pass registrations are a count only. SPOT takes no money and shows no
+  // Day-pass registrations are counts only. SPOT takes no money and shows no
   // money total anywhere — a summed price is an earnings figure and is banned.
-  passes: { count: number };
+  passes: { live: number; usedToday: number };
 }
 
-const EMPTY: PanelData = { members: 0, now: 0, today: 0, byHour: new Array(24).fill(0), passes: { count: 0 } };
+const EMPTY: PanelData = { members: 0, now: 0, today: 0, byHour: new Array(24).fill(0), passes: { live: 0, usedToday: 0 } };
 
 /** Cover photo + map pin — read straight off the gym row (not part of OwnedGym). */
 interface GymMedia {
@@ -105,7 +105,7 @@ export default function GymPanel() {
       now: occ.ok ? occ.value.now : 0,
       today: occ.ok ? occ.value.today : 0,
       byHour: occ.ok ? occ.value.byHour : new Array(24).fill(0),
-      passes: passes.ok ? { count: passes.value.count } : { count: 0 },
+      passes: passes.ok ? passes.value : { live: 0, usedToday: 0 },
     });
     setClaim(claimRow.ok ? claimRow.value : null);
     setClaimKnown(claimRow.ok);
@@ -299,12 +299,14 @@ export default function GymPanel() {
           )}
         </View>
 
-        {/* Day-pass — informational only. SPOT charges nothing and holds no money. */}
+        {/* Day-pass — informational only. SPOT charges nothing and holds no money.
+            The two numbers are today's, not all time: nothing expires a pass, so
+            an all-time count only ever grew and said nothing about the door. */}
         <View style={styles.card}>
           <View style={styles.cardHead}>
             <AppText variant="headline">Day-pass</AppText>
             <AppText variant="caption" color={palette.tertiary}>
-              ümumi qeydiyyat
+              bu gün
             </AppText>
           </View>
           {errors.passes ? (
@@ -313,19 +315,20 @@ export default function GymPanel() {
               title="Day-pass məlumatı yüklənmədi"
               body="Bu, «day-pass yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və səhifəni aşağı çəkib yenilə."
             />
-          ) : data.passes.count > 0 ? (
+          ) : data.passes.live > 0 || data.passes.usedToday > 0 ? (
             <View style={{ gap: 10 }}>
-              <Row label="Qeydə alınan day-pass" value={`${data.passes.count}`} />
+              <Row label="İndi keçərli" value={`${data.passes.live}`} />
+              <Row label="Resepsiyada təsdiqlənən" value={`${data.passes.usedToday}`} />
               <View style={styles.divider} />
               <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.tertiary }}>
-                SPOT ödəniş qəbul etmir və komissiya tutmur — pul zalda ödənilir. Ona görə burada yalnız qeydiyyat
-                sayı göstərilir.
+                SPOT ödəniş qəbul etmir və komissiya tutmur — pul zalda ödənilir. Ona görə burada yalnız say
+                göstərilir.
               </AppText>
             </View>
           ) : (
             <EmptyNote
               inset
-              title={loaded ? 'Hələ day-pass qeydə alınmayıb' : 'Yüklənir…'}
+              title={loaded ? 'Bu gün day-pass qeydə alınmayıb' : 'Yüklənir…'}
               body={
                 loaded
                   ? 'Üzv olmayan biri zalını day-pass ilə seçəndə burada görünəcək. SPOT ödəniş qəbul etmir — pul zalda ödənilir.'
@@ -333,6 +336,13 @@ export default function GymPanel() {
               }
             />
           )}
+          <Button
+            title="Kodu yoxla"
+            variant="secondary"
+            full
+            onPress={() => router.push('/gym/pass')}
+            style={{ marginTop: 14, height: 44 }}
+          />
         </View>
 
         {/* Where customers find this gym on the map */}

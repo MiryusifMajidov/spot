@@ -25,6 +25,7 @@ export default function GymLayout() {
       <Tabs.Screen name="edit" options={{ href: null }} />
       <Tabs.Screen name="claim" options={{ href: null }} />
       <Tabs.Screen name="qr" options={{ href: null }} />
+      <Tabs.Screen name="pass" options={{ href: null }} />
     </Tabs>
   );
 }

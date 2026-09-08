@@ -791,29 +791,52 @@ export async function createReport(input: {
 }
 
 // -------------------- day-pass --------------------
-/** Record a day-pass. SPOT charges nothing and takes NO commission — `price` is
- *  the gym's informational price, paid at the gym. Returns the door code the
- *  member shows at reception (useless if we swallowed it). */
-export async function buyDayPass(gymId: string, price: number): Promise<{ code: string; expiresAt: string }> {
-  const uid = await getUserId();
-  if (!uid) throw new Error('no session');
-  const code = Math.random().toString(36).slice(2, 8).toUpperCase();
-  const end = new Date();
-  end.setHours(23, 59, 59, 0);
-  const expiresAt = end.toISOString();
-  const { error } = await supabase.from('day_passes').insert({
-    user_id: uid,
-    gym_id: gymId,
-    code,
-    price,
-    // There is no `commission` column any more. It existed, defaulted to 0, and
-    // was written as 0 here — but a commission field in the schema is a place for
-    // a commission to appear later, and SPOT takes none. schema27 drops it.
-    status: 'active',
-    expires_at: expiresAt,
-  });
+export interface DayPass {
+  code: string;
+  expiresAt: string;
+  /** The gym's own informational price, as the server read it. */
+  price: number;
+}
+
+/** Ask the server to issue today's day-pass for this gym.
+ *
+ *  The code and the price are the SERVER's: this used to build the code with
+ *  Math.random() on the phone and INSERT it, price included, which meant the
+ *  number the gym owner's panel counts as a visit was whatever the client felt
+ *  like writing. `create_day_pass` is now the only way a row is created.
+ *
+ *  Calling it twice returns the SAME pass while it is still live, so the button
+ *  cannot stack registrations and a lost code can be recovered by pressing again.
+ *  SPOT charges nothing; the price is paid to the gym at the door. */
+export async function createDayPass(gymId: string): Promise<DayPass & { reused: boolean }> {
+  const { data, error } = await supabase.rpc('create_day_pass', { g_id: gymId });
   if (error) throw error;
-  return { code, expiresAt };
+  const r = (data ?? {}) as { code?: string; expires_at?: string; price?: number; reused?: boolean };
+  if (!r.code || !r.expires_at) throw new Error('bad-pass');
+  return { code: r.code, expiresAt: r.expires_at, price: Number(r.price ?? 0), reused: !!r.reused };
+}
+
+/** The caller's live pass for this gym, or null when there is none.
+ *
+ *  Without this the code existed only in a `useState` on the gym screen: leaving
+ *  the screen threw away the thing the person was told to show at reception,
+ *  while the row stayed in the database. `null` means «no live pass»; a THROW
+ *  means we do not know, and the caller must not draw either state. */
+export async function getMyDayPass(gymId: string): Promise<DayPass | null> {
+  const uid = await getUserId();
+  if (!uid) return null;
+  const { data, error } = await supabase
+    .from('day_passes')
+    .select('code,expires_at,price')
+    .eq('user_id', uid)
+    .eq('gym_id', gymId)
+    .eq('status', 'active')
+    .gt('expires_at', new Date().toISOString())
+    .order('purchased_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  const row = (data ?? [])[0] as { code: string; expires_at: string; price: number } | undefined;
+  return row ? { code: row.code, expiresAt: row.expires_at, price: Number(row.price ?? 0) } : null;
 }
 
 /** Upload a picked video to Supabase Storage and publish it as a feed video.

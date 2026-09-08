@@ -18,12 +18,11 @@ import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
 import { Tag } from '@/components/ui/Tag';
 import { Gym, Partner } from '@/data/types';
-import { buyDayPass, getGym, getWhoIsHere } from '@/lib/api';
+import { createDayPass, DayPass, getGym, getMyDayPass, getMyProfile, getWhoIsHere } from '@/lib/api';
 import { useAuthGate } from '@/lib/authGate';
 import { usePartnersForGym, useTrainersForGym } from '@/lib/hooks';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { showModerationSheet } from '@/lib/moderation';
-import { getMyProfile } from '@/lib/api';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { gymById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
@@ -181,9 +180,32 @@ export default function GymDetail() {
   const [reviewText, setReviewText] = useState('');
   const [savingReview, setSavingReview] = useState(false);
   const [buyingPass, setBuyingPass] = useState(false);
-  // The door code the member shows at reception. A pass without its code is useless,
-  // so it stays on screen until they leave the gym page.
-  const [dayPass, setDayPass] = useState<{ code: string; expiresAt: string } | null>(null);
+  /* The door code the member shows at reception. It used to live ONLY here, so
+     stepping off this screen threw it away while the row stayed in the database —
+     the person lost the one thing they were told to show, and the button offered
+     to register a second pass. It is read back from the server on every focus.
+     `undefined` = not asked yet, `null` = asked and there is none. */
+  const [dayPass, setDayPass] = useState<DayPass | null | undefined>(undefined);
+  const [passReadFailed, setPassReadFailed] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasSupabaseConfig) return;
+      let alive = true;
+      getMyDayPass(id)
+        .then((p) => {
+          if (!alive) return;
+          setDayPass(p);
+          setPassReadFailed(false);
+        })
+        // A failed read is NOT «no pass»: leaving the button live would let the
+        // person register a second one over a first we simply could not see.
+        .catch(() => alive && setPassReadFailed(true));
+      return () => {
+        alive = false;
+      };
+    }, [id])
+  );
 
   const submitReview = async () => {
     const body = reviewText.trim();
@@ -243,9 +265,13 @@ export default function GymDetail() {
       }
       setBuyingPass(true);
       try {
-        const pass = await buyDayPass(gym.id, gym.dayPass);
+        const pass = await createDayPass(gym.id);
         setDayPass(pass);
-        toast('Day-pass qeydə alındı — kod aşağıdadır');
+        setPassReadFailed(false);
+        // Pressing again while a pass is live returns the SAME one. Saying
+        // «qeydə alındı» then would claim a second registration that did not
+        // happen, so the two cases are named apart.
+        toast(pass.reused ? 'Bu zal üçün day-pass artıq var — kod aşağıdadır' : 'Day-pass qeydə alındı — kod aşağıdadır');
       } catch {
         toast('Day-pass alınmadı — yenidən cəhd et', 'error');
       } finally {
@@ -403,9 +429,17 @@ export default function GymDetail() {
                 style={{ flex: 1, height: 46 }}
               />
               <Button
-                title={buyingPass ? 'Alınır…' : dayPass ? 'Day-pass aktivdir' : `1 günlük · ${gym.dayPass} ₼`}
+                title={
+                  buyingPass
+                    ? 'Alınır…'
+                    : dayPass
+                      ? 'Day-pass aktivdir'
+                      : passReadFailed
+                        ? 'Day-pass yoxlanılmadı'
+                        : `1 günlük · ${gym.dayPass} ₼`
+                }
                 variant="secondary"
-                disabled={buyingPass || !!dayPass}
+                disabled={buyingPass || !!dayPass || passReadFailed}
                 onPress={getDayPass}
                 style={{ flex: 1, height: 46 }}
               />
@@ -425,8 +459,16 @@ export default function GymDetail() {
                 </View>
                 <AppText style={styles.passCode}>{dayPass.code}</AppText>
                 <AppText variant="footnote" color={palette.text3} style={{ marginTop: 6, lineHeight: 18 }}>
-                  Resepsiyada bu kodu göstər — bu gün {hhmm(dayPass.expiresAt)}-a qədər keçərlidir. {gym.dayPass} ₼ zalın özünə
-                  ödənilir; SPOT komissiya götürmür.
+                  Resepsiyada bu kodu göstər — zal onu SPOT panelindən yoxlayır. Bu gün {hhmm(dayPass.expiresAt)}-a qədər
+                  keçərlidir. {dayPass.price} ₼ zalın özünə ödənilir; SPOT komissiya götürmür.
+                </AppText>
+              </View>
+            ) : passReadFailed ? (
+              /* Not «you have no pass» — we could not find out. Drawing the buy
+                 button over a pass that exists is how someone ends up with two. */
+              <View style={styles.passCard}>
+                <AppText variant="footnote" color={palette.text3} style={{ lineHeight: 18 }}>
+                  Day-pass məlumatın yüklənmədi — bu, day-pass olmadığı demək deyil. Bağlantını yoxlayıb səhifəni yenilə.
                 </AppText>
               </View>
             ) : null}

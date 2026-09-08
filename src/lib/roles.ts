@@ -353,17 +353,55 @@ export async function getGymOccupancy(gymId: string): Promise<{ now: number; byH
 }
 
 /** Day-passes recorded for this gym. Display-only money — SPOT charges nothing. */
-export async function getGymDayPasses(gymId: string): Promise<{ count: number }> {
+export async function getGymDayPasses(gymId: string): Promise<{ live: number; usedToday: number }> {
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
   const { data, error } = await supabase
     .from('day_passes')
-    .select('id')
+    .select('status,expires_at,used_at')
     .eq('gym_id', gymId)
-    .in('status', ['active', 'used']);
+    .gte('purchased_at', dayStart.toISOString());
   // Otherwise «Hələ day-pass qeydə alınmayıb» would be printed over a read that failed.
   if (error) throw error;
-  // A COUNT, never a sum. This used to also return `total` — the day-pass prices
-  // added up — which is an earnings figure for the gym owner. Nothing rendered it,
-  // but a money total computed and handed to the panel is one line away from being
-  // shown, and SPOT surfaces no revenue anywhere.
-  return { count: (data ?? []).length };
+
+  // This used to be one all-time count of every pass ever created, under the
+  // label «Qeydə alınan day-pass». Nothing expires a pass, so that number only
+  // ever grew and told the owner nothing about today — the same reason schema58
+  // removed `daypass_active` from the admin dashboard. Two numbers an owner can
+  // act on replace it: how many passes are live right now, and how many were
+  // actually honoured at the door today.
+  const now = Date.now();
+  const rows = (data ?? []) as { status: string; expires_at: string | null; used_at: string | null }[];
+  return {
+    live: rows.filter((r) => r.status === 'active' && r.expires_at && Date.parse(r.expires_at) > now).length,
+    usedToday: rows.filter((r) => r.status === 'used').length,
+  };
+  // Still a COUNT, never a sum. This used to also return `total` — the day-pass
+  // prices added up — which is an earnings figure for the gym owner. SPOT
+  // surfaces no revenue anywhere.
+}
+
+export type PassCheck = {
+  state: 'valid' | 'used' | 'expired' | 'refunded' | 'not_found' | 'redeemed';
+  gym_id?: string;
+  price?: number;
+  purchased_at?: string;
+  expires_at?: string;
+  used_at?: string;
+};
+
+/** Look a day-pass code up at a gym the caller owns. Changes nothing.
+ *  Returns the pass state and NOTHING about the visitor — reception needs to
+ *  know the code is good, not who is holding it. */
+export async function checkDayPass(code: string): Promise<PassCheck> {
+  const { data, error } = await supabase.rpc('check_day_pass', { p_code: code });
+  if (error) throw error;
+  return (data ?? { state: 'not_found' }) as PassCheck;
+}
+
+/** Mark a day-pass honoured at the door. One-way, owner-only. */
+export async function redeemDayPass(code: string): Promise<PassCheck> {
+  const { data, error } = await supabase.rpc('redeem_day_pass', { p_code: code });
+  if (error) throw error;
+  return (data ?? { state: 'not_found' }) as PassCheck;
 }
