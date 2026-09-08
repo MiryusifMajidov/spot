@@ -17,7 +17,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Partner } from '@/data/types';
 import { useAuthGate } from '@/lib/authGate';
-import { usePartnerDeck } from '@/lib/hooks';
+import { usePartnerDeck, usePartnersPhase } from '@/lib/hooks';
 import { gymById, seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { applyPartnerFilter, partnerFilterCount, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
@@ -77,6 +77,7 @@ export default function Cards() {
   const isWoman = womenOnlyAllowed(useAppStore((s) => s.profile.gender));
   const gate = useAuthGate();
   const deck = usePartnerDeck(homeGymId ?? '');
+  const phase = usePartnersPhase(homeGymId ?? '');
   const filter = useDiscoverPrefs((s) => s.partnerFilter);
   const savedPartners = useDiscoverPrefs((s) => s.savedPartners);
   const toggleSavedPartner = useDiscoverPrefs((s) => s.toggleSavedPartner);
@@ -227,26 +228,42 @@ export default function Cards() {
              today's 30 are spent, the filter is too tight, nobody here clears 60 %,
              or there is genuinely nobody left. */
           <View style={styles.empty}>
-            <Icon name={emptyKind === 'cap' ? 'clock' : emptyKind === 'gate' ? 'target' : 'users'} size={30} color={palette.tertiary} />
+            {/* A FIFTH reason the deck can be empty, and the only one that is not
+                about the user: the request for this gym's people failed. Saying
+                «Hamısını gördün» then claims a measurement — that we looked and
+                there is nobody — over a read that never happened. */}
+            <Icon
+              name={phase === 'failed' ? 'x' : emptyKind === 'cap' ? 'clock' : emptyKind === 'gate' ? 'target' : 'users'}
+              size={30}
+              color={phase === 'failed' ? palette.red : palette.tertiary}
+            />
             <AppText variant="headline" style={{ marginTop: 12 }} center>
-              {emptyKind === 'cap'
-                ? 'Bu günün kartları bitdi'
-                : emptyKind === 'filter'
-                  ? 'Filtrə uyğun kart yoxdur'
-                  : emptyKind === 'gate'
-                    ? 'Yüksək uyğunluqlu kart yoxdur'
-                    : 'Hamısını gördün'}
+              {phase === 'failed'
+                ? 'Kartlar yüklənmədi'
+                : phase === 'loading'
+                  ? 'Yüklənir…'
+                  : emptyKind === 'cap'
+                    ? 'Bu günün kartları bitdi'
+                    : emptyKind === 'filter'
+                      ? 'Filtrə uyğun kart yoxdur'
+                      : emptyKind === 'gate'
+                        ? 'Yüksək uyğunluqlu kart yoxdur'
+                        : 'Hamısını gördün'}
             </AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, maxWidth: 265, lineHeight: 21 }}>
-              {emptyKind === 'cap'
-                ? `Gündə ən çox ${DAILY_CAP} kart — az, ona görə hər birinə diqqətlə baxılır. Sabah səhər yenidən açılır.`
-                : emptyKind === 'filter'
-                  ? 'Seçdiyin filtrə uyğun yeni yoldaş qalmadı. Filtri yumşalt.'
-                  : emptyKind === 'gate'
-                    ? `Kartlarda yalnız uyğunluğu ${MIN_SCORE}%-dən yuxarı olanlar göstərilir. Bu zalda ${belowGate} nəfər var, amma uyğunluq bu həddən aşağıdır. Profilində saat, səviyyə və məqsədi doldur — uyğunluq dəqiqləşəcək.`
-                    : 'Bu zalda cavab vermədiyin yoldaş qalmadı. Yeni adam qoşulanda burada görünəcək.'}
+              {phase === 'failed'
+                ? 'Zalındakı adamların siyahısı serverdən gəlmədi — bu, kart olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç.'
+                : phase === 'loading'
+                  ? 'Zalındakı adamlar yüklənir.'
+                  : emptyKind === 'cap'
+                    ? `Gündə ən çox ${DAILY_CAP} kart — az, ona görə hər birinə diqqətlə baxılır. Sabah səhər yenidən açılır.`
+                    : emptyKind === 'filter'
+                      ? 'Seçdiyin filtrə uyğun yeni yoldaş qalmadı. Filtri yumşalt.'
+                      : emptyKind === 'gate'
+                        ? `Kartlarda yalnız uyğunluğu ${MIN_SCORE}%-dən yuxarı olanlar göstərilir. Bu zalda ${belowGate} nəfər var, amma uyğunluq bu həddən aşağıdır. Profilində saat, səviyyə və məqsədi doldur — uyğunluq dəqiqləşəcək.`
+                        : 'Bu zalda cavab vermədiyin yoldaş qalmadı. Yeni adam qoşulanda burada görünəcək.'}
             </AppText>
-            {emptyKind === 'filter' ? (
+            {phase === 'failed' || phase === 'loading' ? null : emptyKind === 'filter' ? (
               <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/discover/partner-filter')} style={styles.emptyBtn}>
                 <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>Filtri dəyiş</AppText>
               </PressableScale>

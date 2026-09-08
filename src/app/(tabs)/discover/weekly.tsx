@@ -11,7 +11,7 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Partner } from '@/data/types';
-import { usePartnersForGym } from '@/lib/hooks';
+import { usePartnersForGym, usePartnersPhase } from '@/lib/hooks';
 import { useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { applyPartnerFilter, isoWeekKey, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
@@ -28,6 +28,7 @@ export default function Weekly() {
   const setWeeklyPicks = useDiscoverPrefs((s) => s.setWeeklyPicks);
   const matches = useDb((s) => s.matches);
   const all = usePartnersForGym(homeGymId ?? '');
+  const phase = usePartnersPhase(homeGymId ?? '');
   /* The third argument was missing, so `viewerIsWoman` defaulted to false and
      the women-only branch never ran: a woman who turned the safety filter on was
      still shown men in her frozen weekly three — the one list the app pushes at
@@ -78,11 +79,22 @@ export default function Weekly() {
 
         {!top ? (
           <View style={styles.empty}>
-            <Icon name={homeGymId ? 'users' : 'pin'} size={28} color={palette.tertiary} />
+            {/* «Bu həftə üçün hələ uyğun təklif yoxdur» is a claim that the
+                algorithm ran and found nobody. When the read failed it never ran
+                at all, and the person is told their gym is empty. */}
+            <Icon
+              name={phase === 'failed' ? 'x' : homeGymId ? 'users' : 'pin'}
+              size={28}
+              color={phase === 'failed' ? palette.red : palette.tertiary}
+            />
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 260, lineHeight: 21 }}>
-              {homeGymId
-                ? 'Bu həftə üçün hələ uyğun təklif yoxdur. Profilini tamamla — uyğun adam çıxan kimi burada görünəcək.'
-                : 'Zalını seç — yoldaşlar zala görə tapılır.'}
+              {!homeGymId
+                ? 'Zalını seç — yoldaşlar zala görə tapılır.'
+                : phase === 'failed'
+                  ? 'Təkliflər yüklənmədi — bu, uyğun adam olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç.'
+                  : phase === 'loading'
+                    ? 'Təkliflər yüklənir…'
+                    : 'Bu həftə üçün hələ uyğun təklif yoxdur. Profilini tamamla — uyğun adam çıxan kimi burada görünəcək.'}
             </AppText>
             {!homeGymId ? (
               <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.emptyBtn}>

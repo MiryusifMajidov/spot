@@ -11,7 +11,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { DAYS } from '@/data/mock';
 import { useAuthGate } from '@/lib/authGate';
-import { useTrainer } from '@/lib/hooks';
+import { useTrainer, useTrainerPhase } from '@/lib/hooks';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { getMyRequestTo, requestTrainer, type TrainerRequestRow } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
@@ -35,6 +35,7 @@ export default function Reserve() {
   const router = useRouter();
   const gate = useAuthGate();
   const trainer = useTrainer(id);
+  const phase = useTrainerPhase(id);
   /* Android edge-to-edge (SDK 54+) never resizes the window, so `adjustResize` and
      KeyboardAvoidingView both do nothing here — the note field and the «Sorğu göndər»
      footer used to sit under the IME with no way to scroll them out. The measured
@@ -85,11 +86,17 @@ export default function Reserve() {
       <Screen edges={['top']}>
         <NavBar title="Rezervasiya" />
         <View style={styles.missing}>
-          <Icon name="user" size={28} color={palette.tertiary} />
-          <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10 }}>
-            Müəllim tapılmadı.
+          <Icon name={phase === 'failed' ? 'x' : 'user'} size={28} color={phase === 'failed' ? palette.red : palette.tertiary} />
+          <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, lineHeight: 21 }}>
+            {phase === 'loading'
+              ? 'Yüklənir…'
+              : phase === 'failed'
+                ? 'Müəllim məlumatı yüklənmədi — bağlantını yoxla və yenidən aç. Rezervasiya göndərmək üçün bu məlumat lazımdır.'
+                : 'Müəllim tapılmadı.'}
           </AppText>
-          <Button title="Geri" variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, height: 44, paddingHorizontal: 24 }} />
+          {phase !== 'loading' ? (
+            <Button title="Geri" variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, height: 44, paddingHorizontal: 24 }} />
+          ) : null}
         </View>
       </Screen>
     );

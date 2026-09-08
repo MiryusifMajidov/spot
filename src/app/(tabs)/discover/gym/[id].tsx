@@ -20,7 +20,7 @@ import { Tag } from '@/components/ui/Tag';
 import { Gym, Partner } from '@/data/types';
 import { createDayPass, DayPass, getGym, getMyDayPass, getMyProfile, getWhoIsHere } from '@/lib/api';
 import { useAuthGate } from '@/lib/authGate';
-import { usePartnersForGym, useTrainersForGym } from '@/lib/hooks';
+import { usePartnersForGym, usePartnersPhase, useTrainersForGym, useTrainersForGymPhase } from '@/lib/hooks';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { showModerationSheet } from '@/lib/moderation';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
@@ -140,7 +140,9 @@ export default function GymDetail() {
   );
 
   const members = usePartnersForGym(id);
+  const membersPhase = usePartnersPhase(id);
   const gymTrainers = useTrainersForGym(id);
+  const trainersPhase = useTrainersForGymPhase(id);
   const { rows: reviews, loaded: reviewsLoaded, failed: reviewsFailed, reload: reloadReviews } = useGymReviews(id);
 
   // Presence is only ever claimed for people with a live check-in row.
@@ -597,7 +599,21 @@ export default function GymDetail() {
               {seg === 1 && (
                 <View>
                   {gymTrainers.length === 0 ? (
-                    <EmptyState icon="user" text="Bu zalda hələ SPOT-da qeydiyyatdan keçmiş müəllim yoxdur." />
+                    /* «Bu zalda hələ müəllim yoxdur» is a statement about the gym.
+                       When the request failed it is a statement about our own
+                       connection, and it sends a customer away from a coach who
+                       is right there. The reviews tab on this same screen already
+                       drew the distinction; the trainer and member tabs did not. */
+                    <EmptyState
+                      icon={trainersPhase === 'failed' ? 'x' : 'user'}
+                      text={
+                        trainersPhase === 'failed'
+                          ? 'Müəllimlər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda müəllim olmadığı demək deyil.'
+                          : trainersPhase === 'loading'
+                            ? 'Müəllimlər yüklənir…'
+                            : 'Bu zalda hələ SPOT-da qeydiyyatdan keçmiş müəllim yoxdur.'
+                      }
+                    />
                   ) : (
                     gymTrainers.map((t) => (
                       <TrainerRow key={t.id} trainer={t} onPress={() => router.push({ pathname: '/(tabs)/discover/trainer/[id]', params: { id: t.id } })} />
@@ -609,7 +625,16 @@ export default function GymDetail() {
               {seg === 2 && (
                 <View>
                   {members.length === 0 ? (
-                    <EmptyState icon="users" text="Bu zalda hələ SPOT istifadəçisi yoxdur. Birinci sən ol — check-in et." />
+                    <EmptyState
+                      icon={membersPhase === 'failed' ? 'x' : 'users'}
+                      text={
+                        membersPhase === 'failed'
+                          ? 'Üzvlər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda istifadəçi olmadığı demək deyil.'
+                          : membersPhase === 'loading'
+                            ? 'Üzvlər yüklənir…'
+                            : 'Bu zalda hələ SPOT istifadəçisi yoxdur. Birinci sən ol — check-in et.'
+                      }
+                    />
                   ) : (
                     <>
                       <View style={styles.hintRow}>

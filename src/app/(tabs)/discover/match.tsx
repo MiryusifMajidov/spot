@@ -14,7 +14,7 @@ import { Screen } from '@/components/ui/Screen';
 import { DAYS, TIME_SLOTS } from '@/data/mock';
 import { getMyProfile, sendMatchRequest as apiSendMatchRequest } from '@/lib/api';
 import { useAuthGate } from '@/lib/authGate';
-import { usePartner } from '@/lib/hooks';
+import { usePartner, usePartnerPhase } from '@/lib/hooks';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { gymById, seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
@@ -83,6 +83,7 @@ export default function Match() {
   const gate = useAuthGate();
   const profile = useAppStore((s) => s.profile);
   const partner = usePartner(id ?? '');
+  const phase = usePartnerPhase(id ?? '');
   const seed = seedById(id ?? '');
   const match = useDb((s) => (id ? s.matches[id] : undefined));
   const sendRequest = useDb((s) => s.sendMatchRequest);
@@ -149,13 +150,21 @@ export default function Match() {
   const timeIdx = time < slots.length ? time : 0;
 
   if (!partner || !id) {
+    /* «Bu yoldaş tapılmadı» used to cover a failed request too — telling somebody
+       the person they were about to train with has vanished, when in fact the
+       phone simply did not reach the server. */
+    const failed = phase === 'failed';
     return (
       <Screen edges={['top', 'bottom']} padded>
         <NavBar />
         <View style={styles.center}>
-          <Icon name="users" size={28} color={palette.tertiary} />
-          <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 260 }}>
-            Bu yoldaş tapılmadı. Siyahıya qayıt.
+          <Icon name={failed ? 'x' : 'users'} size={28} color={failed ? palette.red : palette.tertiary} />
+          <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 260, lineHeight: 21 }}>
+            {phase === 'loading'
+              ? 'Yüklənir…'
+              : failed
+                ? 'Yoldaşın məlumatı yüklənmədi — bu, hesabın silindiyi demək deyil. Bağlantını yoxla və yenidən aç.'
+                : 'Bu yoldaş tapılmadı. Siyahıya qayıt.'}
           </AppText>
         </View>
       </Screen>

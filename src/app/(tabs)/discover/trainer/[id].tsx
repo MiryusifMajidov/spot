@@ -10,7 +10,7 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { useAuthGate } from '@/lib/authGate';
-import { useTrainer } from '@/lib/hooks';
+import { useTrainer, useTrainerPhase } from '@/lib/hooks';
 import { showModerationSheet } from '@/lib/moderation';
 import { getMyRequestTo, type TrainerRequestRow } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
@@ -39,6 +39,7 @@ export default function TrainerDetail() {
   const router = useRouter();
   const gate = useAuthGate();
   const trainer = useTrainer(id);
+  const phase = useTrainerPhase(id);
   const [request, setRequest] = useState<TrainerRequestRow | null>(null);
 
   useFocusEffect(
@@ -55,15 +56,27 @@ export default function TrainerDetail() {
   );
 
   if (!trainer) {
+    /* Three different situations used to print the same sentence: still loading,
+       the request failed, and the trainer really is not there. «Müəllim
+       tapılmadı» over a dropped connection tells somebody their coach deleted
+       their account. */
+    const failed = phase === 'failed';
+    const loading = phase === 'loading';
     return (
       <Screen>
         <NavBar />
         <View style={styles.missing}>
-          <Icon name="user" size={28} color={palette.tertiary} />
-          <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 250 }}>
-            Müəllim tapılmadı.
+          <Icon name={failed ? 'x' : 'user'} size={28} color={failed ? palette.red : palette.tertiary} />
+          <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 250, lineHeight: 21 }}>
+            {loading
+              ? 'Yüklənir…'
+              : failed
+                ? 'Müəllim məlumatı yüklənmədi — bu, müəllimin olmadığı demək deyil. Bağlantını yoxla və yenidən aç.'
+                : 'Müəllim tapılmadı.'}
           </AppText>
-          <Button title="Geri" variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, height: 44, paddingHorizontal: 24 }} />
+          {!loading ? (
+            <Button title="Geri" variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, height: 44, paddingHorizontal: 24 }} />
+          ) : null}
         </View>
       </Screen>
     );

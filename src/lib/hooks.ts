@@ -12,7 +12,7 @@ import { meals as mockMeals, shoppingList as mockShop, Meal, ShopItem } from '@/
 import { Exercise, Gym, Partner, Program, Trainer } from '@/data/types';
 import { getPartner as apiGetPartner, byCompatibility, getGyms, getPartnersAtGym } from '@/lib/api';
 import { supabase, hasSupabaseConfig } from '@/lib/supabase';
-import { nonEmpty, useFocusFetch } from '@/lib/focusFetch';
+import { nonEmpty, useFetchPhase, useFocusFetch } from '@/lib/focusFetch';
 import { isPlaceholderName } from '@/lib/authorName';
 import { myFollowing } from '@/lib/social';
 
@@ -273,22 +273,38 @@ function isRealTrainer(t: Trainer): boolean {
 }
 
 export const useTrainer = (id: string) =>
-  useOne<Trainer>(null, async () => {
+  useFocusFetch<Trainer | null>(id ? `trainer:${id}` : '', null, async () => {
     const { data } = await supabase.from('trainers').select('*').eq('id', id).maybeSingle();
     return data ? mapTrainer(data) : null;
-  }, [id]);
+  });
+
+/* ---- «did the read succeed?» for the screens that draw a definite absence ----
+ *
+ * `null` and `[]` are what these hooks return while the request is in flight,
+ * when the row genuinely is not there, AND when the network failed. Screens were
+ * printing «Müəllim tapılmadı» and «Hamısını gördün» for all three. These expose
+ * the phase that `useFocusFetch` already records, so a screen can tell the person
+ * which of the three actually happened. */
+export const useTrainerPhase = (id: string) => useFetchPhase(id ? `trainer:${id}` : '');
+export const usePartnerPhase = (id: string) => useFetchPhase(id ? `partner:${id}` : '');
+export const usePartnersPhase = (gymId: string) => useFetchPhase(gymId ? `partners:${gymId}` : '');
+
+export const useTrainersForGymPhase = (gymId: string) => useFetchPhase(gymId ? `gymTrainers:${gymId}` : '');
 
 export const useTrainersForGym = (gymId: string) =>
-  useList<Trainer>(NO_TRAINERS, async () => {
+  useFocusFetch<Trainer[]>(gymId ? `gymTrainers:${gymId}` : '', NO_TRAINERS, async () => {
     // `listed` and `isRealTrainer` are the same two filters the discovery list
     // uses. Without them a coach who unlisted themselves — or a «Sən · Test»
     // placeholder — stayed visible on the gym page, and the gym's «N müəllim»
     // (now a real count of listed trainers, schema23) disagreed with the list
     // underneath it.
-    const { data } = await supabase.from('trainers').select('*').eq('gym_id', gymId).eq('listed', true);
+    const { data, error } = await supabase.from('trainers').select('*').eq('gym_id', gymId).eq('listed', true);
+    // A PostgREST error does not throw — it comes back in the result. Without
+    // this the screen read a refused query as «this gym has no trainers».
+    if (error) throw error;
     // Same rule as the discovery list: verified coaches first.
     return byVerification(data ?? []).map(mapTrainer).filter(isRealTrainer);
-  }, [gymId]);
+  });
 
 /** Program-day exercises (from the exercise library). */
 export const useDayExercises = () =>
