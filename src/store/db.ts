@@ -111,7 +111,6 @@ export interface MeParams {
 }
 
 // ------------------------------------------------------------------ seed: partners
-const nowMin = () => Date.now();
 
 /* Empty on purpose — this held TWELVE invented training partners (Kamran,
  * Tural, Aysel, Orxan, Ramil, Leyla, Nihad, Sevinc, Elvin, Günay, Murad, Zaur)
@@ -1018,33 +1017,74 @@ export function programDayExercises(program: Program | undefined, dayIndex: numb
 }
 
 // ---------------------------------------------------------------- challenges
-/** Real challenge progress from the user's own logs — never an invented number.
- *  `unit` mirrors the challenge unit ("məşq", "gün", "kq", "t"). */
-export function computeChallengeProgress(
-  unit: string,
-  s: { workouts: Workout[]; checkIns: CheckIn[]; installedAt: string }
-): number {
-  const u = (unit || '').toLowerCase();
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
-  const inMonth = (iso: string) => new Date(iso) >= monthStart;
+/** What a challenge unit means in terms of the person's own logs.
+ *
+ *  `null` is a real answer: «5 dartma» cannot be derived from a workout row —
+ *  `workouts` stores duration, volume and set count, not per-exercise reps — and
+ *  the old code fell through to counting SESSIONS for it, so somebody who trained
+ *  three times read «3 / 5 dartma» as if they had done three pull-ups. A number
+ *  that measures the wrong thing is worse than no number. */
+export type ChallengeMetric = 'sessions' | 'tonnes' | 'kilos' | null;
 
-  if (u.includes('gün')) return computeStreak(s.checkIns, s.workouts);
-  if (u.includes('t') && !u.includes('təkrar')) {
-    const kg = s.workouts.filter((w) => inMonth(w.at)).reduce((a, w) => a + w.volumeKg, 0);
-    return Math.round((kg / 1000) * 10) / 10;
-  }
-  if (u.includes('kq')) return s.workouts.filter((w) => inMonth(w.at)).reduce((a, w) => a + w.volumeKg, 0);
-  // default: sessions this month
-  return s.workouts.filter((w) => inMonth(w.at)).length;
+export function challengeMetric(unit: string): ChallengeMetric {
+  const u = (unit || '').trim().toLowerCase();
+  if (u.includes('gün')) return 'sessions'; // streak card, handled separately
+  if (u === 't' || u === 'ton') return 'tonnes';
+  if (u === 'kq' || u === 'kg') return 'kilos';
+  if (u.includes('məşq') || u.includes('mesq') || u === '') return 'sessions';
+  return null;
 }
 
-export function useChallengeProgress(unit: string): number {
+/** Real challenge progress from the user's own logs — never an invented number.
+ *
+ *  The window is the CHALLENGE's, not the calendar month. It used to be
+ *  `monthStart = 1st of this month`, hardcoded, which meant September sessions
+ *  were counted towards «Avqust · 12 məşq» — the same root cause as the challenge
+ *  never expiring. `null` = this unit is not measurable (see challengeMetric). */
+export function computeChallengeProgress(
+  unit: string,
+  s: { workouts: Workout[]; checkIns: CheckIn[]; installedAt: string },
+  window?: { startsAt?: string | null; endsAt?: string | null }
+): number | null {
+  const u = (unit || '').toLowerCase();
+  if (u.includes('gün')) return computeStreak(s.checkIns, s.workouts);
+
+  const metric = challengeMetric(unit);
+  if (!metric) return null;
+
+  const from = window?.startsAt ? Date.parse(window.startsAt) : startOfMonth();
+  const to = window?.endsAt ? Date.parse(window.endsAt) : Date.now();
+  const inWindow = (iso: string) => {
+    const t = new Date(iso).getTime();
+    return t >= from && t <= to;
+  };
+  const mine = s.workouts.filter((w) => inWindow(w.at));
+
+  if (metric === 'tonnes') return Math.round((mine.reduce((a, w) => a + w.volumeKg, 0) / 1000) * 10) / 10;
+  if (metric === 'kilos') return mine.reduce((a, w) => a + w.volumeKg, 0);
+  return mine.length;
+}
+
+function startOfMonth(): number {
+  const d = new Date();
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+export function useChallengeProgress(
+  unit: string,
+  window?: { startsAt?: string | null; endsAt?: string | null }
+): number | null {
   const workouts = useDb((s) => s.workouts);
   const checkIns = useDb((s) => s.checkIns);
   const installedAt = useDb((s) => s.installedAt);
-  return useMemo(() => computeChallengeProgress(unit, { workouts, checkIns, installedAt }), [unit, workouts, checkIns, installedAt]);
+  const from = window?.startsAt ?? null;
+  const to = window?.endsAt ?? null;
+  return useMemo(
+    () => computeChallengeProgress(unit, { workouts, checkIns, installedAt }, { startsAt: from, endsAt: to }),
+    [unit, workouts, checkIns, installedAt, from, to]
+  );
 }
 
 /* Comments are read from the server — see `fetchComments` in src/lib/comments.ts.

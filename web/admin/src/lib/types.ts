@@ -161,8 +161,14 @@ export interface Challenge {
   unit: string;
   participants: number;
   active: boolean;
-  days_left: number;
-  reward: string;
+  /* `days_left: number` used to live here. It was an int nothing ever
+     decremented, so «11 gün qalıb» stayed 11 forever and an August challenge was
+     still shown as running in September. schema60 replaced it with a real
+     window. `leaderboard`, `progress` and `day_cells` were dropped as well —
+     seeded JSON and a per-challenge «progress» that belonged to nobody. */
+  starts_at: string | null;
+  ends_at: string | null;
+  reward: string | null;
 }
 
 export interface CommunityPost {

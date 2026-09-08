@@ -1,10 +1,9 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { exerciseLibrary, timeAgoAz, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 
-import { activeChallenge as mockActive, gymRanking as mockRanking, joinable as mockJoinable, streakChallenge, Challenge, LeaderRow } from '@/data/challenges';
+import { gymRanking as mockRanking, streakChallenge, Challenge, Standing } from '@/data/challenges';
 import { communityPosts as mockPosts, feedVideos as mockVideos, CommunityPost, FeedVideo } from '@/data/feed';
 // NOTE: `trainers` and `partnersForGym` are deliberately NOT imported any more —
 // people are never seeded into a list the user can act on.
@@ -56,6 +55,7 @@ function useOne<T>(fallback: T | null, fetcher: () => Promise<T | null>, deps: u
 /** Module-level so an empty list keeps the same reference across renders — a
  *  selector that builds a fresh array every time loops React forever. */
 const NO_PARTNERS: Partner[] = [];
+const NO_CHALLENGES: Challenge[] = [];
 const NO_TRAINERS: Trainer[] = [];
 
 // ---------------- mappers ----------------
@@ -107,10 +107,15 @@ const mapTrainer = (r: any): Trainer => ({
   rating: r.rating, clients: r.clients, responseTime: r.response_time, priceFrom: r.price_from,
   bio: r.bio, certifications: r.certifications ?? [], photoUrl: r.photo_url ?? null,
 });
+/* No `progress` and no `leaderboard` any more: schema60 dropped both columns.
+   A challenge has no single progress — only each participant's — and the ranking
+   is counted by `challenge_standings()` from real workout rows. `daysLeft` is
+   gone too; `endsAt` is a date the app can actually compare against now. */
 const mapChallenge = (r: any): Challenge => ({
   id: r.id, title: r.title, scope: r.scope, scopeLabel: r.scope_label, description: r.description,
-  progress: r.progress ?? 0, target: r.target, unit: r.unit, daysLeft: r.days_left, reward: r.reward,
-  participants: r.participants ?? 0, leaderboard: (r.leaderboard ?? []) as LeaderRow[],
+  target: r.target, unit: r.unit, reward: r.reward ?? null,
+  active: !!r.active, startsAt: r.starts_at ?? null, endsAt: r.ends_at ?? null,
+  participants: r.participants ?? 0,
 });
 /* There is no stand-in for a video nobody uploaded.
  *
@@ -295,21 +300,58 @@ export const useDayExercises = () =>
     }));
   });
 
+/** Published challenges that have not ended, soonest deadline first.
+ *
+ *  The featured one used to be `all.find(c => c.id === 'aug-12')` — hardcoded to
+ *  a single seeded row. That is why the admin panel's «Dayandır» did nothing
+ *  visible (it writes `active`, which nobody read), why a newly activated
+ *  challenge could never be featured, and why an August challenge was still on
+ *  everybody's screen in September. `active` and `endsAt` decide now.
+ *
+ *  There is no seed fallback. `useList` keeps its fallback when a fetch returns
+ *  an empty list, so a seeded array here would have survived schema60 deleting
+ *  the fabricated rows and kept showing them forever. `null` means «SPOT has no
+ *  live challenge», and the screen says exactly that. */
 export const useChallenges = () => {
-  const all = useList<Challenge>([mockActive, ...mockJoinable], async () => {
-    const { data } = await supabase.from('challenges').select('*');
+  const live = useList<Challenge>(NO_CHALLENGES, async () => {
+    // Published and not finished, soonest deadline first — asked of the database
+    // rather than filtered afterwards, so «now» is read when the request is made
+    // and not on every render.
+    const nowIso = new Date().toISOString();
+    const { data } = await supabase
+      .from('challenges')
+      .select('*')
+      .eq('active', true)
+      .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
+      .order('ends_at', { ascending: true, nullsFirst: false });
     return (data ?? []).map(mapChallenge);
   });
-  const active = all.find((c) => c.id === 'aug-12') ?? all[0] ?? mockActive;
-  const joinable = all.filter((c) => c.id !== active?.id);
-  return { active, joinable, streak: streakChallenge, all };
+  const active = live[0] ?? null;
+  const joinable = live.slice(1);
+  return { active, joinable, streak: streakChallenge, live };
 };
 
 export const useChallenge = (id: string) =>
-  useOne<Challenge>([mockActive, ...mockJoinable].find((c) => c.id === id) ?? null, async () => {
+  useOne<Challenge>(null, async () => {
     const { data } = await supabase.from('challenges').select('*').eq('id', id).maybeSingle();
     return data ? mapChallenge(data) : null;
   }, [id]);
+
+/** The ranking for one challenge, counted on the server from real workout rows.
+ *  `[]` means nobody has joined; a THROW means we could not read it, and the
+ *  screen must not draw either as the other. */
+export async function challengeStandings(id: string): Promise<Standing[]> {
+  const { data, error } = await supabase.rpc('challenge_standings', { cid: id });
+  if (error) throw error;
+  return ((data ?? []) as any[]).map((r) => ({
+    profileId: r.profile_id,
+    name: r.name ?? '',
+    username: r.username ?? null,
+    avatarUrl: r.avatar_url ?? null,
+    done: r.done === null || r.done === undefined ? null : Number(r.done),
+    isMe: !!r.is_me,
+  }));
+}
 
 export const useGymRanking = () =>
   useList(mockRanking, async () => {

@@ -8,18 +8,12 @@ import { Icon } from '../ui/icons';
 import type { Challenge } from '../lib/types';
 import type { ScreenProps } from '../App';
 
-// One embedded leaderboard entry (jsonb `leaderboard` array on the row).
-// Everything is optional/guarded — real rows may have an empty array.
-interface LeaderEntry {
-  name?: string;
-  rank?: number;
-  value?: string;
-  me?: boolean;
-}
-
-// The Challenge type in lib/types omits the jsonb columns; model the extra
-// column this screen reads on top of it.
-type ChallengeRow = Challenge & { leaderboard?: LeaderEntry[] | null };
+/* The embedded `leaderboard` jsonb is gone (schema60). It held seeded entries —
+   invented names with invented ranks — and this screen drew the top three of them
+   as «Liderlər», which made a fabricated ranking look like a moderation fact. The
+   real ranking is counted from workout rows by `challenge_standings()` and lives
+   in the app, where the participants are. */
+type ChallengeRow = Challenge;
 
 type Filter = 'all' | 'active' | 'inactive';
 
@@ -30,10 +24,6 @@ const SCOPES: { value: string; label: string }[] = [
   { value: 'city', label: 'Şəhər · hamı' },
 ];
 const scopeLabelFor = (scope: string) => SCOPES.find((s) => s.value === scope)?.label ?? scope;
-
-// medal colour for leaderboard rank 1/2/3
-const medal = (rank?: number) =>
-  rank === 1 ? 'var(--orange)' : rank === 2 ? '#9AA0A6' : rank === 3 ? '#B0713B' : 'var(--muted)';
 
 function slugify(title: string) {
   const base = title
@@ -50,9 +40,10 @@ interface Draft {
   target: string;
   unit: string;
   reward: string;
-  days: string;
+  /** yyyy-mm-dd from a date input. A challenge with no end date never ends. */
+  endsOn: string;
 }
-const emptyDraft: Draft = { title: '', scope: 'solo', target: '', unit: '', reward: '', days: '' };
+const emptyDraft: Draft = { title: '', scope: 'solo', target: '', unit: '', reward: '', endsOn: '' };
 
 export function Challenges({ search, refreshCounts }: ScreenProps) {
   const { admin } = useAuth();
@@ -74,7 +65,7 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
       .from('challenges')
       .select('*')
       .order('active', { ascending: false })
-      .order('days_left', { ascending: true });
+      .order('ends_at', { ascending: true, nullsFirst: false });
     setRows((data as ChallengeRow[]) ?? []);
     setLoading(false);
   }
@@ -133,7 +124,9 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
     if (!t || !draft.unit.trim() || !Number.isFinite(target) || target <= 0) return;
     setSaving(true);
     const id = slugify(t);
-    const days = parseInt(draft.days, 10);
+    /* End of the chosen day in Baku, so a challenge that «ends on the 30th» is
+       still open all day on the 30th. No date means open-ended. */
+    const endsAt = draft.endsOn ? new Date(`${draft.endsOn}T23:59:59+04:00`).toISOString() : null;
     const { error } = await supabase.from('challenges').insert({
       id,
       title: t,
@@ -142,17 +135,16 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
       target,
       unit: draft.unit.trim(),
       reward: draft.reward.trim() || null,
-      days_left: Number.isFinite(days) && days > 0 ? days : 0,
-      participants: 0,
+      starts_at: new Date().toISOString(),
+      ends_at: endsAt,
       active: false,
-      leaderboard: [],
     });
     setSaving(false);
     if (error) {
       toast('Xəta: ' + error.message);
       return;
     }
-    await audit('challenge_create', 'challenge', id, undefined, { title: t, scope: draft.scope, target, unit: draft.unit.trim() });
+    await audit('challenge_create', 'challenge', id, undefined, { title: t, scope: draft.scope, target, unit: draft.unit.trim(), ends_at: endsAt });
     toast('Challenge yaradıldı');
     setShowNew(false);
     setDraft(emptyDraft);
@@ -258,12 +250,11 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
                   style={inputStyle}
                 />
               </Field>
-              <Field label="Gün">
+              <Field label="Bitmə tarixi">
                 <input
-                  value={draft.days}
-                  onChange={(e) => setDraft({ ...draft, days: e.target.value.replace(/[^0-9]/g, '') })}
-                  inputMode="numeric"
-                  placeholder="30"
+                  type="date"
+                  value={draft.endsOn}
+                  onChange={(e) => setDraft({ ...draft, endsOn: e.target.value })}
                   style={inputStyle}
                 />
               </Field>
@@ -327,15 +318,22 @@ function Kpi({ label, val, sub, dark }: { label: string; val: string; sub?: stri
   );
 }
 
+/** Days left, from a real timestamp. `null` = open-ended, past = finished. */
+function leftLabel(endsAt: string | null): string {
+  if (!endsAt) return 'tarixsiz';
+  const days = Math.ceil((Date.parse(endsAt) - Date.now()) / 86400000);
+  if (days <= 0) return 'bitib';
+  return `${days} gün`;
+}
+function isUrgent(endsAt: string | null): boolean {
+  if (!endsAt) return false;
+  const days = Math.ceil((Date.parse(endsAt) - Date.now()) / 86400000);
+  return days > 0 && days <= 3;
+}
+
 function ChallengeCard({ c, canManage, busy, onToggle }: {
   c: ChallengeRow; canManage: boolean; busy: boolean; onToggle: () => void;
 }) {
-  const board = Array.isArray(c.leaderboard) ? c.leaderboard : [];
-  const top3 = board
-    .filter((e) => typeof e.rank === 'number' && (e.rank as number) <= 3)
-    .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
-    .slice(0, 3);
-
   return (
     <div className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* header */}
@@ -358,7 +356,7 @@ function ChallengeCard({ c, canManage, busy, onToggle }: {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
         <Stat val={`${c.target}${c.unit ? ' ' + c.unit : ''}`} label="hədəf" />
         <Stat val={(c.participants || 0).toLocaleString('az')} label="iştirakçı" />
-        <Stat val={c.days_left > 0 ? `${c.days_left} gün` : 'bitib'} label="qalıb" accent={c.days_left > 0 && c.days_left <= 3 ? 'var(--red)' : undefined} />
+        <Stat val={leftLabel(c.ends_at)} label="qalıb" accent={isUrgent(c.ends_at) ? 'var(--red)' : undefined} />
       </div>
 
       {/* reward */}
@@ -366,24 +364,6 @@ function ChallengeCard({ c, canManage, busy, onToggle }: {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--fill)', borderRadius: 10, padding: '9px 12px' }}>
           <Icon name="flame" size={14} color="var(--orange)" />
           <div style={{ font: '500 12.5px/1.3 var(--font)', color: 'var(--text3)' }}>{c.reward}</div>
-        </div>
-      ) : null}
-
-      {/* leaderboard top 3 */}
-      {top3.length > 0 ? (
-        <div style={{ borderTop: '1px solid var(--line2)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ font: '600 10.5px/1 var(--font)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>
-            Liderlər
-          </div>
-          {top3.map((e, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 18, font: '700 12px/1 var(--font)', color: medal(e.rank), textAlign: 'center' }}>{e.rank}</div>
-              <div style={{ flex: 1, font: '500 12.5px/1 var(--font)', color: e.me ? 'var(--ink2)' : 'var(--text3)' }}>
-                {e.name ?? '—'}{e.me ? <span style={{ color: 'var(--muted)' }}> · sən</span> : null}
-              </div>
-              {e.value ? <div style={{ font: '600 12px/1 var(--font)', color: 'var(--muted2)' }}>{e.value}</div> : null}
-            </div>
-          ))}
         </div>
       ) : null}
 

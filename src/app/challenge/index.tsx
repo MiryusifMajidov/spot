@@ -34,13 +34,25 @@ function useLast7Days(): boolean[] {
   }, [workouts, checkIns]);
 }
 
+/** «3 gün qalıb» from a real end date. The old card showed `days_left`, an int in
+ *  the database that nothing ever decremented. */
+function daysLeftText(endsAt: string): string {
+  const ms = Date.parse(endsAt) - Date.now();
+  const days = Math.ceil(ms / 86400000);
+  if (days <= 0) return 'bugün bitir';
+  if (days === 1) return '1 gün qalıb';
+  return `${days} gün qalıb`;
+}
+
 export default function Challenges() {
   const router = useRouter();
   const { active: a, joinable, streak: streakChallenge } = useChallenges();
   const dayCells = useLast7Days();
-  // Progress is computed from the user's own logs — never read from the seed literal.
-  const activeProgress = useChallengeProgress(a.unit);
-  const streakDays = useChallengeProgress('gün');
+  // Progress is computed from the user's own logs, inside the CHALLENGE's window —
+  // never read from a seed literal, and never over the calendar month, which used
+  // to count September sessions towards an August challenge.
+  const activeProgress = useChallengeProgress(a?.unit ?? '', { startsAt: a?.startsAt, endsAt: a?.endsAt });
+  const streakDays = useChallengeProgress('gün') ?? 0;
   const streakLeft = Math.max(0, streakChallenge.target - streakDays);
   const joined = useAppStore((s) => s.joinedChallenges);
   // A gym challenge belongs to the user's OWN gym. The seed label ("Iron Bay · komanda")
@@ -61,33 +73,59 @@ export default function Challenges() {
         }
       />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {/* Active (ink) */}
-        <PressableScale activeScale={0.98} onPress={() => router.push({ pathname: '/challenge/[id]', params: { id: a.id } })} style={styles.activeCard}>
-          <View style={styles.activeHead}>
-            <AppText style={styles.activeOverline}>{scopeLabel(a).toUpperCase()}</AppText>
-            <View style={styles.rewardTag}>
-              <Icon name="trophy" size={11} color={palette.inkText} />
-              <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.inkText }}>{a.reward}</AppText>
+        {/* Active (ink) — only when the server really has a published, unfinished
+            challenge. This card used to be drawn from a hardcoded id, so an
+            August challenge sat here in September and the admin panel's
+            «Dayandır» changed nothing on it. */}
+        {a ? (
+          <PressableScale activeScale={0.98} onPress={() => router.push({ pathname: '/challenge/[id]', params: { id: a.id } })} style={styles.activeCard}>
+            <View style={styles.activeHead}>
+              <AppText style={styles.activeOverline}>{scopeLabel(a).toUpperCase()}</AppText>
+              {a.endsAt ? (
+                <View style={styles.rewardTag}>
+                  <Icon name="clock" size={11} color={palette.inkText} />
+                  <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.inkText }}>{daysLeftText(a.endsAt)}</AppText>
+                </View>
+              ) : null}
             </View>
-          </View>
-          <AppText style={styles.activeTitle}>{a.title}</AppText>
-          <View style={styles.activeProgress}>
-            <View style={styles.activeTrack}>
-              <View style={[styles.activeFill, { width: `${Math.min(100, (activeProgress / a.target) * 100)}%` }]} />
-            </View>
-            <AppText style={{ color: palette.white, fontSize: 14, fontWeight: '700' }}>
-              {activeProgress} / {a.target}
+            <AppText style={styles.activeTitle}>{a.title}</AppText>
+            {activeProgress === null ? (
+              /* The unit is not something SPOT can measure (a «5 dartma» target is
+                 not in any workout row). A session count under a pull-up label
+                 would be a wrong measurement dressed as a right one. */
+              <AppText style={{ color: 'rgba(255,255,255,0.62)', fontSize: 12.5, marginTop: 14, lineHeight: 18 }}>
+                Bu challenge-in hədəfi ({a.target} {a.unit}) qeyd etdiyin məşqlərdən avtomatik ölçülmür — irəliləyişi
+                özün izləyirsən.
+              </AppText>
+            ) : (
+              <>
+                <View style={styles.activeProgress}>
+                  <View style={styles.activeTrack}>
+                    <View style={[styles.activeFill, { width: `${Math.min(100, (activeProgress / a.target) * 100)}%` }]} />
+                  </View>
+                  <AppText style={{ color: palette.white, fontSize: 14, fontWeight: '700' }}>
+                    {activeProgress} / {a.target}
+                  </AppText>
+                </View>
+                <AppText style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11.5, marginTop: 10 }}>
+                  {activeProgress === 0 ? 'Hələ başlamamısan — ilk məşqini qeyd et.' : 'Son 7 gün'}
+                </AppText>
+                <View style={styles.dayCells}>
+                  {dayCells.map((on, i) => (
+                    <View key={i} style={[styles.dayCell, { backgroundColor: on ? palette.volt : 'rgba(255,255,255,0.14)' }]} />
+                  ))}
+                </View>
+              </>
+            )}
+          </PressableScale>
+        ) : (
+          <View style={styles.noneCard}>
+            <AppText variant="headline">Hazırda gedən challenge yoxdur</AppText>
+            <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 5, lineHeight: 19 }}>
+              Yeni challenge başlayanda burada görünəcək. Aşağıdaki streak isə həmişə sənindir — heç kimdən asılı deyil.
             </AppText>
           </View>
-          <AppText style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11.5, marginTop: 10 }}>
-            {activeProgress === 0 ? 'Hələ başlamamısan — ilk məşqini qeyd et.' : 'Son 7 gün'}
-          </AppText>
-          <View style={styles.dayCells}>
-            {dayCells.map((on, i) => (
-              <View key={i} style={[styles.dayCell, { backgroundColor: on ? palette.volt : 'rgba(255,255,255,0.14)' }]} />
-            ))}
-          </View>
-        </PressableScale>
+        )}
 
         {/* Streak (white) */}
         <View style={styles.streakCard}>
@@ -116,9 +154,11 @@ export default function Challenges() {
           </View>
         </View>
 
-        <AppText variant="overline" color={palette.caption} style={{ marginTop: 18, marginBottom: 11 }}>
-          Qoşula bilərsən
-        </AppText>
+        {joinable.length > 0 ? (
+          <AppText variant="overline" color={palette.caption} style={{ marginTop: 18, marginBottom: 11 }}>
+            Qoşula bilərsən
+          </AppText>
+        ) : null}
         {joinable.map((c) => (
           <JoinRow
             key={c.id}
@@ -169,6 +209,7 @@ function JoinRow({
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 40 },
   activeCard: { backgroundColor: palette.ink, borderRadius: 20, padding: 18, marginBottom: 13 },
+  noneCard: { backgroundColor: palette.white, borderRadius: 20, padding: 18, marginBottom: 13 },
   activeHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   activeOverline: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8, color: palette.volt },
   rewardTag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: palette.volt, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4 },
