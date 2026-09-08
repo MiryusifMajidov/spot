@@ -30,10 +30,15 @@ export function Dashboard({ go }: ScreenProps) {
   const [claims, setClaims] = useState<GymClaim[]>([]);
   const [gyms, setGyms] = useState<Gym[]>([]);
   const [checkInsToday, setCheckInsToday] = useState<number | null>(null);
+  const [kpiFailed, setKpiFailed] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const { data: kpi } = await supabase.rpc('admin_dashboard');
+      /* The error is kept, not discarded. It used to be dropped, so when the
+         RPC was broken every queue count silently became 0 — a moderator read
+         «Şikayətlər 0» with five open reports listed underneath. */
+      const { data: kpi, error: kpiErr } = await supabase.rpc('admin_dashboard');
+      setKpiFailed(!!kpiErr);
       setK((kpi ?? null) as DashboardKpis | null);
       const [v, r, c, g, ci] = await Promise.all([
         supabase.from('trainer_verifications').select('*').eq('status', 'pending').order('sla_due_at').limit(3),
@@ -75,11 +80,11 @@ export function Dashboard({ go }: ScreenProps) {
 
       <div className="section-head"><h2>Növbələr · SLA</h2></div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
-        <QueueCard icon="verified" color="var(--blue)" title="Müəllim doğrulanması" count={k?.trainers_pending ?? 0} onOpen={() => go('trainers')}
+        <QueueCard icon="verified" color="var(--blue)" title="Müəllim doğrulanması" count={kpiFailed || !k ? null : k.trainers_pending} onOpen={() => go('trainers')}
           rows={verifs.map((v) => ({ label: v.trainer_id || 'Müəllim', badge: slaBadge(v.sla_due_at) }))} empty="Növbə boşdur" />
-        <QueueCard icon="shield" color="var(--red)" title="Şikayətlər" count={k?.reports_open ?? 0} onOpen={() => go('moderation')}
+        <QueueCard icon="shield" color="var(--red)" title="Şikayətlər" count={kpiFailed || !k ? null : k.reports_open} onOpen={() => go('moderation')}
           rows={reports.map((r) => ({ label: `${r.category} · #${r.id.slice(0, 4)}`, badge: slaBadge(r.sla_due_at) }))} empty="Açıq şikayət yoxdur" />
-        <QueueCard icon="pin" color="var(--green)" title="Zal sahibliyi (claim)" count={k?.claims_pending ?? 0} onOpen={() => go('gyms')}
+        <QueueCard icon="pin" color="var(--green)" title="Zal sahibliyi (claim)" count={kpiFailed || !k ? null : k.claims_pending} onOpen={() => go('gyms')}
           rows={claims.map((c) => ({ label: c.gym_id || 'Zal', badge: slaBadge(c.sla_due_at) }))} empty="Claim növbəsi boşdur" />
       </div>
 
@@ -104,7 +109,7 @@ export function Dashboard({ go }: ScreenProps) {
 }
 
 function QueueCard({ icon, color, title, count, rows, empty, onOpen }: {
-  icon: 'verified' | 'shield' | 'pin'; color: string; title: string; count: number;
+  icon: 'verified' | 'shield' | 'pin'; color: string; title: string; count: number | null;
   rows: { label: string; badge: { cls: string; text: string } }[]; empty: string; onOpen: () => void;
 }) {
   return (
@@ -112,7 +117,8 @@ function QueueCard({ icon, color, title, count, rows, empty, onOpen }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
         <Icon name={icon} size={17} color={color} />
         <div style={{ flex: 1, font: '600 13.5px/1 var(--font)' }}>{title}</div>
-        <div style={{ font: '700 16px/1 var(--font)' }}>{count}</div>
+        {/* «—», never 0: a count we could not obtain is not a count of zero. */}
+        <div style={{ font: '700 16px/1 var(--font)' }}>{count ?? '—'}</div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {rows.length === 0 ? <div style={{ font: '400 12.5px/1 var(--font)', color: 'var(--muted)' }}>{empty}</div> : null}

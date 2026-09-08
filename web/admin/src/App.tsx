@@ -32,7 +32,16 @@ export default function App() {
   const [counts, setCounts] = useState<Record<string, string>>({});
 
   const refreshCounts = useCallback(async () => {
-    const { data } = await supabase.rpc('admin_dashboard');
+    // Keep the error: an empty badge and a failed read look identical otherwise.
+      const { data, error } = await supabase.rpc('admin_dashboard');
+    if (error) {
+      // A read that failed is not an empty queue. '!' is visibly different from
+      // both a number and a blank badge, so pending work is never hidden by a
+      // broken call — which is exactly what happened while admin_dashboard()
+      // was throwing 42703 (schema58).
+      setCounts({ users: '', trainers: '!', gyms: '!', moderation: '!' });
+      return;
+    }
     const k = (data ?? {}) as Partial<DashboardKpis>;
     setCounts({
       users: k.users_total != null ? fmtK(k.users_total) : '',
