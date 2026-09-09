@@ -1,5 +1,7 @@
+import { Children } from 'react';
 import { StyleSheet, Text, TextProps, TextStyle } from 'react-native';
 
+import { azUpper } from '@/lib/az';
 import { colors, type as typeScale, TypeVariant } from '@/theme';
 
 type Props = TextProps & {
@@ -35,6 +37,18 @@ export function AppText({ variant = 'body', color = colors.text, center, style, 
 
   const { fontWeight: _omitWeight, ...styleNoWeight } = merged;
 
+  /* The `overline` variant is the app's section label and used to carry
+     `textTransform: 'uppercase'`. That transform runs in native code without a
+     locale, so «i» came out as «I» rather than «İ» — wrong in Azerbaijani, on
+     every iOS device and on every Android phone whose system language is not
+     Azerbaijani or Turkish. Doing it here, in JS, is the only way to get the
+     right letter. Only plain strings are transformed; anything else (a nested
+     <AppText>, a number, an element) is passed through untouched. */
+  const children =
+    variant === 'overline'
+      ? Children.map(rest.children, (c) => (typeof c === 'string' ? azUpper(c) : c))
+      : rest.children;
+
   return (
     <Text
       style={[
@@ -44,6 +58,8 @@ export function AppText({ variant = 'body', color = colors.text, center, style, 
         center ? { textAlign: 'center' } : null,
       ]}
       {...rest}
-    />
+    >
+      {children}
+    </Text>
   );
 }

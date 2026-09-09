@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
+import { parseDecimal } from '@/lib/az';
 import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
@@ -18,8 +19,12 @@ export default function WeightLog() {
   const [kg, setKg] = useState('');
   const [saving, setSaving] = useState(false);
 
+  /* `Number('72,5')` is NaN, and on an Azerbaijani keypad the decimal key IS a
+     comma — so this screen refused to save at all for anybody whose phone types
+     one: the button stayed disabled and nothing said why. */
+  const val = parseDecimal(kg);
+
   const save = () => {
-    const val = Number(kg);
     if (!val || saving) return;
     gate(async () => {
       setSaving(true);
@@ -39,7 +44,7 @@ export default function WeightLog() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <NavBar title="Çəki qeyd et" right={<Button title="Yadda saxla" variant="volt" disabled={!Number(kg) || saving} onPress={save} />} />
+      <NavBar title="Çəki qeyd et" right={<Button title="Yadda saxla" variant="volt" disabled={!val || saving} onPress={save} />} />
       <View style={styles.body}>
         <AppText variant="body" color={palette.textSecondary} style={{ marginBottom: 24, lineHeight: 21 }}>
           Bugünkü çəkini yaz. Vaxt keçdikcə dəyişimi profilində qrafik kimi görəcəksən.

@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { ScrollView, Share, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
+import { azUpper } from '@/lib/az';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -100,7 +101,7 @@ export default function ChallengeDetail() {
       />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <AppText variant="overline" color={palette.voltDeep}>
-          {scopeLabel.toUpperCase()}
+          {azUpper(scopeLabel)}
         </AppText>
         <AppText variant="title" style={{ marginTop: 8 }}>
           {c.title}

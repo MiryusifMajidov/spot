@@ -7,6 +7,7 @@ import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
 import { ensureSession, updateMyProfile, deleteMyAccount } from '@/lib/api';
 import { unregisterPush } from '@/lib/push';
+import { wipeDeviceData } from '@/lib/wipe';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { useDb } from '@/store/db';
@@ -169,7 +170,11 @@ export default function PrivacyDetails() {
                       toast('Hesab silinmədi — internet yoxlanılsın, sonra yenidən cəhd et', 'error');
                       return;
                     }
-                    await wipeDevice();
+                    /* NOT wipeDevice(): that one calls ensureSession() first, so
+                       deleting the account signed a brand-new anonymous user in on
+                       the server a second later — a fresh orphan profile created by
+                       the act of deleting one. wipeDeviceData() touches no session. */
+                    await wipeDeviceData();
                     toast('Hesabın silindi');
                     router.replace('/onboarding/welcome');
                   },

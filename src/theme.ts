@@ -107,7 +107,11 @@ export const type = {
     lineHeight: 12,
     fontWeight: '600',
     letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    /* No `textTransform: 'uppercase'`. React Native does that transform in
+       native code with no locale, so «i» became «I» instead of «İ» and roughly
+       thirty section labels across the app were misspelled in Azerbaijani —
+       İSTİFADƏÇİ ADI, CİNS, SƏVİYYƏ, HƏFTƏNİN GÜNLƏRİ, BİO. AppText uppercases
+       this variant in JS with `azUpper` instead. */
   },
 } satisfies Record<string, TextStyle>;
 

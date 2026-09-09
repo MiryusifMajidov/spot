@@ -19,7 +19,7 @@ import { hasSupabaseConfig } from '@/lib/supabase';
 import { useDb, useStats } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
-import { azLower } from '@/lib/az';
+import { azLower, azUpper } from '@/lib/az';
 
 /** `avatar_url` lives on the profiles row (added by schema8) — read it defensively. */
 function avatarOf(row: unknown): string | null {
@@ -200,7 +200,7 @@ export default function Profile() {
             <View style={{ flexDirection: 'row', gap: 10 }}>
               {prs.slice(0, 3).map((pr) => (
                 <View key={pr.lift} style={styles.pr}>
-                  <AppText style={styles.prLabel}>{pr.lift.toUpperCase()}</AppText>
+                  <AppText style={styles.prLabel}>{azUpper(pr.lift)}</AppText>
                   <AppText style={{ fontSize: 17, fontWeight: '700', marginTop: 8 }}>{pr.value} kq</AppText>
                   {pr.delta ? <AppText style={{ fontSize: 10.5, fontWeight: '500', color: palette.voltDeep, marginTop: 6 }}>{pr.delta}</AppText> : null}
                 </View>

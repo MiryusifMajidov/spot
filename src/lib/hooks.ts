@@ -156,7 +156,8 @@ const mapShop = (r: any): ShopItem => ({ id: r.id, name: r.name, qty: r.qty, pri
 export const usePrograms = () => {
   const mine = useDb((s) => s.myPrograms);
   const remote = useFocusFetch<Program[]>('programs', mockPrograms, async () => {
-    const { data } = await supabase.from('programs').select('*').is('hidden_at', null).order('saves', { ascending: false });
+    const { data, error } = await supabase.from('programs').select('*').is('hidden_at', null).order('saves', { ascending: false });
+    if (error) throw error;
     return nonEmpty((data ?? []).map(mapProgram));
   });
   // The user's own programs always come first and are never hidden by the catalog.
@@ -170,7 +171,8 @@ export const usePrograms = () => {
 export const useProgram = (id: string) => {
   const mine = useDb((s) => s.myPrograms.find((p) => p.id === id));
   const fetched = useOne<Program>(mockPrograms.find((p) => p.id === id) ?? null, async () => {
-    const { data } = await supabase.from('programs').select('*').eq('id', id).is('hidden_at', null).maybeSingle();
+    const { data, error } = await supabase.from('programs').select('*').eq('id', id).is('hidden_at', null).maybeSingle();
+    if (error) throw error;
     return data ? mapProgram(data) : null;
   }, [id]);
   return mine ?? fetched;
@@ -233,7 +235,8 @@ export const usePartner = (id: string): Partner | null =>
  *  instead of three invented people, two of them wearing a verified badge. */
 export const useTrainers = () =>
   useFocusFetch<Trainer[]>('trainers', NO_TRAINERS, async () => {
-    const { data } = await supabase.from('trainers').select('*').eq('listed', true);
+    const { data, error } = await supabase.from('trainers').select('*').eq('listed', true);
+    if (error) throw error;
     return nonEmpty(byVerification(data ?? []).map(mapTrainer).filter(isRealTrainer));
   });
 
@@ -274,7 +277,8 @@ function isRealTrainer(t: Trainer): boolean {
 
 export const useTrainer = (id: string) =>
   useFocusFetch<Trainer | null>(id ? `trainer:${id}` : '', null, async () => {
-    const { data } = await supabase.from('trainers').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await supabase.from('trainers').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
     return data ? mapTrainer(data) : null;
   });
 
@@ -299,6 +303,7 @@ export const useTrainersForGym = (gymId: string) =>
     // (now a real count of listed trainers, schema23) disagreed with the list
     // underneath it.
     const { data, error } = await supabase.from('trainers').select('*').eq('gym_id', gymId).eq('listed', true);
+    if (error) throw error;
     // A PostgREST error does not throw — it comes back in the result. Without
     // this the screen read a refused query as «this gym has no trainers».
     if (error) throw error;
@@ -309,7 +314,8 @@ export const useTrainersForGym = (gymId: string) =>
 /** Program-day exercises (from the exercise library). */
 export const useDayExercises = () =>
   useList<Exercise>(pushExercises, async () => {
-    const { data } = await supabase.from('exercises').select('*');
+    const { data, error } = await supabase.from('exercises').select('*');
+    if (error) throw error;
     return (data ?? []).map((r: any) => ({
       id: r.id, name: r.name, muscle: r.muscle, sets: r.sets, reps: r.reps,
       commonMistake: r.common_mistake, substitutes: r.substitutes ?? [],
@@ -334,12 +340,13 @@ export const useChallenges = () => {
     // rather than filtered afterwards, so «now» is read when the request is made
     // and not on every render.
     const nowIso = new Date().toISOString();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('challenges')
       .select('*')
       .eq('active', true)
       .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
       .order('ends_at', { ascending: true, nullsFirst: false });
+    if (error) throw error;
     return (data ?? []).map(mapChallenge);
   });
   const active = live[0] ?? null;
@@ -349,7 +356,8 @@ export const useChallenges = () => {
 
 export const useChallenge = (id: string) =>
   useOne<Challenge>(null, async () => {
-    const { data } = await supabase.from('challenges').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await supabase.from('challenges').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
     return data ? mapChallenge(data) : null;
   }, [id]);
 
@@ -371,7 +379,8 @@ export async function challengeStandings(id: string): Promise<Standing[]> {
 
 export const useGymRanking = () =>
   useList(mockRanking, async () => {
-    const { data } = await supabase.from('gyms').select('id,name,members,tons');
+    const { data, error } = await supabase.from('gyms').select('id,name,members,tons');
+    if (error) throw error;
     return (data ?? [])
       .map((g: any) => ({
         gym: g.name,
@@ -401,12 +410,13 @@ export const useGymRanking = () =>
 export const useFeedVideos = () => {
   // local-first
   return useFocusFetch<FeedVideo[]>('feed_videos', mockVideos, async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('feed_videos')
       .select('*')
       .is('hidden_at', null)
       .order('created_at', { ascending: false })
       .limit(200);
+    if (error) throw error;
     const rows = (data ?? []).map(mapVideo);
 
     let following = new Set<string>();
@@ -428,7 +438,8 @@ export const useFeedVideos = () => {
 export const useCommunityPosts = () => {
   // local-first
   return useFocusFetch<CommunityPost[]>('community_posts', mockPosts, async () => {
-    const { data } = await supabase.from('community_posts').select('*').is('hidden_at', null).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('community_posts').select('*').is('hidden_at', null).order('created_at', { ascending: false });
+    if (error) throw error;
     return nonEmpty((data ?? []).map(mapPost));
   });
 };
@@ -447,13 +458,15 @@ export const useCommunityPosts = () => {
 
 export const useMeals = () =>
   useList<Meal>(mockMeals, async () => {
-    const { data } = await supabase.from('meals').select('*').order('ord');
+    const { data, error } = await supabase.from('meals').select('*').order('ord');
+    if (error) throw error;
     return (data ?? []).map(mapMeal);
   });
 
 export const useShopItems = () =>
   useList<ShopItem>(mockShop, async () => {
-    const { data } = await supabase.from('shop_items').select('*').order('ord');
+    const { data, error } = await supabase.from('shop_items').select('*').order('ord');
+    if (error) throw error;
     return (data ?? []).map(mapShop);
   });
 
@@ -462,7 +475,8 @@ export const useReviews = (gymId: string) =>
   useList<{ id: string; name: string; tenure: string; rating: number; text: string }>(
     [],
     async () => {
-      const { data } = await supabase.from('reviews').select('*').eq('gym_id', gymId);
+      const { data, error } = await supabase.from('reviews').select('*').eq('gym_id', gymId);
+      if (error) throw error;
       return (data ?? []).map((r: any) => ({ id: r.id, name: r.name, tenure: r.tenure, rating: r.rating, text: r.body }));
     },
     [gymId]

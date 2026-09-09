@@ -22,7 +22,7 @@ import { useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { applyGymFilter, applyPartnerFilter, gymFilterCount, partnerFilterCount, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
-import { searchKey } from '@/lib/az';
+import { searchKey, azUpper } from '@/lib/az';
 import { getUnreadCount } from '@/lib/notifications';
 
 // Shared fold — a plain toLocaleLowerCase('az') turned «Iron Bay» into
@@ -276,7 +276,7 @@ export default function Discover() {
                     <View style={styles.liveRow}>
                       <LiveDot />
                       <AppText style={styles.liveLabel}>
-                        İNDİ ZALDA {homeGym.liveCount} NƏFƏR · {homeGym.name.toUpperCase()}
+                        İNDİ ZALDA {homeGym.liveCount} NƏFƏR · {azUpper(homeGym.name)}
                       </AppText>
                     </View>
                   ) : null}

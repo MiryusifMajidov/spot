@@ -20,6 +20,9 @@ import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
 
 /** Design rule: a manual check-in only counts within 150 m of the gym. */
+/** Long enough for a real indoor fix, short enough that nobody stares at a
+ *  frozen button. Beyond this we fall back to the last known position. */
+const GPS_TIMEOUT_MS = 15000;
 const MAX_DISTANCE_M = 150;
 
 /** Metres between two WGS-84 points (haversine). */
@@ -182,7 +185,25 @@ export default function CheckIn() {
           fail('Check-in üçün lokasiya icazəsi lazımdır — zalda olduğunu yalnız bununla yoxlaya bilirik.');
           return;
         }
-        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        /* A check-in happens INSIDE a concrete building, which is exactly where
+           expo-location's own docs warn that this call «may take some time to
+           resolve». It has no timeout of its own: if no provider ever returns a
+           fix the promise never settles, so `setVerifying(true)` is never undone,
+           the catch below never runs, and the button sits on «Yoxlanılır…»
+           forever with no message, no retry and no cancel. Race it, then fall
+           back to the last known position — which for somebody standing in their
+           gym is almost always good enough for a 150 m radius. */
+        const pos =
+          (await Promise.race([
+            Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), GPS_TIMEOUT_MS)),
+          ])) ?? (await Location.getLastKnownPositionAsync({ maxAge: 5 * 60 * 1000 }));
+        if (!pos) {
+          fail(
+            'Lokasiya vaxtında gəlmədi — zalın içində GPS siqnalı zəif olur. Girişə yaxın dayanıb yenidən cəhd et.'
+          );
+          return;
+        }
         here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       } catch {
         fail('Lokasiya alınmadı. GPS-i aç və yenidən cəhd et.');

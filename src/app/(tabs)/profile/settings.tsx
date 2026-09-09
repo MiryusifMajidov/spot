@@ -11,6 +11,7 @@ import { Screen } from '@/components/ui/Screen';
 import { accountCount, showAccountSwitcher } from '@/lib/accounts';
 import { useAuthGate } from '@/lib/authGate';
 import { currentIdentity, signOut } from '@/lib/auth';
+import { wipeDeviceData } from '@/lib/wipe';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { releaseSounds, successFeedback, tapFeedback } from '@/lib/feedback';
 import { useAppStore } from '@/store/appStore';
@@ -59,9 +60,16 @@ export default function Settings() {
           label: 'Çıx',
           style: 'destructive',
           onPress: () => {
-            signOut()
+            /* The dialog above promises the phone is cleared. Until now nothing
+               cleared it: the Supabase session ended and `spot-db` / `spot-app`
+               stayed exactly where they were, so the next person to open SPOT
+               on this phone got the previous account's workouts, weigh-ins and
+               chat threads. Wipe FIRST — if the network call then fails the
+               device is still clean, which is the safe order. */
+            wipeDeviceData()
+              .then(() => signOut())
               .then(() => {
-                toast('Hesabdan çıxdın');
+                toast('Hesabdan çıxdın — bu telefondakı məlumatlar silindi');
                 router.replace('/onboarding/welcome');
               })
               .catch(() => toast('Çıxmaq alınmadı — yenidən cəhd et', 'error'));
@@ -78,16 +86,18 @@ export default function Settings() {
      in the same `reports` table the admin panel reads (schema21). */
   const help = () => router.push('/(tabs)/profile/support');
 
-  /** Scope note: resetOnboarding() clears the profile + onboarding flag only —
-   *  workouts, weights and check-ins stay. The confirm says exactly that. */
+  /** Scope note: this restarts the onboarding FLOW on this device. It does not
+   *  delete anything on the server — `bootstrap()` reads the profile back from
+   *  `profiles` on the next launch, so the name, gym, goals and level return.
+   *  The copy used to promise they would be «silinəcək», which was never true. */
   const resetOnboarding = () =>
     confirm(
-      'Onboarding-i sıfırla',
-      'Profil məlumatların (ad, zal, məqsəd, səviyyə) silinəcək və qeydiyyat yenidən başlayacaq. Məşq, çəki və check-in tarixçən qalır — onları da silmək üçün Məxfilik → «Datanı bu cihazdan sil».',
+      'Onboarding-i yenidən keç',
+      'Qeydiyyat addımları bu cihazda yenidən başlayacaq və cavablarını yenidən verə bilərsən. Serverdəki profilin silinmir — dəyişmədiyin sahələr olduğu kimi qalır. Məşq, çəki və check-in tarixçən də toxunulmur; onları silmək üçün Məxfilik → «Datanı bu cihazdan sil».',
       [
         { label: 'Ləğv et', style: 'cancel' },
         {
-          label: 'Sıfırla',
+          label: 'Yenidən keç',
           style: 'destructive',
           onPress: () => {
             reset();
@@ -230,7 +240,7 @@ export default function Settings() {
         </ListGroup>
 
         <ListGroup footer="Bu, test üçün qeydiyyatı yenidən başladır.">
-          <ListRow icon="arrowU" iconBg={palette.red} iconColor={palette.white} title="Onboarding-i sıfırla" danger chevron={false} onPress={resetOnboarding} />
+          <ListRow icon="arrowU" iconBg={palette.red} iconColor={palette.white} title="Onboarding-i yenidən keç" danger chevron={false} onPress={resetOnboarding} />
         </ListGroup>
       </ScrollView>
     </Screen>

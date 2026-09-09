@@ -24,6 +24,39 @@ export function azLower(s: string | null | undefined): string {
   return (s ?? '').toLocaleLowerCase('az');
 }
 
+/**
+ * Correct Azerbaijani UPPERCASE: i→İ, ı→I.
+ *
+ * `'i'.toUpperCase()` gives 'I', which is a different letter in this alphabet —
+ * so every section label the app uppercased came out misspelled: «İSTİFADƏÇİ
+ * ADI» as «İSTIFADƏÇI ADI», «SƏVİYYƏ» as «SƏVIYYƏ», «CİNS» as «CINS». The same
+ * applies to React Native's `textTransform: 'uppercase'`, which is implemented
+ * natively and is locale-blind on both platforms (iOS `uppercaseString`, Android
+ * `uppercase(Locale.getDefault())`) — so it cannot be fixed with a style and the
+ * transform has to happen in JS, here.
+ */
+export function azUpper(s: string | null | undefined): string {
+  return (s ?? '').toLocaleUpperCase('az');
+}
+
+/**
+ * A number the person typed, with either separator.
+ *
+ * On an Azerbaijani (or Turkish, or Russian) keyboard the `decimal-pad` key is a
+ * COMMA, and `Number('72,5')` is NaN. Two places turned that into real damage:
+ * the set logger wrote `Number(kg) || 0`, so a comma-typed weight was silently
+ * recorded as 0 kg and disappeared from the volume total; and the weigh-in
+ * screen gated its save button on `!Number(kg)`, so somebody whose keypad types
+ * a comma could not record their weight at all. Returns null when there is no
+ * number at all, so a caller can tell «nothing typed» from «zero».
+ */
+export function parseDecimal(s: string | null | undefined): number | null {
+  const clean = (s ?? '').trim().replace(',', '.');
+  if (!clean) return null;
+  const n = Number(clean);
+  return Number.isFinite(n) ? n : null;
+}
+
 /** Diacritics → their bare ASCII neighbour, as Azerbaijanis actually type them
  *  on a keyboard without the letters: «nə cür» is typed «ne cur». */
 const FOLD: Record<string, string> = {

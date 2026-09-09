@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -59,6 +59,31 @@ export function UiHost() {
   const [bannerH, setBannerH] = useState(0);
   const banner = sanction ? 'sanction' : sessionLost ? 'session' : null;
   const bannerBottom = insets.bottom + 74;
+
+  /* Android's back button belongs to whatever is on top, and every overlay in
+     SPOT — confirm dialogs, action sheets, the comments sheet — is state in
+     `useUi` rendered HERE, outside the navigator. Nothing registered a handler,
+     so back went to the Stack underneath: the screen behind the dialog navigated
+     away while the dialog stayed mounted and live on top of whatever arrived.
+     Pressing back to cancel «Hesabı tamamilə sil» left a red «Sil» button
+     floating over the settings list, one tap from deleting the account. On the
+     Feed tab, which is the app's root route, back exited SPOT with the comments
+     sheet still open. */
+  useEffect(() => {
+    if (!dialog && !sheet && !comments) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (comments) {
+        closeComments();
+        return true;
+      }
+      if (dialog || sheet) {
+        dismiss();
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [dialog, sheet, comments, dismiss, closeComments]);
 
   const run = (a: UiAction) => {
     dismiss();

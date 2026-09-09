@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { successFeedback, tapFeedback } from '@/lib/feedback';
+import { parseDecimal } from '@/lib/az';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -320,7 +321,11 @@ export default function Session() {
         timed: e.timed,
         sets: e.sets
           .filter((s) => s.done)
-          .map((s) => ({ weight: Number(s.kg) || 0, reps: Number(s.reps) || baseRepOf(e.ex.reps), done: true })),
+          /* `parseDecimal`, not `Number`: a comma-typed weight («72,5» — the
+             decimal key on an Azerbaijani keypad) was NaN, and `|| 0` then
+             recorded the set as 0 kg. The set counted, the weight vanished, and
+             the session's whole volume figure was quietly wrong. */
+          .map((s) => ({ weight: parseDecimal(s.kg) ?? 0, reps: parseDecimal(s.reps) ?? baseRepOf(e.ex.reps), done: true })),
       }))
       .filter((e) => e.sets.length > 0);
 

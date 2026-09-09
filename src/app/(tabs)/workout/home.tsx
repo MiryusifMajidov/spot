@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
+import { azUpper } from '@/lib/az';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useGyms } from '@/lib/hooks';
 import { useAllPrograms } from '@/store/db';
@@ -51,7 +52,7 @@ export default function HomeWorkout() {
         <View style={styles.todayCard}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 }}>
             <View style={styles.voltDot} />
-            <AppText style={styles.overlineVolt}>BUGÜN · {equip.length === 1 && equip[0] === 'Heç nə' ? 'AVADANLIQSIZ' : equip.filter((e) => e !== 'Heç nə').join(', ').toUpperCase()}</AppText>
+            <AppText style={styles.overlineVolt}>BUGÜN · {equip.length === 1 && equip[0] === 'Heç nə' ? 'AVADANLIQSIZ' : azUpper(equip.filter((e) => e !== 'Heç nə').join(', '))}</AppText>
           </View>
           <AppText style={{ fontSize: 21, fontWeight: '700', color: palette.white, letterSpacing: -0.4 }}>Tam bədən · {time} dəqiqə</AppText>
           <AppText style={{ fontSize: 13, lineHeight: 18, color: 'rgba(255,255,255,0.55)', marginTop: 7 }}>

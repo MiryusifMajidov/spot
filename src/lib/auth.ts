@@ -28,6 +28,7 @@
  * Neither can be done from here, and each function says so when it is missing
  * rather than failing with a raw provider error.
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -84,9 +85,20 @@ async function requireProvider(name: 'google' | 'apple' | 'phone' | 'email'): Pr
   if (p && p[name] === false) throw new AuthSetupError(name);
 }
 
-/** Is the person currently signed in as an anonymous (device-only) user? */
+/**
+ * Is the person currently signed in as an anonymous (device-only) user?
+ *
+ * THROWS when it cannot tell. That matters more than it looks: this answer picks
+ * between LINKING an identity to the existing account and CREATING a new one.
+ * It used to read `data.user?.is_anonymous` and ignore the error, so a dropped
+ * connection or a refused token refresh answered «not anonymous» — and the
+ * caller then signed the person into a brand-new account, leaving their profile,
+ * @username, streak, workouts and videos behind on the old one. A guess in that
+ * direction costs somebody their history.
+ */
 export async function isAnonymous(): Promise<boolean> {
-  const { data } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw new Error('session-unknown');
   return !!data.user?.is_anonymous;
 }
 
@@ -140,15 +152,35 @@ async function signInWithProvider(provider: 'google' | 'apple'): Promise<void> {
   await requireProvider(provider);
   const anon = await isAnonymous();
 
-  const start = anon
+  const oauth = () =>
+    supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: AUTH_REDIRECT, skipBrowserRedirect: true },
+    });
+
+  let start = anon
     ? await supabase.auth.linkIdentity({
         provider,
         options: { redirectTo: AUTH_REDIRECT, skipBrowserRedirect: true },
       })
-    : await supabase.auth.signInWithOAuth({
-        provider,
-        options: { redirectTo: AUTH_REDIRECT, skipBrowserRedirect: true },
-      });
+    : await oauth();
+
+  /* GETTING BACK IN FROM A NEW PHONE.
+     On a fresh install the person is anonymous, so the branch above tries to
+     LINK their Google/Apple identity to the new device-only account — and
+     Supabase refuses, because that identity already belongs to the account they
+     are trying to reach. Without this fallback the screen's whole promise
+     («indi başqa telefondan da girə bilərsən») was impossible to keep: every
+     path linked to the local anonymous user and there was none that signed in
+     to an existing account. When the identity is already taken, signing IN is
+     exactly the right move — the anonymous user on a fresh install has nothing
+     in it to lose. */
+  if (anon && start.error) {
+    const m = String(start.error.message ?? '').toLowerCase();
+    const taken =
+      m.includes('already') || m.includes('exists') || m.includes('in use') || m.includes('registered');
+    if (taken) start = await oauth();
+  }
 
   if (start.error) {
     const m = String(start.error.message ?? '').toLowerCase();
@@ -160,6 +192,7 @@ async function signInWithProvider(provider: 'google' | 'apple'): Promise<void> {
     throw start.error;
   }
   if (!start.data?.url) throw new AuthSetupError(provider);
+  await beginAuthAttempt();
 
   const result = await WebBrowser.openAuthSessionAsync(start.data.url, AUTH_REDIRECT);
   if (result.type !== 'success' || !result.url) {
@@ -168,6 +201,52 @@ async function signInWithProvider(provider: 'google' | 'apple'): Promise<void> {
   }
 
   await completeFromUrl(result.url);
+}
+
+/* ---------------- only finish a sign-in THIS APP started ----------------
+ *
+ * The PKCE `code` form is safe on its own: `exchangeCodeForSession` checks the
+ * verifier this device generated, so a code from anywhere else fails. The older
+ * fragment form (`#access_token=…&refresh_token=…`) carries a COMPLETE session
+ * and is verified by nothing — any `spot://auth-callback#access_token=…` link,
+ * from a web page or a message, would silently replace the session and the app
+ * would announce «Hesabın qorundu». The person would then log their workouts,
+ * their weight and their chats into somebody else's account.
+ *
+ * So the fragment form is only accepted while a sign-in this app started is
+ * still in flight. */
+const ATTEMPT_KEY = 'spot-auth-attempt';
+/* An hour. The e-mail path is the reason this is not minutes: the person taps
+   the link when they next open their mail, long after SPOT was swiped away, so
+   the flag has to survive a cold start — which is also why it lives in storage
+   rather than in a module variable. */
+const ATTEMPT_TTL_MS = 60 * 60 * 1000;
+
+export async function beginAuthAttempt(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(ATTEMPT_KEY, String(Date.now()));
+  } catch {
+    /* Storage refused. The PKCE path still works; only the fragment path,
+       which needs this proof, will refuse — and refusing is the safe side. */
+  }
+}
+
+async function attemptIsLive(): Promise<boolean> {
+  try {
+    const raw = await AsyncStorage.getItem(ATTEMPT_KEY);
+    const at = raw ? Number(raw) : 0;
+    return at > 0 && Date.now() - at < ATTEMPT_TTL_MS;
+  } catch {
+    return false;
+  }
+}
+
+async function endAuthAttempt(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(ATTEMPT_KEY);
+  } catch {
+    /* nothing to do */
+  }
 }
 
 /** Turn the redirect URL into a session. Handles both the PKCE `code` form and
@@ -187,8 +266,10 @@ export async function completeFromUrl(url: string): Promise<void> {
   const access_token = frag.get('access_token');
   const refresh_token = frag.get('refresh_token');
   if (access_token && refresh_token) {
+    if (!(await attemptIsLive())) throw new Error('unsolicited-callback');
     const { error } = await supabase.auth.setSession({ access_token, refresh_token });
     if (error) throw error;
+    await endAuthAttempt(); // one callback per attempt
     return;
   }
 
@@ -223,12 +304,27 @@ export async function sendEmailCode(email: string): Promise<{ linking: boolean }
      custom SMTP provider, so `{{ .Token }}` cannot be added and the default
      template sends a LINK and no code. The link is therefore the path that
      works with zero configuration — see `handleAuthDeepLink`. */
-  const { error } = anon
+  const otp = () =>
+    supabase.auth.signInWithOtp({
+      email: clean,
+      options: { shouldCreateUser: true, emailRedirectTo: AUTH_REDIRECT },
+    });
+
+  let linking = anon;
+  let { error } = anon
     ? await supabase.auth.updateUser({ email: clean }, { emailRedirectTo: AUTH_REDIRECT })
-    : await supabase.auth.signInWithOtp({
-        email: clean,
-        options: { shouldCreateUser: true, emailRedirectTo: AUTH_REDIRECT },
-      });
+    : await otp();
+
+  /* Same fallback as the social path: attaching an address that already belongs
+     to an account is refused, and on a new phone that is exactly the address the
+     person is trying to come back through. */
+  if (anon && error) {
+    const m = String(error.message ?? '').toLowerCase();
+    if (m.includes('already') || m.includes('exists') || m.includes('registered') || m.includes('in use')) {
+      ({ error } = await otp());
+      linking = false;
+    }
+  }
 
   if (error) {
     const m = String(error.message ?? '').toLowerCase();
@@ -236,7 +332,8 @@ export async function sendEmailCode(email: string): Promise<{ linking: boolean }
     if (m.includes('not enabled') || m.includes('disabled')) throw new AuthSetupError('email');
     throw error;
   }
-  return { linking: anon };
+  await beginAuthAttempt();
+  return { linking };
 }
 
 /** Confirm the emailed code. `email_change` when it was attached to an existing

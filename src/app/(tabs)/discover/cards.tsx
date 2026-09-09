@@ -10,6 +10,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { Icon } from '@/components/Icon';
+import { azUpper } from '@/lib/az';
 import { COMPAT_UNKNOWN_SHORT, MISMATCH_COLOR, compatOf, splitReasons } from '@/components/PartnerRow';
 import { AppText } from '@/components/ui/AppText';
 import { NavBar } from '@/components/ui/NavBar';
@@ -404,7 +405,7 @@ function CardFace({ partner }: { partner: Partner }) {
 function DataCell({ label, value, volt }: { label: string; value: string; volt?: boolean }) {
   return (
     <View style={[styles.cell, volt && { backgroundColor: 'rgba(198,255,61,0.26)' }]}>
-      <AppText style={[styles.cellLabel, volt && { color: palette.voltDeep }]}>{label.toUpperCase()}</AppText>
+      <AppText style={[styles.cellLabel, volt && { color: palette.voltDeep }]}>{azUpper(label)}</AppText>
       <AppText style={[styles.cellValue, volt && { color: '#3F5500' }]} numberOfLines={1}>
         {value}
       </AppText>

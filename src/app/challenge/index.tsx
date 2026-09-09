@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon, IconName } from '@/components/Icon';
+import { azUpper } from '@/lib/az';
 import { AppText } from '@/components/ui/AppText';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
@@ -80,7 +81,7 @@ export default function Challenges() {
         {a ? (
           <PressableScale activeScale={0.98} onPress={() => router.push({ pathname: '/challenge/[id]', params: { id: a.id } })} style={styles.activeCard}>
             <View style={styles.activeHead}>
-              <AppText style={styles.activeOverline}>{scopeLabel(a).toUpperCase()}</AppText>
+              <AppText style={styles.activeOverline}>{azUpper(scopeLabel(a))}</AppText>
               {a.endsAt ? (
                 <View style={styles.rewardTag}>
                   <Icon name="clock" size={11} color={palette.inkText} />
@@ -132,7 +133,7 @@ export default function Challenges() {
           <View style={styles.streakHead}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Icon name="flame" size={16} color={palette.streak} />
-              <AppText style={styles.streakOverline}>{streakChallenge.scopeLabel.toUpperCase()}</AppText>
+              <AppText style={styles.streakOverline}>{azUpper(streakChallenge.scopeLabel)}</AppText>
             </View>
             <AppText style={{ fontSize: 13, fontWeight: '700', color: palette.caption }}>{streakDays} gün</AppText>
           </View>

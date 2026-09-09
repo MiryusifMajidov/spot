@@ -53,14 +53,14 @@ export default function Analytics() {
 
   return (
     <Screen edges={['top']}>
-      <NavBar
-        title="Analitika"
-        right={
-          <View style={styles.plusBadge}>
-            <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.volt }}>SPOT+</AppText>
-          </View>
-        }
-      />
+      {/* No «SPOT+» badge. It was rendered unconditionally, for everybody, and
+          SPOT+ was the paid subscription tier the team cancelled — so it told a
+          person either that they were on a plan they never bought, or that this
+          screen was premium and about to be taken away. Parametrlər says on the
+          same account «SPOT tam pulsuzdur — abunə, tətbiqdaxili ödəniş və ya
+          kilidli funksiya yoxdur»; both could not be true. Nothing in the app is
+          gated by any plan, so the badge was also a status nobody obtained. */}
+      <NavBar title="Analitika" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 14 }}>
@@ -177,7 +177,6 @@ function MetricCard({ title, value, sub, subColor }: { title: string; value: str
 }
 
 const styles = StyleSheet.create({
-  plusBadge: { backgroundColor: palette.ink, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
   card: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 12 },
   muscleHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   barTrack: { height: 8, borderRadius: 4, backgroundColor: '#EFEFF2', overflow: 'hidden' },

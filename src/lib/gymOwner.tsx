@@ -384,10 +384,15 @@ export async function postGymAnnouncement(gymName: string, body: string): Promis
       author: gymName,
       author_id: me.id,
       gym: gymName,
+      time_ago: 'indi',
       type: 'text',
       body,
-      likes: 0,
-      comments: 0,
+      // No `likes: 0` / `comments: 0`. schema45 revoked INSERT on the counter
+      // columns and schema47/53 rebuilt the grant without them, so naming them
+      // made Postgres refuse the WHOLE row («permission denied for column
+      // likes») — every gym announcement ever written failed, and the screen
+      // blamed the owner's internet for a permission rule. api.ts:665 documents
+      // the same hazard for the sibling function; this path was never updated.
     })
     .select('id');
   if (error) throw error;
