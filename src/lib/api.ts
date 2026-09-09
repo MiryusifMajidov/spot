@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gym, Partner, toLevel } from '@/data/types';
 import { supabase } from './supabase';
 import { invalidateFocusCache, invalidateFocusPrefix } from './focusFetch';
+import { cacheGyms } from './gymCache';
 import { isPlaceholderName } from './authorName';
 
 /** Raw DB row shapes (snake_case, as stored in Postgres). */
@@ -302,7 +303,14 @@ export async function getGymsNear(lat: number, lng: number): Promise<Gym[]> {
     activeCountsByGym(),
   ]);
   if (error) throw error;
-  return (data ?? []).map((row: { gym: DbGym; distance_km: number }) => mapGym(row.gym, row.distance_km, counts[row.gym.id] ?? 0));
+  const list = (data ?? []).map((row: { gym: DbGym; distance_km: number }) =>
+    mapGym(row.gym, row.distance_km, counts[row.gym.id] ?? 0)
+  );
+  // This is the ONLY path that produces a real distance, so it is also the one
+  // worth caching: `gymById()` reads the cache, and the swipe cards can then
+  // print a distance somebody actually measured instead of a hardcoded 0.
+  cacheGyms(list);
+  return list;
 }
 
 export async function getGyms(): Promise<Gym[]> {

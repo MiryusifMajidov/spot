@@ -7,7 +7,8 @@ import { gymRanking as mockRanking, streakChallenge, Challenge, Standing } from 
 import { communityPosts as mockPosts, feedVideos as mockVideos, CommunityPost, FeedVideo } from '@/data/feed';
 // NOTE: `trainers` and `partnersForGym` are deliberately NOT imported any more —
 // people are never seeded into a list the user can act on.
-import { gyms as mockGyms, programs as mockPrograms, pushExercises } from '@/data/mock';
+import { programs as mockPrograms, pushExercises } from '@/data/mock';
+import { cacheGyms } from '@/lib/gymCache';
 import { meals as mockMeals, shoppingList as mockShop, Meal, ShopItem } from '@/data/nutrition';
 import { Exercise, Gym, Partner, Program, Trainer } from '@/data/types';
 import { getPartner as apiGetPartner, byCompatibility, getGyms, getPartnersAtGym } from '@/lib/api';
@@ -56,6 +57,7 @@ function useOne<T>(fallback: T | null, fetcher: () => Promise<T | null>, deps: u
  *  selector that builds a fresh array every time loops React forever. */
 const NO_PARTNERS: Partner[] = [];
 const NO_CHALLENGES: Challenge[] = [];
+const NO_GYMS: Gym[] = [];
 const NO_TRAINERS: Trainer[] = [];
 
 // ---------------- mappers ----------------
@@ -180,7 +182,15 @@ export const useProgram = (id: string) => {
 
 export const useGyms = () => {
   // Local-first: seeds render instantly, the server overrides once it answers.
-  return useFocusFetch<Gym[]>('gyms', mockGyms, async () => nonEmpty(await getGyms()));
+  /* No seed fallback, and the result is cached so the synchronous `gymById()`
+     lookups on other screens can see a real gym. `useList`/`useFocusFetch` keep
+     their fallback when a fetch comes back empty, so a seeded array here would
+     have outlived schema66 and kept showing four invented businesses forever. */
+  return useFocusFetch<Gym[]>('gyms', NO_GYMS, async () => {
+    const list = await getGyms();
+    cacheGyms(list);
+    return nonEmpty(list);
+  });
 };
 
 /** REAL people at this gym (other SPOT users), refreshed on focus. This is now the
@@ -294,6 +304,7 @@ export const usePartnerPhase = (id: string) => useFetchPhase(id ? `partner:${id}
 export const usePartnersPhase = (gymId: string) => useFetchPhase(gymId ? `partners:${gymId}` : '');
 
 export const useTrainersForGymPhase = (gymId: string) => useFetchPhase(gymId ? `gymTrainers:${gymId}` : '');
+export const useGymsPhase = () => useFetchPhase('gyms');
 
 export const useTrainersForGym = (gymId: string) =>
   useFocusFetch<Trainer[]>(gymId ? `gymTrainers:${gymId}` : '', NO_TRAINERS, async () => {
@@ -482,4 +493,3 @@ export const useReviews = (gymId: string) =>
     [gymId]
   );
 
-export { mockGyms };

@@ -1,4 +1,4 @@
-import { Exercise, Gym, Partner, Program, Trainer } from './types';
+import { Exercise, Partner, Program, Trainer } from './types';
 
 /** Onboarding option lists (matching = these params only). */
 export const GOALS = ['Kütlə yığmaq', 'Arıqlamaq', 'Güc', 'Dözümlülük', 'Forma saxlamaq', 'Sağlamlıq'];
@@ -7,99 +7,27 @@ export const WORKOUT_TYPES = ['Sərbəst ağırlıq', 'Kardio', 'Funksional', 'C
 export const DAYS = ['B.e', 'Ç.a', 'Çər', 'C.a', 'Cüm', 'Şən', 'Baz'];
 export const TIME_SLOTS = ['Səhər 6–9', 'Gündüz 9–17', 'Axşam 17–21', 'Gecə 21–24'];
 
-export const gyms: Gym[] = [
-  {
-    id: 'iron-bay',
-    lat: 40.4093,
-    lng: 49.8671, // Nərimanov rayonunun mərkəzi — nümunə zalı üçün təxmini yer
-    approxLocation: true,
-    name: 'Iron Bay',
-    verified: false, // no admin ever approved an ownership claim for a seed gym
-    district: 'Nərimanov',
-    distanceKm: 0, // a distance can only come from the gyms_near RPC with a real fix; the screens hide 0
-    hours: '6:00–24:00',
-    priceMonth: 45,
-    dayPass: 5,
-    members: 0,      // derived from real profiles by schema11; never a seeded figure
-    trainers: 9,
-    rating: 0,       // derived from real reviews by schema11
-    reviewCount: 0,  // idem
-    liveCount: 0,
-    amenities: ['Sərbəst ağırlıq', 'Duş', 'Park', 'Sauna', 'Kardio zonası', 'Wi-Fi'],
-    tags: ['Sərbəst ağırlıq', 'Duş', 'Park', '9 müəllim'],
-    about:
-      'Nərimanovda sərbəst ağırlıq üzərində qurulmuş güc zalı. Geniş kardio zonası, təmiz duş və park daxil. Səhər tezdən gecəyə qədər açıqdır.',
-  },
-  {
-    id: 'volt-gym',
-    lat: 40.3777,
-    lng: 49.809, // Yasamal rayonunun mərkəzi — nümunə zalı üçün təxmini yer
-    approxLocation: true,
-    name: 'Volt Gym',
-    verified: false,
-    district: 'Yasamal',
-    distanceKm: 0, // a distance can only come from the gyms_near RPC with a real fix; the screens hide 0
-    hours: '24 saat',
-    priceMonth: 60,
-    dayPass: 7,
-    members: 0,      // derived from real profiles by schema11; never a seeded figure
-    trainers: 14,
-    rating: 0,       // derived from real reviews by schema11
-    reviewCount: 0,  // idem
-    liveCount: 0,
-    amenities: ['24 saat', 'Duş', 'Kardio zonası', 'Qrup dərsləri'],
-    tags: ['24 saat', 'Kardio', '14 müəllim'],
-    about: '24 saat açıq, müasir avadanlıqlı şəhər zalı. Qrup dərsləri və geniş kardio zonası ilə.',
-  },
-  {
-    id: 'atlas-fit',
-    lat: 40.386,
-    lng: 49.896, // Xətai rayonunun mərkəzi — nümunə zalı üçün təxmini yer
-    approxLocation: true,
-    name: 'Atlas Fitness',
-    verified: false, // no admin ever approved an ownership claim for a seed gym
-    district: 'Xətai',
-    distanceKm: 0, // a distance can only come from the gyms_near RPC with a real fix; the screens hide 0
-    hours: '7:00–23:00',
-    priceMonth: 50,
-    dayPass: 6,
-    members: 0,      // derived from real profiles by schema11; never a seeded figure
-    trainers: 7,
-    rating: 0,       // derived from real reviews by schema11
-    reviewCount: 0,  // idem
-    liveCount: 0,
-    amenities: ['Sərbəst ağırlıq', 'Basseyn', 'Sauna', 'Duş'],
-    tags: ['Basseyn', 'Sauna', '7 müəllim'],
-    about: 'Basseyn və sauna daxil olmaqla tam kompleks. Ailəvi mühit, təcrübəli müəllim heyəti.',
-  },
-  {
-    id: 'peak-house',
-    lat: 40.396,
-    lng: 49.842, // Nəsimi rayonunun mərkəzi — nümunə zalı üçün təxmini yer
-    approxLocation: true,
-    name: 'Peak House',
-    verified: false,
-    district: 'Nəsimi',
-    distanceKm: 0, // a distance can only come from the gyms_near RPC with a real fix; the screens hide 0
-    hours: '8:00–22:00',
-    priceMonth: 40,
-    dayPass: 4,
-    members: 0,      // derived from real profiles by schema11; never a seeded figure
-    trainers: 5,
-    rating: 0,       // derived from real reviews by schema11
-    reviewCount: 0,  // idem
-    liveCount: 0,
-    amenities: ['Funksional', 'CrossFit', 'Duş'],
-    tags: ['Funksional', 'CrossFit', '5 müəllim'],
-    about: 'Funksional və CrossFit yönümlü butik zal. Kiçik qruplarla intensiv məşqlər.',
-  },
-];
+/* There are no seeded gyms any more.
+ *
+ * Four lived here — Iron Bay, Volt Gym, Atlas Fitness, Peak House — with monthly
+ * prices, day-pass prices, opening hours, amenity lists, «about» copy, ratings,
+ * member counts and coordinates that a seed script invented, attributed to
+ * named businesses that never agreed to any of it. They were the ENTIRE
+ * catalogue: onboarding step 4 offered exactly these, Kəşf listed exactly these,
+ * the map plotted exactly these, and because `useGyms` is local-first they also
+ * stood in whenever the network was down — so `discover/index.tsx`'s honest
+ * «Hələ zal yoxdur» state could never appear.
+ *
+ * Their coordinates were district centres, so a person standing inside the real
+ * gym was told it was 1.4 km away and could not check in. Their tags still read
+ * «9 müəllim» for a gym with no trainers — the exact string schema23 exists to
+ * strip from the database.
+ *
+ * schema66 deletes the rows; these literals go with them. A gym now exists only
+ * when a real one registers, and the empty states that were already written are
+ * what a person sees until then.
+ */
 
-/* Empty on purpose — four invented coaches with ratings (4.9, 4.8), client
- * counts (38, 44) and certifications including «Iron Bay təsdiqi». Kəşf →
- * Müəllimlər reads the server (`useTrainers`), so these never showed; they were
- * a ready-made fallback with exactly the numbers schema27 stopped anyone from
- * writing. A coach's rating and client count must be earned, not seeded. */
 export const trainers: Trainer[] = [];
 
 
@@ -264,7 +192,8 @@ export const programs: Program[] = [
 ];
 
 // ---- accessors ----
-export const getGym = (id: string) => gyms.find((g) => g.id === id);
+/* `getGym` is gone with the seed rows. A gym is looked up through
+   `gymById()` (src/store/db.ts), which reads the real catalogue cache. */
 export const getTrainer = (id: string) => trainers.find((t) => t.id === id);
 export const getPartner = (id: string) => partners.find((p) => p.id === id);
 export const getProgram = (id: string) => programs.find((p) => p.id === id);

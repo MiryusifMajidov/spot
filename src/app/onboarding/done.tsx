@@ -2,13 +2,13 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { toast } from '@/store/ui';
+import { gymById } from '@/store/db';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
-import { getGym } from '@/data/mock';
 import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
 
@@ -20,7 +20,9 @@ export default function Done() {
 
   const [saving, setSaving] = useState(false);
 
-  const homeGym = profile.homeGymId ? getGym(profile.homeGymId) : null;
+  /* `getGym` searched the four seed rows, so a person who had just picked a real
+     gym was told on this very screen that they train at home. */
+  const homeGym = profile.homeGymId ? (gymById(profile.homeGymId) ?? null) : null;
 
   const start = async () => {
     if (saving) return;

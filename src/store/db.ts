@@ -12,7 +12,8 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { gyms as seedGyms, programs as seedPrograms } from '@/data/mock';
+import { programs as seedPrograms } from '@/data/mock';
+import { cachedGym } from '@/lib/gymCache';
 import { DAILY_TARGET, meals as mealsData } from '@/data/nutrition';
 import { Gym, Level, Partner, Program } from '@/data/types';
 import { newId } from '@/lib/ids';
@@ -430,12 +431,34 @@ export const useDb = create<DbState>()(
       /** Merge rows pulled from the server. Server rows the device already has
        *  (same id) are left alone — the local copy carries the set detail the
        *  server does not store, so overwriting it would LOSE information. */
+      /* De-duplicated by id AND by content.
+       *
+       * By id alone this doubled everybody's history. A workout logged by a
+       * build from before the ids were shared kept a local `w-<ms>` id while the
+       * server generated its own UUID for the same session, so the two copies
+       * matched on nothing: the pull added every one of them a second time, and
+       * `pushLocalHistory` then sent the local copy up under a fresh UUID, so
+       * the server doubled as well — permanently, and stably across every later
+       * launch. «20 məşq · 60 t» became «40 məşq · 120 t» and stayed there.
+       *
+       * A legacy pair shares its timestamp on both sides, which is what the
+       * content key uses. Rounded to the second because the two rows travelled
+       * through different serialisations. */
       mergeFromServer: (incoming) =>
         set((s) => {
+          const wKey = (w: { at: string; title?: string; volumeKg?: number }) =>
+            `${new Date(w.at).setMilliseconds(0)}|${w.title ?? ''}|${Math.round(w.volumeKg ?? 0)}`;
+          const pKey = (p: { at: string; kg: number }) =>
+            `${new Date(p.at).setMilliseconds(0)}|${Math.round(p.kg * 10)}`;
+
           const have = new Set(s.workouts.map((w) => w.id));
-          const added = incoming.workouts.filter((w) => !have.has(w.id));
+          const haveContent = new Set(s.workouts.map(wKey));
+          const added = incoming.workouts.filter((w) => !have.has(w.id) && !haveContent.has(wKey(w)));
           const haveW = new Set(s.weights.map((w) => w.id).filter(Boolean) as string[]);
-          const addedW = incoming.weights.filter((w) => !w.id || !haveW.has(w.id));
+          const haveWContent = new Set(s.weights.map(pKey));
+          const addedW = incoming.weights.filter(
+            (w) => (!w.id || !haveW.has(w.id)) && !haveWContent.has(pKey(w))
+          );
           if (!added.length && !addedW.length) return {};
           return {
             workouts: [...added, ...s.workouts].sort((a, b) => b.at.localeCompare(a.at)),
@@ -929,7 +952,11 @@ export function timeAgoAz(iso: string): string {
 }
 
 export const seedById = (id: string) => partnerSeeds.find((p) => p.id === id) ?? null;
-export const gymById = (id: string): Gym | undefined => seedGyms.find((g) => g.id === id);
+/* Reads the cached REAL catalogue (src/lib/gymCache.ts). It used to search the
+   four seed rows in `src/data/mock.ts`, so a gym registered from the app was
+   never found: its name collapsed to the generic word «Zal», its distance to 0,
+   and two screens told people they had no gym while they were looking at one. */
+export const gymById = (id: string): Gym | undefined => cachedGym(id);
 export const programById = (id: string): Program | undefined => seedPrograms.find((p) => p.id === id);
 /**
  * Technique footage, filled in from the server.

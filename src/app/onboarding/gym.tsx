@@ -6,7 +6,7 @@ import { Icon } from '@/components/Icon';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { SelectCard } from '@/components/onboarding/SelectCard';
 import { AppText } from '@/components/ui/AppText';
-import { useGyms } from '@/lib/hooks';
+import { useGyms, useGymsPhase } from '@/lib/hooks';
 import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
 import { searchKey } from '@/lib/az';
@@ -25,6 +25,7 @@ export default function GymStep() {
      homeGymId null and silently locks them out of Kartlar, Yoldaşlar and Həftəlik
      təkliflər, because partners are found strictly by home_gym_id. */
   const gyms = useGyms();
+  const gymsPhase = useGymsPhase();
 
   const next = () => router.push('/onboarding/profile');
 
@@ -78,8 +79,14 @@ export default function GymStep() {
       ))}
       {list.length === 0 ? (
         <AppText variant="footnote" color={palette.textSecondary} style={{ marginBottom: 12 }}>
-          "{query.trim()}" üzrə zal tapılmadı. Adın yazılışını yoxla. Zalın hələ SPOT-da deyilsə, aşağıdakı
-          seçimi işarələ — sonra Profil → Redaktə bölməsindən dəyişə bilərsən.
+          {/* Three different situations. The old copy assumed a search term, so an
+              empty catalogue — which is what a new install sees today — read as
+              «"" üzrə zal tapılmadı». */}
+          {gymsPhase === 'failed'
+            ? 'Zal siyahısı yüklənmədi — bu, zal olmadığı demək deyil. İndilik aşağıdakı seçimi işarələ; zalını sonra Profil → Redaktə bölməsindən seçə bilərsən.'
+            : query.trim()
+              ? `"${query.trim()}" üzrə zal tapılmadı. Adın yazılışını yoxla. Zalın hələ SPOT-da deyilsə, aşağıdakı seçimi işarələ — sonra Profil → Redaktə bölməsindən dəyişə bilərsən.`
+              : 'Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Aşağıdakı seçimi işarələ — zalın qoşulanda Profil → Redaktə bölməsindən seçərsən.'}
         </AppText>
       ) : null}
       <SelectCard

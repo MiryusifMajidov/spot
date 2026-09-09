@@ -73,11 +73,22 @@ export async function pushLocalHistory(): Promise<void> {
   const haveW = new Set(serverWorkouts.map((w) => w.id));
   const haveP = new Set(serverWeights.map((p) => p.id));
 
+  /* Content keys, not just ids. A workout written before the ids were shared has
+     a local `w-<ms>` id and a server-generated UUID for the same session, so an
+     id check alone said «the server does not have this» and uploaded a duplicate
+     on every launch. The pair shares its timestamp; that is the join. */
+  const wKey = (at: string, title: string, volumeKg: number) =>
+    `${new Date(at).setMilliseconds(0)}|${title}|${Math.round(volumeKg)}`;
+  const pKey = (at: string, kg: number) => `${new Date(at).setMilliseconds(0)}|${Math.round(kg * 10)}`;
+  const haveWContent = new Set(serverWorkouts.map((w) => wKey(w.at, w.title, w.volumeKg)));
+  const havePContent = new Set(serverWeights.map((p) => pKey(p.at, p.kg)));
+
   const db = useDb.getState();
 
   for (const w of db.workouts) {
     if (w.summaryOnly) continue;            // came FROM the server
     if (isUuid(w.id) && haveW.has(w.id)) continue;
+    if (haveWContent.has(wKey(w.at, w.title, w.volumeKg))) continue;
     const id = isUuid(w.id) ? w.id : newId();
     const setsDone = w.setsDone ?? w.exercises.reduce((a, e) => a + e.sets.filter((s) => s.done).length, 0);
     try {
@@ -99,6 +110,7 @@ export async function pushLocalHistory(): Promise<void> {
 
   for (const p of db.weights) {
     if (p.id && haveP.has(p.id)) continue;
+    if (havePContent.has(pKey(p.at, p.kg))) continue;
     const id = p.id && isUuid(p.id) ? p.id : newId();
     try {
       await logWeight(p.kg, id, p.at);
@@ -112,15 +124,21 @@ export async function pushLocalHistory(): Promise<void> {
 /** Called once at start-up: bring the device up to date, then hand up whatever
  *  only it knows. Never throws — a sync failure must not affect the app. */
 export async function syncTrainingHistory(): Promise<void> {
-  try {
-    await pullTrainingHistory();
-  } catch {
-    /* the device history is still shown; it is simply not enriched yet */
-  }
+  /* PUSH FIRST. The push renames a legacy local row to the UUID the server
+     accepted, so the pull that follows can match it by id and adds nothing. The
+     other order — pull, then push — is what doubled the history: the pull could
+     not recognise the local copy, and the push then could not recognise the
+     server copy. Both halves also compare content now, so the order is a
+     belt-and-braces matter rather than the only defence. */
   try {
     await pushLocalHistory();
   } catch {
     /* retried next launch */
+  }
+  try {
+    await pullTrainingHistory();
+  } catch {
+    /* the device history is still shown; it is simply not enriched yet */
   }
 }
 

@@ -330,6 +330,7 @@ export default function Cards() {
 function CardFace({ partner }: { partner: Partner }) {
   const score = compatOf(partner);
   const { pros, cons } = splitReasons(partner);
+  const cardGym = gymById(partner.gymId);
   return (
     <View style={styles.card}>
       <View style={styles.photo}>
@@ -355,7 +356,13 @@ function CardFace({ partner }: { partner: Partner }) {
             {nameWithAge(partner.name, partner.age)}
           </AppText>
           <AppText style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13.5, marginTop: 5 }}>
-            {gymById(partner.gymId)?.name ?? 'Zal'} · {gymById(partner.gymId)?.distanceKm ?? 0} km
+            {/* The distance segment is drawn only when there IS one. Every seed
+                carried `distanceKm: 0` and only the `gyms_near` RPC — which this
+                screen never calls — produces a real figure, so «Zal · 0 km» was
+                a measurement nobody took, under a gym nobody could name. Every
+                other consumer already guards with `distanceKm > 0`. */}
+            {cardGym?.name ?? 'Zal'}
+            {cardGym && cardGym.distanceKm > 0 ? ` · ${cardGym.distanceKm} km` : ''}
           </AppText>
         </View>
       </View>

@@ -16,7 +16,7 @@ import { Segmented } from '@/components/ui/Segmented';
 import { Partner } from '@/data/types';
 import { getPartner } from '@/lib/api';
 import { useFetchPhase } from '@/lib/focusFetch';
-import { useGyms, usePartnersForGym, useTrainers } from '@/lib/hooks';
+import { useGyms, useGymsPhase, usePartnersForGym, useTrainers } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
@@ -75,6 +75,7 @@ export default function Discover() {
   // occupancy, and the local engine only knows about the user's own check-in —
   // neither is a crowd count, so neither may feed the banner below.
   const gyms = useGyms();
+  const gymsPhase = useGymsPhase();
 
   const allPartners = usePartnersForGym(homeGymId ?? '');
   const trainers = useTrainers();
@@ -261,9 +262,16 @@ export default function Discover() {
             <EmptyBlock
               icon="pin"
               text={
-                q || filterN > 0
-                  ? 'Bu axtarışa uyğun zal tapılmadı. Filtri sıfırla və ya başqa söz yaz.'
-                  : 'Hələ zal yoxdur. Xəritəyə bax və ya sonra yenidən yoxla.'
+                /* «Hələ zal yoxdur» is a claim about the catalogue. Until now it
+                   was also printed over a read that never landed — there was no
+                   failed branch for gyms at all. */
+                gymsPhase === 'failed'
+                  ? 'Zallar yüklənmədi — bu, zal olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç.'
+                  : gymsPhase === 'loading'
+                    ? 'Zallar yüklənir…'
+                    : q || filterN > 0
+                      ? 'Bu axtarışa uyğun zal tapılmadı. Filtri sıfırla və ya başqa söz yaz.'
+                      : 'Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, Profil → «Zal əlavə et» ilə özün əlavə edə bilərsən.'
               }
               action={{ label: 'Xəritədə bax', onPress: () => router.push('/(tabs)/discover/map') }}
             />
