@@ -105,6 +105,15 @@ export default function CreateProgram() {
     });
   };
 
+  /** Why «Yarat» is still grey, in one sentence. */
+  const sayWhatIsMissing = () => {
+    if (!title.trim()) {
+      toast('Proqramın başlığını yaz', 'info');
+      return;
+    }
+    toast('Ən azı bir günə hərəkət əlavə et — günün altındakı «Hərəkət əlavə et»', 'info');
+  };
+
   const create = () =>
     gate(async () => {
       if (!ready || saving) return;
@@ -206,7 +215,11 @@ export default function CreateProgram() {
     <Screen>
       <NavBar
         right={
-          <PressableScale onPress={ready ? create : undefined} haptic={false} activeScale={0.94}>
+          // The button always answers. It used to be `ready ? create : undefined`,
+          // so a program with a title but no moves had a grey «Yarat» that did
+          // nothing at all when tapped, and nothing on screen said the moves were
+          // what was missing.
+          <PressableScale onPress={ready ? create : sayWhatIsMissing} haptic={false} activeScale={0.94}>
             <AppText variant="headline" color={ready ? palette.blue : palette.tertiary}>
               Yarat
             </AppText>
