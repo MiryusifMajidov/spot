@@ -23,6 +23,17 @@ export function toLevel(raw: string | null | undefined): Level | null {
 }
 export type Gender = 'kişi' | 'qadın';
 
+/** One line of a gym's own class timetable, exactly as the owner panel writes it
+ *  into `gyms.schedule` (jsonb, schema7). Declared here — rather than imported
+ *  from `src/lib/gymOwner.tsx`, where `ScheduleItem` has the same shape — so a
+ *  customer-facing screen can read a timetable without pulling in the owner
+ *  panel's React components. */
+export interface GymScheduleItem {
+  time: string;
+  name: string;
+  trainer: string;
+}
+
 export interface Gym {
   id: string;
   name: string;
@@ -44,9 +55,14 @@ export interface Gym {
   photos?: string[];
   lat?: number | null;
   lng?: number | null;
-  /** True when the pin is a district-centre approximation, not a recorded address.
-   *  Only the seed catalogue sets this; a gym located by its owner never does. */
-  approxLocation?: boolean;
+  /* `approxLocation` is gone. It marked a district-centre pin, and only the seed
+     catalogue deleted in schema66 ever set it — so after that nothing wrote it,
+     the map footer that read it was removed with the fake pins, and the field
+     survived as a flag every gym silently answered «false» to. */
+  /** The gym's class timetable as its owner entered it (`gyms.schedule`).
+   *  Empty means «the owner has not filled one in» — mapGym drops entries that
+   *  do not carry a time and a name rather than rendering a half-row. */
+  schedule?: GymScheduleItem[];
 }
 
 export interface Trainer {

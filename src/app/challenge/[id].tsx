@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, Share, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -10,11 +10,12 @@ import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
-import { Standing } from '@/data/challenges';
+import { Challenge, Standing } from '@/data/challenges';
 import { useAuthGate } from '@/lib/authGate';
-import { challengeStandings, useChallenge } from '@/lib/hooks';
-import { joinChallenge as joinChallengeOnServer, leaveChallenge as leaveChallengeOnServer } from '@/lib/social';
-import { hasSupabaseConfig } from '@/lib/supabase';
+import { invalidateFocusCache, useFetchPhase, useFocusFetch } from '@/lib/focusFetch';
+import { challengeStandings } from '@/lib/hooks';
+import { joinChallenge as joinChallengeOnServer, leaveChallenge as leaveChallengeOnServer, myChallengeJoinedAt } from '@/lib/social';
+import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { gymById, useChallengeProgress } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
@@ -30,10 +31,48 @@ function endsText(endsAt: string): string {
   return `${days} gün`;
 }
 
+/** The row, mapped here rather than through `useChallenge`.
+ *
+ *  `useChallenge` is built on `useOne`, whose value is `null` both while the read
+ *  is in flight AND after it fails. This screen turned that one null into
+ *  `return null` — BEFORE `<Screen>` and `<NavBar>` — so opening a challenge
+ *  offline (or from a push deep link) produced a completely blank frame with no
+ *  title, no message and no back arrow, and the same blank flashed on every
+ *  normal open. `useFocusFetch` records a phase under the same key, so «yüklənir»,
+ *  «yüklənmədi» and «yoxdur» are three different sentences again.
+ *
+ *  `target` is clamped to a non-negative number on the way in: the column is a
+ *  nullable int with no CHECK, and `(progress / null) * 100` went straight into a
+ *  style as «NaN%» — or as Infinity, clamped to a full bar that announced a goal
+ *  with no target as complete. 0 means «no target», and the screen says so. */
+function mapChallengeRow(r: Record<string, unknown>): Challenge {
+  const target = Number(r.target);
+  return {
+    id: String(r.id),
+    title: (r.title as string) ?? '',
+    scope: (r.scope as Challenge['scope']) ?? 'personal',
+    scopeLabel: (r.scope_label as string) ?? '',
+    description: (r.description as string) ?? '',
+    target: Number.isFinite(target) && target > 0 ? target : 0,
+    unit: (r.unit as string) ?? '',
+    active: !!r.active,
+    startsAt: (r.starts_at as string) ?? null,
+    endsAt: (r.ends_at as string) ?? null,
+    reward: (r.reward as string) ?? null,
+    participants: Number(r.participants ?? 0),
+  };
+}
+
 export default function ChallengeDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const c = useChallenge(id);
+  const fetchKey = hasSupabaseConfig && id ? `challenge:${id}` : '';
+  const c = useFocusFetch<Challenge | null>(fetchKey, null, async () => {
+    const { data, error } = await supabase.from('challenges').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data ? mapChallengeRow(data as Record<string, unknown>) : null;
+  });
+  const phase = useFetchPhase(fetchKey);
   const gate = useAuthGate();
   const joined = useAppStore((s) => s.joinedChallenges.includes(id));
   const join = useAppStore((s) => s.joinChallenge);
@@ -41,7 +80,34 @@ export default function ChallengeDetail() {
      seeded `progress` column is gone (schema60) and the window used to be the
      calendar month, which credited September sessions to an August challenge.
      `null` means the unit is not measurable from a workout row. */
-  const progress = useChallengeProgress(c?.unit ?? '', { startsAt: c?.startsAt, endsAt: c?.endsAt });
+  /* `joinedAt` matters: `challenge_standings()` counts each participant from
+     max(challenge start, THEIR join time), so without it the card above the
+     ranking counted sessions logged before the person joined and reported a
+     bigger number than the ranking row for the same person, on the same screen. */
+  const [joinedAt, setJoinedAt] = useState<string | null>(null);
+  useEffect(() => {
+    if (!hasSupabaseConfig || !id) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const at = await myChallengeJoinedAt(id);
+        if (alive) setJoinedAt(at);
+      } catch {
+        // Unknown join time: fall back to the challenge window, which is the
+        // wider — and therefore never under-reporting — of the two.
+        if (alive) setJoinedAt(null);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+
+  const progress = useChallengeProgress(c?.unit ?? '', {
+    startsAt: c?.startsAt,
+    endsAt: c?.endsAt,
+    joinedAt,
+  });
 
   /* The ranking, counted on the server. The screen used to promise «Reytinq
      cedveli istirakci datasi toplananda acilacaq» — this is that data.
@@ -79,7 +145,12 @@ export default function ChallengeDetail() {
             return;
           }
           leaveChallengeOnServer(id)
-            .then(() => toast('Challenge-dən çıxdın', 'info'))
+            .then(() => {
+              // The participant count on this row just changed; drop the cached
+              // copy so the next open shows the number the server now holds.
+              invalidateFocusCache(fetchKey);
+              toast('Challenge-dən çıxdın', 'info');
+            })
             .catch(() => {
               useAppStore.setState((s) => ({ joinedChallenges: [...s.joinedChallenges, id] }));
               toast('Çıxmaq alınmadı — yenidən cəhd et', 'error');
@@ -88,7 +159,33 @@ export default function ChallengeDetail() {
       },
     ]);
 
-  if (!c) return null;
+  /* Three different facts, three different sentences — and all of them inside a
+     <Screen> with a NavBar, so there is always a way back out. */
+  if (!c) {
+    return (
+      <Screen edges={['top', 'bottom']}>
+        <NavBar />
+        <View style={styles.stateWrap}>
+          <Icon
+            name={phase === 'failed' ? 'x' : phase === 'ready' ? 'target' : 'clock'}
+            size={20}
+            color={phase === 'failed' ? palette.red : palette.caption}
+          />
+          <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 12, lineHeight: 21 }}>
+            {phase === 'failed'
+              ? 'Challenge yüklənmədi — bu, onun silindiyi demək deyil. Bağlantını yoxlayıb yenidən aç.'
+              : phase === 'ready'
+                ? 'Bu challenge tapılmadı — silinmiş və ya artıq bağlanmış ola bilər.'
+                : hasSupabaseConfig
+                  ? 'Challenge yüklənir…'
+                  : 'Bağlantı yoxdur — challenge məlumatı serverdə saxlanılır.'}
+          </AppText>
+        </View>
+      </Screen>
+    );
+  }
+
+  const hasTarget = c.target > 0;
 
   return (
     <Screen edges={['top', 'bottom']}>
@@ -112,20 +209,29 @@ export default function ChallengeDetail() {
 
         <View style={styles.metaRow}>
           {c.endsAt ? <Meta icon="clock" label="Bitir" value={endsText(c.endsAt)} /> : null}
-          <Meta icon="target" label="Hədəf" value={`${c.target} ${c.unit}`} />
+          {/* «0 gün» would be a target the row does not carry — see mapChallengeRow. */}
+          <Meta icon="target" label="Hədəf" value={hasTarget ? `${c.target} ${c.unit}` : '—'} />
           <Meta icon="users" label="İştirakçı" value={`${c.participants}`} />
         </View>
 
         <View style={styles.progressCard}>
           <View style={styles.progressTop}>
             <AppText variant="headline">Sənin irəliləyişin</AppText>
-            {progress !== null ? (
+            {progress !== null && hasTarget ? (
               <AppText variant="headline" color={palette.voltDeep}>
                 {progress} / {c.target} {c.unit}
               </AppText>
             ) : null}
           </View>
-          {progress !== null ? (
+          {!hasTarget ? (
+            /* No target on the row at all. There is no fraction to draw and no
+               «x / y» to print — the bar used to be handed `width: "NaN%"` here,
+               or a clamped 100% the moment the person logged anything. */
+            <AppText variant="footnote" color={palette.caption} style={{ lineHeight: 18 }}>
+              Bu challenge-in hədəfi yazılmayıb, ona görə irəliləyişini ölçə bilmirik. Challenge-i açan tərəf
+              hədəfi əlavə edəndə burada görünəcək.
+            </AppText>
+          ) : progress !== null ? (
             <>
               <View style={styles.track}>
                 <View style={[styles.fill, { width: `${Math.min(100, (progress / c.target) * 100)}%` }]} />
@@ -206,7 +312,7 @@ export default function ChallengeDetail() {
             <Icon name="trophy" size={15} color={palette.caption} />
             <AppText variant="caption" color={palette.caption} style={{ flex: 1, lineHeight: 17 }}>
               Mükafat: {c.reward}. Mükafatı challenge-i açan tərəf verir — SPOT ödəniş qəbul etmir, mükafat
-              paylamır və qalibi özü seçmir. Yuxarıdaki sıralama qeyd olunan məşqlərdən hesablanır.
+              paylamır və qalibi özü seçmir. Yuxarıdakı sıralama qeyd olunan məşqlərdən hesablanır.
             </AppText>
           </View>
         ) : null}
@@ -241,7 +347,10 @@ export default function ChallengeDetail() {
                 return;
               }
               joinChallengeOnServer(id)
-                .then(() => toast(`"${c.title}" challenge-inə qoşuldun`))
+                .then(() => {
+                  invalidateFocusCache(fetchKey);
+                  toast(`"${c.title}" challenge-inə qoşuldun`);
+                })
                 .catch(() => {
                   useAppStore.setState((st) => ({
                     joinedChallenges: st.joinedChallenges.filter((x) => x !== id),
@@ -282,5 +391,6 @@ const styles = StyleSheet.create({
   track: { height: 10, borderRadius: 5, backgroundColor: palette.element, overflow: 'hidden' },
   fill: { height: 10, borderRadius: 5, backgroundColor: palette.volt },
   boardNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 18, paddingHorizontal: 4 },
+  stateWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingBottom: 60 },
   footer: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
 });

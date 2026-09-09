@@ -154,33 +154,49 @@ export async function markThreadRead(threadId: string): Promise<void> {
  * which is how the old local-only chat felt even when it «worked».
  */
 export function subscribeToThread(threadId: string, onInsert: (m: ChatMessageRow) => void): () => void {
-  let channel: RealtimeChannel | null = null;
-  let cancelled = false;
+  /* Knowing who I am is needed only to set `mine` on an incoming row, so it must
+     not GATE the subscription.
 
-  void getMyProfile().then((me) => {
-    if (cancelled) return;
-    channel = supabase
-      .channel(`thread:${threadId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `thread_id=eq.${threadId}` },
-        (payload) => {
-          const r = payload.new as {
-            id: string; thread_id: string; sender_id: string; body: string; created_at: string; read_at: string | null;
-          };
-          onInsert({
-            id: r.id, threadId: r.thread_id, senderId: r.sender_id,
-            mine: !!me?.id && r.sender_id === me.id,
-            body: r.body, createdAt: r.created_at, read: !!r.read_at,
-          });
-        }
-      )
-      .subscribe();
-  });
+     This used to be `void getMyProfile().then(me => { channel = … })` with no
+     `.catch`. `getMyProfile` rejects on any non-AuthSessionMissingError auth
+     failure or PostgREST error, so a connection drop during that one read both
+     raised an unhandled rejection and left `channel` null with no retry: for as
+     long as that screen stayed open no incoming message ever appeared, and the
+     thread looked like a conversation the other person simply never answered —
+     which is the exact failure schema42 and this function were written to end.
+     The channel is now opened immediately and the identity fills in beside it. */
+  let myId: string | null = null;
+  void getMyProfile()
+    .then((me) => {
+      myId = me?.id ?? null;
+    })
+    .catch(() => {
+      // Unknown identity means only that an incoming row is not marked as mine —
+      // and my own messages are appended locally by `sendMessage` and de-duplicated
+      // by id, so the bubble side stays right. Losing the live feed does not.
+      myId = null;
+    });
+
+  const channel: RealtimeChannel = supabase
+    .channel(`thread:${threadId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `thread_id=eq.${threadId}` },
+      (payload) => {
+        const r = payload.new as {
+          id: string; thread_id: string; sender_id: string; body: string; created_at: string; read_at: string | null;
+        };
+        onInsert({
+          id: r.id, threadId: r.thread_id, senderId: r.sender_id,
+          mine: !!myId && r.sender_id === myId,
+          body: r.body, createdAt: r.created_at, read: !!r.read_at,
+        });
+      }
+    )
+    .subscribe();
 
   return () => {
-    cancelled = true;
-    if (channel) void supabase.removeChannel(channel);
+    void supabase.removeChannel(channel);
   };
 }
 

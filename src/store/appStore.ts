@@ -116,6 +116,51 @@ function toDbPatch(p: Profile) {
   };
 }
 
+/**
+ * The write never reached Postgres at all — there was no session to write as, or
+ * the request could not be sent.
+ *
+ * A first launch with no signal used to end up as 'failed'. `ensureSession()`
+ * cannot mint an anonymous user offline, so `updateMyProfile` threw «no session»,
+ * `done.tsx` printed «Profil yadda saxlanılmadı» and stayed on the recap screen —
+ * and every retry failed identically, because nothing about the phone had
+ * changed. Meanwhile the store had already persisted `onboarded: true`, so
+ * force-quitting (the only way out) dropped the person straight into the tabs
+ * with a profile that existed on this phone and nowhere else, that no partner
+ * search could see, and that nothing ever tried to send again.
+ *
+ * That case is exactly what 'local' means. A server that ANSWERED and refused
+ * is still 'failed' — it must never be softened into «saxlanıldı».
+ */
+function isUnreachable(e: unknown): boolean {
+  const err = e as { message?: string; name?: string } | null;
+  const msg = (err?.message ?? '').toLowerCase();
+  return (
+    msg.includes('no session') ||
+    msg.includes('network request failed') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('load failed') ||
+    msg.includes('timeout') ||
+    msg.includes('timed out') ||
+    err?.name === 'AuthRetryableFetchError'
+  );
+}
+
+/** Send the device's profile to the server.
+ *
+ *  Shared by `saveProfile()` and the bootstrap retry so both write the same row:
+ *  the privacy switches live at store root, not on Profile, so `toDbPatch` alone
+ *  would drop them — the choice made on onboarding step 6 was then shown as
+ *  active on the phone while the server kept the default `true` and the gym owner
+ *  saw the user's real name. */
+function pushProfile(s: { profile: Profile; visibility: 'match-only' | 'everyone'; showInGymList: boolean }) {
+  return updateMyProfile({
+    ...toDbPatch(s.profile),
+    visibility: s.visibility,
+    show_in_gym_list: s.showInGymList,
+  });
+}
+
 const emptyProfile: Profile = {
   name: '',
   username: null,
@@ -294,6 +339,25 @@ export const useAppStore = create<AppState>()(
             // instead of returning null, so this never fires on a bad connection.
             const uid = await getUserId();
             if (uid && get().profileId) set({ profileId: null });
+            /* PUSH THE PROFILE THAT NEVER LEFT THE PHONE.
+               saveProfile() returns 'local' when the write could not be sent (a
+               first launch with no signal has no session to write as), and until
+               now nothing ever retried it — bootstrap only READ the profile. The
+               person had finished onboarding, had no `profiles` row, and was
+               therefore invisible to every partner search and every sync for as
+               long as the app stayed installed. A session exists now, so send it.
+               An un-rehydrated store has no name yet and is skipped: the next
+               launch, which is the only thing that created this state, retries. */
+            if (uid && get().onboarded && get().profile.name.trim()) {
+              try {
+                const id = await pushProfile(get());
+                if (id) set({ profileId: id });
+              } catch (pushErr) {
+                // Still not written. Nothing here claims otherwise; the profile
+                // stays on the device and the next launch tries again.
+                console.warn('[bootstrap] profile push', pushErr);
+              }
+            }
           }
         } catch (e) {
           console.warn('[bootstrap] profile', e);
@@ -329,16 +393,7 @@ export const useAppStore = create<AppState>()(
 
         if (!hasSupabaseConfig) return 'local';
         try {
-          // The privacy switches live at store root, not on Profile, so toDbPatch
-          // cannot carry them. Without this the choice made on onboarding step 6 was
-          // shown as active on the phone while the server kept the default `true`
-          // and the gym owner saw the user's real name.
-          const s = get();
-          const id = await updateMyProfile({
-            ...toDbPatch(s.profile),
-            visibility: s.visibility,
-            show_in_gym_list: s.showInGymList,
-          });
+          const id = await pushProfile(get());
           // This upsert is where a first-run user's profiles row is born, and
           // `profileId` is the identity every ownership check is keyed on. Without
           // recording it here the person would be a stranger to their OWN video,
@@ -349,7 +404,15 @@ export const useAppStore = create<AppState>()(
           console.warn('[saveProfile]', e);
           // A handle somebody else already holds is not a network problem, and the
           // save really did NOT happen — the caller must say «tutulub», never 'saved'.
-          if (isUsernameConflict(e)) set({ lastSaveError: 'username-taken' });
+          if (isUsernameConflict(e)) {
+            set({ lastSaveError: 'username-taken' });
+            return 'failed';
+          }
+          // Nothing reached the server, so nothing was refused: the profile really
+          // is on this device, and bootstrap() pushes it up on the next launch that
+          // has a session. Reporting this as 'failed' dead-ended the last
+          // onboarding screen — see isUnreachable.
+          if (isUnreachable(e)) return 'local';
           return 'failed';
         }
       },

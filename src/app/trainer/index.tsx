@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
@@ -8,7 +8,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { showAccountSwitcher } from '@/lib/accounts';
-import { decideTrainerRequest, type StudentRow } from '@/lib/roles';
+import { decideTrainerRequest, getMyListing, setMyListed, type StudentRow } from '@/lib/roles';
 import { useAppStore } from '@/store/appStore';
 import { gymById } from '@/store/db';
 import { toast } from '@/store/ui';
@@ -33,6 +33,24 @@ export default function TrainerPanel() {
   // refresh on re-focus keeps the last numbers we actually obtained; a failure
   // or a missing server takes them away again.
   const [everLoaded, setEverLoaded] = useState(false);
+  /* null = we could not read it. Never drawn as «gizli», which would tell a
+     visible coach they are hidden. */
+  const [listed, setListed] = useState<boolean | null>(null);
+  const [listedBusy, setListedBusy] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const r = await getMyListing();
+        if (alive) setListed(r ? r.listed : null);
+      } catch {
+        if (alive) setListed(null);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
   useEffect(() => {
     if (!loading && !failed && !offline) setEverLoaded(true);
   }, [loading, failed, offline]);
@@ -197,6 +215,40 @@ export default function TrainerPanel() {
             </PressableScale>
           </View>
         ) : null}
+
+        {/* Whether this coach is findable at all.
+            `trainers.listed` starts false and nothing in the app ever set it, so
+            every trainer who signed up was invisible in Kəşf → Müəllimlər for
+            good while being told their profile was created. */}
+        <View style={styles.card}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <AppText variant="headline">Kəşfdə görün</AppText>
+              <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 4, lineHeight: 18 }}>
+                {listed === null
+                  ? 'Vəziyyət oxunmadı — bağlantını yoxla və səhifəni yenidən aç.'
+                  : listed
+                    ? 'Profilin Kəşf → Müəllimlər siyahısındadır. Şagirdlər səni tapa bilər.'
+                    : 'Profilin hazırda gizlidir — Kəşfdə görünmürsən və heç kim sənə sorğu göndərə bilmir.'}
+              </AppText>
+            </View>
+            <Switch
+              value={!!listed}
+              disabled={listed === null || listedBusy}
+              onValueChange={(v) => {
+                setListedBusy(true);
+                setMyListed(v)
+                  .then((got) => {
+                    setListed(got);
+                    toast(got ? 'Profilin Kəşfdə göründü' : 'Profilin Kəşfdən gizləndi');
+                  })
+                  .catch(() => toast('Dəyişiklik saxlanılmadı — yenidən cəhd et', 'error'))
+                  .finally(() => setListedBusy(false));
+              }}
+              trackColor={{ true: palette.voltDeep, false: palette.separator }}
+            />
+          </View>
+        </View>
 
         {/* What a trainer can actually do here */}
         <View style={styles.card}>

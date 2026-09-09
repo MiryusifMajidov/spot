@@ -7,6 +7,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import type { FeedVideo } from '@/data/feed';
 import { displayAuthor, isPlaceholderName } from '@/lib/authorName';
@@ -165,10 +166,19 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 /** One video in the grid. The gradient is the FALLBACK, not the picture: a real
  *  frame from the clip is drawn over it as soon as the device has made one
- *  (see lib/videoPoster). Without it every tile in the grid looked the same. */
+ *  (see lib/videoPoster). Without it every tile in the grid looked the same.
+ *
+ *  Tapping plays it. This was a plain `View` with a play badge and no handler, so
+ *  every tile on a creator's page — «12 video», twelve play triangles — did
+ *  nothing at all when touched. The badge is an affordance and it now leads
+ *  somewhere: the feed, opened on this clip. */
 function VideoTile({ v }: { v: FeedVideo }) {
+  const router = useRouter();
   return (
-    <View style={styles.tile}>
+    <PressableScale
+      activeScale={0.97}
+      onPress={() => router.push({ pathname: '/(tabs)/feed', params: { videoId: v.id } })}
+      style={styles.tile}>
       <VideoPoster id={v.id} videoUrl={v.videoUrl} gradient={v.gradient} />
       <View style={styles.tilePlay}>
         <Icon name="play" size={16} color="rgba(255,255,255,0.9)" />
@@ -176,7 +186,7 @@ function VideoTile({ v }: { v: FeedVideo }) {
       <AppText numberOfLines={2} style={styles.tileCaption}>
         {v.caption}
       </AppText>
-    </View>
+    </PressableScale>
   );
 }
 

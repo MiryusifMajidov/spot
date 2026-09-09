@@ -164,7 +164,11 @@ export const programs: Program[] = [
     minutes: 45,
     videoCount: 0,
     doneBy: 0,
-    hasMealPlan: true,
+    /* No `hasMealPlan` any more. It was `true` on this plan alone and fed a
+       «Qida planı daxil» line that has since been removed — there is no meal
+       plan in this program's days, and there never was one to open. The flag is
+       still on `Program` because `programs.has_meal_plan` is a real column an
+       author can set; SPOT's own starter plan simply does not claim it. */
     tags: ['Funksional', 'Kardio', 'Arıqlama'],
     saves: 0,
     days: [{ title: 'Gün 1 · HIIT', focus: 'Yüksək intensivlik', exercises: homeCardioCore }],

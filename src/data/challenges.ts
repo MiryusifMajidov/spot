@@ -46,7 +46,12 @@ export interface Standing {
  *  number and the progress beside it is computed from the person's own logs, so
  *  there is nothing here that could be a claim about them. */
 export const streakChallenge = {
-  title: 'Streak-i qırma',
+  /* «Streak-i qırma» until now. The app calls this counter «seriya»
+     everywhere else — the profile badge, achievements, analytics, the
+     check-in screen — and the sentence directly above this card on the
+     challenge screen was changed to «seriya» too, so the card contradicted
+     the line it sat under. */
+  title: 'Seriyanı qırma',
   scopeLabel: 'Şəxsi · 21 gün',
   target: 21,
 };

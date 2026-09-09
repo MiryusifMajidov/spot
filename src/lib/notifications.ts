@@ -14,7 +14,7 @@ import { router } from 'expo-router';
 
 import { getMyProfile } from './api';
 import { supabase } from './supabase';
-import { openComments } from '@/store/ui';
+import { openComments, toast } from '@/store/ui';
 
 /**
  * Every type the DATABASE can write.
@@ -134,10 +134,32 @@ export async function getUnreadCount(): Promise<number | null> {
 export async function markRead(id?: string): Promise<void> {
   const me = await getMyProfile();
   if (!me) return;
-  let q = supabase.from('notifications').update({ read_at: new Date().toISOString() }).is('read_at', null);
-  if (id) q = q.eq('id', id);
-  const { error } = await q.select('id');
+  const readAt = new Date().toISOString();
+
+  if (!id) {
+    // «Hamısını oxu». Zero rows here is the ordinary case — nothing was unread —
+    // so there is no claim to verify.
+    const { error } = await supabase.from('notifications').update({ read_at: readAt }).is('read_at', null);
+    if (error) throw error;
+    return;
+  }
+
+  /* One row, and this time the returned array is actually LOOKED AT. `.select('id')`
+     was added because an RLS-filtered UPDATE comes back as `error: null` with zero
+     rows changed — and then the result was discarded, so a refused write resolved
+     exactly like a successful one: the list crossed the row off optimistically and
+     the unread badge came back on the next fetch with nothing to explain it.
+
+     The `read_at is null` filter is deliberately NOT applied on this branch: with
+     it, re-opening a notification that was already read also changed zero rows,
+     and that is not a failure. */
+  const { data, error } = await supabase
+    .from('notifications')
+    .update({ read_at: readAt })
+    .eq('id', id)
+    .select('id');
   if (error) throw error;
+  if (!data?.length) throw new Error('not-marked-read');
 }
 
 export async function deleteNotification(id: string): Promise<void> {
@@ -202,7 +224,13 @@ export function notifText(n: NotifRow): string {
 /** Where tapping it should go, or null when there is nothing to open. */
 export function notifTarget(
   n: NotifRow
-): { kind: 'comments'; key: string } | { kind: 'requests' } | { kind: 'chat'; profileId: string } | { kind: 'profile'; profileId: string } | null {
+):
+  | { kind: 'comments'; key: string }
+  | { kind: 'requests' }
+  | { kind: 'chat'; profileId: string }
+  | { kind: 'profile'; profileId: string }
+  | { kind: 'review'; reviewId: string }
+  | null {
   switch (n.type) {
     case 'comment_like':
     case 'comment_reply':
@@ -217,6 +245,13 @@ export function notifTarget(
       return n.actorId ? { kind: 'chat', profileId: n.actorId } : null;
     case 'follow':
       return n.actorId ? { kind: 'profile', profileId: n.actorId } : null;
+    case 'review_reply':
+      /* This case was missing, so «Zal rəyinə cavab yazdı» fell through to
+         `default: return null` — the row in Bildirişlər and the push on the lock
+         screen both did nothing at all when tapped. `entity_id` holds the REVIEW's
+         id (schema35 §4h writes `new.id`), not the gym's, so the gym is resolved
+         in openNotifTarget before the page can be opened. */
+      return n.entityId ? { kind: 'review', reviewId: n.entityId } : null;
     case 'video_like':
     case 'post_like':
       // The like is on my own content; there is no useful second screen for it.
@@ -237,5 +272,23 @@ export function openNotifTarget(t: ReturnType<typeof notifTarget>): void {
   if (t.kind === 'comments') openComments(t.key);
   else if (t.kind === 'chat') router.push({ pathname: '/chat/[id]', params: { id: t.profileId } });
   else if (t.kind === 'profile') router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: t.profileId } });
+  else if (t.kind === 'review') openReview(t.reviewId);
   else router.push('/chat/requests');
+}
+
+/** The gym whose page carries this review. The notification only knows the review
+ *  id, and `reviews` is world-readable (schema2's `reviews_read`), so one small
+ *  lookup turns it into a destination. A failed lookup says so rather than doing
+ *  nothing — a tap that silently goes nowhere is what this whole path was. */
+function openReview(reviewId: string): void {
+  void (async () => {
+    const { data, error } = await supabase.from('reviews').select('gym_id').eq('id', reviewId).maybeSingle();
+    const gymId = error ? null : ((data as { gym_id: string } | null)?.gym_id ?? null);
+    /* `seg: 'reviews'` opens the gym page on its Rəylər segment. Without it the
+       page opened on «Haqqında» — so a notification that says the gym answered
+       your review landed on the gym's description, with nothing on screen to
+       say the answer was behind a segment two taps away. */
+    if (gymId) router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: gymId, seg: 'reviews' } });
+    else toast('Rəyin aid olduğu zal açılmadı — bağlantını yoxla', 'error');
+  })();
 }

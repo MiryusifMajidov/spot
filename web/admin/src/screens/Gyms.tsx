@@ -73,6 +73,20 @@ export function Gyms({ search }: ScreenProps) {
 
   async function load() {
     setLoading(true);
+    /* try/catch/finally: this screen returns `<div className="spinner" />` for
+       the WHOLE page while `loading` is true, so a throw in the mapping below
+       used to leave the claim queue behind a spinner that never stopped. */
+    try {
+      await loadInner();
+    } catch (e) {
+      setGymsError(errMsg(e));
+      setClaimsError(errMsg(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadInner() {
     const [g, c] = await Promise.all([
       supabase.from('gyms').select('*').order('members', { ascending: false, nullsFirst: false }),
       supabase.from('gym_claims').select('*').eq('status', 'pending').order('sla_due_at'),
@@ -106,7 +120,6 @@ export function Gyms({ search }: ScreenProps) {
       setNames({});
       setProfileIds({});
     }
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -177,11 +190,19 @@ export function Gyms({ search }: ScreenProps) {
         });
         if (gErr) throw gErr;
 
-        const { error: cErr } = await supabase
+        /* `.select('id')` + a row check, exactly as the reject branch below. An
+           RLS-filtered UPDATE returns `error: null` with ZERO rows changed, so
+           checking only the error let «Claim təsdiqləndi» fire over a claim that
+           stayed `pending` — the gym already owned by the RPC above, the audit
+           row written, and the claim back in the pending queue on every reload
+           with no way to tell it from a real one. */
+        const { data: cRows, error: cErr } = await supabase
           .from('gym_claims')
           .update({ status: 'approved' })
-          .eq('id', claim.id);
+          .eq('id', claim.id)
+          .select('id');
         if (cErr) throw cErr;
+        if (!cRows?.length) throw new Error('Sahiblik verildi, amma iddia «gözləyir» olaraq qaldı — icazə yoxdur');
 
         // The audit entry is the only record this approval ever happened, so a
         // failure to write it is reported rather than hidden behind a success toast.
@@ -219,11 +240,18 @@ export function Gyms({ search }: ScreenProps) {
     }
   }
 
-  function invite(g: Gym) {
+  async function invite(g: Gym) {
     // Nothing is actually sent to the gym — the action only records an audit
     // entry, so the toast must not claim a delivered invitation.
-    toast(`${g.name}: dəvət qeydə alındı (avtomatik mesaj göndərilmir)`);
-    void audit('gym_invite', 'gym', g.id, undefined, { name: g.name });
+    /* And the audit row IS the whole action here: `void audit(...)` threw the
+       failure reason away, so «dəvət qeydə alındı» was printed over an insert
+       that never landed and left no record anywhere. */
+    const auditErr = await audit('gym_invite', 'gym', g.id, undefined, { name: g.name });
+    toast(
+      auditErr
+        ? `${g.name}: dəvət qeydə alınmadı — ${auditErr}`
+        : `${g.name}: dəvət qeydə alındı (avtomatik mesaj göndərilmir)`,
+    );
   }
 
   const qr = (verified: boolean) =>
@@ -434,12 +462,18 @@ export function Gyms({ search }: ScreenProps) {
                 </td>
                 <td style={{ color: 'var(--muted2)' }}>{g.district ?? '—'}</td>
                 <td>{g.members ?? '—'}</td>
+                {/* Guarded on the EVIDENCE, not on null. `gyms.rating` is
+                    `numeric default 0` and schema11 backfilled it with
+                    `coalesce(avg, 0)`, so it is never null and the old
+                    `!= null` test was always true — an unrated gym printed
+                    «★ 0 (0)», which reads as a terrible score rather than as
+                    the absence of a single review. */}
                 <td>
-                  {g.rating != null ? (
+                  {(g.review_count ?? 0) > 0 ? (
                     <>
                       ★ {g.rating}
                       <span style={{ color: 'var(--muted)', font: '400 11.5px/1 var(--font)', marginLeft: 4 }}>
-                        ({g.review_count ?? 0})
+                        ({g.review_count})
                       </span>
                     </>
                   ) : (
@@ -455,14 +489,25 @@ export function Gyms({ search }: ScreenProps) {
                 {/* schema41 makes a gym created inside the app start unlisted, and
                     nothing in the product could ever publish it — the column is not
                     in any client UPDATE grant. This is that control (schema50). */}
+                {/* Behind `canDecide` like every other decision on this screen. It
+                    was the one write here with no role gate, so a support admin —
+                    whose row in the İcazə matrisi ticks nothing but «Datanı
+                    oxumaq» — could hide the busiest gym in the catalogue from Kəşf
+                    for every user in the app. */}
                 <td>
-                  <button
-                    className="btn small"
-                    disabled={publishing === g.id}
-                    onClick={() => setListed(g)}
-                    title={g.listed === false ? 'Kəşfdə göstər' : 'Kəşfdən gizlət'}>
-                    {publishing === g.id ? '…' : g.listed === false ? 'Dərc et' : 'Gizlət'}
-                  </button>
+                  {canDecide ? (
+                    <button
+                      className="btn small"
+                      disabled={publishing === g.id}
+                      onClick={() => setListed(g)}
+                      title={g.listed === false ? 'Kəşfdə göstər' : 'Kəşfdən gizlət'}>
+                      {publishing === g.id ? '…' : g.listed === false ? 'Dərc et' : 'Gizlət'}
+                    </button>
+                  ) : (
+                    <span style={{ color: 'var(--muted)', font: '400 11.5px/1.3 var(--font)' }}>
+                      {g.listed === false ? 'Kəşfdə yoxdur' : 'Kəşfdədir'} · ops rolu lazımdır
+                    </span>
+                  )}
                 </td>
               </tr>
             );

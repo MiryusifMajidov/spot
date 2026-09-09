@@ -38,12 +38,32 @@ const hhmm = (iso: string) => {
 type MyReview = { rating: number; text: string; at: string };
 const NO_REVIEWS: MyReview[] = []; // stable ref — avoids an infinite re-render loop
 
+/** «12 sentyabr». The app writes its own Azerbaijani dates everywhere else
+ *  (workout/index.tsx, trainer/verify.tsx) rather than trusting Intl month
+ *  names on Hermes, and a reply with no date reads as if it arrived today. */
+const AZ_MONTHS = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avqust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr'];
+const dayLabel = (iso: string): string | null => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : `${d.getDate()} ${AZ_MONTHS[d.getMonth()]}`;
+};
+
 interface GymReview {
   id: string;
   name: string;
   tenure: string | null;
   rating: number;
   text: string;
+  /** Who wrote it. Read back so the screen can tell that MY review already
+   *  reached the server — `reviews_one_per_member` (schema30) refuses a second
+   *  one, and the compose button used to keep offering it. */
+  authorId: string | null;
+  /** The gym's official answer (`reviews.reply` / `reviews.reply_at`, schema7).
+   *  The owner panel has been writing it since schema7 and this mapping dropped
+   *  both columns, so a reply existed in the database and reached no reader at
+   *  all — and «Rəyinə cavab» in Bildirişlər opened the very page that was
+   *  hiding it. Null when the gym has not answered. */
+  reply: string | null;
+  replyAt: string | null;
 }
 
 /** Real reviews only. No fallback rows — an empty gym shows an empty state.
@@ -68,13 +88,30 @@ function useGymReviews(gymId: string) {
     }
     setFailed(false);
     setRows(
-      (data ?? []).map((r: { id: string; name: string; tenure: string | null; rating: number; body: string }) => ({
-        id: r.id,
-        name: r.name,
-        tenure: r.tenure,
-        rating: r.rating,
-        text: r.body,
-      }))
+      (data ?? []).map(
+        (r: {
+          id: string;
+          name: string;
+          tenure: string | null;
+          rating: number;
+          body: string;
+          author_id: string | null;
+          // Optional on purpose: without supabase/schema7_gym_owner.sql the two
+          // reply columns do not exist, and `select('*')` then simply returns
+          // rows without them — which is «no reply», not a broken row.
+          reply?: string | null;
+          reply_at?: string | null;
+        }) => ({
+          id: r.id,
+          name: r.name,
+          tenure: r.tenure,
+          rating: r.rating,
+          text: r.body,
+          authorId: r.author_id ?? null,
+          reply: r.reply ?? null,
+          replyAt: r.reply_at ?? null,
+        })
+      )
     );
     setLoaded(true);
   }, [gymId]);
@@ -92,11 +129,15 @@ function useGymReviews(gymId: string) {
 }
 
 export default function GymDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  /* `seg` names the tab to open on. Without it every caller landed on
+     «Haqqında»: the «Rəyinə cavab» notification opened this page and left the
+     person to find the Rəylər segment themselves, on a screen that gives no
+     hint that the thing they tapped for is three taps away. */
+  const { id, seg: segParam } = useLocalSearchParams<{ id: string; seg?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const gate = useAuthGate();
-  const [seg, setSeg] = useState(0);
+  const [seg, setSeg] = useState(segParam === 'reviews' ? 3 : 0);
   const checkIns = useDb((s) => s.checkIns);
   /* Android edge-to-edge never resizes the window, so the KeyboardAvoidingView below
      is inert there and the review composer's «Göndər» ended up under the IME. The
@@ -174,6 +215,7 @@ export default function GymDetail() {
   const bookmarks = useAppStore((s) => s.bookmarks);
   const toggle = useAppStore((s) => s.toggleBookmark);
   const profileName = useAppStore((s) => s.profile.name) || 'Sən';
+  const myProfileId = useAppStore((s) => s.profileId);
   const myReviews = useDb((s) => s.myReviews[id]) ?? NO_REVIEWS;
   const addReview = useDb((s) => s.addReview);
   const myCheckins = checkIns.filter((c) => c.gymId === id).length;
@@ -189,33 +231,55 @@ export default function GymDetail() {
      `undefined` = not asked yet, `null` = asked and there is none. */
   const [dayPass, setDayPass] = useState<DayPass | null | undefined>(undefined);
   const [passReadFailed, setPassReadFailed] = useState(false);
+  const [passChecking, setPassChecking] = useState(false);
+
+  /* One reader for both the focus effect and the retry button. A failed read used
+     to be a dead end: the CTA went permanently disabled («Day-pass yoxlanılmadı»)
+     and the card told the person to refresh a page that has no pull-to-refresh and
+     no retry control at all — the only way back was to guess that leaving the
+     screen and returning re-runs this effect. */
+  const loadDayPass = useCallback(
+    async (isAlive: () => boolean = () => true) => {
+      if (!hasSupabaseConfig) return;
+      setPassChecking(true);
+      try {
+        const p = await getMyDayPass(id);
+        if (!isAlive()) return;
+        setDayPass(p);
+        setPassReadFailed(false);
+      } catch {
+        // A failed read is NOT «no pass»: leaving the button live would let the
+        // person register a second one over a first we simply could not see.
+        if (isAlive()) setPassReadFailed(true);
+      } finally {
+        if (isAlive()) setPassChecking(false);
+      }
+    },
+    [id]
+  );
 
   useFocusEffect(
     useCallback(() => {
-      if (!hasSupabaseConfig) return;
       let alive = true;
-      getMyDayPass(id)
-        .then((p) => {
-          if (!alive) return;
-          setDayPass(p);
-          setPassReadFailed(false);
-        })
-        // A failed read is NOT «no pass»: leaving the button live would let the
-        // person register a second one over a first we simply could not see.
-        .catch(() => alive && setPassReadFailed(true));
+      void loadDayPass(() => alive);
       return () => {
         alive = false;
       };
-    }, [id])
+    }, [loadDayPass])
   );
 
+  /* The review is written to the local store ONLY after the database accepted it
+     (or, offline, when there was no database to ask).
+     It used to be added BEFORE the insert and never rolled back, so a refusal —
+     «hər zala bir rəy», the 3-check-in rule, a dropped connection — left a
+     phantom review on the page wearing the «Sənin rəyin» shield AND folded its
+     stars into the gym's header average, for a row the server never had. The
+     tail of this function also cleared the box unconditionally, so the refusal
+     destroyed the draft the person had just typed. */
   const submitReview = async () => {
     const body = reviewText.trim();
     if (!body || !gym) return;
     setSavingReview(true);
-    // Local-first so the review survives offline…
-    addReview(id, rating, body);
-    // …but it MUST reach the gym owner and the admin queue, so failures are surfaced.
     if (hasSupabaseConfig) {
       try {
         // `author_id` is REQUIRED by `reviews_insert` (schema29/30). Without it
@@ -241,15 +305,24 @@ export default function GymDetail() {
         // person is not told to check a connection that is working.
         const msg = String((e as { message?: string })?.message ?? '');
         toast(
-          msg.includes('row-level security') || msg.includes('violates')
-            ? 'Rəy qəbul edilmədi — bu zalda ən azı 3 check-in lazımdır və hər zala bir rəy yazmaq olar.'
-            : msg === 'no-profile'
-              ? 'Profil tapılmadı — rəy yazmaq üçün profilini tamamla.'
-              : 'Rəy zala çatmadı — internet yoxlanılsın, sonra yenidən yaz',
+          msg.includes('duplicate key') || msg.includes('reviews_one_per_member')
+            ? 'Bu zala rəyini artıq yazmısan — hər zala bir rəy yazmaq olar.'
+            : msg.includes('row-level security') || msg.includes('violates')
+              ? 'Rəy qəbul edilmədi — bu zalda ən azı 3 check-in lazımdır və hər zala bir rəy yazmaq olar.'
+              : msg === 'no-profile'
+                ? 'Profil tapılmadı — rəy yazmaq üçün profilini tamamla.'
+                : 'Rəy zala çatmadı — internet yoxlanılsın, sonra yenidən yaz',
           'error'
         );
+        // The draft stays exactly where it was — the composer, the text and the
+        // stars — so «yenidən yaz» means one tap, not retyping from memory.
+        setSavingReview(false);
+        return;
       }
     } else {
+      // No backend to refuse it: this really is a device-only note, and it is
+      // labelled as one below instead of joining the gym's rating.
+      addReview(id, rating, body);
       toast('Rəy yalnız cihazda saxlanıldı — zala çatması üçün internet lazımdır', 'info');
     }
     setSavingReview(false);
@@ -330,11 +403,18 @@ export default function GymDetail() {
   // My locally-stored review is only rendered while the server copy is not back yet,
   // so a synced review is never counted twice.
   const mineOnly = myReviews.filter((r) => !reviews.some((x) => x.name === profileName && x.text === r.text));
-  // The header rating is only meaningful once real reviews exist.
-  const totalReviews = reviews.length + mineOnly.length;
+  /* The header rating is the GYM's rating, so it is computed from the rows the
+     database actually holds. Device-only notes used to be averaged in and added
+     to «N rəy», which meant the author — and only the author — saw a star figure
+     for a review nobody else has. They are still shown below, marked as unsent. */
+  const totalReviews = reviews.length;
   const avgRating = totalReviews
-    ? Math.round(([...reviews.map((r) => r.rating), ...mineOnly.map((r) => r.rating)].reduce((s, n) => s + n, 0) / totalReviews) * 10) / 10
+    ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / totalReviews) * 10) / 10
     : null;
+  /* One review per person per gym (`reviews_one_per_member`, schema30). Offering
+     «Rəy yaz» to somebody who already has one only leads to a refusal, so the
+     button is replaced by the reason it is gone. */
+  const iAlreadyReviewed = !!myProfileId && reviews.some((r) => r.authorId === myProfileId);
 
   const heroActions = (
     <View style={[styles.heroTop, { paddingTop: insets.top + 6 }]}>
@@ -361,6 +441,7 @@ export default function GymDetail() {
   );
 
   const photos = gym.photos ?? [];
+  const schedule = gym.schedule ?? [];
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.grouped }}>
@@ -424,16 +505,30 @@ export default function GymDetail() {
             </View>
 
             <View style={styles.ctaRow}>
+              {/* «QR ilə check-in» named a mechanism the app does not have: the
+                  screen this opens is a GPS check-in whose own footnote ends «QR
+                  oxuyucu hələ yoxdur», so somebody standing in front of the gym's
+                  printed code tapped it expecting a camera and got a location
+                  permission prompt instead. The button now says what it does.
+
+                  It opens the ROOT `/checkin`, not `/(tabs)/workout/checkin`:
+                  the tab route switched the focused tab to Məşq, so the check-in
+                  screen's own `router.back()` popped inside the Məşq stack and
+                  dropped somebody who started on this gym page in Kəşf onto
+                  Məşq home instead of back here. */}
               <Button
-                title="QR ilə check-in"
-                icon="qr"
-                onPress={() => router.push({ pathname: '/(tabs)/workout/checkin', params: { gymId: gym.id } })}
+                title="Check-in et"
+                icon="pin"
+                onPress={() => router.push({ pathname: '/checkin', params: { gymId: gym.id } })}
                 style={{ flex: 1, height: 46 }}
               />
               <Button
                 title={
                   buyingPass
-                    ? 'Alınır…'
+                    ? /* «Alınır…» put a purchase verb straight onto a price tag on the
+                         one screen where SPOT takes no money. The RPC only issues a
+                         code — the same words the success toast uses. */
+                      'Qeydə alınır…'
                     : dayPass
                       ? 'Day-pass aktivdir'
                       : passReadFailed
@@ -467,11 +562,20 @@ export default function GymDetail() {
               </View>
             ) : passReadFailed ? (
               /* Not «you have no pass» — we could not find out. Drawing the buy
-                 button over a pass that exists is how someone ends up with two. */
+                 button over a pass that exists is how someone ends up with two.
+                 The card carries its own retry: the copy used to send people to
+                 refresh a page that has neither pull-to-refresh nor a button. */
               <View style={styles.passCard}>
                 <AppText variant="footnote" color={palette.text3} style={{ lineHeight: 18 }}>
-                  Day-pass məlumatın yüklənmədi — bu, day-pass olmadığı demək deyil. Bağlantını yoxlayıb səhifəni yenilə.
+                  Day-pass məlumatın yüklənmədi — bu, day-pass olmadığı demək deyil. Bağlantını yoxla və yenidən yoxlat.
                 </AppText>
+                <Button
+                  title={passChecking ? 'Yoxlanılır…' : 'Yenidən yoxla'}
+                  variant="secondary"
+                  disabled={passChecking}
+                  onPress={() => void loadDayPass()}
+                  style={{ marginTop: 10, height: 42 }}
+                />
               </View>
             ) : null}
 
@@ -581,6 +685,43 @@ export default function GymDetail() {
                     </>
                   ) : null}
 
+                  {/* The class timetable, as the gym's own owner typed it into
+                      `/gym/classes`. It has been saved to `gyms.schedule` since
+                      schema7 and nothing customer-facing ever read it back, so
+                      an owner could fill in a whole week and be the only person
+                      alive who could see it. Nothing is drawn when the array is
+                      empty — an unwritten timetable is not «no classes». */}
+                  {schedule.length > 0 ? (
+                    <>
+                      <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
+                        Cədvəl
+                      </AppText>
+                      <View style={{ gap: 9 }}>
+                        {schedule.map((c, i) => (
+                          <View key={`${c.time}-${c.name}-${i}`} style={styles.classRow}>
+                            <AppText style={styles.classTime}>{c.time}</AppText>
+                            <View style={styles.classDiv} />
+                            <View style={{ flex: 1 }}>
+                              <AppText style={{ fontSize: 15, fontWeight: '600' }}>{c.name}</AppText>
+                              {/* The trainer field is optional in the owner panel;
+                                  a blank line under the class name would read as a
+                                  name we failed to load. */}
+                              {c.trainer ? (
+                                <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>{c.trainer}</AppText>
+                              ) : null}
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                      {/* Said plainly, because a timetable looks like something you
+                          can tap to book: SPOT has no places, no queue and no
+                          booking, so it must not imply one. */}
+                      <AppText variant="caption" color={palette.caption} style={{ marginTop: 9, lineHeight: 17 }}>
+                        Cədvəli zalın özü yazır. Dərsə yazılma SPOT-da yoxdur — yer üçün zalla danış.
+                      </AppText>
+                    </>
+                  ) : null}
+
                   {gym.amenities.length > 0 ? (
                     <>
                       <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
@@ -653,8 +794,21 @@ export default function GymDetail() {
 
               {seg === 3 && (
                 <View>
-                  {/* 3-check-in gate — only real gym-goers can review (prevents fake reviews) */}
-                  {myCheckins >= 3 ? (
+                  {/* Already reviewed → no compose button. The database allows one
+                      review per person per gym, so the button could only produce a
+                      refusal that the person had to read to find that out. */}
+                  {iAlreadyReviewed ? (
+                    <View style={styles.gateCard}>
+                      <Icon name="check" size={18} color={palette.voltDeep} />
+                      <View style={{ flex: 1 }}>
+                        <AppText variant="callout">Bu zala rəyini yazmısan</AppText>
+                        <AppText variant="footnote" color={palette.caption} style={{ marginTop: 3, lineHeight: 18 }}>
+                          Hər zala bir rəy yazmaq olar — rəyin aşağıdakı siyahıdadır.
+                        </AppText>
+                      </View>
+                    </View>
+                  ) : /* 3-check-in gate — only real gym-goers can review (prevents fake reviews) */
+                  myCheckins >= 3 ? (
                     composing ? (
                       <View style={styles.composeCard}>
                         <AppText variant="headline">Rəyin</AppText>
@@ -714,9 +868,14 @@ export default function GymDetail() {
                           ))}
                         </View>
                       </View>
+                      {/* A verification-style shield on a row the gym never received
+                          read as «your review is live here». These are the copies
+                          that only exist on this phone, so they say so. */}
                       <View style={styles.tenure}>
-                        <Icon name="shield" size={12} color={palette.voltDeep} />
-                        <AppText style={{ fontSize: 11, fontWeight: '600', color: palette.voltDeep }}>Sənin rəyin · {myCheckins} check-in</AppText>
+                        <Icon name="clock" size={12} color={palette.textSecondary} />
+                        <AppText style={{ fontSize: 11, fontWeight: '600', color: palette.textSecondary }}>
+                          Yalnız sənin cihazında — zala göndərilməyib
+                        </AppText>
                       </View>
                       <AppText variant="body" color={palette.text3} style={{ marginTop: 8, lineHeight: 21 }}>
                         {r.text}
@@ -743,6 +902,22 @@ export default function GymDetail() {
                       <AppText variant="body" color={palette.text3} style={{ marginTop: 8, lineHeight: 21 }}>
                         {r.text}
                       </AppText>
+                      {/* The gym's official answer. It is written on the owner
+                          panel (gym/reviews.tsx) and, until now, read there and
+                          nowhere else — the person it was addressed to never saw
+                          it. Same card as the owner's own view, so both sides
+                          read the same words. */}
+                      {r.reply ? (
+                        <View style={styles.reply}>
+                          <AppText style={{ fontSize: 12, fontWeight: '700', color: palette.blue }}>
+                            {gym.name} · rəsmi cavab
+                            {r.replyAt && dayLabel(r.replyAt) ? ` · ${dayLabel(r.replyAt)}` : ''}
+                          </AppText>
+                          <AppText variant="footnote" color={palette.text3} style={{ marginTop: 4, lineHeight: 18 }}>
+                            {r.reply}
+                          </AppText>
+                        </View>
+                      ) : null}
                     </View>
                   ))}
 
@@ -751,7 +926,7 @@ export default function GymDetail() {
                       icon="x"
                       text="Rəylər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda rəy olmadığı demək deyil."
                     />
-                  ) : reviewsLoaded && totalReviews === 0 ? (
+                  ) : reviewsLoaded && totalReviews === 0 && mineOnly.length === 0 ? (
                     <EmptyState
                       icon="star"
                       text={
@@ -847,6 +1022,11 @@ const styles = StyleSheet.create({
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: palette.white, borderRadius: 12, padding: 12, marginBottom: 6 },
   review: { backgroundColor: palette.white, borderRadius: 14, padding: 14, marginBottom: 10 },
   reviewHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  // Same card the owner panel draws its own reply in (src/app/gym/reviews.tsx).
+  reply: { backgroundColor: 'rgba(10,132,255,0.06)', borderRadius: 12, padding: 12, marginTop: 12 },
+  classRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 13 },
+  classTime: { fontSize: 16, fontWeight: '700', width: 52 },
+  classDiv: { width: 1, alignSelf: 'stretch', backgroundColor: palette.separator },
   tenure: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
   emptyState: { alignItems: 'center', paddingVertical: 34 },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center' },

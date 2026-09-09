@@ -59,11 +59,20 @@ const LADDER: { key: Rung; label: string; status: 'muted' | 'suspended' | 'banne
   { key: 'ban', label: 'Ban', status: 'banned', days: null, danger: true },
 ];
 
-const AUTO_FLAG = [
-  'Sorğu cavab faizi < 15% və ≥ 20 sorğu → «spam ehtimalı» etiketi',
-  '24 saatda 3 şikayət → hesab avtomatik mesaj qadağasına düşür (moderator təsdiqinə qədər)',
-  'Şərhdə açar sözlər (steroid, dərman adları) → avtomatik növbəyə düşür',
-  'Yeni profil + avatarsız + 10 sorğu → sorğular «şübhəli» qutusuna gedir',
+/* This card used to list four rules in the present tense under the heading
+   «Avtomatik siqnal qaydaları», including «24 saatda 3 şikayət → hesab avtomatik
+   mesaj qadağasına düşür». Nothing implements three of them: there is no
+   trigger, function, cron job or client code that counts reports in a window,
+   mutes an account, scans comment text for keywords or routes requests to a
+   «şübhəli» box. A moderator who read the mute rule treated a reported account
+   as already contained and worked the queue in SLA order while the account kept
+   sending messages. Only the first rule is real, and even it is a figure the
+   panel computes and DISPLAYS — it tags nothing and stops nobody. */
+const AUTO_FLAG: { text: string; live: boolean }[] = [
+  { text: 'Sorğu cavab faizi < 15% və ≥ 20 sorğu → İstifadəçilər ekranında hesab kartında «spam davranışı ehtimalı» kimi göstərilir (etiket yazılmır, heç nə bloklanmır)', live: true },
+  { text: '24 saatda 3 şikayət → hesabın avtomatik mesaj qadağasına düşməsi', live: false },
+  { text: 'Şərhdə açar sözlərin (steroid, dərman adları) avtomatik növbəyə salınması', live: false },
+  { text: 'Yeni profil + avatarsız + 10 sorğu → sorğuların «şübhəli» qutusuna yönləndirilməsi', live: false },
 ];
 
 const LADDER_STEPS = [
@@ -85,6 +94,9 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
   const [resolvedToday, setResolvedToday] = useState<number | null>(0);
 
   const [active, setActive] = useState<Report | null>(null);
+  /** The 15-minute lock write came back with zero rows — the report is open in
+   *  read-only mode and nothing is holding it. */
+  const [lockFailed, setLockFailed] = useState(false);
   const [msgs, setMsgs] = useState<ReportMessage[]>([]);
   const [msgLoading, setMsgLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -95,25 +107,35 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const q = supabase.from('reports').select('*');
-    /* PostgREST does not throw: a refused or dropped read returns
-       `{data: null, error}`. Reading only `data` turned that into `[]`, and the
-       screen then stated «Açıq şikayət yoxdur» and «Bugün həll olundu: 0» over a
-       queue holding open safety reports. Dashboard.tsx was fixed for exactly
-       this; the queue itself was not. */
-    const { data, error } = tab === 'open'
-      ? await q.eq('status', 'open').order('sla_due_at', { ascending: true })
-      : await q.in('status', ['resolved', 'dismissed']).order('created_at', { ascending: false }).limit(60);
-    setFailed(!!error);
-    setRows((data as Report[]) ?? []);
+    /* try/finally, not a bare sequence: a throw anywhere between here and the
+       end used to skip `setLoading(false)`, so the abuse queue span forever with
+       no error, no rows and no way to retry short of a reload. */
+    try {
+      const q = supabase.from('reports').select('*');
+      /* PostgREST does not throw: a refused or dropped read returns
+         `{data: null, error}`. Reading only `data` turned that into `[]`, and the
+         screen then stated «Açıq şikayət yoxdur» and «Bugün həll olundu: 0» over a
+         queue holding open safety reports. Dashboard.tsx was fixed for exactly
+         this; the queue itself was not. */
+      const { data, error } = tab === 'open'
+        ? await q.eq('status', 'open').order('sla_due_at', { ascending: true })
+        : await q.in('status', ['resolved', 'dismissed']).order('created_at', { ascending: false }).limit(60);
+      setFailed(!!error);
+      setRows((data as Report[]) ?? []);
 
-    const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
-    const { count, error: cErr } = await supabase
-      .from('reports').select('id', { count: 'exact', head: true })
-      .in('status', ['resolved', 'dismissed'])
-      .gte('resolved_at', startOfDay.toISOString());
-    setResolvedToday(cErr ? null : (count ?? 0));
-    setLoading(false);
+      const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+      const { count, error: cErr } = await supabase
+        .from('reports').select('id', { count: 'exact', head: true })
+        .in('status', ['resolved', 'dismissed'])
+        .gte('resolved_at', startOfDay.toISOString());
+      setResolvedToday(cErr ? null : (count ?? 0));
+    } catch {
+      setFailed(true);
+      setRows([]);
+      setResolvedToday(null);
+    } finally {
+      setLoading(false);
+    }
   }, [tab]);
 
   useEffect(() => { load(); }, [load]);
@@ -139,10 +161,18 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
       .eq('id', r.id)
       .select('*')
       .maybeSingle();
-    const opened = (locked as Report) ?? { ...r, locked_by: myUid, locked_until: lockedUntil };
+    /* No fabricated fallback. `reports_admin_update` is moderator+, so for a
+       support admin — who CAN read the queue — this UPDATE comes back
+       `error: null` with zero rows and `maybeSingle()` yields null. The old
+       `?? { ...r, locked_by: myUid, locked_until: lockedUntil }` then invented
+       the lock in local state and wrote it into `rows`, so the screen counted
+       down «15 dəq kilid · sən» over a database row that was never locked and a
+       moderator opened the same harassment report seconds later. */
+    const opened = (locked as Report | null) ?? r;
+    setLockFailed(!locked);
     setActive(opened);
     setNow(Date.now());
-    setRows((prev) => prev.map((x) => (x.id === opened.id ? opened : x)));
+    if (locked) setRows((prev) => prev.map((x) => (x.id === opened.id ? opened : x)));
 
     // attached chat evidence — the ONLY place message text appears (max 20)
     setMsgLoading(true);
@@ -159,6 +189,7 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
       await supabase.from('reports').update({ locked_by: null, locked_until: null }).eq('id', active.id).eq('status', 'open');
     }
     setActive(null);
+    setLockFailed(false);
     setMsgs([]);
   }
 
@@ -366,9 +397,21 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
       {/* bottom info cards */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 18 }}>
         <div className="card" style={{ padding: 17 }}>
-          <div style={{ font: '600 13.5px/1 var(--font)', marginBottom: 13 }}>Avtomatik siqnal qaydaları</div>
+          <div style={{ font: '600 13.5px/1 var(--font)', marginBottom: 13 }}>Siqnal qaydaları</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, font: '400 12.5px/1.45 var(--font)', color: 'var(--muted2)' }}>
-            {AUTO_FLAG.map((t, i) => <div key={i}>· {t}</div>)}
+            {AUTO_FLAG.map((r, i) => (
+              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                <span className={'badge ' + (r.live ? 'green' : 'grey')} style={{ flex: 'none' }}>
+                  {r.live ? 'İŞLƏYİR' : 'İŞLƏMİR'}
+                </span>
+                <span style={{ color: r.live ? 'var(--muted2)' : 'var(--muted)' }}>{r.text}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ font: '400 11.5px/1.5 var(--font)', color: 'var(--orange-deep)', marginTop: 12 }}>
+            «İŞLƏMİR» qeyd olunanlar planlaşdırılıb, amma qurulmayıb: heç bir hesab avtomatik
+            susdurulmur, heç bir şərh avtomatik növbəyə düşmür. Növbədəki hər şikayət əl ilə
+            yoxlanılmalıdır.
           </div>
         </div>
         <div className="card" style={{ padding: 17 }}>
@@ -392,6 +435,7 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
           <div className="modal" style={{ width: 560, maxHeight: '86vh', overflow: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <ReportDetail
               r={active} msgs={msgs} msgLoading={msgLoading} now={now} myUid={myUid} canAct={canAct} busy={busy}
+              lockFailed={lockFailed}
               onClose={closeDetail} onPunish={punish} onDismiss={dismiss}
             />
           </div>
@@ -416,10 +460,10 @@ function TabBtn({ active, onClick, label }: { active: boolean; onClick: () => vo
 }
 
 function ReportDetail({
-  r, msgs, msgLoading, now, myUid, canAct, busy, onClose, onPunish, onDismiss,
+  r, msgs, msgLoading, now, myUid, canAct, busy, lockFailed, onClose, onPunish, onDismiss,
 }: {
   r: Report; msgs: ReportMessage[]; msgLoading: boolean; now: number; myUid: string;
-  canAct: boolean; busy: boolean; onClose: () => void;
+  canAct: boolean; busy: boolean; lockFailed: boolean; onClose: () => void;
   onPunish: (a: Rung, label: string) => void; onDismiss: () => void;
 }) {
   // Account sanctions need a profiles id; only a `user` report has one in
@@ -445,7 +489,19 @@ function ReportDetail({
         <button className="link" style={{ marginLeft: 'auto' }} onClick={onClose}>Bağla</button>
       </div>
 
-      {r.locked_until && (
+      {/* An unlocked report is opened read-only rather than with an invented
+          countdown — two people can otherwise work the same case believing each
+          holds it exclusively. */}
+      {lockFailed && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(255,149,0,.12)', borderRadius: 7, padding: '7px 11px', margin: '4px 0 14px' }}>
+          <Icon name="clock" size={13} color="var(--orange-deep)" />
+          <span style={{ font: '500 11.5px/1.4 var(--font)', color: 'var(--orange-deep)' }}>
+            Kilid alınmadı — bu şikayət səndə deyil. Başqa moderator eyni anda onunla işləyə bilər.
+          </span>
+        </div>
+      )}
+
+      {!lockFailed && r.locked_until && (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: mine ? 'rgba(198,255,61,.28)' : 'var(--fill)', borderRadius: 7, padding: '5px 10px', margin: '4px 0 14px' }}>
           <Icon name="clock" size={13} color={mine ? 'var(--volt-deep)' : 'var(--muted2)'} />
           <span style={{ font: '600 11.5px/1 var(--font)', color: mine ? 'var(--volt-deep)' : 'var(--muted2)' }}>

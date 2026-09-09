@@ -68,6 +68,50 @@ export async function getMyTrainerId(): Promise<string | null> {
  *  user would wait forever for a reply that cannot come. Refuse instead of writing
  *  a row nobody can ever see — the caller turns `trainer-inactive` into an honest
  *  message rather than «yenidən cəhd et». */
+/**
+ * Is my trainer listing public, and can I change that?
+ *
+ * `trainers.listed` defaults to false and is NOT in the INSERT grant — schema53
+ * decided a listing must not publish itself the instant it is written. Nothing
+ * was ever built to publish it afterwards: no switch in the app, no admin
+ * action, and the verification trigger sets `verified` but never `listed`. So
+ * every coach who signed up was invisible in Kəşf → Müəllimlər forever, while
+ * the screen told them «Müəllim profilin yaradıldı».
+ *
+ * `listed` IS in the UPDATE grant and `trainers_update` pins the row to its
+ * owner, so publishing is the trainer's own deliberate act — which is what
+ * schema53 wanted: not published on creation, published when the person has
+ * looked at it and decided.
+ */
+export async function getMyListing(): Promise<{ id: string; listed: boolean } | null> {
+  const me = await getMyProfile();
+  if (!me?.id) return null;
+  const { data, error } = await supabase
+    .from('trainers')
+    .select('id,listed')
+    .eq('id', me.id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? { id: (data as { id: string }).id, listed: !!(data as { listed: boolean }).listed } : null;
+}
+
+/** Publish or unpublish my own trainer listing. Returns the value that landed. */
+export async function setMyListed(listed: boolean): Promise<boolean> {
+  const me = await getMyProfile();
+  if (!me?.id) throw new Error('no-profile');
+  // `.select()` is not cosmetic: an RLS-filtered UPDATE returns `error: null`
+  // with zero rows changed, so a refusal would otherwise be reported as done.
+  const { data, error } = await supabase
+    .from('trainers')
+    .update({ listed })
+    .eq('id', me.id)
+    .select('listed');
+  if (error) throw error;
+  const rows = (data ?? []) as { listed: boolean }[];
+  if (!rows.length) throw new Error('not-updated');
+  return !!rows[0].listed;
+}
+
 export async function requestTrainer(trainerId: string, note: string, preferredTime: string): Promise<void> {
   const me = await getMyProfile();
   if (!me) throw new Error('no profile');

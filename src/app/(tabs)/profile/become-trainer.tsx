@@ -14,7 +14,7 @@ import { getMyProfile } from '@/lib/api';
 import { useAuthGate } from '@/lib/authGate';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { invalidateFocusCache } from '@/lib/focusFetch';
-import { pickImage, setTrainerPhoto, shootImage } from '@/lib/images';
+import { imageTooLargeMessage, pickImage, setTrainerPhoto, shootImage } from '@/lib/images';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, confirm, toast } from '@/store/ui';
@@ -218,9 +218,12 @@ export default function BecomeTrainer() {
       setPhotoLocal(null);
       successFeedback();
       toast('Profil şəklin yeniləndi');
-    } catch {
+    } catch (e) {
       errorFeedback();
-      toast('Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      /* «yenidən cəhd et» is a lie about a file over the 5 MB avatars ceiling —
+         the same photo fails the same way forever. That case names itself and
+         carries the real numbers; everything else keeps the retry wording. */
+      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
     } finally {
       setPhotoBusy(false);
     }
@@ -248,7 +251,10 @@ export default function BecomeTrainer() {
       setProfile({ role: 'trainer', specialty: payload.specialty, priceFrom, bio: payload.bio });
 
       let serverOk = false;
-      let photoFailed = false;
+      /* The whole message for a photo that did not go up with the profile, or
+         null when it did. It used to be a boolean, which could only ever produce
+         «yenidən cəhd et» — including for a file the bucket refuses every time. */
+      let photoFailMsg: string | null = null;
       if (hasSupabaseConfig) {
         try {
           const trainerId = await publishTrainer(payload);
@@ -260,8 +266,11 @@ export default function BecomeTrainer() {
               const url = await setTrainerPhoto(trainerId, photoLocal);
               setPhotoUrl(url);
               setPhotoLocal(null);
-            } catch {
-              photoFailed = true;
+            } catch (e) {
+              const why = imageTooLargeMessage(e);
+              photoFailMsg = why
+                ? `Profil saxlanıldı, amma şəkil yüklənmədi. ${why}`
+                : 'Profil saxlanıldı, amma şəkil yüklənmədi — yenidən cəhd et';
             }
           }
         } catch {
@@ -272,8 +281,8 @@ export default function BecomeTrainer() {
 
       if (!hasSupabaseConfig) {
         toast('Cihazda saxlanıldı — server bağlantısı olmadan başqaları səni görmür', 'info');
-      } else if (serverOk && photoFailed) {
-        toast('Profil saxlanıldı, amma şəkil yüklənmədi — yenidən cəhd et', 'error');
+      } else if (serverOk && photoFailMsg) {
+        toast(photoFailMsg, 'error');
       } else if (serverOk) {
         toast(alreadyTrainer ? 'Müəllim profilin yeniləndi' : 'Müəllim profilin yaradıldı');
       } else {
@@ -301,8 +310,14 @@ export default function BecomeTrainer() {
         try {
           setPhotoUrl(await setTrainerPhoto(trainerId, photoLocal));
           setPhotoLocal(null);
-        } catch {
-          toast('Profil sinxronlaşdı, amma şəkil yüklənmədi — yenidən cəhd et', 'error');
+        } catch (e) {
+          const why = imageTooLargeMessage(e);
+          // «Yenidən sinxronla» retries this same held photo, so telling the user
+          // to retry a file the bucket refuses would loop them here forever.
+          toast(
+            why ? `Profil sinxronlaşdı, amma şəkil yüklənmədi. ${why}` : 'Profil sinxronlaşdı, amma şəkil yüklənmədi — yenidən cəhd et',
+            'error'
+          );
           return;
         }
       }

@@ -92,13 +92,17 @@ export interface Match {
   at: string;
   question?: string;
 }
+/* A message is text. The `kind: 'invite'` variant that used to sit here carried a
+   «MƏŞQ TƏKLİFİ» card with a «Qəbul et» button that only called a local `set(...)`:
+   the card turned green and announced «Təqvimə əlavə olundu» on the same phone that
+   wrote the invite, with no server row and nobody told. chat/[id].tsx stopped
+   rendering those cards, so the fields and the two actions behind them
+   (`proposeWorkout` / `acceptInvite`) had no reader and no caller left. */
 export interface ChatMessage {
   id: string;
   from: 'me' | 'them';
   text: string;
   at: string;
-  kind?: 'text' | 'invite';
-  invite?: { gymId: string; when: string; accepted?: boolean };
 }
 
 // ------------------------------------------------------------------ me params (from appStore profile)
@@ -332,7 +336,7 @@ interface DbState {
   serverPRs: { lift: string; value: number; delta?: string }[];
   setServerPRs: (rows: { lift: string; value: number; delta?: string }[]) => void;
   /** Bring server-stored history into the device engine — see the implementation. */
-  mergeFromServer: (incoming: { workouts: Workout[]; weights: WeightLog[] }) => void;
+  mergeFromServer: (incoming: { workouts: Workout[]; weights: WeightLog[]; checkIns?: CheckIn[] }) => void;
   /** Adopt the id the server accepted, for a row written before ids were shared. */
   renameWorkout: (oldId: string, newId: string) => void;
   renameWeight: (at: string, id: string) => void;
@@ -341,11 +345,9 @@ interface DbState {
   /** Bring the device's match state back in line with the server. See the
    *  implementation for why only UUID-keyed entries are touched. */
   reconcileMatches: (rows: { otherProfileId: string; status: 'pending' | 'accepted' | 'declined'; iSent: boolean }[]) => void;
-  proposeWorkout: (partnerId: string, gymId: string, when: string) => void;
   acceptMatch: (partnerId: string) => void;
   declineMatch: (partnerId: string) => void;
   sendMessage: (partnerId: string, text: string) => void;
-  acceptInvite: (partnerId: string, messageId: string) => void;
   resetDomain: () => void;
 }
 
@@ -459,10 +461,25 @@ export const useDb = create<DbState>()(
           const addedW = incoming.weights.filter(
             (w) => (!w.id || !haveW.has(w.id)) && !haveWContent.has(pKey(w))
           );
-          if (!added.length && !addedW.length) return {};
+
+          /* Check-ins, same rules. A check-in written by this device carries a
+             local `c-<ms>` id and the server's copy of it a UUID, so the id
+             alone would import every one of them a second time; the gym day plus
+             the gym is the pair's shared identity, and it is also exactly what
+             the server's one-per-gym-day unique index enforces. Without this
+             merge a person whose streak is built on check-ins rather than logged
+             workouts came back from a new phone with a flame of 0 while the
+             server still held every row. */
+          const cKey = (c: { at: string; gymId: string }) => `${dayKey(c.at)}|${c.gymId}`;
+          const haveC = new Set(s.checkIns.map((c) => c.id));
+          const haveCContent = new Set(s.checkIns.map(cKey));
+          const addedC = (incoming.checkIns ?? []).filter((c) => !haveC.has(c.id) && !haveCContent.has(cKey(c)));
+
+          if (!added.length && !addedW.length && !addedC.length) return {};
           return {
             workouts: [...added, ...s.workouts].sort((a, b) => b.at.localeCompare(a.at)),
             weights: [...s.weights, ...addedW].sort((a, b) => a.at.localeCompare(b.at)),
+            checkIns: [...addedC, ...s.checkIns].sort((a, b) => b.at.localeCompare(a.at)),
           };
         }),
 
@@ -479,18 +496,27 @@ export const useDb = create<DbState>()(
       /**
        * The server is the authority on a partner request; this device is not.
        *
-       * Only entries keyed by a real profile UUID are reconciled. `match.tsx`
-       * sends to the server ONLY when `hasSupabaseConfig && UUID.test(id)`, and
-       * on failure it returns before touching this store — so a UUID-keyed entry
-       * exists exactly when a server row once existed. A non-UUID key is a
-       * local-only record against a seed partner, which the user was told was
-       * never sent («Təklif cihazında qeyd olundu — hələ göndərilməyib»); wiping
-       * those would delete something the app promised to keep.
+       * Only entries keyed by a real profile UUID are reconciled. A non-UUID key
+       * is a local-only record against a seed partner, which the user was told
+       * was never sent («Təklif cihazında qeyd olundu — hələ göndərilməyib»);
+       * wiping those would delete something the app promised to keep.
        *
        * Therefore: server row present → take its status. Server row gone → the
-       * request no longer exists (answered and cleared, or the other account was
+       * OFFER no longer exists (answered and cleared, or the other account was
        * deleted) and the local «Gözləyən» is a ghost. Requests that arrived while
        * this device was away are added as `incoming`.
+       *
+       * One exception, and this comment used to get it wrong: it asserted that a
+       * UUID-keyed entry exists exactly when a server row once existed, on the
+       * grounds that `match.tsx` only records an offer it managed to send. That
+       * was never true of a PASS. A left swipe in Kartlar writes `declined` here
+       * and no `match_requests` row anywhere — it is a decision about a card, not
+       * an offer — so the sweep below deleted it on the next launch and everybody
+       * passed yesterday came back: in usePartnersForGym, in the gym screen's
+       * «indi zalda» list, and in the deck itself under a hint that promises
+       * «kart bir daha gəlmir» (cards.tsx has since added its own persisted pass
+       * list, but the other two screens have only this entry to go on). A decline
+       * this device made is kept until this device is reset.
        */
       reconcileMatches: (rows) =>
         set((s) => {
@@ -502,7 +528,11 @@ export const useDb = create<DbState>()(
           for (const [pid, m] of Object.entries(s.matches)) {
             if (!isUuid(pid)) { next[pid] = m; continue; } // local-only, leave alone
             const r = server.get(pid);
-            if (!r) continue;                              // gone on the server → drop
+            if (!r) {
+              // No row was ever written for a pass — keep the decision, drop the ghost.
+              if (m.state === 'declined') next[pid] = m;
+              continue;
+            }
             next[pid] = {
               ...m,
               state: r.status === 'accepted' ? 'accepted'
@@ -524,28 +554,6 @@ export const useDb = create<DbState>()(
           return { matches: next };
         }),
 
-      // Propose a first workout → opens a real, persisted partner chat. In this
-      // single-user MVP the counterpart auto-confirms; Supabase makes it 2-sided later.
-      /* Sending a proposal records MY invite and marks the request as sent. The
-         other person has not answered yet — SPOT never fabricates their reply,
-         and never marks the invite accepted on their behalf. */
-      proposeWorkout: (partnerId, gymId, when) =>
-        set((s) => {
-          const now = new Date().toISOString();
-          const invite: ChatMessage = {
-            id: `m-${Date.now()}`,
-            from: 'me',
-            text: `Məşq təklifi: ${when}`,
-            at: now,
-            kind: 'invite',
-            invite: { gymId, when, accepted: false },
-          };
-          return {
-            matches: { ...s.matches, [partnerId]: { partnerId, state: 'requested', at: now } },
-            threads: { ...s.threads, [partnerId]: [...(s.threads[partnerId] ?? []), invite] },
-          };
-        }),
-
       /* Accepting opens the thread — but SPOT never writes a message and signs
          another person's name to it. The thread starts empty on purpose. */
       acceptMatch: (partnerId) =>
@@ -562,16 +570,6 @@ export const useDb = create<DbState>()(
           threads: {
             ...s.threads,
             [partnerId]: [...(s.threads[partnerId] ?? []), { id: `m-${Date.now()}`, from: 'me', text, at: new Date().toISOString() }],
-          },
-        })),
-
-      acceptInvite: (partnerId, messageId) =>
-        set((s) => ({
-          threads: {
-            ...s.threads,
-            [partnerId]: (s.threads[partnerId] ?? []).map((m) =>
-              m.id === messageId && m.invite ? { ...m, invite: { ...m.invite, accepted: true } } : m
-            ),
           },
         })),
 
@@ -598,13 +596,29 @@ export const useDb = create<DbState>()(
       // removed `comments` key therefore hydrates without touching anything —
       // the key rides along as an inert leftover, nothing reads it, and the next
       // write drops it (partialize no longer emits it).
+      //
+      // The same goes for the `kind` / `invite` fields on messages inside
+      // `threads`: an upgraded install still has them on old rows, no code reads
+      // them any more, and such a message now shows as the plain text it always
+      // carried («Məşq təklifi: …») instead of a card with an accept button that
+      // did nothing. No migration is needed and none is written — a rewrite of
+      // the whole slice risks losing messages to fix nothing.
       onRehydrateStorage: () => (state) => state?.setHydrated(),
     }
   )
 );
 
 // ------------------------------------------------------------------ derived selectors / business logic
-export function computeStreak(checkIns: CheckIn[], workouts: Workout[]): number {
+/** Consecutive gym days ending today.
+ *
+ *  `window` bounds the walk when the streak belongs to something with a start
+ *  and an end — a challenge. Without it the count is the person's whole history,
+ *  which is what the app's own streak card means. */
+export function computeStreak(
+  checkIns: CheckIn[],
+  workouts: Workout[],
+  window?: { fromMs?: number; toMs?: number }
+): number {
   const keys = new Set<string>([...checkIns.map((c) => dayKey(c.at)), ...workouts.map((w) => dayKey(w.at))]);
   if (keys.size === 0) return 0;
   // Walk back from today in the SAME key space `dayKey` produces — a cursor that
@@ -612,10 +626,14 @@ export function computeStreak(checkIns: CheckIn[], workouts: Workout[]): number 
   // flat 24 h is safe because the shifted timeline has a fixed offset and no DST,
   // unlike `setDate` on a device-local clock.
   let streak = 0;
-  let cursorMs = Date.now();
+  let cursorMs = Math.min(Date.now(), window?.toMs ?? Date.now());
+  // The first day the window credits. Compared as day KEYS, which sort
+  // lexicographically because `dayKey` emits YYYY-MM-DD.
+  const floorKey = typeof window?.fromMs === 'number' ? gymDayOf(window.fromMs) : null;
   // If today has nothing yet, start from yesterday — today is still open.
   if (!keys.has(gymDayOf(cursorMs))) cursorMs -= 86_400_000;
   while (keys.has(gymDayOf(cursorMs))) {
+    if (floorKey && gymDayOf(cursorMs) < floorKey) break;
     streak += 1;
     cursorMs -= 86_400_000;
   }
@@ -750,7 +768,13 @@ export function suggestNext(
   const done = (last.exercises.find((x) => x.name === exerciseName)?.sets ?? []).filter((st) => st.done);
   if (!done.length) return null;
 
-  const top = done[0];
+  /* The HEAVIEST completed set, not the first one in the list.
+     `done[0]` is whatever set was ticked first, which on any ramped exercise is
+     the warm-up: squat logged as 60×5, 80×5, 100×5, 100×5 and rated «Asan»
+     produced «Keçən dəfə 60kq asan keçdi — +5kq artır» and prefilled every set
+     with 65 kg — a 35 kg cut from the real working load, presented as
+     progressive overload. */
+  const top = done.reduce((a, b) => (b.weight > a.weight ? b : a));
   const prevWeight = top.weight;
   const rpe = last.rpe;
 
@@ -787,7 +811,11 @@ export function suggestNext(
   }
 
   // «Normal» (or not rated): the load only rises when every set hit its target.
-  const allHit = done.every((st) => st.reps >= topRep);
+  // Only the sets at the working load are asked that question — a warm-up set of
+  // 5 reps on a 8-rep target is not a missed target, and counting it as one kept
+  // the load frozen for everybody who warms up on the bar.
+  const working = done.filter((st) => st.weight === prevWeight);
+  const allHit = working.every((st) => st.reps >= topRep);
   if (allHit) {
     const weight = halfKg(prevWeight + 2.5);
     return {
@@ -1053,12 +1081,18 @@ export function programDayExercises(program: Program | undefined, dayIndex: numb
  *  that measures the wrong thing is worse than no number. */
 export type ChallengeMetric = 'sessions' | 'tonnes' | 'kilos' | null;
 
+/* The units are matched EXACTLY as `challenge_standings()` matches them
+   (schema60: `lower(coalesce(unit,''))` against 't' / 'kq' / 'məşq' / 'mesq' /
+   ''), because the ranking and this number sit one above the other on
+   challenge/[id].tsx. While this side used `includes()` and accepted 'ton' and
+   'kg' as well, a challenge whose unit the server calls unmeasurable — every row
+   in SIRALAMA drawn as «—» — still showed the person a progress bar above it. */
 export function challengeMetric(unit: string): ChallengeMetric {
-  const u = (unit || '').trim().toLowerCase();
-  if (u.includes('gün')) return 'sessions'; // streak card, handled separately
-  if (u === 't' || u === 'ton') return 'tonnes';
-  if (u === 'kq' || u === 'kg') return 'kilos';
-  if (u.includes('məşq') || u.includes('mesq') || u === '') return 'sessions';
+  const u = (unit || '').toLowerCase();
+  if (u === 'gün') return 'sessions'; // streak, handled separately below
+  if (u === 't') return 'tonnes';
+  if (u === 'kq') return 'kilos';
+  if (u === 'məşq' || u === 'mesq' || u === '') return 'sessions';
   return null;
 }
 
@@ -1071,16 +1105,35 @@ export function challengeMetric(unit: string): ChallengeMetric {
 export function computeChallengeProgress(
   unit: string,
   s: { workouts: Workout[]; checkIns: CheckIn[]; installedAt: string },
-  window?: { startsAt?: string | null; endsAt?: string | null }
+  window?: { startsAt?: string | null; endsAt?: string | null; joinedAt?: string | null }
 ): number | null {
   const u = (unit || '').toLowerCase();
-  if (u.includes('gün')) return computeStreak(s.checkIns, s.workouts);
+
+  /* The SAME window the server counts in: `greatest(joined_at, starts_at)` →
+     `least(now(), ends_at)` (schema60). Without `joinedAt` this side started at
+     the challenge's own start, so «Sənin irəliləyişin» credited the person for
+     every session logged before they entered and read «9 / 12 məşq» directly
+     above their own row in SIRALAMA, which said «0 məşq». */
+  const bounds = [window?.startsAt, window?.joinedAt]
+    .map((iso) => (iso ? Date.parse(iso) : NaN))
+    .filter((t) => Number.isFinite(t));
+  const endsMs = window?.endsAt ? Date.parse(window.endsAt) : NaN;
+  const bounded = bounds.length > 0 || Number.isFinite(endsMs);
+  const from = bounds.length ? Math.max(...bounds) : startOfMonth();
+  const to = Number.isFinite(endsMs) ? Math.min(Date.now(), endsMs) : Date.now();
+
+  /* «gün» inside a challenge is that challenge's streak, not the person's
+     lifetime one: a 30-day challenge published last week used to show «45 / 30
+     gün» — a streak that started before the challenge existed. With no window at
+     all the caller is the app's own streak card, where the whole history IS the
+     answer. */
+  if (u === 'gün') {
+    return bounded ? computeStreak(s.checkIns, s.workouts, { fromMs: from, toMs: to }) : computeStreak(s.checkIns, s.workouts);
+  }
 
   const metric = challengeMetric(unit);
   if (!metric) return null;
 
-  const from = window?.startsAt ? Date.parse(window.startsAt) : startOfMonth();
-  const to = window?.endsAt ? Date.parse(window.endsAt) : Date.now();
   const inWindow = (iso: string) => {
     const t = new Date(iso).getTime();
     return t >= from && t <= to;
@@ -1101,16 +1154,20 @@ function startOfMonth(): number {
 
 export function useChallengeProgress(
   unit: string,
-  window?: { startsAt?: string | null; endsAt?: string | null }
+  /** `joinedAt` is the caller's own `challenge_members.joined_at`. Pass it
+   *  whenever it is known: without it this number is counted over a wider window
+   *  than the ranking on the same screen. */
+  window?: { startsAt?: string | null; endsAt?: string | null; joinedAt?: string | null }
 ): number | null {
   const workouts = useDb((s) => s.workouts);
   const checkIns = useDb((s) => s.checkIns);
   const installedAt = useDb((s) => s.installedAt);
   const from = window?.startsAt ?? null;
   const to = window?.endsAt ?? null;
+  const joined = window?.joinedAt ?? null;
   return useMemo(
-    () => computeChallengeProgress(unit, { workouts, checkIns, installedAt }, { startsAt: from, endsAt: to }),
-    [unit, workouts, checkIns, installedAt, from, to]
+    () => computeChallengeProgress(unit, { workouts, checkIns, installedAt }, { startsAt: from, endsAt: to, joinedAt: joined }),
+    [unit, workouts, checkIns, installedAt, from, to, joined]
   );
 }
 

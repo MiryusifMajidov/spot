@@ -13,11 +13,20 @@ export default function Achievements() {
   const stats = useStats();
   const checkInCount = useDb((s) => s.checkIns.length);
   const partners = useDb((s) => Object.values(s.matches).filter((m) => m.state === 'accepted').length);
+  /* How many DIFFERENT people the user has actually trained with. `Workout.partnerId`
+     (written by session.tsx) is the only record of a joint session; the accepted-match
+     count above measures matching, not training, and using it for the «5 yoldaşla məşq»
+     goal told someone who had accepted four requests and trained with nobody that they
+     had trained with four people. A Set built inside the selector is fine — `.size` is
+     a primitive, so the store does not re-render on identity. */
+  const trainedWith = useDb((s) => new Set(s.workouts.map((w) => w.partnerId).filter(Boolean)).size);
   const prSquat = stats.prs.find((p) => p.lift === 'Skvat')?.value ?? 0;
   const volumeT = stats.volumeKg / 1000;
 
   const badges: Badge[] = [
-    { icon: 'qr', label: 'İlk check-in', earned: checkInCount > 0 },
+    // A GPS check-in, not a scan: there is no QR scanner in the app (workout/checkin.tsx).
+    { icon: 'pin', label: 'İlk check-in', earned: checkInCount > 0 },
+    // Earned by having a partner — an accepted match — which is what the label says.
     { icon: 'users', label: 'İlk yoldaş', earned: partners > 0 },
     { icon: 'trophy', label: '100 kq skvat', earned: prSquat >= 100 },
     { icon: 'flame', label: '21 gün seriya', earned: stats.streakDays >= 21 },
@@ -29,7 +38,7 @@ export default function Achievements() {
 
   const close = [
     { icon: 'target' as IconName, label: '50 məşq', cur: Math.min(stats.count, 50), total: 50 },
-    { icon: 'users' as IconName, label: '5 yoldaşla məşq', cur: Math.min(partners, 5), total: 5 },
+    { icon: 'users' as IconName, label: '5 yoldaşla məşq', cur: Math.min(trainedWith, 5), total: 5 },
     { icon: 'dumbbell' as IconName, label: '100 t həcm', cur: Math.min(Math.round(volumeT), 100), total: 100 },
   ];
 
@@ -107,8 +116,10 @@ export default function Achievements() {
 
         <View style={styles.note}>
           <Icon name="shield" size={15} color={palette.tertiary} />
+          {/* «QR check-in» sent people looking for a scanner that does not exist — the
+              check-in they can already do (GPS, workout/checkin.tsx) is what earns it. */}
           <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.textSecondary, flex: 1 }}>
-            Nişanlar yalnız QR check-in və qeyd edilmiş məşqlərlə qazanılır. Satın alınmır, hədiyyə edilmir.
+            Nişanlar yalnız check-in və qeyd edilmiş məşqlərlə qazanılır. Satın alınmır, hədiyyə edilmir.
           </AppText>
         </View>
       </ScrollView>

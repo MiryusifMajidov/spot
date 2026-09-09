@@ -21,18 +21,47 @@
  * suggesting a next weight from a workout whose sets we do not have would be a
  * guess dressed as a recommendation.
  */
-import { getMyPRs, getMyProgress, getMyWorkouts, logWeight, logWorkout } from './api';
+import { getMyPRs, getMyProfile, getMyProgress, getMyWorkouts, logWeight, logWorkout } from './api';
 import { isUuid, newId } from './ids';
 import { myChallenges, myFollowing } from './social';
 import { hasSupabaseConfig, supabase } from './supabase';
-import { setExerciseVideos, useDb, type Workout } from '@/store/db';
+import { setExerciseVideos, useDb, type CheckIn, type Workout } from '@/store/db';
+
+/**
+ * The user's OWN check-ins, back from the server.
+ *
+ * `computeStreak` builds its day set from check-ins AND workouts, so somebody
+ * who keeps a streak by checking in on cardio days rather than logging a
+ * workout lost the whole flame on a new phone: the rows were all still in
+ * `check_ins`, and nothing read them.
+ *
+ * `profile_id = me` is not optional. `check_ins_read` (schema48) also exposes
+ * OTHER people's live «indi zalda» rows, so an unfiltered select would fold
+ * strangers' visits into this person's streak.
+ *
+ * A failed read returns nothing and the device keeps what it has — an empty
+ * array here would be «you have never checked in», which is a different claim.
+ */
+async function myCheckIns(): Promise<CheckIn[]> {
+  const me = await getMyProfile();
+  if (!me?.id) return [];
+  const { data, error } = await supabase
+    .from('check_ins')
+    .select('id,gym_id,created_at')
+    .eq('profile_id', me.id)
+    .order('created_at', { ascending: false });
+  if (error) return [];
+  return ((data ?? []) as { id: string; gym_id: string; created_at: string | null }[])
+    .filter((r) => !!r.created_at)
+    .map((r) => ({ id: r.id, gymId: r.gym_id, at: r.created_at as string }));
+}
 
 /** Pull the server's history into the device engine. Additive: a row the device
  *  already has (same id) keeps its local copy, which is the richer one. */
 export async function pullTrainingHistory(): Promise<void> {
   if (!hasSupabaseConfig) return;
-  const [serverWorkouts, serverWeights, serverPRs] = await Promise.all([
-    getMyWorkouts(), getMyProgress(), getMyPRs(),
+  const [serverWorkouts, serverWeights, serverPRs, serverCheckIns] = await Promise.all([
+    getMyWorkouts(), getMyProgress(), getMyPRs(), myCheckIns(),
   ]);
 
   // Records set on a device whose sets never left it — see `computeStats`.
@@ -56,6 +85,7 @@ export async function pullTrainingHistory(): Promise<void> {
   useDb.getState().mergeFromServer({
     workouts,
     weights: serverWeights.map((p) => ({ id: p.id, at: p.at, kg: p.kg })),
+    checkIns: serverCheckIns,
   });
 }
 

@@ -6,6 +6,11 @@ export interface Admin {
   email: string | null;
   role: AdminRole;
   two_factor: boolean;
+  /** What actually revokes access: `is_admin()` and `admin_role()` both filter
+   *  on `disabled_at is null`. It was missing from this type, so the team roster
+   *  drew a revoked admin exactly like a working one — name, 2FA badge and a
+   *  role dropdown — and an access review had no way to tell them apart. */
+  disabled_at: string | null;
 }
 
 export interface Profile {
@@ -29,14 +34,19 @@ export interface Profile {
    *  row and written by nothing, anywhere — so «yalnız şikayət edilənlər» came
    *  back empty while five reports sat open. They are now computed from the
    *  source rows by `public.admin_profile_stats()` (schema20) and merged in
-   *  after the profile fetch. */
-  reports_count: number;
-  requests_sent: number;
-  requests_answered: number;
+   *  after the profile fetch.
+   *
+   *  `null` means the counters call itself FAILED. It is not the same thing as a
+   *  profile missing from a successful result, which genuinely is zero: a `0`
+   *  printed in the Şikayət column of a reported account is the exact lie
+   *  schema22 removed the dead columns to stop. */
+  reports_count: number | null;
+  requests_sent: number | null;
+  requests_answered: number | null;
   /** Counted from CHECK-INS ONLY. Deliberately not the streak the member sees:
    *  theirs also counts logged workouts, and workout detail never leaves their
    *  device. Label it «check-in seriyası», never «streak». */
-  checkin_streak: number;
+  checkin_streak: number | null;
   /** Never present on a row read from the table: schema9 withholds the column
    *  from every client role. The real number comes only from the audited
    *  `admin_unmask_phone` RPC, one profile at a time. */
@@ -126,7 +136,12 @@ export interface TrainerVerification {
   doc_cert_url: string | null;
   gym_confirm: boolean;
   intro_video_url: string | null;
-  internal_note: string | null;
+  /* NOT part of the row read. schema70 withheld the column: it is the
+     moderator's own working note, and `tv_admin_read` lets the APPLICANT read
+     their own verification row, so a SELECT grant meant the trainer being judged
+     read every word written about them. It arrives separately, per row, through
+     `admin_verification_note(id)`. */
+  internal_note?: string | null;
   reject_reason: string | null;
   sla_due_at: string;
   created_at: string;

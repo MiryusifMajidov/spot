@@ -1,7 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { successFeedback } from '@/lib/feedback';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { BackHandler, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -12,7 +14,7 @@ import { logWorkout as logWorkoutApi } from '@/lib/api';
 import { useAuthGate } from '@/lib/authGate';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useDb, useLatestWeight } from '@/store/db';
-import { confirm } from '@/store/ui';
+import { confirm, toast } from '@/store/ui';
 import { palette } from '@/theme';
 import { homeMoveReps, homeMoveSeconds, homeWorkoutPlan } from './day';
 
@@ -33,7 +35,6 @@ export default function HomeSession() {
   const [idx, setIdx] = useState(0);
   const [remaining, setRemaining] = useState(() => homeMoveSeconds(plan.moves[0]));
   const [paused, setPaused] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
   const [doneCount, setDoneCount] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const advancing = useRef(false);
@@ -42,20 +43,91 @@ export default function HomeSession() {
   const perRound = Math.max(1, plan.circuit.length);
   const round = Math.floor(idx / perRound) + 1;
 
-  // total session clock
+  /* The screen stays awake for the same reason session.tsx keeps it awake: this
+     one runs planks and timed circuits, and the phone used to go dark mid-move
+     with the countdown on it. */
+  useKeepAwake();
+
+  /* Session clock from a START TIMESTAMP, the way session.tsx does it. Counting
+     interval ticks only advances while the JS thread is awake, so a call or a
+     locked screen quietly shortened the workout that got logged — and a counted
+     number cannot survive the draft below either. */
+  const [startedAt, setStartedAt] = useState<number>(() => Date.now());
+  const [now, setNow] = useState<number>(() => Date.now());
   useEffect(() => {
-    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+  const elapsed = Math.max(0, Math.floor((now - startedAt) / 1000));
+
+  /* The circuit, on disk.
+     It lived in component state alone, so Android's back button — or the OS
+     killing the app in the background — threw the whole workout away without a
+     word: 9 of 12 moves done, nothing logged, and «Evdə məşq» opened again at
+     move 1. The draft is keyed by the plan's own inputs, because restoring
+     «move 9» into a different circuit would point at a different exercise. */
+  const draftKey = `spot-home-session:${params.equip ?? ''}:${params.minutes ?? ''}`;
+  const [restored, setRestored] = useState(false);
+  const clearDraft = () => AsyncStorage.removeItem(draftKey).catch(() => {});
+
+  useEffect(() => {
+    let alive = true;
+    AsyncStorage.getItem(draftKey)
+      .then((raw) => {
+        if (!alive) return;
+        try {
+          const d = raw
+            ? (JSON.parse(raw) as { idx?: number; doneCount?: number; startedAt?: number; savedAt?: number })
+            : null;
+          // A draft older than 12 hours is not a circuit somebody is still in.
+          const fresh = !!d && typeof d.savedAt === 'number' && Date.now() - d.savedAt < 12 * 3600 * 1000;
+          const at = Math.min(Math.max(0, d?.idx ?? 0), plan.moves.length - 1);
+          if (fresh && plan.moves.length > 0 && (at > 0 || (d?.doneCount ?? 0) > 0)) {
+            setIdx(at);
+            setDoneCount(Math.max(0, d?.doneCount ?? 0));
+            /* The clock resumes where it stopped instead of counting the hours
+               the app was closed: carrying the old `startedAt` over would have
+               logged «Evdə · 20 dəqiqə» as a three-hour session because the
+               phone sat on the table between the two halves. */
+            const spent = Math.max(0, (d?.savedAt ?? 0) - (d?.startedAt ?? 0));
+            setStartedAt(Date.now() - spent);
+            setRemaining(homeMoveSeconds(plan.moves[at]));
+            toast('Yarımçıq məşqin bərpa olundu', 'info');
+          } else if (raw) {
+            clearDraft();
+          }
+        } catch {
+          clearDraft();
+        }
+        setRestored(true);
+      })
+      .catch(() => {
+        if (alive) setRestored(true);
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
+
+  useEffect(() => {
+    // Only after the restore has run, or the first render would overwrite the
+    // draft it is about to load.
+    if (!restored || (idx === 0 && doneCount === 0)) return;
+    // `savedAt` is what makes the draft's age readable, and with `startedAt` it
+    // is also how much of the circuit had actually been worked through.
+    AsyncStorage.setItem(draftKey, JSON.stringify({ idx, doneCount, startedAt, savedAt: Date.now() })).catch(() => {});
+  }, [restored, idx, doneCount, startedAt, draftKey]);
 
   // move countdown — auto-advances (with a haptic) when it hits zero
   useEffect(() => {
-    if (paused) return;
+    // Not before the restore: the clock would run down the wrong move's seconds.
+    if (paused || !restored) return;
     timer.current = setInterval(() => setRemaining((r) => Math.max(0, r - 1)), 1000);
     return () => {
       if (timer.current) clearInterval(timer.current);
     };
-  }, [paused, idx]);
+  }, [paused, restored, idx]);
 
   useEffect(() => {
     if (remaining > 0 || advancing.current) return;
@@ -92,6 +164,7 @@ export default function HomeSession() {
     if (hasSupabaseConfig) {
       logWorkoutApi({ id: workoutId, title, durationSec: elapsed, volumeKg, setsDone }).catch(() => {});
     }
+    clearDraft();
     router.replace({
       pathname: '/(tabs)/workout/summary',
       params: { title, durationSec: String(elapsed), volumeKg: String(volumeKg), setsDone: String(setsDone), maxKg: '0' },
@@ -118,15 +191,33 @@ export default function HomeSession() {
 
   const quit = () => {
     if (doneCount === 0 && idx === 0) {
+      clearDraft();
       router.replace('/(tabs)/workout');
       return;
     }
+    // Leaving no longer means losing it: «Sonra davam edərəm» keeps the draft and
+    // the circuit reopens where it stopped.
     confirm('Məşqi dayandır?', `${idx} hərəkət bitirmisən. Yadda saxlayaq?`, [
       { label: 'Bitir və yadda saxla', style: 'primary', onPress: () => gate(() => saveAndFinish(idx), 'Məşqi yadda saxlamaq üçün') },
       { label: 'Məşqə davam et', style: 'cancel' },
-      { label: 'Saxlamadan çıx', style: 'destructive', onPress: () => router.replace('/(tabs)/workout') },
+      { label: 'Sonra davam edərəm', onPress: () => router.replace('/(tabs)/workout') },
+      { label: 'Saxlamadan çıx', style: 'destructive', onPress: () => { clearDraft(); router.replace('/(tabs)/workout'); } },
     ]);
   };
+
+  /* Android's back button popped this route and unmounted the screen: no
+     «Yadda saxlayaq?» prompt, no `logWorkout`, no streak, and nothing to come
+     back to. It now asks exactly what the × asks. The ref keeps the listener
+     registered once while still calling the current closure. */
+  const quitRef = useRef(quit);
+  quitRef.current = quit;
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      quitRef.current();
+      return true;
+    });
+    return () => sub.remove();
+  }, []);
 
   if (!move) return null;
   const total = homeMoveSeconds(move);

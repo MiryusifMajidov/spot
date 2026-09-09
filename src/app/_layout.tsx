@@ -120,6 +120,12 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
               <Stack.Screen name="(tabs)" />
+              {/* Check-in is opened from two tabs — the Məşq home tile and the
+                  Kəşf gym page — so it sits at the root rather than inside Məşq.
+                  While it lived in the Məşq stack, opening it from Kəşf switched
+                  the focused tab and its own «geri» then popped inside Məşq,
+                  stranding the person on Məşq home. */}
+              <Stack.Screen name="checkin" />
               <Stack.Screen name="trainer" />
               <Stack.Screen name="gym" />
               <Stack.Screen name="onboarding" />

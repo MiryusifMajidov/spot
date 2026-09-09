@@ -118,7 +118,11 @@ export default function Profile() {
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.topIcons}>
-          <PressableScale activeScale={0.9} onPress={() => Share.share({ message: `${name} — SPOT fitness profili.${gym ? ` ${gym.name}.` : ''}${profile.level ? ` ${profile.level} səviyyə.` : ''}` }).catch(() => {})}>
+          {/* «fitness» was English, and this string leaves the app: it is the text
+              the person sends to someone else, so the one place the product spoke
+              English was the one place strangers read it. «idman» is the word the
+              rest of the app uses («idman zalı»). */}
+          <PressableScale activeScale={0.9} onPress={() => Share.share({ message: `${name} — SPOT idman profili.${gym ? ` ${gym.name}.` : ''}${profile.level ? ` ${profile.level} səviyyə.` : ''}` }).catch(() => {})}>
             <Icon name="share" size={24} color={palette.inkText} />
           </PressableScale>
           <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/profile/settings')}>
@@ -214,7 +218,14 @@ export default function Profile() {
         </View>
 
         <View style={{ marginTop: 14 }}>
-          <Segmented options={['Postlar', 'Progress', 'Challenge']} value={seg} onChange={setSeg} />
+          {/* «Progress» was English on an Azerbaijani-only screen, and it named a
+              tab that calls itself something else: the screen it opens says
+              «İrəliləyiş» in its title, its section header and its button, so the
+              person tapped one word and landed on another.
+              «Challenge» stays as it is — the app uses it as a proper noun for the
+              feature (NavBar «Challenge-lər», every screen under /challenge), and
+              renaming it here alone would have given one feature two names. */}
+          <Segmented options={['Postlar', 'İrəliləyiş', 'Challenge']} value={seg} onChange={setSeg} />
         </View>
 
         {seg === 0 && (
@@ -269,8 +280,11 @@ export default function Profile() {
             <AppText variant="headline" style={{ marginTop: 12 }}>
               {weights.length >= 2 ? `${weightDelta > 0 ? '+' : ''}${weightDelta.toFixed(1)} kq` : weights.length === 1 ? `${weights[0].kg} kq` : 'Çəki qeyd et'}
             </AppText>
+            {/* The destination screen calls these «İrəliləyiş fotoları»; this
+                line called them «progress fotoları», an English word for the same
+                photos two taps apart. */}
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 4 }}>
-              Çəki qrafikini və progress fotolarını gör
+              Çəki qrafikini və irəliləyiş fotolarını gör
             </AppText>
           </PressableScale>
         )}

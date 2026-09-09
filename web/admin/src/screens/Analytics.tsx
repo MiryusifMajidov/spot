@@ -30,9 +30,23 @@ const nf = (n: number) => n.toLocaleString('az');
 export function Analytics(_props: ScreenProps) {
   const [loading, setLoading] = useState(true);
   const [m, setM] = useState<Metrics | null>(null);
+  /* A throw between `setLoading(true)` and `setLoading(false)` — an RPC shape the
+     mapping below did not expect — used to escape the async IIFE and leave this
+     screen spinning forever, with no error and no retry. */
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
+      try {
+        await run();
+      } catch (e) {
+        setLoadError(e instanceof Error ? e.message : 'naməlum xəta');
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    async function run() {
       // NOTE: `select('*')` on profiles is rejected outright (column privileges
       // withhold `phone`), so every projection here names a granted column.
       const [profilesTotal, withGym, withGoals, feedVideos, communityPosts] = await Promise.all([
@@ -63,11 +77,21 @@ export function Analytics(_props: ScreenProps) {
         feedVideos,
         communityPosts,
       });
-      setLoading(false);
-    })();
+    }
   }, []);
 
-  if (loading || !m) return <div className="spinner" />;
+  if (loading) return <div className="spinner" />;
+  if (loadError || !m) {
+    return (
+      <div className="card" style={{ padding: 18, borderColor: 'var(--orange)' }}>
+        <div style={{ font: '600 14px/1 var(--font)', marginBottom: 8 }}>Analitika yüklənmədi</div>
+        <div style={{ font: '400 12.5px/1.5 var(--font)', color: 'var(--text3)' }}>
+          {loadError ?? 'Göstəriciləri oxumaq mümkün olmadı'} — bu, «göstərici sıfırdır» demək DEYİL.
+          Səhifəni yenilə; problem qalarsa, icazələri yoxla.
+        </div>
+      </div>
+    );
+  }
 
   // ---- Block 1: core hypothesis (yoldaşı olan vs tək) ---------------------
   // `total` stays null when the profiles count could not be read — a failed read
@@ -114,9 +138,9 @@ export function Analytics(_props: ScreenProps) {
   const worstIdx = drops[1] > drops[0] ? 2 : 1;
   if (funnelKnown && total! > 0) funnel[worstIdx].color = '#FF6B35';
   const funnelConclusion = !funnelKnown
-    ? 'Funnel göstəriciləri oxunmadı.'
+    ? 'Qeydiyyat axınının göstəriciləri oxunmadı.'
     : total === 0
-      ? 'Funnel üçün hələ kifayət data yoxdur.'
+      ? 'Qeydiyyat axını üçün hələ kifayət data yoxdur.'
       : `Ən böyük itki: «${funnel[worstIdx - 1].label} → ${funnel[worstIdx].label}» (${drops[worstIdx - 1]} punkt). Fəaliyyət: bu addımı sadələşdir.`;
 
   // ---- Block 3: matching quality -----------------------------------------
@@ -164,7 +188,8 @@ export function Analytics(_props: ScreenProps) {
       <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 18, marginBottom: 18, alignItems: 'start' }}>
         {/* Onboarding funnel */}
         <div className="card" style={{ padding: 18 }}>
-          <div style={{ font: '600 14.5px/1 var(--font)', marginBottom: 18 }}>Onboarding funnel</div>
+          {/* «Onboarding funnel» was English in an Azerbaijani-only product. */}
+          <div style={{ font: '600 14.5px/1 var(--font)', marginBottom: 18 }}>Qeydiyyat axını</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
             {funnel.map((f) => (
               <div key={f.label}>

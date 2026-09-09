@@ -15,7 +15,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { createGym } from '@/lib/api';
 import { errorFeedback, successFeedback, tapFeedback } from '@/lib/feedback';
-import { addGymPhoto, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
+import { addGymPhoto, imageTooLargeMessage, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, confirm, toast, type UiAction } from '@/store/ui';
@@ -25,6 +25,22 @@ import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 const AMENITIES = ['Sərbəst ağırlıq', 'Kardio', 'Duş', 'Park', 'Sauna', 'Hovuz', 'Qadın zonası', 'Kafe'];
 
 type Coords = { lat: number; lng: number };
+
+/**
+ * Why a cover upload failed, and whether «Şəkli yenidən yüklə» could ever change
+ * the answer.
+ *
+ * It used to be a plain boolean, so the banner always read «Şəkil yüklənmədi —
+ * yenidən cəhd et» with a retry button under it. For a file over the bucket
+ * ceiling that button is a wall: the same photo is too big every time, and
+ * nothing on the screen ever said how big it was or what fits.
+ */
+type CoverFail = { text: string; retry: boolean };
+
+const coverFailOf = (e: unknown): CoverFail => {
+  const tooLarge = imageTooLargeMessage(e);
+  return tooLarge ? { text: tooLarge, retry: false } : { text: 'Şəkil yüklənmədi — yenidən cəhd et.', retry: true };
+};
 
 
 export default function CreateGym() {
@@ -44,7 +60,7 @@ export default function CreateGym() {
 
   // Cover photo: held locally until there is a gym row to attach it to.
   const [coverUri, setCoverUri] = useState<string | null>(null);
-  const [coverFailed, setCoverFailed] = useState(false);
+  const [coverFail, setCoverFail] = useState<CoverFail | null>(null);
   const [coverBusy, setCoverBusy] = useState(false);
 
   // Location — required: a gym with no coordinates cannot appear on the customer map.
@@ -80,6 +96,35 @@ export default function CreateGym() {
 
   const toggle = (a: string) => setAmenities((s) => (s.includes(a) ? s.filter((x) => x !== a) : [...s, a]));
 
+  /** Send one cover to a gym row that already exists. */
+  const uploadCover = async (uri: string) => {
+    if (!createdId || coverBusy) return;
+    setCoverBusy(true);
+    try {
+      await setGymCover(createdId, uri);
+      setCoverFail(null);
+      successFeedback();
+    } catch (e) {
+      errorFeedback();
+      setCoverFail(coverFailOf(e));
+    }
+    setCoverBusy(false);
+  };
+
+  /** Retry a cover upload that failed after the gym row was already created. */
+  const retryCover = () => {
+    if (coverUri) uploadCover(coverUri);
+  };
+
+  /* Before the gym row exists the pick is only held — there is nothing to attach
+     it to, and the upload happens right after «Zalı yarat». Afterwards it has to
+     go up immediately: drawing a new photo as the cover while the server still
+     holds the old one would show the owner a cover nobody else can see. */
+  const takeCover = (uri: string) => {
+    setCoverUri(uri);
+    if (createdId) uploadCover(uri);
+  };
+
   const chooseCover = () => {
     tapFeedback();
     const actions: UiAction[] = [
@@ -87,35 +132,23 @@ export default function CreateGym() {
         label: 'Kamera',
         onPress: async () => {
           const uri = await shootImage();
-          if (uri) setCoverUri(uri);
+          if (uri) takeCover(uri);
         },
       },
       {
         label: 'Qalereyadan seç',
         onPress: async () => {
           const uri = await pickImage();
-          if (uri) setCoverUri(uri);
+          if (uri) takeCover(uri);
         },
       },
     ];
-    if (coverUri) actions.push({ label: 'Şəkli sil', style: 'destructive', onPress: () => setCoverUri(null) });
+    /* Only while the gym is still a draft. Once the row exists this would clear
+       the preview and leave the uploaded cover on the server — «silindi» about a
+       photo that is still on every customer's gym card. */
+    if (coverUri && !createdId) actions.push({ label: 'Şəkli sil', style: 'destructive', onPress: () => setCoverUri(null) });
     actions.push({ label: 'Ləğv et', style: 'cancel' });
     actionSheet({ title: 'Zalın şəkli', message: 'Zalın içindən çəkilmiş bir şəkil müştəriyə ən çox məlumat verir.', actions });
-  };
-
-  /** Retry a cover upload that failed after the gym row was already created. */
-  const retryCover = async () => {
-    if (!createdId || !coverUri || coverBusy) return;
-    setCoverBusy(true);
-    try {
-      await setGymCover(createdId, coverUri);
-      setCoverFailed(false);
-      successFeedback();
-    } catch {
-      errorFeedback();
-      toast('Şəkil yüklənmədi — yenidən cəhd et', 'error');
-    }
-    setCoverBusy(false);
   };
 
   const useMyLocation = async () => {
@@ -146,9 +179,11 @@ export default function CreateGym() {
     try {
       setPhotos(await addGymPhoto(createdId, uri));
       successFeedback();
-    } catch {
+    } catch (e) {
       errorFeedback();
-      toast('Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      // Retrying a file over the 10 MB gyms ceiling can only fail again — that
+      // case says the real size and limit instead of asking for another attempt.
+      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
     }
     setPhotoBusy(false);
   };
@@ -256,9 +291,9 @@ export default function CreateGym() {
       setCoverBusy(true);
       try {
         await setGymCover(gymId, coverUri);
-        setCoverFailed(false);
-      } catch {
-        setCoverFailed(true);
+        setCoverFail(null);
+      } catch (e) {
+        setCoverFail(coverFailOf(e));
       }
       setCoverBusy(false);
     }
@@ -329,10 +364,18 @@ export default function CreateGym() {
               </View>
             ) : null}
           </View>
-          {coverFailed ? (
+          {coverFail ? (
             <View style={{ marginTop: 8 }}>
-              <AppText style={styles.warn}>Şəkil yüklənmədi — yenidən cəhd et.</AppText>
-              <Button title={coverBusy ? 'Yüklənir…' : 'Şəkli yenidən yüklə'} variant="secondary" disabled={coverBusy} onPress={retryCover} />
+              <AppText style={styles.warn}>{coverFail.text}</AppText>
+              {coverFail.retry ? (
+                <Button title={coverBusy ? 'Yüklənir…' : 'Şəkli yenidən yüklə'} variant="secondary" disabled={coverBusy} onPress={retryCover} />
+              ) : (
+                /* The file is over the bucket ceiling: the same photo fails the
+                   same way every time, so offering «yenidən yüklə» would be a
+                   button that can only ever fail. Another photo is the only way
+                   out, and this one uploads the moment it is picked. */
+                <Button title={coverBusy ? 'Yüklənir…' : 'Başqa şəkil seç'} variant="secondary" disabled={coverBusy} onPress={chooseCover} />
+              )}
             </View>
           ) : null}
 

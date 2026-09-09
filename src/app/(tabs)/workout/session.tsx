@@ -73,6 +73,8 @@ export default function Session() {
   const gate = useAuthGate();
   const params = useLocalSearchParams<{ programId?: string; dayIndex?: string; title?: string; partnerId?: string }>();
   const workouts = useDb((s) => s.workouts);
+  // Records set on a device whose set detail never left it — see `save` below.
+  const serverPRs = useDb((s) => s.serverPRs);
   const logWorkout = useDb((s) => s.logWorkout);
   const bodyweight = useLatestWeight();
 
@@ -359,9 +361,20 @@ export default function Session() {
           .filter((e) => test(e.name))
           .reduce((m, e) => Math.max(m, ...e.sets.map((s) => s.weight)), 0);
         if (!best) continue;
-        const prevBest = workouts.reduce(
-          (m, w) => Math.max(m, ...w.exercises.filter((e) => test(e.name)).flatMap((e) => e.sets.map((s) => s.weight)), 0),
-          0
+        /* The record already on the server counts too.
+           A workout restored from the server comes back `summaryOnly`, with an
+           EMPTY `exercises` array (src/lib/trainingSync.ts), so on a rebuilt
+           device this reduce found 0 for every lift and the first session there
+           was written to `prs` as a new record. Elvin's 100 kg bench, logged on
+           his old phone, was overwritten on his profile by the 80 kg he opened
+           the new one with. `serverPRs` is that history — see `computeStats`. */
+        const serverBest = serverPRs.find((p) => p.lift === lift)?.value ?? 0;
+        const prevBest = Math.max(
+          serverBest,
+          workouts.reduce(
+            (m, w) => Math.max(m, ...w.exercises.filter((e) => test(e.name)).flatMap((e) => e.sets.map((s) => s.weight)), 0),
+            0
+          )
         );
         if (best > prevBest) logPR(lift, best).catch(() => {});
       }

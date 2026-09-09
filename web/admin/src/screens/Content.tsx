@@ -43,10 +43,57 @@ type Tab = 'programs' | 'feed';
 
 // One unified feed row: a feed_videos row or a community_posts row.
 type FeedItem =
-  | { kind: 'video'; id: string; author: string; verified: boolean; is_trainer: boolean; text: string; likes: number; comments: number; noVideo: boolean; stale: boolean }
+  | { kind: 'video'; id: string; author: string; verified: boolean; is_trainer: boolean; text: string; likes: number; comments: number; noVideo: boolean; videoUrl: string | null; stale: boolean }
   | { kind: 'post'; id: string; author: string; gym: string | null; text: string; likes: number; comments: number; stale: boolean };
 
-interface RemoveTarget { targetId: string; label: string; table: ContentTable }
+interface RemoveTarget {
+  targetId: string;
+  label: string;
+  table: ContentTable;
+  /** The stored MP4 behind a feed video, if it has one. Hiding the row does not
+   *  touch the file, and the moderator has to be told that. */
+  fileUrl?: string | null;
+}
+
+/** `https://<ref>.supabase.co/storage/v1/object/public/videos/<path>` → `<path>`.
+ *  Returns null for anything that is not an object in this bucket (an external
+ *  link, a signed URL, a malformed value) — there is nothing for us to delete. */
+function storagePath(url: string, bucket: string): string | null {
+  const marker = `/storage/v1/object/public/${bucket}/`;
+  const i = url.indexOf(marker);
+  if (i < 0) return null;
+  const path = url.slice(i + marker.length).split('?')[0];
+  return path ? decodeURIComponent(path) : null;
+}
+
+/** Result of trying to delete the stored file behind a taken-down video. */
+type FileOutcome = 'deleted' | 'refused' | 'none';
+
+/* Hiding the row is NOT the takedown a moderator thinks they performed: the MP4
+   sits in the `videos` bucket, which is public and whose SELECT policy is a bare
+   `bucket_id = 'videos'` for the `public` role — the file stays downloadable at
+   its permanent URL and the bucket can be listed by an unauthenticated caller.
+   «Məzmun silindi» over that is the panel telling a reporter her video is gone
+   while it is still a public download.
+
+   Storage refuses a delete the way PostgREST does — `error: null` and an EMPTY
+   list — so the returned rows are what says it happened. Today the only DELETE
+   policy on storage.objects is `owner = auth.uid()`, so an admin deleting
+   somebody else's clip comes back refused; the toast says so instead of
+   pretending. */
+async function removeStoredVideo(url: string | null | undefined): Promise<FileOutcome> {
+  if (!url) return 'none';
+  const path = storagePath(url, 'videos');
+  // A URL we cannot resolve to an object is still a live file we did not delete
+  // — «refused», not «none», so the moderator is told rather than reassured.
+  if (!path) return 'refused';
+  try {
+    const { data, error } = await supabase.storage.from('videos').remove([path]);
+    return !error && !!data?.length ? 'deleted' : 'refused';
+  } catch {
+    return 'refused';
+  }
+}
 
 const creatorLabel = (t: string | null) => (t === 'trainer' ? 'MÜƏLLİM' : 'İSTİFADƏÇİ');
 
@@ -74,22 +121,30 @@ export function Content({ search, refreshCounts }: ScreenProps) {
 
   async function loadData() {
     setLoading(true);
-    const [p, v, c, m] = await Promise.all([
-      supabase.from('programs').select('*').order('title'),
-      supabase.from('feed_videos').select('*').order('ord'),
-      supabase.from('community_posts').select('*').order('created_at', { ascending: false }),
-      // which content ids were already removed (moderator+ can read; ignore on error)
-      supabase.from('moderation_actions').select('target_id').eq('target_type', 'content').eq('action', 'content_remove'),
-    ]);
-    // «Yoxlanılacaq proqram yoxdur» is a statement about the platform's content.
-    // It may only be made after a read that landed.
-    setFailed(!!p.error || !!v.error || !!c.error);
-    setPrograms((p.data as Program[]) ?? []);
-    setVideos((v.data as FeedVideo[]) ?? []);
-    setPosts((c.data as CommunityPost[]) ?? []);
-    const rows = (m.data as { target_id: string }[] | null) ?? [];
-    setLoggedRemoved(new Set(rows.map((r) => r.target_id)));
-    setLoading(false);
+    /* try/finally, not a bare sequence: an unexpected shape thrown by the mapping
+       below used to skip `setLoading(false)` entirely and leave the moderation
+       queue spinning forever with nothing on screen to say why. */
+    try {
+      const [p, v, c, m] = await Promise.all([
+        supabase.from('programs').select('*').order('title'),
+        supabase.from('feed_videos').select('*').order('ord'),
+        supabase.from('community_posts').select('*').order('created_at', { ascending: false }),
+        // which content ids were already removed (moderator+ can read; ignore on error)
+        supabase.from('moderation_actions').select('target_id').eq('target_type', 'content').eq('action', 'content_remove'),
+      ]);
+      // «Yoxlanılacaq proqram yoxdur» is a statement about the platform's content.
+      // It may only be made after a read that landed.
+      setFailed(!!p.error || !!v.error || !!c.error);
+      setPrograms((p.data as Program[]) ?? []);
+      setVideos((v.data as FeedVideo[]) ?? []);
+      setPosts((c.data as CommunityPost[]) ?? []);
+      const rows = (m.data as { target_id: string }[] | null) ?? [];
+      setLoggedRemoved(new Set(rows.map((r) => r.target_id)));
+    } catch {
+      setFailed(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -121,6 +176,7 @@ export function Content({ search, refreshCounts }: ScreenProps) {
         likes: v.likes,
         comments: v.comments,
         noVideo: !v.video_url,
+        videoUrl: v.video_url,
         stale: loggedRemoved.has(v.id),
       }));
     const pst: FeedItem[] = posts
@@ -171,7 +227,10 @@ export function Content({ search, refreshCounts }: ScreenProps) {
       return;
     }
 
-    // 2. Only a real takedown gets logged.
+    // 2. Delete the stored file, and say which of the two actually happened.
+    const file = await removeStoredVideo(target.fileUrl);
+
+    // 3. Only a real takedown gets logged.
     const { data: u } = await supabase.auth.getUser();
     const { error } = await supabase.from('moderation_actions').insert({
       admin_id: u.user?.id,
@@ -180,11 +239,18 @@ export function Content({ search, refreshCounts }: ScreenProps) {
       action: 'content_remove',
       reason: why,
     });
-    const auditErr = error ? null : await audit('content_remove', 'content', target.targetId, why, { label: target.label, table: target.table });
+    const auditErr = error ? null : await audit('content_remove', 'content', target.targetId, why, { label: target.label, table: target.table, file_deleted: file === 'deleted' });
     setSaving(false);
-    if (error) toast('Məzmun silindi, amma moderasiya qeydi yazılmadı: ' + error.message);
-    else if (auditErr) toast('Məzmun silindi, amma audit qeydi yazılmadı: ' + auditErr);
-    else toast('Məzmun silindi');
+    /* «Məzmun silindi» claimed more than the write did: the row is hidden from
+       the app, the video file is a separate object that has to be deleted on its
+       own. The wording now matches whichever of the two landed. */
+    const head = file === 'deleted' ? 'Məzmun və video faylı silindi' : 'Məzmun tətbiqdən gizlədildi';
+    const fileWarn = file === 'refused'
+      ? ' DİQQƏT: video faylı silinmədi — birbaşa linklə hələ də açılır. Owner-ə bildir.'
+      : '';
+    if (error) toast(head + ', amma moderasiya qeydi yazılmadı: ' + error.message + fileWarn);
+    else if (auditErr) toast(head + ', amma audit qeydi yazılmadı: ' + auditErr + fileWarn);
+    else toast(head + '.' + fileWarn);
     setTarget(null);
     refreshCounts();
     loadData();
@@ -206,8 +272,16 @@ export function Content({ search, refreshCounts }: ScreenProps) {
           {tab === 'programs' ? (
             <div style={{ background: 'rgba(255,149,0,.1)', border: '1px solid rgba(255,149,0,.3)', borderRadius: 12, padding: '13px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 11 }}>
               <Icon name="clock" size={17} color="var(--orange-deep)" />
+              {/* This card used to promise a hold-for-review: «proqram 24 saat içində
+                  yoxlanılmalıdır. Yoxlanılana qədər yalnız müəllif görür.» There is
+                  no review gate — `programs` has no approval column and
+                  `programs_read` is `using (true)` — so a program is public to every
+                  user AND every guest the instant it is inserted. A moderator who
+                  believed the sentence would leave a dangerous program until morning
+                  thinking nobody but its author could see it. */}
               <div style={{ font: '500 12.5px/1.4 var(--font)', color: 'var(--orange-deep)' }}>
-                Moderasiya qaydası: proqram 24 saat içində yoxlanılmalıdır. Yoxlanılana qədər yalnız müəllif görür.
+                Proqram dərc olunan andan hamıya (qonaqlara da) görünür — gözləmə rejimi yoxdur.
+                Yoxlama sonradan aparılır, ona görə növbəni gecikdirmə.
               </div>
             </div>
           ) : (
@@ -236,7 +310,17 @@ export function Content({ search, refreshCounts }: ScreenProps) {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {feedItems.map((i) => (
-                <FeedCard key={i.kind + i.id} item={i} canModerate={canModerate} onRemove={() => askRemove({ targetId: i.id, label: i.text.slice(0, 60) || i.author, table: i.kind === 'video' ? 'feed_videos' : 'community_posts' })} />
+                <FeedCard
+                  key={i.kind + i.id}
+                  item={i}
+                  canModerate={canModerate}
+                  onRemove={() => askRemove({
+                    targetId: i.id,
+                    label: i.text.slice(0, 60) || i.author,
+                    table: i.kind === 'video' ? 'feed_videos' : 'community_posts',
+                    fileUrl: i.kind === 'video' ? i.videoUrl : null,
+                  })}
+                />
               ))}
             </div>
           )}
@@ -244,18 +328,20 @@ export function Content({ search, refreshCounts }: ScreenProps) {
 
         {/* ── Right: auto-check hint + reject templates ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* «3 avtomatik yoxlama» stood here with three green ticks and the line
+              «sistem hər proqram üçün bu 3 yoxlamanı aparıb problemi öncədən
+              yazır». Nothing computes any of them — there is no such check in the
+              app, in the panel or in the database — so the card told the moderator
+              a program had already been screened when it had not been looked at by
+              anybody. */}
           <div className="card" style={{ padding: 18 }}>
-            <div style={{ font: '600 14px/1 var(--font)', marginBottom: 13 }}>3 avtomatik yoxlama</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-              {['Video tamlığı — hər hərəkətin videosu var', 'Set məntiqi — set/təkrar sxemi təhlükəsiz', 'Mətn qaydaları — iddia və başlıq qaydalara uyğun'].map((t) => (
-                <div key={t} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                  <Icon name="check" size={14} color="var(--green)" />
-                  <div style={{ font: '500 12px/1.4 var(--font)', color: 'var(--text3)' }}>{t}</div>
-                </div>
-              ))}
+            <div style={{ font: '600 14px/1 var(--font)', marginBottom: 13 }}>Yoxlama tam əl işidir</div>
+            <div style={{ font: '400 12.5px/1.5 var(--font)', color: 'var(--text3)' }}>
+              Avtomatik yoxlama yoxdur: nə videoların tamlığı, nə set sxemi, nə də mətn qaydaları
+              sistem tərəfindən yoxlanılmır. Kartda gördüyün hər şey müəllifin özünün yazdığıdır.
             </div>
             <div style={{ font: '400 11.5px/1.5 var(--font)', color: 'var(--muted)', marginTop: 13 }}>
-              Moderator qərar vermir, yoxlayır: sistem hər proqram üçün bu 3 yoxlamanı aparıb problemi öncədən yazır.
+              Hər proqramı özün aç və yoxla — heç bir işarə «bu artıq yoxlanılıb» demir.
             </div>
           </div>
 
@@ -288,6 +374,16 @@ export function Content({ search, refreshCounts }: ScreenProps) {
               «{target.label}» — məzmun dərhal tətbiqdən gizlədiləcək və səbəb audit jurnalına yazılacaq.
               Şablon seç və ya öz səbəbini yaz.
             </div>
+            {/* The row and the file are two different things. Saying so BEFORE the
+                click is the difference between a takedown and a moderator who
+                believes a recording is gone while it is still a public download. */}
+            {target.fileUrl ? (
+              <div style={{ background: 'rgba(255,149,0,.1)', border: '1px solid rgba(255,149,0,.3)', borderRadius: 10, padding: '10px 12px', marginBottom: 14, font: '400 12px/1.45 var(--font)', color: 'var(--orange-deep)' }}>
+                Video faylı ayrıca obyektdir: gizlətmə onu tətbiqdən çıxarır, faylın özünü silmir.
+                Panel faylı da silməyə cəhd edir — alınmasa, sənə deyiləcək və fayl birbaşa linklə
+                açıq qalacaq.
+              </div>
+            ) : null}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 14 }}>
               {TEMPLATES.map((t) => (
                 <button
@@ -365,10 +461,9 @@ function ProgramCard({ p, stale, canModerate, onRemove }: { p: Program; stale: b
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
             {p.level ? <span className="badge grey">{p.level}</span> : null}
             {p.goal ? <span className="badge grey">{p.goal}</span> : null}
+            {/* A «3 avtomatik yoxlama» shield badge sat here on EVERY card, computed
+                by nothing — a green all-clear on a program no system had read. */}
             {stale ? <StaleFlag /> : null}
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, font: '500 11.5px/1 var(--font)', color: 'var(--muted2)' }}>
-              <Icon name="shield" size={13} color="var(--muted)" /> 3 avtomatik yoxlama
-            </span>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flex: 'none' }}>

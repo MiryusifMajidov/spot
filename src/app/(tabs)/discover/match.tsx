@@ -291,16 +291,20 @@ export default function Match() {
                           ? `${partner.name} hələ cavab verməyib. Cavab gələndə söhbət açılacaq.`
                           : `${partner.name} cavab verənə qədər söhbət açılmır. Cavab gələndə «Sorğular»da görünəcək.`}
               </AppText>
-              {/* The chosen hour stays on this phone: `match_requests` carries no time
-                  column, so it did not travel with the offer. Showing it without
-                  saying so would make the two sides read different messages. */}
+              {/* This line used to say the chosen hour stayed on this phone, because
+                  `match_requests` had no column to carry it. schema54 added `note`
+                  and `propose()` below sends the slot label plus the gym name in it —
+                  chat/requests.tsx prints it to the recipient — so the old sentence
+                  told the sender his gym and his hour had not travelled when both had. */}
               {match?.question ? (
                 <>
                   <AppText variant="footnote" color={palette.caption} style={{ marginTop: 6 }}>
                     {match.question}
                   </AppText>
                   <AppText variant="caption" color={palette.caption} style={{ marginTop: 3, lineHeight: 17 }}>
-                    Bu vaxt yalnız səndə qeyd olunub — təklifin içində getmir, qəbul ediləndən sonra söhbətdə dəqiqləşdir.
+                    {deliverable
+                      ? 'Bu vaxt və zal təkliflə birlikdə göndərilib — qarşı tərəf onları «Sorğular»da görür. Qəbul ediləndən sonra söhbətdə dəqiqləşdirin.'
+                      : 'Bu təklif göndərilməyib — vaxt yalnız sənin cihazında qeyd olunub.'}
                   </AppText>
                 </>
               ) : null}
@@ -322,11 +326,16 @@ export default function Match() {
                     : 'Onun cədvəli bizdə yoxdur — vaxtlar yalnız sənin məşq günlərinə görə seçilib.'}
               </AppText>
             ) : null}
-            {/* Said before the choice, not after: the offer itself carries no time. */}
+            {/* Said BEFORE the choice, because the choice is what gets sent: the
+                slot label and the gym name are the whole content of the request
+                (`note`, schema54). The old sentence here promised the opposite —
+                that the time stayed on this phone — while the recipient's Sorğular
+                screen was already showing it, gym name included. */}
             {slots.length > 0 ? (
               <AppText variant="caption" color={palette.caption} style={{ marginBottom: 12, lineHeight: 17 }}>
-                Seçdiyin vaxt təkliflə birlikdə getmir — yalnız səndə qeyd olunur. Dəqiq vaxtı qarşı tərəf qəbul edəndən sonra
-                söhbətdə razılaşacaqsınız.
+                {deliverable
+                  ? 'Seçdiyin vaxt və zal təklifin içində gedir — qarşı tərəf onları görəcək. Dəqiq vaxtı o qəbul edəndən sonra söhbətdə razılaşacaqsınız.'
+                  : `${localOnlyReason} Seçdiyin vaxt da yalnız səndə qalır.`}
               </AppText>
             ) : null}
             {slots.length === 0 ? (

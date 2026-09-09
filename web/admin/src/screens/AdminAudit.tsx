@@ -58,6 +58,16 @@ const MATRIX: { op: string; cells: [Cell, Cell, Cell, Cell]; red?: boolean }[] =
   { op: 'Çəki, progress fotosu, söhbət arxivi', cells: [false, false, false, false], red: true },
 ];
 
+/** How many entries the on-screen table holds. The heading says so out loud —
+ *  it used to print `{filtered.length} qeyd` next to «24 ay saxlanılır», which
+ *  reads as the size of the whole log rather than the size of one page. */
+const TABLE_LIMIT = 100;
+/** Export page size, and the ceiling that stops a runaway loop. An export that
+ *  hits the ceiling says so rather than passing off a truncated file as
+ *  complete. */
+const EXPORT_PAGE = 1000;
+const EXPORT_MAX = 20000;
+
 function timeParts(iso: string): { t: string; d: string } {
   const dt = new Date(iso);
   return {
@@ -73,6 +83,9 @@ export function AdminAudit({ search }: ScreenProps) {
   const [team, setTeam] = useState<Admin[]>([]);
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [teamError, setTeamError] = useState<string | null>(null);
+  const [rowsError, setRowsError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   // pending owner-only role change awaiting a reason
   const [pending, setPending] = useState<{ target: Admin; role: AdminRole } | null>(null);
@@ -81,16 +94,29 @@ export function AdminAudit({ search }: ScreenProps) {
 
   async function load() {
     setLoading(true);
-    const [t, a] = await Promise.all([
-      supabase.from('admins').select('*'),
-      supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(100),
-    ]);
-    const admins = ((t.data as Admin[]) ?? []).slice().sort(
-      (x, y) => ROLE_ORDER.indexOf(y.role) - ROLE_ORDER.indexOf(x.role),
-    );
-    setTeam(admins);
-    setRows((a.data as AuditRow[]) ?? []);
-    setLoading(false);
+    // try/catch/finally: a throw between here and the end used to skip
+    // `setLoading(false)` and leave the audit log behind a permanent spinner.
+    try {
+      const [t, a] = await Promise.all([
+        supabase.from('admins').select('*'),
+        supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(TABLE_LIMIT),
+      ]);
+      /* «Komanda · 0 admin» and «Audit qeydi yoxdur» are claims. A refused read
+         is not one of them. */
+      setTeamError(t.error ? t.error.message : null);
+      setRowsError(a.error ? a.error.message : null);
+      const admins = ((t.data as Admin[]) ?? []).slice().sort(
+        (x, y) => ROLE_ORDER.indexOf(y.role) - ROLE_ORDER.indexOf(x.role),
+      );
+      setTeam(admins);
+      setRows((a.data as AuditRow[]) ?? []);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'naməlum xəta';
+      setTeamError(msg);
+      setRowsError(msg);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -106,6 +132,8 @@ export function AdminAudit({ search }: ScreenProps) {
         .includes(q),
     );
   }, [rows, search]);
+
+  const activeTeam = useMemo(() => team.filter((m) => !m.disabled_at).length, [team]);
 
   // ── owner actions ──────────────────────────────────────────────────────────
   function askRole(target: Admin, role: AdminRole) {
@@ -123,20 +151,30 @@ export function AdminAudit({ search }: ScreenProps) {
     }
     setBusy(true);
     try {
-      const { error } = await supabase
+      /* `.select('user_id')` + a row check: `admins_owner_write` is an RLS
+         policy, so a caller outside it gets `error: null` with ZERO rows changed
+         — and this toast would have announced a role change that never happened,
+         with an audit entry to match. */
+      const { data: changed, error } = await supabase
         .from('admins')
         .update({ role: pending.role })
-        .eq('user_id', pending.target.user_id);
+        .eq('user_id', pending.target.user_id)
+        .select('user_id');
       if (error) {
         toast('Alınmadı: ' + error.message);
         return;
       }
-      await audit('admin_role_change', 'admin', pending.target.user_id, r, {
+      if (!changed?.length) {
+        toast('Rol dəyişmədi — icazə yoxdur. Hesab əvvəlki rolda qaldı');
+        return;
+      }
+      const auditErr = await audit('admin_role_change', 'admin', pending.target.user_id, r, {
         from: pending.target.role,
         to: pending.role,
         email: pending.target.email,
       });
-      toast(`${pending.target.name ?? pending.target.email ?? 'Admin'} → ${ROLE_META[pending.role].label}`);
+      const done = `${pending.target.name ?? pending.target.email ?? 'Admin'} → ${ROLE_META[pending.role].label}`;
+      toast(auditErr ? `${done}, amma audit qeydi yazılmadı: ${auditErr}` : done);
       await load();
     } finally {
       setBusy(false);
@@ -148,8 +186,12 @@ export function AdminAudit({ search }: ScreenProps) {
   async function addNote(target: Admin) {
     const note = window.prompt(`${target.name ?? target.email ?? 'Admin'} üçün qeyd (audit log-a düşür):`);
     if (!note || !note.trim()) return;
-    await audit('admin_note', 'admin', target.user_id, note.trim(), { email: target.email });
-    toast('Qeyd audit log-a yazıldı');
+    /* The audit row IS the note — it has no other storage. Throwing away what
+       `audit()` returns meant a failed insert (expired session, refused
+       `audit_insert`) still toasted «Qeyd audit log-a yazıldı», and the only
+       copy of what the owner wrote was their memory. */
+    const auditErr = await audit('admin_note', 'admin', target.user_id, note.trim(), { email: target.email });
+    toast(auditErr ? 'Qeyd YAZILMADI: ' + auditErr : 'Qeyd audit log-a yazıldı');
     await load();
   }
 
@@ -164,30 +206,60 @@ export function AdminAudit({ search }: ScreenProps) {
     URL.revokeObjectURL(url);
   }
 
-  function exportCsv() {
-    const head = ['created_at', 'admin_name', 'action', 'entity', 'entity_id', 'reason'];
-    const lines = rows.map((r) =>
-      [r.created_at, r.admin_name ?? '', r.action, r.entity ?? '', r.entity_id ?? '', r.reason ?? '']
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(','),
-    );
-    download(
-      `spot-audit-${new Date().toISOString().slice(0, 10)}.csv`,
-      'text/csv;charset=utf-8',
-      [head.join(','), ...lines].join('\n'),
-    );
-    void audit('audit_export', 'audit_log', 'csv', `${rows.length} sətir`);
-    toast(`${rows.length} sətir CSV ixrac edildi`);
+  /* The exports used to serialise the same 100 rows the table holds. An owner
+     asked for the moderation history behind a ban three months old pressed «CSV
+     ixrac», read «24 ay saxlanılır» above it, and handed over a file whose
+     oldest row was a few weeks old — the ban's own entry was not in it. The
+     export now runs its own paged query over the whole log. Returns the rows, or
+     an error string; `truncated` is true when the ceiling was reached, and the
+     caller says so instead of shipping a silent tail. */
+  async function fetchAllAudit(): Promise<{ rows: AuditRow[]; truncated: boolean } | string> {
+    const out: AuditRow[] = [];
+    for (let from = 0; from < EXPORT_MAX; from += EXPORT_PAGE) {
+      const { data, error } = await supabase
+        .from('audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + EXPORT_PAGE - 1);
+      if (error) return error.message;
+      const page = (data as AuditRow[]) ?? [];
+      out.push(...page);
+      if (page.length < EXPORT_PAGE) return { rows: out, truncated: false };
+    }
+    return { rows: out, truncated: true };
   }
 
-  function exportJson() {
-    download(
-      `spot-audit-${new Date().toISOString().slice(0, 10)}.json`,
-      'application/json',
-      JSON.stringify(rows, null, 2),
-    );
-    void audit('audit_export', 'audit_log', 'json', `${rows.length} sətir`);
-    toast(`${rows.length} sətir JSON ixrac edildi`);
+  async function runExport(kind: 'csv' | 'json') {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const res = await fetchAllAudit();
+      if (typeof res === 'string') {
+        toast(`İxrac alınmadı: ${res}. Fayl yazılmadı`);
+        return;
+      }
+      const { rows: all, truncated } = res;
+      const stamp = new Date().toISOString().slice(0, 10);
+      if (kind === 'csv') {
+        const head = ['created_at', 'admin_name', 'action', 'entity', 'entity_id', 'reason'];
+        const lines = all.map((r) =>
+          [r.created_at, r.admin_name ?? '', r.action, r.entity ?? '', r.entity_id ?? '', r.reason ?? '']
+            .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+            .join(','),
+        );
+        download(`spot-audit-${stamp}.csv`, 'text/csv;charset=utf-8', [head.join(','), ...lines].join('\n'));
+      } else {
+        download(`spot-audit-${stamp}.json`, 'application/json', JSON.stringify(all, null, 2));
+      }
+      void audit('audit_export', 'audit_log', kind, `${all.length} sətir${truncated ? ` (${EXPORT_MAX} limitinə çatdı)` : ''}`);
+      toast(
+        truncated
+          ? `${all.length} sətir ixrac edildi — LİMİTƏ ÇATDI, log bundan uzundur. Tam nüsxə üçün baza sorğusu lazımdır`
+          : `${all.length} sətir ixrac edildi (bütün log)`,
+      );
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -209,16 +281,16 @@ export function AdminAudit({ search }: ScreenProps) {
         </span>
         {isOwner ? (
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-            <button className="btn" onClick={exportCsv}>
+            <button className="btn" disabled={exporting} onClick={() => void runExport('csv')}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <Icon name="download" size={15} color="var(--ink2)" />
-                CSV ixrac
+                {exporting ? 'İxrac olunur…' : 'CSV ixrac'}
               </span>
             </button>
-            <button className="btn" onClick={exportJson}>
+            <button className="btn" disabled={exporting} onClick={() => void runExport('json')}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <Icon name="download" size={15} color="var(--ink2)" />
-                JSON ixrac
+                {exporting ? 'İxrac olunur…' : 'JSON ixrac'}
               </span>
             </button>
           </div>
@@ -237,16 +309,22 @@ export function AdminAudit({ search }: ScreenProps) {
                 font: '600 14px/1 var(--font)',
               }}
             >
-              Komanda · {loading ? '—' : `${team.length} admin`}
+              {/* Counts the ACTIVE admins. A disabled row is not a member of the
+                  team — `is_admin()` filters `disabled_at is null` — so folding
+                  it into «4 admin» overstated who actually holds access. */}
+              Komanda · {loading ? '—' : `${activeTeam} aktiv admin${team.length > activeTeam ? ` · ${team.length - activeTeam} deaktiv` : ''}`}
             </div>
             {loading ? (
               <div className="spinner" />
             ) : team.length === 0 ? (
-              <div className="empty">Admin yoxdur</div>
+              <div className="empty">
+                {teamError ? `Komanda yüklənmədi (${teamError}) — bu «admin yoxdur» demək DEYİL.` : 'Admin yoxdur'}
+              </div>
             ) : (
               <div>
                 {team.map((m) => {
                   const rm = ROLE_META[m.role];
+                  const off = !!m.disabled_at;
                   return (
                     <div
                       key={m.user_id}
@@ -256,12 +334,18 @@ export function AdminAudit({ search }: ScreenProps) {
                         gap: 11,
                         padding: '13px 18px',
                         borderBottom: '1px solid var(--line2)',
+                        opacity: off ? 0.6 : 1,
                       }}
                     >
                       <div className="avatar" style={{ width: 34, height: 34 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ font: '600 13.5px/1 var(--font)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          {m.name ?? 'Adsız'}
+                        <div style={{ font: '600 13.5px/1 var(--font)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span style={off ? { textDecoration: 'line-through' } : undefined}>{m.name ?? 'Adsız'}</span>
+                          {/* A revoked admin rendered exactly like a working one:
+                              same name, same 2FA badge, same role dropdown. An
+                              access review could not tell them apart, so a genuinely
+                              active admin could be left unrevoked. */}
+                          {off ? <span className="badge red" style={{ fontSize: 9 }}>DEAKTİV</span> : null}
                           {m.two_factor ? (
                             <span className="badge green" style={{ fontSize: 9 }}>2FA</span>
                           ) : (
@@ -279,12 +363,15 @@ export function AdminAudit({ search }: ScreenProps) {
                           }}
                         >
                           {m.email ?? '—'}
+                          {off ? ` · girişi bağlanıb ${new Date(m.disabled_at as string).toLocaleDateString('az')}` : ''}
                         </div>
                       </div>
                       {isOwner ? (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                           <select
                             value={m.role}
+                            disabled={off}
+                            title={off ? 'Bu hesabın girişi bağlanıb — rol dəyişikliyi ona giriş qaytarmır' : undefined}
                             onChange={(e) => askRole(m, e.target.value as AdminRole)}
                             style={{
                               border: '1px solid var(--line)',
@@ -401,13 +488,17 @@ export function AdminAudit({ search }: ScreenProps) {
               gap: 12,
             }}
           >
-            <div style={{ font: '600 14px/1 var(--font)' }}>Audit log</div>
+            {/* «Audit log» was the last English heading in an Azerbaijani-only
+                panel. And the count beside «24 ay saxlanılır» read as the size of
+                the whole log while the table holds one page of it — the export
+                below reads the log itself, not this list. */}
+            <div style={{ font: '600 14px/1 var(--font)' }}>Audit qeydləri</div>
             <div style={{ font: '400 12px/1 var(--font)', color: 'var(--muted)' }}>
-              dəyişdirilə bilməz · 24 ay saxlanılır
+              dəyişdirilə bilməz · 24 ay saxlanılır · ekranda son {TABLE_LIMIT} qeyd
             </div>
             {!loading ? (
               <div style={{ marginLeft: 'auto', font: '400 12px/1 var(--font)', color: 'var(--muted)' }}>
-                {filtered.length} qeyd{search.trim() ? ` · «${search.trim()}»` : ''}
+                {filtered.length} göstərilir{search.trim() ? ` · «${search.trim()}»` : ''}
               </div>
             ) : null}
           </div>
@@ -467,7 +558,9 @@ export function AdminAudit({ search }: ScreenProps) {
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="empty">
-                      {rows.length === 0 ? 'Audit qeydi yoxdur' : 'Uyğun qeyd tapılmadı'}
+                      {rowsError
+                        ? `Audit qeydləri yüklənmədi (${rowsError}) — bu «qeyd yoxdur» demək DEYİL.`
+                        : rows.length === 0 ? 'Audit qeydi yoxdur' : 'Uyğun qeyd tapılmadı'}
                     </td>
                   </tr>
                 ) : null}

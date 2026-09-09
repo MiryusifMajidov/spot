@@ -48,7 +48,16 @@ Serves the built SPA; data is live from Supabase at runtime.
 |---|---|---|---|---|
 | Read data, reply to user | ✓ | ✓ | ✓ | ✓ |
 | Resolve reports, remove content, punishment ladder | ✗ | ✓ | ✓ | ✓ |
-| Trainer verify, gym claim, refunds | ✗ | ✗ | ✓ | ✓ |
+| Trainer verify, gym claim | ✗ | ✗ | ✓ | ✓ |
 | Unmask phone (logged) | ✗ | ✗ | ✓ | ✓ |
 | Role management, audit export | ✗ | ✗ | ✗ | ✓ |
 | **Weight, progress photo, chat archive** | **✗** | **✗** | **✗** | **✗** |
+
+**SPOT handles no money.** The ops row used to read “Trainer verify, gym claim,
+refunds”, which described a product SPOT is not: there are no in-app payments, no
+commission and no balance to refund — a day-pass visitor pays the gym at reception,
+in cash. There is no refund action anywhere in the SPA, so the row promised a power
+no admin has ever had. Day-pass cancellation is not in the matrix either: the panel
+has no day-pass screen at all (and `schema58` dropped the “active day-pass” KPI
+because nothing ever moves a pass out of `active`). If day-pass handling is ever
+added, add the row then — not before.

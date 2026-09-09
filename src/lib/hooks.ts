@@ -113,9 +113,21 @@ const mapTrainer = (r: any): Trainer => ({
    A challenge has no single progress — only each participant's — and the ranking
    is counted by `challenge_standings()` from real workout rows. `daysLeft` is
    gone too; `endsAt` is a date the app can actually compare against now. */
+/* `target` is clamped here, not passed through.
+ *
+ * `challenges.target` is a nullable int with no CHECK, so a row written by SQL
+ * rather than through the admin form arrived as null while `Challenge.target`
+ * promised a number. That null went straight into a percentage width:
+ * «NaN%» with no progress — the bar silently disappears — and Infinity, clamped
+ * to a full bar, with any progress at all, announcing a goal that has no target
+ * as already complete. 0 now means «no target» and the screens say so. */
+const positiveTarget = (t: unknown): number => {
+  const n = Number(t);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+};
 const mapChallenge = (r: any): Challenge => ({
   id: r.id, title: r.title, scope: r.scope, scopeLabel: r.scope_label, description: r.description,
-  target: r.target, unit: r.unit, reward: r.reward ?? null,
+  target: positiveTarget(r.target), unit: r.unit, reward: r.reward ?? null,
   active: !!r.active, startsAt: r.starts_at ?? null, endsAt: r.ends_at ?? null,
   participants: r.participants ?? 0,
 });

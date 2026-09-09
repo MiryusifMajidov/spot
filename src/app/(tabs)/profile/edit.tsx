@@ -14,7 +14,7 @@ import { DAYS, GOALS, LEVELS, TIME_SLOTS, WORKOUT_TYPES } from '@/data/mock';
 import { USERNAME_TAKEN_MSG, displayNameError, getMyProfile, isUsernameTaken, suggestUsername, usernameError } from '@/lib/api';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { useGyms } from '@/lib/hooks';
-import { pickImage, setMyAvatar, shootImage } from '@/lib/images';
+import { imageTooLargeMessage, pickImage, setMyAvatar, shootImage } from '@/lib/images';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, toast } from '@/store/ui';
@@ -89,10 +89,14 @@ export default function EditProfile() {
       setAvatar(url);
       successFeedback();
       toast('Profil şəklin yeniləndi');
-    } catch {
+    } catch (e) {
       setAvatar(previous); // never leave a photo on screen that was not saved
       errorFeedback();
-      toast('Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      /* A file over the bucket ceiling fails identically every single time, so
+         «yenidən cəhd et» sent people back to tap the same photo at a wall. That
+         one case names itself, and only its message can say how big the file is
+         and what actually fits. */
+      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
     } finally {
       setUploading(false);
     }

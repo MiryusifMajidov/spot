@@ -117,6 +117,21 @@ export function Users({ search }: ScreenProps) {
 
   async function load() {
     setLoading(true);
+    // try/catch/finally: a throw in the merge below used to skip
+    // `setLoading(false)`, leaving the roster — and the sanction ladder that
+    // lives in its row drawer — behind a spinner that never stopped.
+    try {
+      await loadInner();
+    } catch {
+      setFailed(true);
+      setStatsFailed(true);
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadInner() {
     const [{ data: profs, error: profErr }, { data: gyms }, { data: stats, error: statErr }] = await Promise.all([
       // Never request `phone`: schema9 revokes column access to it, so `select('*')`
       // would fail outright — and the masked value shown here is meant to come from
@@ -149,15 +164,23 @@ export function Users({ search }: ScreenProps) {
     // explanation anywhere on screen.
     setFailed(!!profErr);
     setStatsFailed(!!statErr);
+    /* `?? 0` is only correct when the CALL landed: a profile missing from a
+       successful result really has nothing to count. When the whole
+       admin_profile_stats() call failed, the same `?? 0` printed «0 şikayət» on
+       every row — including the account a moderator was investigating — and put
+       those zeros in the CSV they handed to a colleague. Null now, «—» on
+       screen, and the «yalnız şikayət olunanlar» filter turned off, because with
+       no counters there is nothing to filter by. */
+    if (statErr) setOnlyReported(false);
     setRows(
       ((profs as ProfileRow[]) ?? []).map((p) => {
         const s = stat.get(p.id);
         return {
           ...p,
-          reports_count: s?.reports_count ?? 0,
-          requests_sent: s?.requests_sent ?? 0,
-          requests_answered: s?.requests_answered ?? 0,
-          checkin_streak: s?.checkin_streak ?? 0,
+          reports_count: statErr ? null : s?.reports_count ?? 0,
+          requests_sent: statErr ? null : s?.requests_sent ?? 0,
+          requests_answered: statErr ? null : s?.requests_answered ?? 0,
+          checkin_streak: statErr ? null : s?.checkin_streak ?? 0,
           status_reason: s?.status_reason ?? null,
         };
       })
@@ -165,7 +188,6 @@ export function Users({ search }: ScreenProps) {
     const map: Record<string, string> = {};
     for (const g of (gyms as { id: string; name: string }[]) ?? []) map[g.id] = g.name;
     setGymNames(map);
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -386,8 +408,10 @@ export function Users({ search }: ScreenProps) {
         (p.home_gym_id && gymNames[p.home_gym_id]) || '',
         effectiveStatus(p),
         p.status_until ?? '',
-        p.reports_count ?? 0,
-        p.checkin_streak ?? 0,
+        // Empty, never 0: this file leaves the panel and is read without the
+        // banner that says the counters could not be obtained.
+        p.reports_count ?? '',
+        p.checkin_streak ?? '',
         maskPhone(p.phone),
       ]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
@@ -400,7 +424,11 @@ export function Users({ search }: ScreenProps) {
     a.download = `spot-users-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast(`${filtered.length} sətir ixrac edildi (maskalanmış)`);
+    toast(
+      statsFailed
+        ? `${filtered.length} sətir ixrac edildi (maskalanmış) — şikayət və seriya sütunları BOŞDUR, sayğaclar yüklənmədi`
+        : `${filtered.length} sətir ixrac edildi (maskalanmış)`,
+    );
   }
 
   const roleChips: { id: RoleFilter; label: string }[] = [
@@ -459,16 +487,23 @@ export function Users({ search }: ScreenProps) {
             {c.label}
           </button>
         ))}
+        {/* Disabled while the counters are unknown: an enabled filter that can
+            only ever return nobody says «heç kim şikayət olunmayıb» about a
+            question it never got to ask. */}
         <button
           className="chip"
-          onClick={() => setOnlyReported((v) => !v)}
+          disabled={statsFailed}
+          title={statsFailed ? 'Sayğaclar yüklənmədi — bu filtri işlətmək olmur' : undefined}
+          onClick={() => !statsFailed && setOnlyReported((v) => !v)}
           style={
-            onlyReported
-              ? { background: 'rgba(255,59,48,.1)', color: '#C42B22', borderColor: 'rgba(255,59,48,.25)' }
-              : undefined
+            statsFailed
+              ? { opacity: 0.45, cursor: 'not-allowed' }
+              : onlyReported
+                ? { background: 'rgba(255,59,48,.1)', color: '#C42B22', borderColor: 'rgba(255,59,48,.25)' }
+                : undefined
           }
         >
-          Şikayəti var: {reportedCount}
+          Şikayəti var: {statsFailed ? '—' : reportedCount}
         </button>
         <button className="link" style={{ marginLeft: 'auto' }} onClick={resetFilters}>
           Filtri sıfırla
@@ -515,14 +550,17 @@ export function Users({ search }: ScreenProps) {
               const rMeta = ROLE_LABEL[p.role ?? 'user'] ?? ROLE_LABEL.user;
               const sMeta = STATUS_META[effectiveStatus(p)];
               const until = untilLabel(p);
-              const reports = p.reports_count ?? 0;
+              // null = not measured. `?? 0` here is what printed «0» in the
+              // Şikayət column of a reported account while the stats call was
+              // broken, and made it look clean.
+              const reports = p.reports_count;
               // `p.phone` is never selected, so there is nothing to mask: say the
               // number is hidden rather than printing a mask of `undefined`.
               const shownPhone = revealed[p.id] ?? 'gizli';
               return (
                 <tr
                   key={p.id}
-                  style={{ cursor: 'pointer', background: reports > 0 ? 'rgba(255,59,48,.04)' : undefined }}
+                  style={{ cursor: 'pointer', background: (reports ?? 0) > 0 ? 'rgba(255,59,48,.04)' : undefined }}
                   onClick={() => setOpen(p)}
                 >
                   <td onClick={(e) => e.stopPropagation()}>
@@ -575,7 +613,9 @@ export function Users({ search }: ScreenProps) {
                     </div>
                   </td>
                   <td>
-                    {reports > 0 ? (
+                    {reports == null ? (
+                      <span style={{ color: 'var(--muted)' }} title="Sayğaclar yüklənmədi — bu «0 şikayət» demək deyil">—</span>
+                    ) : reports > 0 ? (
                       <span className="badge red">{reports} ŞİKAYƏT</span>
                     ) : (
                       <span style={{ color: 'var(--muted)' }}>0</span>
@@ -584,7 +624,7 @@ export function Users({ search }: ScreenProps) {
                   <td>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 600 }}>
                       {(p.checkin_streak ?? 0) > 0 ? <Icon name="flame" size={13} color="#FF6B35" /> : null}
-                      {p.checkin_streak ?? 0}
+                      {p.checkin_streak == null ? <span style={{ color: 'var(--muted)', fontWeight: 400 }}>—</span> : p.checkin_streak}
                     </span>
                   </td>
                   <td>
@@ -719,10 +759,12 @@ function DetailModal({
   onRestore: () => void;
   onClose: () => void;
 }) {
-  const sent = p.requests_sent ?? 0;
-  const answered = p.requests_answered ?? 0;
-  const rate = sent > 0 ? answered / sent : null;
-  const spam = rate !== null && rate < 0.15 && sent >= 20;
+  // null = the counters call failed. The whole «Aktivlik siqnalı» block then has
+  // nothing to report, and a spam verdict computed from 0/0 would be invented.
+  const sent = p.requests_sent;
+  const answered = p.requests_answered;
+  const rate = sent != null && answered != null && sent > 0 ? answered / sent : null;
+  const spam = rate !== null && rate < 0.15 && (sent ?? 0) >= 20;
   const eff = effectiveStatus(p);
   const sMeta = STATUS_META[eff];
   const until = untilLabel(p);
@@ -788,15 +830,20 @@ function DetailModal({
         <div style={{ border: '1px solid var(--line2)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
           <div style={{ font: '600 13px/1 var(--font)', marginBottom: 14 }}>Aktivlik siqnalı</div>
           <div style={{ display: 'flex', gap: 22 }}>
-            <Stat n={sent} label={<>sorğu<br />göndərdi</>} />
-            <Stat n={answered} label={<>cavab<br />aldı</>} color={spam ? '#C42B22' : undefined} />
+            <Stat n={sent ?? '—'} label={<>sorğu<br />göndərdi</>} />
+            <Stat n={answered ?? '—'} label={<>cavab<br />aldı</>} color={spam ? '#C42B22' : undefined} />
             <Stat
               n={rate === null ? '—' : `${Math.round(rate * 100)}%`}
               label={<>cavab<br />nisbəti</>}
               color={spam ? '#C42B22' : undefined}
             />
-            <Stat n={p.reports_count ?? 0} label="şikayət" color={(p.reports_count ?? 0) > 0 ? '#C42B22' : undefined} />
+            <Stat n={p.reports_count ?? '—'} label="şikayət" color={(p.reports_count ?? 0) > 0 ? '#C42B22' : undefined} />
           </div>
+          {p.reports_count == null ? (
+            <div style={{ font: '400 11.5px/1.45 var(--font)', color: 'var(--orange-deep)', marginTop: 12 }}>
+              Sayğaclar yüklənmədi — bu rəqəmlər ölçülməyib. «—» sıfır demək deyil.
+            </div>
+          ) : null}
           {spam ? (
             <div style={{ background: 'rgba(255,59,48,.08)', borderRadius: 11, padding: 12, marginTop: 14 }}>
               <div style={{ font: '500 12px/1.45 var(--font)', color: '#8A2B22' }}>

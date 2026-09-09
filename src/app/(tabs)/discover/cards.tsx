@@ -69,6 +69,31 @@ const useCardQuota = create<CardQuota>()(
   )
 );
 
+/** Ids this device has passed on («keç»).
+ *
+ *  A pass is a device decision and nothing else: it writes no row anywhere. The
+ *  deck used to rely on `matches[id] = declined` alone, and `reconcileMatches`
+ *  deletes every UUID-keyed match entry that has no `match_requests` row on the
+ *  server — right for an offer that was really sent, wrong for a pass, which
+ *  never creates one. So every card passed yesterday was back at the top of the
+ *  deck this morning and spent a second card out of today's 30, under a hint
+ *  that says «sola = keç (kart bir daha gəlmir)». Persisted here so the promise
+ *  holds; the deck filters on it below. */
+interface PassedCards {
+  ids: string[];
+  pass: (id: string) => void;
+}
+
+const usePassedCards = create<PassedCards>()(
+  persist(
+    (set) => ({
+      ids: [],
+      pass: (id) => set((s) => (s.ids.includes(id) ? {} : { ids: [...s.ids, id] })),
+    }),
+    { name: 'spot-cards-passed', storage: createJSONStorage(() => AsyncStorage) }
+  )
+);
+
 export default function Cards() {
   const router = useRouter();
   // Null until the user picks a gym — no catalogue gym is substituted, so the deck
@@ -77,7 +102,12 @@ export default function Cards() {
   // «not a man», not «is a woman» — see womenOnlyAllowed.
   const isWoman = womenOnlyAllowed(useAppStore((s) => s.profile.gender));
   const gate = useAuthGate();
-  const deck = usePartnerDeck(homeGymId ?? '');
+  const engineDeck = usePartnerDeck(homeGymId ?? '');
+  const passedIds = usePassedCards((s) => s.ids);
+  const passCard = usePassedCards((s) => s.pass);
+  // The engine deck drops anybody with a match entry; this drops the people this
+  // device passed on, whose entry the server reconcile may already have removed.
+  const deck = useMemo(() => engineDeck.filter((p) => !passedIds.includes(p.id)), [engineDeck, passedIds]);
   const phase = usePartnersPhase(homeGymId ?? '');
   const filter = useDiscoverPrefs((s) => s.partnerFilter);
   const savedPartners = useDiscoverPrefs((s) => s.savedPartners);
@@ -89,7 +119,9 @@ export default function Cards() {
   const usedToday = quotaDay === gymDayKey() ? quotaCount : 0;
   const remaining = Math.max(0, DAILY_CAP - usedToday);
 
-  const inFilter = useMemo(() => applyPartnerFilter(deck, filter, isWoman), [deck, filter]);
+  // `isWoman` belongs in the deps — a stale value here would keep filtering the
+  // deck by the gender the profile had when this memo first ran.
+  const inFilter = useMemo(() => applyPartnerFilter(deck, filter, isWoman), [deck, filter, isWoman]);
   /* The 60 % gate. A null score means nothing was compared at all (the app holds
      too little of my own profile) — that can never pass a threshold, so those
      people are held back and the empty state says why. */
@@ -131,7 +163,8 @@ export default function Cards() {
     const p = current;
     tapFeedback();
     if (p) {
-      declineMatch(p.id); // removes them from usePartnerDeck permanently
+      declineMatch(p.id); // removes them from usePartnerDeck…
+      passCard(p.id); // …and this survives the server reconcile, which the match entry does not
       spend();
     }
     reset();

@@ -8,7 +8,9 @@ export type ScreenId =
   | 'content' | 'challenges' | 'analytics' | 'admin';
 
 export const NAV: { id: ScreenId; label: string; icon: IconName; countKey?: string; tone?: string }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'grid' },
+  // «Dashboard» was the first item a moderator read in an Azerbaijani-only
+  // panel. The mobile gym and trainer surfaces already call this «Panel».
+  { id: 'dashboard', label: 'Panel', icon: 'grid' },
   { id: 'users', label: 'İstifadəçilər', icon: 'users', countKey: 'users', tone: 'soft' },
   { id: 'trainers', label: 'Müəllimlər', icon: 'verified', countKey: 'trainers', tone: 'streak' },
   { id: 'gyms', label: 'Zallar', icon: 'pin', countKey: 'gyms', tone: 'streak' },
@@ -19,7 +21,7 @@ export const NAV: { id: ScreenId; label: string; icon: IconName; countKey?: stri
 ];
 
 const TITLES: Record<ScreenId, string> = {
-  dashboard: 'Dashboard', users: 'İstifadəçilər', trainers: 'Müəllim doğrulanması', gyms: 'Zallar və claim',
+  dashboard: 'İdarə paneli', users: 'İstifadəçilər', trainers: 'Müəllim doğrulanması', gyms: 'Zallar və claim',
   moderation: 'Moderasiya', content: 'Məzmun', challenges: 'Challenge',
   analytics: 'Analitika', admin: 'Admin və audit',
 };
@@ -44,6 +46,9 @@ export function Shell({
   children: ReactNode;
 }) {
   const { admin, signOut } = useAuth();
+  /** App.refreshCounts leaves this '' when the queue is empty, a number when it
+   *  is not, and '!' when the read itself failed — all three are worth a dot. */
+  const pendingReports = !!counts.moderation;
   const [date, setDate] = useState(nowLabel());
   useEffect(() => {
     const t = setInterval(() => setDate(nowLabel()), 30000);
@@ -111,9 +116,20 @@ export function Shell({
               <input id="admin-search" value={search} onChange={(e) => onSearch(e.target.value)} placeholder="İstifadəçi, zal, müəllim, ID axtar" />
               <span className="kbd">⌘K</span>
             </div>
-            <button className="icon-btn" title="Bildirişlər">
+            {/* The dot used to be unconditional and the button had no handler, so
+                every admin saw a permanent unread indicator that did nothing when
+                clicked — and learned to ignore the one signal a real escalation
+                would have to use. It now shows the open-report count that the
+                sidebar already carries, and opens that queue. */}
+            <button
+              className="icon-btn"
+              title={pendingReports ? `Açıq şikayət: ${counts.moderation}` : 'Açıq şikayət yoxdur'}
+              onClick={() => onNav('moderation')}
+            >
               <Icon name="bell" size={18} />
-              <span style={{ position: 'absolute', top: 7, right: 8, width: 7, height: 7, borderRadius: '50%', background: 'var(--red)', border: '1.5px solid var(--fill)' }} />
+              {pendingReports ? (
+                <span style={{ position: 'absolute', top: 7, right: 8, width: 7, height: 7, borderRadius: '50%', background: 'var(--red)', border: '1.5px solid var(--fill)' }} />
+              ) : null}
             </button>
           </div>
         </div>

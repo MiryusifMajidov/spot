@@ -85,8 +85,11 @@ export default function Summary() {
             <Icon name="flame" size={18} color={palette.streak} />
           </View>
           <View style={{ flex: 1 }}>
+            {/* «Seriya», the word Profil and Analitika already use for this same
+                counter — the English «streak» was the odd one out in an
+                Azerbaijani-only UI. */}
             <AppText variant="callout">
-              {stats.streakDays > 0 ? `${stats.streakDays} günlük streak` : 'Streak bugün başladı'}
+              {stats.streakDays > 0 ? `${stats.streakDays} günlük seriya` : 'Seriya bugün başladı'}
             </AppText>
             <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2 }}>
               Ümumi {stats.count} məşq qeyd olunub

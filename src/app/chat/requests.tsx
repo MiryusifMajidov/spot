@@ -238,22 +238,43 @@ export default function Requests() {
     router.push({ pathname: '/chat/[id]', params: { id: row.fromProfile, name: row.name ?? '' } });
   };
 
-  /** Decline: hide it on my side for good, and try to mark the row as well. */
+  /** Decline: mark the row, and only then hide it on my side.
+   *
+   *  The local hide used to happen first and stay whatever the server said. When
+   *  the UPDATE was refused — RLS returns `error: null` with ZERO rows, which is
+   *  why the row count is checked — the server row stayed `pending`, and the
+   *  next launch's `reconcileMatches` saw a live pending row and flipped the
+   *  local `declined` back to `incoming`. The request the person had dismissed
+   *  reappeared in their list, with no explanation, over and over. Rolling the
+   *  local state back instead keeps the two sides saying the same thing: it is
+   *  still there, because it really is still there. */
   const decline = async (row: Incoming) => {
     tapFeedback();
-    declineMatch(row.fromProfile);
-    setIncoming((rows) => rows.filter((r) => r.id !== row.id));
-    setHidden((rows) => rows.filter((r) => r.id !== row.id));
+    if (!hasSupabaseConfig || !UUID.test(row.id)) {
+      // Nothing to reach: the row only ever existed on this device.
+      declineMatch(row.fromProfile);
+      setIncoming((rows) => rows.filter((r) => r.id !== row.id));
+      setHidden((rows) => rows.filter((r) => r.id !== row.id));
+      return;
+    }
+    let landed = false;
     try {
       const { data, error } = await supabase
         .from('match_requests')
         .update({ status: 'declined' })
         .eq('id', row.id)
         .select('id');
-      if (error || !data?.length) toast('Sorğu siyahından silindi — göndərənə bildiriş getmir', 'info');
+      landed = !error && !!data?.length;
     } catch {
-      toast('Sorğu siyahından silindi — göndərənə bildiriş getmir', 'info');
+      landed = false;
     }
+    if (!landed) {
+      toast('Sorğu rədd edilmədi — serverə çatmadı. Yenidən cəhd et.', 'error');
+      return;
+    }
+    declineMatch(row.fromProfile);
+    setIncoming((rows) => rows.filter((r) => r.id !== row.id));
+    setHidden((rows) => rows.filter((r) => r.id !== row.id));
   };
 
   const cancel = (partnerId: string, name: string) => {

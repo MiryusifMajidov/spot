@@ -1,6 +1,6 @@
 import { useEvent } from 'expo';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -260,6 +260,41 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
   const [activeIndex, setActiveIndex] = useState(0);
   const [muted, setMuted] = useState(false);
 
+  /* Open one specific clip — the route Saxlanılanlar and a creator's grid use.
+     Those tiles used to push the creator page, which showed the same thumbnail
+     with the same play badge and no way through, so a saved video could not be
+     watched a second time except by scrolling the whole feed hoping to hit it. */
+  const params = useLocalSearchParams<{ videoId?: string }>();
+  const wantedId = params.videoId || '';
+  const listRef = useRef<FlatList<FeedVideo>>(null);
+  useEffect(() => {
+    if (!wantedId || h === 0 || !playersReady || videos.length === 0) return;
+    const i = videos.findIndex((v) => v.id === wantedId);
+    /* Consumed either way: left on the route, the param would drag the feed back
+       to this clip every time the tab is opened again, and re-tapping the same
+       tile would push a param that never changed. */
+    router.setParams({ videoId: '' });
+    if (i < 0) {
+      // The clip is not in the list we have — deleted, hidden, or not loaded.
+      // Saying so beats silently leaving the reader on somebody else's video.
+      toast('Bu video feed-də tapılmadı', 'error');
+      return;
+    }
+    /* One frame later: the list has to have laid out its first page before it can
+       be told to jump, and the active page is set from the same callback so the
+       clip that starts playing is the one that was asked for. */
+    const raf = requestAnimationFrame(() => {
+      listRef.current?.scrollToIndex({ index: i, animated: false });
+      setActiveIndex(i);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [wantedId, h, playersReady, videos, router]);
+
+  /* Every page is exactly the stage height, so the offsets are known without
+     measuring — which is what lets the jump above land on a clip the list has
+     not rendered yet. */
+  const getItemLayout = useCallback((_: unknown, index: number) => ({ length: h, offset: h * index, index }), [h]);
+
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const first = viewableItems.find((it) => it.isViewable);
     if (first?.index != null) setActiveIndex(first.index);
@@ -293,11 +328,13 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
         <StatusBar style="light" />
         {h > 0 && playersReady && (
           <FlatList
+            ref={listRef}
             data={videos}
             keyExtractor={(v) => v.id}
             pagingEnabled
             showsVerticalScrollIndicator={false}
             decelerationRate="fast"
+            getItemLayout={getItemLayout}
             renderItem={({ item, index }) => (
               <VideoPage
                 bottomInset={BOTTOM_GAP}
@@ -822,45 +859,22 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
         </PressableScale>
       </View>
 
-      {post.type === 'progress' ? (
-        <View style={styles.progressImages}>
-          {['Əvvəl', 'Sonra'].map((label) => (
-            <View key={label} style={styles.progressImg}>
-              <LinearGradient colors={['#D2D2D8', '#EDEDF0']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <View style={styles.progressTag}>
-                <AppText style={{ color: palette.white, fontSize: 10.5, fontWeight: '700' }}>{label}</AppText>
-              </View>
-            </View>
-          ))}
-        </View>
-      ) : null}
-
+      {/* Three blocks used to be drawn here and all three were fiction.
+       *
+       * `type === 'progress'` painted two grey gradients tagged «Əvvəl» / «Sonra»:
+       * `community_posts` has no image column at all, so those frames could never
+       * hold a photo — the card presented two invented "before/after" pictures as
+       * somebody's real transformation.
+       *
+       * `stats` printed free-form value/label chips («-6 kq»), and `trainer_comment`
+       * printed a blue verification check over «<ad> · müəllim» and a quoted
+       * coaching reply. Both columns are still in schema47's client INSERT grant
+       * and nothing checks that the named person is a trainer or ever wrote the
+       * words, while the app's own compose screen never writes either one — so no
+       * legitimate value could ever reach them, only a forged one. */}
       <AppText variant="body" color={palette.text3} style={{ marginTop: 12, lineHeight: 21 }}>
         {post.text}
       </AppText>
-
-      {post.stats ? (
-        <View style={styles.statsRow}>
-          {post.stats.map((s) => (
-            <View key={s.label} style={styles.statChip}>
-              <AppText style={{ fontSize: 15, fontWeight: '700' }}>{s.value}</AppText>
-              <AppText style={{ fontSize: 11, color: palette.caption, marginTop: 2 }}>{s.label}</AppText>
-            </View>
-          ))}
-        </View>
-      ) : null}
-
-      {post.trainerComment ? (
-        <View style={styles.trainerComment}>
-          <Icon name="verified" size={14} color={palette.blue} />
-          <View style={{ flex: 1 }}>
-            <AppText style={{ fontSize: 12.5, fontWeight: '700' }}>{post.trainerComment.name} · müəllim</AppText>
-            <AppText variant="footnote" color={palette.text3} style={{ marginTop: 3, lineHeight: 18 }}>
-              {post.trainerComment.text}
-            </AppText>
-          </View>
-        </View>
-      ) : null}
 
       <View style={styles.postActions}>
         {/* Colour, not a word — same reason as the video rail. */}
@@ -881,8 +895,11 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
           </AppText>
         </PressableScale>
         <View style={{ flex: 1 }} />
+        {/* «Feedback ver» was English, under every single post — the most repeated
+            piece of copy in the app. It opens the comments sheet, so it says what
+            the «Şərh» action beside it says. */}
         <PressableScale activeScale={0.95} onPress={onOpenComments} style={styles.feedbackBtn}>
-          <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.inkText }}>Feedback ver</AppText>
+          <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.inkText }}>Rəy yaz</AppText>
         </PressableScale>
       </View>
     </View>
@@ -930,12 +947,6 @@ const styles = StyleSheet.create({
   composeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
   post: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 12 },
   postHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  progressImages: { flexDirection: 'row', gap: 8, marginTop: 14 },
-  progressImg: { flex: 1, height: 180, borderRadius: 14, overflow: 'hidden' },
-  progressTag: { position: 'absolute', top: 10, left: 10, backgroundColor: 'rgba(11,11,14,0.6)', borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3 },
-  statsRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  statChip: { flex: 1, backgroundColor: palette.grouped, borderRadius: 13, padding: 12, alignItems: 'center' },
-  trainerComment: { flexDirection: 'row', gap: 9, backgroundColor: 'rgba(10,132,255,0.08)', borderRadius: 13, padding: 13, marginTop: 14 },
   postActions: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 14 },
   postAction: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 34 },
   feedbackBtn: { backgroundColor: palette.grouped, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },

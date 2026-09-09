@@ -62,16 +62,24 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
 
   async function loadData() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('challenges')
-      .select('*')
-      .order('active', { ascending: false })
-      .order('ends_at', { ascending: true, nullsFirst: false });
-    // A refused read is not «no challenges»: the KPI strip below counts `rows`,
-    // so it would print four confident zeroes over a table nobody managed to ask.
-    setFailed(!!error);
-    setRows((data as ChallengeRow[]) ?? []);
-    setLoading(false);
+    // try/finally: a throw here used to skip `setLoading(false)` and leave the
+    // screen spinning with no error and no retry.
+    try {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .order('active', { ascending: false })
+        .order('ends_at', { ascending: true, nullsFirst: false });
+      // A refused read is not «no challenges»: the KPI strip below counts `rows`,
+      // so it would print four confident zeroes over a table nobody managed to ask.
+      setFailed(!!error);
+      setRows((data as ChallengeRow[]) ?? []);
+    } catch {
+      setFailed(true);
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -106,17 +114,33 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
       ?.trim();
     if (!reason) return; // cancelled or empty → no-op
     setBusy(c.id);
-    const { error } = await supabase.from('challenges').update({ active: next }).eq('id', c.id);
+    /* `.select('id')` + a row check, not just `error`. `challenges_admin_update`
+       is an RLS policy, so a caller outside it gets `error: null` with ZERO rows
+       changed — the panel then wrote a `challenge_deactivate` audit entry and
+       toasted «Challenge dayandırıldı» while the challenge stayed `active` and
+       kept running in every user's list, contradicted by the reload two lines
+       later. */
+    const { data: rows, error } = await supabase
+      .from('challenges')
+      .update({ active: next })
+      .eq('id', c.id)
+      .select('id');
     setBusy(null);
     if (error) {
       toast('Xəta: ' + error.message);
       return;
     }
-    await audit(next ? 'challenge_activate' : 'challenge_deactivate', 'challenge', c.id, reason, {
+    if (!rows?.length) {
+      toast(`Challenge dəyişmədi — icazə yoxdur. «${c.title}» hələ də ${c.active ? 'aktivdir' : 'passivdir'}`);
+      loadData();
+      return;
+    }
+    const auditErr = await audit(next ? 'challenge_activate' : 'challenge_deactivate', 'challenge', c.id, reason, {
       title: c.title,
       active: next,
     });
-    toast(next ? 'Challenge aktivləşdirildi' : 'Challenge dayandırıldı');
+    const done = next ? 'Challenge aktivləşdirildi' : 'Challenge dayandırıldı';
+    toast(auditErr ? `${done}, amma audit qeydi yazılmadı: ${auditErr}` : done);
     refreshCounts();
     loadData();
   }
@@ -131,7 +155,9 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
     /* End of the chosen day in Baku, so a challenge that «ends on the 30th» is
        still open all day on the 30th. No date means open-ended. */
     const endsAt = draft.endsOn ? new Date(`${draft.endsOn}T23:59:59+04:00`).toISOString() : null;
-    const { error } = await supabase.from('challenges').insert({
+    // Same discipline on the insert: an RLS-filtered INSERT that writes nothing
+    // must not be announced as a created challenge.
+    const { data: rows, error } = await supabase.from('challenges').insert({
       id,
       title: t,
       scope: draft.scope,
@@ -142,14 +168,18 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
       starts_at: new Date().toISOString(),
       ends_at: endsAt,
       active: false,
-    });
+    }).select('id');
     setSaving(false);
     if (error) {
       toast('Xəta: ' + error.message);
       return;
     }
-    await audit('challenge_create', 'challenge', id, undefined, { title: t, scope: draft.scope, target, unit: draft.unit.trim(), ends_at: endsAt });
-    toast('Challenge yaradıldı');
+    if (!rows?.length) {
+      toast('Challenge yaradılmadı — icazə yoxdur');
+      return;
+    }
+    const auditErr = await audit('challenge_create', 'challenge', id, undefined, { title: t, scope: draft.scope, target, unit: draft.unit.trim(), ends_at: endsAt });
+    toast(auditErr ? 'Challenge yaradıldı, amma audit qeydi yazılmadı: ' + auditErr : 'Challenge yaradıldı');
     setShowNew(false);
     setDraft(emptyDraft);
     refreshCounts();
@@ -163,10 +193,13 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
     <>
       {/* ── KPI strip ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
-        <Kpi label="Challenge · ümumi" val={loading ? '—' : String(rows.length)} />
-        <Kpi label="Aktiv" val={loading ? '—' : String(activeCount)} sub={activeCount ? 'canlı' : undefined} />
-        <Kpi label="İştirakçı · cəmi" val={loading ? '—' : participantsTotal.toLocaleString('az')} />
-        <Kpi label="Passiv / qaralama" val={loading ? '—' : String(rows.length - activeCount)} dark />
+        {/* `failed` counts as «not measured», not as zero: these four tiles are
+            computed from `rows`, so a refused read printed four confident zeroes
+            over a table nobody managed to ask. */}
+        <Kpi label="Challenge · ümumi" val={loading || failed ? '—' : String(rows.length)} />
+        <Kpi label="Aktiv" val={loading || failed ? '—' : String(activeCount)} sub={!failed && activeCount ? 'canlı' : undefined} />
+        <Kpi label="İştirakçı · cəmi" val={loading || failed ? '—' : participantsTotal.toLocaleString('az')} />
+        <Kpi label="Passiv / qaralama" val={loading || failed ? '—' : String(rows.length - activeCount)} dark />
       </div>
 
       {/* ── Toolbar: filter chips + create ── */}

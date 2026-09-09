@@ -74,10 +74,14 @@ export default function Saved() {
           ) : (
             <View style={styles.grid}>
               {videos.map((v) => (
+                /* Tapping a saved clip PLAYS it. It used to open the author's
+                   creator page instead — the same thumbnail with the same play
+                   badge and nothing behind it — so a saved video could never be
+                   watched again except by scrolling the whole feed to find it. */
                 <PressableScale
                   key={v.id}
                   activeScale={0.97}
-                  onPress={() => router.push({ pathname: '/(tabs)/feed/creator', params: { name: v.author, verified: v.verified ? '1' : '', isTrainer: v.isTrainer ? '1' : '' } })}
+                  onPress={() => router.push({ pathname: '/(tabs)/feed', params: { videoId: v.id } })}
                   style={styles.tile}>
                   <VideoPoster id={v.id} videoUrl={v.videoUrl} gradient={v.gradient} />
                   <View style={styles.tilePlay}>
@@ -92,10 +96,13 @@ export default function Saved() {
             </View>
           )
         ) : gyms.length === 0 ? (
+          /* The text used to read «...bookmark düyməsi...»: an English word, naming
+             a button that carries no caption anywhere — on the gym page it is a bare
+             icon in the header. Point at where that icon is instead. */
           <Empty
             icon="dumbbell"
             title="Saxlanılmış zal yoxdur"
-            text="Zal səhifəsindəki bookmark düyməsi zalı bura əlavə edir."
+            text="Zal səhifəsinin yuxarısındakı əlfəcin nişanına toxun — zal burada toplanacaq."
             action={<Button title="Zallara bax" onPress={() => router.push('/(tabs)/discover')} style={{ marginTop: 18 }} />}
           />
         ) : (

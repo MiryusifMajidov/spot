@@ -29,6 +29,7 @@
  * rather than failing with a raw provider error.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isAuthSessionMissingError } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -102,9 +103,34 @@ export async function isAnonymous(): Promise<boolean> {
   return !!data.user?.is_anonymous;
 }
 
-/** The identity behind the current session, for the settings screen. */
-export async function currentIdentity(): Promise<{ kind: 'anonymous' | 'google' | 'apple' | 'phone' | 'email' | 'none'; label: string | null }> {
-  const { data } = await supabase.auth.getUser();
+/**
+ * What is behind the current session.
+ *
+ * `'none'` means «this phone has no account». `'unknown'` means «the question
+ * could not be answered» — they are different facts and the screen that shows
+ * them says different things.
+ */
+export type IdentityKind = 'anonymous' | 'google' | 'apple' | 'phone' | 'email' | 'none' | 'unknown';
+
+/**
+ * Who is behind the session, and «I could not find out» as its own answer.
+ *
+ * This read used to drop the error from `getUser()` on the floor and report
+ * `kind: 'none'` — the same value it returns for a device that genuinely never
+ * had an account. The settings screen renders nothing at all for 'none', so a
+ * dropped connection or a refused token refresh took the red «Hesabını qoru»
+ * row and the «hesab yalnız bu telefonda» warning away from exactly the person
+ * whose account is NOT protected: the group read as «there is nothing to say
+ * about your account» while the account was one reinstall from unreachable.
+ *
+ * `AuthSessionMissingError` is the one error that IS an answer — supabase-js
+ * returns it when there is no stored session at all — so it stays 'none'.
+ * Anything else (network, a rejected refresh, a 500) is un-answerable, the same
+ * judgement `isAnonymous()` above makes when it throws rather than guess.
+ */
+export async function currentIdentity(): Promise<{ kind: IdentityKind; label: string | null }> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error && !isAuthSessionMissingError(error)) return { kind: 'unknown', label: null };
   const u = data.user;
   if (!u) return { kind: 'none', label: null };
   if (u.is_anonymous) return { kind: 'anonymous', label: null };

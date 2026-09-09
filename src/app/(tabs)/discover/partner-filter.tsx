@@ -10,7 +10,7 @@ import { Screen } from '@/components/ui/Screen';
 import { GOALS, LEVELS, TIME_SLOTS, WORKOUT_TYPES } from '@/data/mock';
 import { usePartnersForGym } from '@/lib/hooks';
 import { useAppStore } from '@/store/appStore';
-import { AGE_BUCKETS, applyPartnerFilter, useDiscoverPrefs } from '@/store/discoverPrefs';
+import { AGE_BUCKETS, applyPartnerFilter, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
 
 export default function PartnerFilter() {
@@ -18,7 +18,12 @@ export default function PartnerFilter() {
   // No fallback gym: the count below must describe the user's real pool, not a
   // catalogue gym's. With no gym chosen there is no pool and we say so.
   const homeGymId = useAppStore((s) => s.profile.homeGymId);
-  const isWoman = useAppStore((s) => s.profile.gender) === 'qadın';
+  const gender = useAppStore((s) => s.profile.gender);
+  // The SWITCH is offered to women only — see the comment on it below.
+  const isWoman = gender === 'qadın';
+  /* Whether the women-only flag is actually HONOURED is a different question
+     («not a man» — see womenOnlyAllowed), and it is the one the count has to ask. */
+  const canWomenOnly = womenOnlyAllowed(gender);
   const f = useDiscoverPrefs((s) => s.partnerFilter);
   const setFilter = useDiscoverPrefs((s) => s.setPartnerFilter);
   const reset = useDiscoverPrefs((s) => s.resetPartnerFilter);
@@ -31,8 +36,12 @@ export default function PartnerFilter() {
     setFilter(patch);
   };
 
-  // Real number — how many partners this filter actually leaves in the list.
-  const matched = useMemo(() => applyPartnerFilter(partners, f), [partners, f]);
+  /* Real number — how many partners this filter actually leaves in the list.
+     The third argument was missing, so `viewerIsWoman` defaulted to false and the
+     women-only branch never ran HERE while it ran everywhere the list is drawn:
+     the footer promised «9 yoldaş göstər» and opened a list with one woman in it,
+     on the one filter the sheet calls «Təhlükəsizlik üçün». */
+  const matched = useMemo(() => applyPartnerFilter(partners, f, canWomenOnly), [partners, f, canWomenOnly]);
 
   return (
     <Screen edges={['top', 'bottom']}>

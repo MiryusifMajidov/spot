@@ -111,21 +111,21 @@ export default function GymMap() {
               ? 'Xəritə sənin yerinə görə mərkəzləndi. Məsafələr alınmadı.'
               : 'Xəritə sənin yerinə görə mərkəzləndi. Məsafələr üçün internet lazımdır.';
 
-  // A district-centre pin is not an address, and the map must not imply it is.
-  const approx = useMemo(() => plottable.filter((g) => g.approxLocation).length, [plottable]);
-  const footerParts = [
+  /* There is no «bu pin təxminidir» line any more, and there must not be a fake
+     one. It was computed from `Gym.approxLocation`, which only the deleted seed
+     objects ever carried: `mapGym()` — the one place a database row becomes a
+     Gym — never sets it, so the disclosure could not appear for a single gym on
+     this map and was silently dead. Every pin drawn here is a coordinate a gym
+     owner actually recorded; if approximate locations are ever stored again, the
+     precision has to come back from the server before the footer may claim it. */
+  const footer =
     list.length === 0
       ? 'Filtrə uyğun zal yoxdur.'
       : plottable.length === 0
         ? `${list.length} zalın heç birinin yeri hələ qeyd olunmayıb — «Siyahı»ya bax.`
         : missing > 0
           ? `${missing} zalın yeri hələ qeyd olunmayıb — onlar «Siyahı»dadır.`
-          : null,
-    approx > 0
-      ? `${approx} nümunə zalı rayon mərkəzində göstərilir — dəqiq ünvan deyil. Zal sahibi qeydiyyatdan keçəndə pin dəqiqləşir.`
-      : null,
-  ].filter(Boolean);
-  const footer = footerParts.length ? footerParts.join(' ') : null;
+          : null;
 
   return (
     <Screen edges={['top']}>

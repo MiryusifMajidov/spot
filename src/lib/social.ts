@@ -129,6 +129,32 @@ export async function myChallenges(): Promise<Set<string>> {
   return new Set(((data ?? []) as { challenge_id: string }[]).map((r) => r.challenge_id));
 }
 
+/**
+ * When I joined this challenge — my own `challenge_members.joined_at`.
+ *
+ * The row has carried it since schema43 and nothing selected it, so no screen
+ * could reach it: `computeChallengeProgress` (src/store/db.ts) counts from
+ * `greatest(joined_at, starts_at)` exactly as `challenge_standings()` does on
+ * the server, and without this value the client fell back to the challenge's own
+ * start. «Sənin irəliləyişin» then credited the person for every session logged
+ * before they entered and read «9 / 12 məşq» directly above their own row in
+ * SIRALAMA, which said «0 məşq».
+ *
+ * `null` means «I am not in this challenge» and nothing else — a failed read
+ * THROWS, because silently answering null would hand the caller the same wide
+ * window this exists to close.
+ */
+export async function myChallengeJoinedAt(challengeId: string): Promise<string | null> {
+  const me = await getMyProfile();
+  if (!me?.id) return null;
+  const { data, error } = await supabase
+    .from('challenge_members').select('joined_at')
+    .eq('challenge_id', challengeId).eq('profile_id', me.id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as { joined_at: string | null } | null)?.joined_at ?? null;
+}
+
 // -------------------------------------------------------------------- saves
 /**
  * Saving a video. Until schema45 this lived only in `useAppStore.savedVideos`,

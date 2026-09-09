@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Gym, Partner, toLevel } from '@/data/types';
+import { Gym, GymScheduleItem, Partner, toLevel } from '@/data/types';
 import { supabase } from './supabase';
 import { invalidateFocusCache, invalidateFocusPrefix } from './focusFetch';
 import { cacheGyms } from './gymCache';
@@ -22,6 +22,9 @@ export interface DbGym {
   tags: string[] | null;
   about: string | null;
   image_url: string | null;
+  /** The owner-written class timetable (schema7). `jsonb`, so the shape is a
+   *  convention and not a guarantee — `gymSchedule` below validates it. */
+  schedule?: unknown;
 }
 
 /** Every profile column the app is allowed to read.
@@ -51,6 +54,10 @@ export interface DbProfile {
   role?: string | null;
   specialty?: string | null;
   price_from?: number | null;
+  /** Public avatar URL. `PROFILE_COLS` has always selected it; the field was
+   *  simply never declared, so every reader had to cast the row to reach it
+   *  (`src/lib/images.ts` still carries the note about that). */
+  avatar_url?: string | null;
   /** Moderation state. Written ONLY by an admin — schema18 revoked the client's
    *  update grant on these two columns, so a sanctioned person can no longer
    *  clear their own ban. */
@@ -260,6 +267,29 @@ export async function updateMyProfile(patch: Partial<DbProfile>): Promise<string
 }
 
 // -------------------- gyms --------------------
+/**
+ * The gym's class timetable, validated on the way in.
+ *
+ * `/gym/classes` has been writing `gyms.schedule` since schema7 and nothing ever
+ * read it back, so an owner who filled in the timetable was the only person who
+ * could see it. It is `jsonb`: the column can hold anything, and an entry with
+ * no time or no name would render as «undefined · undefined», so it is dropped
+ * instead. A missing column or a failed shape is an empty timetable, which the
+ * screens show as «cədvəl yoxdur» — not as a class nobody teaches.
+ */
+function gymSchedule(g: DbGym): GymScheduleItem[] {
+  const raw = g.schedule;
+  if (!Array.isArray(raw)) return [];
+  const rows: GymScheduleItem[] = [];
+  for (const r of raw as unknown[]) {
+    if (!r || typeof r !== 'object') continue;
+    const { time, name, trainer } = r as { time?: unknown; name?: unknown; trainer?: unknown };
+    if (typeof time !== 'string' || !time.trim() || typeof name !== 'string' || !name.trim()) continue;
+    rows.push({ time, name, trainer: typeof trainer === 'string' ? trainer : '' });
+  }
+  return rows;
+}
+
 function mapGym(g: DbGym, distanceKm = 0, liveCount = 0): Gym {
   return {
     id: g.id,
@@ -282,6 +312,7 @@ function mapGym(g: DbGym, distanceKm = 0, liveCount = 0): Gym {
     photos: (g as unknown as { photos?: string[] }).photos ?? [],
     lat: (g as unknown as { lat?: number }).lat ?? null,
     lng: (g as unknown as { lng?: number }).lng ?? null,
+    schedule: gymSchedule(g),
   };
 }
 
@@ -1234,7 +1265,18 @@ export async function getMyPartnerCount(): Promise<number> {
   return others.size;
 }
 
-/** The current user's latest PR per lift. */
+/**
+ * The current user's BEST PR per lift.
+ *
+ * It used to keep the FIRST row it saw per lift over a `created_at desc` order —
+ * i.e. the latest one, not the heaviest. So a 100 kq bench followed by a lighter
+ * 80 kq entry came back as 80: the profile announced a personal record the
+ * person had already beaten, while the 100 sat unreachable in `public.prs` with
+ * nothing in the app able to show it again.
+ *
+ * The order stays newest-first, so on a tie the most recent row wins and the
+ * `delta` shown belongs to the row whose value is being displayed.
+ */
 export async function getMyPRs(): Promise<MyPR[]> {
   const me = await getMyProfile();
   if (!me) return [];
@@ -1244,11 +1286,16 @@ export async function getMyPRs(): Promise<MyPR[]> {
     .eq('profile_id', me.id)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  const latest = new Map<string, MyPR>();
-  for (const r of (data ?? []) as { lift: string; value: number; delta: string | null }[]) {
-    if (!latest.has(r.lift)) latest.set(r.lift, { lift: r.lift, value: Number(r.value), delta: r.delta });
+  const best = new Map<string, MyPR>();
+  for (const r of (data ?? []) as { lift: string; value: number | null; delta: string | null }[]) {
+    const value = Number(r.value);
+    // A null or garbled value is not a record. `Number(null)` is 0, and a «0 kq»
+    // personal record is a measurement nobody made.
+    if (!Number.isFinite(value)) continue;
+    const kept = best.get(r.lift);
+    if (!kept || value > kept.value) best.set(r.lift, { lift: r.lift, value, delta: r.delta });
   }
-  return [...latest.values()];
+  return [...best.values()];
 }
 
 // -------------------- account deletion --------------------

@@ -5,6 +5,8 @@ import { toast } from '@/store/ui';
 import { gymById } from '@/store/db';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { USERNAME_TAKEN_MSG } from '@/lib/api';
+import { errorFeedback } from '@/lib/feedback';
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
@@ -32,11 +34,34 @@ export default function Done() {
 
     // Tell the truth about where the profile ended up — never claim a save that didn't happen.
     if (result === 'failed') {
-      toast('Profil yadda saxlanılmadı. İnternet bağlantını yoxla və yenidən cəhd et.', 'error');
+      /* One message used to cover every failure — «İnternet bağlantını yoxla» —
+         including the one failure the store can name. Two people called Aysel get
+         the same suggested handle; the step-5 check passed while it was still free
+         (or could not run at all and said so), and Postgres then refused the
+         duplicate here. The person was told to check a connection that was working,
+         on a screen with no handle field, so pressing the button again could never
+         succeed. Send them back to the step that owns the field, with the handle
+         already marked as taken. */
+      if (useAppStore.getState().lastSaveError === 'username-taken') {
+        errorFeedback();
+        toast(`${USERNAME_TAKEN_MSG} — başqa istifadəçi adı seç`, 'error');
+        router.replace({
+          pathname: '/onboarding/profile',
+          params: { taken: profile.username ?? '' },
+        });
+        return;
+      }
+      // Not a connection problem either: 'failed' now means the server answered
+      // and refused (saveProfile returns 'local' when nothing could be sent).
+      toast('Server profili qəbul etmədi. Bir az sonra yenidən cəhd et.', 'error');
       return; // stay here so the user can retry
     }
     if (result === 'local') {
-      toast('Profil hələlik yalnız bu cihazda saxlanıldı.', 'info');
+      /* This is also the offline first launch now. It used to be reported as
+         'failed', which left the person stuck on this screen retrying a save that
+         could not work — bootstrap() sends the profile up on the next launch that
+         has a session, so say exactly that instead of blocking them here. */
+      toast('Profil hələlik yalnız bu cihazda saxlanıldı — internet olanda göndəriləcək.', 'info');
     }
     complete();
     router.replace('/(tabs)/discover');
@@ -56,7 +81,15 @@ export default function Done() {
         </AppText>
 
         <View style={styles.recap}>
-          <RecapRow icon="pin" label="Zal" value={homeGym ? homeGym.name : 'Evdə məşq'} />
+          {/* «Evdə məşq» is only true when step 4's «zalım yoxdur» was chosen, which
+              is what a null homeGymId means. A gym id we cannot resolve — the
+              catalogue read failed, or it has not been fetched on this launch — is
+              a missing NAME, not a person who trains at home. */}
+          <RecapRow
+            icon="pin"
+            label="Zal"
+            value={homeGym ? homeGym.name : profile.homeGymId ? 'Ad yüklənmədi' : 'Evdə məşq'}
+          />
           <View style={styles.sep} />
           <RecapRow icon="target" label="Məqsəd" value={profile.goals[0] ?? 'Seçilməyib'} />
           <View style={styles.sep} />
@@ -86,7 +119,9 @@ function RecapRow({ icon, label, value }: { icon: 'pin' | 'target' | 'flame'; la
       <AppText variant="body" color={palette.textSecondary} style={{ flex: 1 }}>
         {label}
       </AppText>
-      <AppText variant="headline">{value}</AppText>
+      <AppText variant="headline" style={{ flexShrink: 1 }}>
+        {value}
+      </AppText>
     </View>
   );
 }

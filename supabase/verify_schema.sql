@@ -580,7 +580,14 @@ expected_rpcs(f, why) as (values
   ('challenge_standings',      'schema60 — src/lib/hooks.ts challengeStandings; the ranking, counted from real workout rows'),
   ('push_text',                'schema61 — the Azerbaijani title/body per notification type. Never carries content.'),
   ('push_send',                'schema61 — pg_net POST to Expo; called only by notify()'),
-  ('notify',                   'schema35/49/61 — the single funnel: block check, per-type preference, row, push')
+  ('notify',                   'schema35/49/61 — the single funnel: block check, per-type preference, row, push'),
+  ('admin_set_profile_status', 'schema64 — the ONLY way an account is muted/suspended/banned/restored; the three columns stay ungranted so a banned user cannot lift their own ban'),
+  ('admin_set_content_hidden', 'schema64 — content takedown for programs/feed_videos/community_posts, audited; programs has an owner UPDATE policy so a column grant is not available'),
+  ('admin_match_stats',        'schema65 — web/admin Analytics; counts only, never rows: a match request carries a note one member wrote to another'),
+  ('send_match_request',       'schema67 — src/lib/api.ts sendMatchRequest; one row per pair, re-send moves it back to pending'),
+  ('register_push_token',      'schema67 — src/lib/push.ts registerPush; moves a token to the phone''s current owner, which push_tokens_own refuses to do from the client'),
+  ('require_admin_at_least',   'schema68 — the role-aware gate; require_admin() alone is is_admin() with no minimum'),
+  ('admin_verification_note',  'schema68/70 — reads trainer_verifications.internal_note, which has no column grant because the applicant can read their own row')
 ),
 
 expected_triggers(trg, tbl, why) as (values
@@ -615,6 +622,7 @@ expected_policies(tbl, pol, why) as (values
   -- and the price come from create_day_pass rather than from the visitor''s phone.
   ('day_passes','dp_owner_read',                'schema9 — the gym reads its own passes; check_day_pass depends on it being owner-scoped'),
   ('push_tokens','push_tokens_own',             'schema61 — a device address is readable only by the person it belongs to'),
+  ('programs','programs_delete',                'schema68 — without it a programme could be created and never withdrawn, which is why the trainer panel kept its programmes on the device'),
   ('day_passes','dp_user_read',                 'schema4:244'),
   ('reports','reports_insert',                  'schema4:207 — createReport, the one failure users actually see'),
   ('trainer_verifications','tv_insert',         'schema4:226 — verify.tsx:177'),

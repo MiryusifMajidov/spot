@@ -14,7 +14,7 @@ import { Meal } from '@/data/nutrition';
 import { useAuthGate } from '@/lib/authGate';
 import { useMeals } from '@/lib/hooks';
 import { useAppStore } from '@/store/appStore';
-import { useDb, useLatestWeight, useNutritionToday } from '@/store/db';
+import { dayKey, useDb, useLatestWeight, useNutritionToday } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 
@@ -75,39 +75,61 @@ export interface CustomFood {
   fat: number;
 }
 const CUSTOM_KEY = 'spot-nutrition-custom';
-function gymDayKey(): string {
-  const d = new Date();
-  d.setHours(d.getHours() - 4);
-  return d.toISOString().slice(0, 10);
-}
+
+/* The gym day comes from `dayKey` (src/store/db.ts) — the one function the
+   engine, the streak and schema19's `gym_day` column all agree on.
+   This file used to carry its own copy that subtracted 4 local hours and then
+   read the UTC date, which puts the boundary at 08:00 Baku instead of 04:00. So
+   between 04:00 and 08:00 the plan had already rolled over (`useNutritionToday`
+   clears the ticked meals and the water on `db.dayKey`) while the custom list
+   had not: opening Qida at 06:00 restored yesterday's «Şam — 700 kkal» and the
+   ring read «700 / 2100 kkal» before anything had been eaten. */
 
 // One tiny module-level store so every screen that reads today's food sees the
 // same list the moment it changes (the engine has no custom-food slot yet).
 let customItems: CustomFood[] = [];
+/** The gym day `customItems` belongs to. '' until the first read. */
+let customDay = '';
 let customLoaded = false;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
+
+/** Yesterday's entries are not today's. Checked on every read, because
+ *  `ensureCustomLoaded` runs ONCE per process: an app left open overnight kept
+ *  serving the previous day's food into today's total for as long as it lived. */
+function dropStaleDay(): boolean {
+  const today = dayKey(new Date());
+  if (customDay === today) return false;
+  customDay = today;
+  if (!customItems.length) return false;
+  customItems = [];
+  AsyncStorage.setItem(CUSTOM_KEY, JSON.stringify({ day: today, items: [] })).catch(() => {});
+  return true;
+}
 
 function ensureCustomLoaded() {
   if (customLoaded) return;
   customLoaded = true;
   AsyncStorage.getItem(CUSTOM_KEY)
     .then((raw) => {
+      const today = dayKey(new Date());
       try {
         const parsed = raw ? JSON.parse(raw) : null;
-        customItems = parsed && parsed.day === gymDayKey() ? (parsed.items as CustomFood[]) : [];
+        customItems = parsed && parsed.day === today ? (parsed.items as CustomFood[]) : [];
       } catch {
         customItems = [];
       }
+      customDay = today;
       emit();
     })
     .catch(() => {});
 }
 
 function writeCustom(next: CustomFood[]) {
+  customDay = dayKey(new Date());
   customItems = next;
   emit();
-  AsyncStorage.setItem(CUSTOM_KEY, JSON.stringify({ day: gymDayKey(), items: next })).catch(() => {});
+  AsyncStorage.setItem(CUSTOM_KEY, JSON.stringify({ day: customDay, items: next })).catch(() => {});
 }
 
 export function useCustomFoods() {
@@ -119,7 +141,12 @@ export function useCustomFoods() {
     () => customItems,
     () => customItems
   );
-  useEffect(ensureCustomLoaded, []);
+  // No dependency array on purpose: this is the day check, and it has to happen
+  // on every read rather than once when the screen first mounted.
+  useEffect(() => {
+    ensureCustomLoaded();
+    if (dropStaleDay()) emit();
+  });
 
   const add = useCallback((f: Omit<CustomFood, 'id'>) => writeCustom([...customItems, { ...f, id: `f-${Date.now()}` }]), []);
   const remove = useCallback((id: string) => writeCustom(customItems.filter((i) => i.id !== id)), []);

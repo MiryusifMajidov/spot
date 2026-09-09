@@ -4,6 +4,7 @@ import { useAuth } from './lib/auth';
 import { supabase } from './lib/supabase';
 import type { DashboardKpis } from './lib/types';
 import { Shell, type ScreenId } from './ui/Shell';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 import { Icon } from './ui/icons';
 
 import { Login } from './screens/Login';
@@ -84,7 +85,10 @@ export default function App() {
 
   return (
     <Shell screen={screen} onNav={setScreen} counts={counts} search={search} onSearch={setSearch}>
-      {view}
+      {/* Keyed on the screen: one broken screen must not take the moderation and
+          verification queues down with it, and leaving the screen must clear the
+          error rather than stranding the admin on it. */}
+      <ErrorBoundary key={screen}>{view}</ErrorBoundary>
     </Shell>
   );
 }

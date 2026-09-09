@@ -44,13 +44,31 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [failed, setFailed] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
-  const [sendReason, setSendReason] = useState(true);
 
   async function load() {
     setLoading(true);
+    /* try/catch/finally: a throw in the lookup mapping below used to skip
+       `setLoading(false)` and leave the verification queue behind a permanent
+       spinner with no error anywhere on screen. */
+    try {
+      await loadInner();
+    } catch {
+      setFailed(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadInner() {
     const [pv, rv, vt] = await Promise.all([
-      supabase.from('trainer_verifications').select('*').eq('status', 'pending').order('sla_due_at'),
-      supabase.from('trainer_verifications').select('*').eq('status', 'rejected').order('created_at', { ascending: false }),
+      /* Named columns, not `*`. schema70 took `internal_note` out of the
+         column grant — it is the moderator's working note and
+         `tv_admin_read` lets the applicant read their own row, so granting
+         it meant the trainer read every word. A `select('*')` that touches
+         an ungranted column is refused outright, which would have emptied
+         the whole verification queue. The note is fetched per row below. */
+      supabase.from('trainer_verifications').select('id,trainer_id,user_id,status,doc_id_url,doc_cert_url,gym_confirm,intro_video_url,reject_reason,sla_due_at,created_at').eq('status', 'pending').order('sla_due_at'),
+      supabase.from('trainer_verifications').select('id,trainer_id,user_id,status,doc_id_url,doc_cert_url,gym_confirm,intro_video_url,reject_reason,sla_due_at,created_at').eq('status', 'rejected').order('created_at', { ascending: false }),
       supabase.from('trainers').select('*').eq('verified', true).order('name'),
     ]);
     /* PostgREST resolves on failure, so reading `data` alone made a refused or
@@ -87,7 +105,6 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
     setGymMap(gmap);
 
     setSelId((prev) => (prev && pendingRows.some((v) => v.id === prev) ? prev : pendingRows[0]?.id ?? null));
-    setLoading(false);
   }
 
   useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
@@ -113,7 +130,25 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
   const selected = pending.find((v) => v.id === selId) ?? null;
   const selTrainer = selected?.trainer_id ? trainerMap[selected.trainer_id] : undefined;
 
-  useEffect(() => { setNote(selected?.internal_note ?? ''); }, [selId, selected?.internal_note]);
+  /* The note comes from an admin-gated RPC, one row at a time, because the
+     column is no longer readable through the table (schema70). `null` while it
+     loads, so the textarea does not briefly show the previous row's note. */
+  const [noteLoading, setNoteLoading] = useState(false);
+  const [noteFailed, setNoteFailed] = useState(false);
+  useEffect(() => {
+    if (!selId) { setNote(''); setNoteFailed(false); return; }
+    let alive = true;
+    setNoteLoading(true);
+    setNoteFailed(false);
+    void (async () => {
+      const { data, error } = await supabase.rpc('admin_verification_note', { p_verification: selId });
+      if (!alive) return;
+      setNoteLoading(false);
+      if (error) { setNoteFailed(true); setNote(''); return; }
+      setNote((data as string | null) ?? '');
+    })();
+    return () => { alive = false; };
+  }, [selId]);
 
   // ---- actions (ops+ only) --------------------------------------------------
   /* All three go through SECURITY DEFINER RPCs (schema50/56).
@@ -136,7 +171,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
     setSavingNote(false);
     if (error) { toast(`Qeyd saxlanmadı: ${error.message}`); return; }
     toast('Qeyd saxlanıldı');
-    setPending((rows) => rows.map((r) => (r.id === selected.id ? { ...r, internal_note: note || null } : r)));
+    // The row no longer carries the note, so there is nothing to patch back in.
   }
 
   async function approve() {
@@ -274,9 +309,11 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
               note={note}
               setNote={setNote}
               savingNote={savingNote}
+              noteLoading={noteLoading}
+              noteFailed={noteFailed}
               onSaveNote={saveNote}
               onApprove={approve}
-              onReject={() => { setRejectReason(''); setSendReason(true); setRejectOpen(true); }}
+              onReject={() => { setRejectReason(''); setRejectOpen(true); }}
             />
           ) : (
             <div className="card" style={{ padding: 0 }}><div className="empty">Müraciət seçilməyib</div></div>
@@ -286,7 +323,13 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
 
       {!loading && tab === 'active' ? (
         <table className="tbl">
-          <thead><tr><th>Müəllim</th><th>İxtisas</th><th>Zal</th><th>Müştəri</th><th>Reytinq</th><th>Status</th></tr></thead>
+          {/* No «Reytinq» column. `reviews` has a `gym_id` and no `trainer_id` at
+              all, so nothing on SPOT can rate a coach; `trainers.rating` is
+              `numeric default 0` that schema27 pinned to 0 and made unwritable.
+              The old `t.rating != null` guard was therefore always true and this
+              column printed «★ 0» next to every applicant — read as a terrible
+              score rather than as an impossible measurement. */}
+          <thead><tr><th>Müəllim</th><th>İxtisas</th><th>Zal</th><th>Müştəri</th><th>Status</th></tr></thead>
           <tbody>
             {active
               .filter((t) => !q || t.name.toLowerCase().includes(q) || (t.specialty ?? '').toLowerCase().includes(q))
@@ -298,11 +341,10 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
                   <td style={{ color: 'var(--muted2)' }}>{t.specialty ?? '—'}</td>
                   <td style={{ color: 'var(--muted2)' }}>{t.gym_id ? gymMap[t.gym_id] ?? '—' : 'zalsız'}</td>
                   <td>{t.clients ?? 0}</td>
-                  <td>{t.rating != null ? `★ ${t.rating}` : '—'}</td>
                   <td><span className="badge green">Doğrulanmış</span></td>
                 </tr>
               ))}
-            {active.length === 0 ? <tr><td colSpan={6} className="empty">{failed ? 'Siyahı yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Doğrulanmış müəllim yoxdur'}</td></tr> : null}
+            {active.length === 0 ? <tr><td colSpan={5} className="empty">{failed ? 'Siyahı yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Doğrulanmış müəllim yoxdur'}</td></tr> : null}
           </tbody>
         </table>
       ) : null}
@@ -333,15 +375,22 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div style={{ font: '700 17px/1.2 var(--font)', marginBottom: 6 }}>Müraciəti rədd et</div>
             <div style={{ font: '400 13px/1.4 var(--font)', color: 'var(--muted2)', marginBottom: 14 }}>
-              {label(selected).name} · səbəb məcburidir və müəllimə göndərilə bilər.
+              {label(selected).name} · səbəb məcburidir.
             </div>
             <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
               placeholder="Rədd səbəbi (məs. sertifikatı verən təşkilat naməlum)"
               style={{ width: '100%', minHeight: 96, resize: 'vertical', border: '1px solid var(--line)', borderRadius: 10, padding: 12, font: '400 13px/1.5 var(--font)', outline: 'none', background: 'var(--board)' }} />
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer', font: '500 12.5px/1 var(--font)' }}>
-              <input type="checkbox" checked={sendReason} onChange={(e) => setSendReason(e.target.checked)} />
-              Səbəbi müəllimə göndər
-            </label>
+            {/* A «Səbəbi müəllimə göndər» checkbox stood here, ticked by default
+                and read by nothing: `confirmReject` always passed the text as
+                `p_reason`, which lands in `trainer_verifications.reject_reason`,
+                and `tv_admin_read` is `is_admin(auth.uid()) OR auth.uid() =
+                user_id` — the applicant reads their own row either way. Unticking
+                it changed nothing, so the panel offered a privacy choice it could
+                not honour. Say plainly who will read this instead. */}
+            <div style={{ background: 'rgba(255,149,0,.1)', borderRadius: 10, padding: '10px 12px', marginTop: 12, font: '400 12px/1.45 var(--font)', color: 'var(--orange-deep)' }}>
+              Bu səbəbi müəllimin özü oxuyacaq — onun müraciət sətrində saxlanılır. Daxili qeyd kimi
+              istifadə etmə; ona yazdığın kimi yaz.
+            </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
               <button className="btn" onClick={() => setRejectOpen(false)}>Ləğv et</button>
               <button className="btn danger" disabled={busy || !rejectReason.trim()} onClick={confirmReject}>Rədd et</button>
@@ -355,7 +404,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
 
 // ---------------------------------------------------------------------------
 function VerificationDetail({
-  v, trainer, gymName, canDecide, busy, note, setNote, savingNote, onSaveNote, onApprove, onReject,
+  v, trainer, gymName, canDecide, busy, note, setNote, savingNote, noteLoading, noteFailed, onSaveNote, onApprove, onReject,
 }: {
   v: TrainerVerification;
   trainer: Trainer | undefined;
@@ -365,6 +414,8 @@ function VerificationDetail({
   note: string;
   setNote: (s: string) => void;
   savingNote: boolean;
+  noteLoading: boolean;
+  noteFailed: boolean;
   onSaveNote: () => void;
   onApprove: () => void;
   onReject: () => void;
@@ -485,7 +536,11 @@ function VerificationDetail({
             <Row k="İxtisas" val={trainer?.specialty ?? '—'} />
             <Row k="Zal" val={gymName ?? 'zalsız'} />
             <Row k="Qiymət" val={trainer?.price_from != null ? `${trainer.price_from} ₼-dən` : '—'} />
-            <Row k="Reytinq" val={trainer?.rating != null ? `★ ${trainer.rating}` : '—'} />
+            {/* «★ 0», printed here for every applicant, was not a low score:
+                SPOT has no way to rate a trainer at all — `reviews` carries only
+                `gym_id`. The app says «Yeni müəllim — hələ reytinqi yoxdur» and
+                this panel now says the same thing. */}
+            <Row k="Reytinq" val={<span style={{ color: 'var(--muted)' }}>müəllim reytinqi hələ yoxdur</span>} />
           </div>
           {/* A displayed rate is informational only — SPOT processes no money. */}
           <div style={{ font: '400 11.5px/1.5 var(--font)', color: 'var(--muted)', marginTop: 12 }}>
@@ -494,12 +549,24 @@ function VerificationDetail({
           </div>
         </div>
         <div className="card" style={{ padding: 18 }}>
-          <div style={{ font: '600 13px/1 var(--font)', marginBottom: 12 }}>Qərar üçün qeyd · daxili</div>
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} disabled={!canDecide}
-            placeholder="Daxili qeyd — audit log-a düşür"
+          {/* It IS internal now. `internal_note` used to be SELECT-granted to
+              `authenticated` while `tv_admin_read` lets the applicant read their
+              own verification row, so the trainer being judged read every word —
+              under a field the panel called «daxili». schema70 took the column
+              out of the grant; it is read here through an admin-gated RPC. */}
+          <div style={{ font: '600 13px/1 var(--font)', marginBottom: 12 }}>Qərar üçün daxili qeyd</div>
+          {noteFailed ? (
+            <div style={{ font: '400 12px/1.4 var(--font)', color: 'var(--orange-deep)', marginBottom: 8 }}>
+              Mövcud qeyd oxunmadı — burada yazsan, əvvəlki qeydin üzərinə yazılacaq.
+            </div>
+          ) : null}
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} disabled={!canDecide || noteLoading}
+            placeholder={noteLoading ? 'Qeyd yüklənir…' : 'Qeyd — yalnız moderatorlar görür, audit log-a düşür'}
             style={{ width: '100%', minHeight: 76, resize: 'vertical', border: 'none', borderRadius: 10, padding: 12, background: 'var(--board)', font: '400 13px/1.5 var(--font)', color: 'var(--text3)', outline: 'none' }} />
           <div style={{ display: 'flex', alignItems: 'center', marginTop: 12 }}>
-            <div style={{ font: '400 11.5px/1 var(--font)', color: 'var(--muted)' }}>Qeyd audit log-a düşür</div>
+            <div style={{ font: '400 11.5px/1.4 var(--font)', color: 'var(--muted)', maxWidth: 220 }}>
+              Yalnız moderatorlar görür (schema70). Audit log-a düşür.
+            </div>
             <button className="btn" disabled={!canDecide || savingNote} onClick={onSaveNote}
               style={{ marginLeft: 'auto', padding: '7px 13px', font: '600 12px/1 var(--font)', ...(!canDecide ? { opacity: .45, cursor: 'not-allowed' } : {}) }}>
               {savingNote ? 'Saxlanır…' : 'Qeydi saxla'}

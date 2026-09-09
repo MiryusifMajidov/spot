@@ -89,9 +89,17 @@ export default function GymClasses() {
             <Icon name="plus" size={20} color={palette.inkText} />
           </PressableScale>
         </View>
+        {/* This used to say the schedule «zal profilinə yazılır» — the gym profile.
+            It does not: `gyms.schedule` is written and saved, but nothing on the
+            customer side reads it (the `Gym` type has no schedule field, `mapGym`
+            does not select it, and the Kəşf gym page has no such section). Owners
+            typed out a whole week on that promise and then found no timetable
+            anywhere on their own gym's page. Until the customer-side section
+            exists, the screen states what is actually true today. */}
         <AppText variant="body" color={palette.textSecondary} style={{ marginBottom: 16, lineHeight: 21 }}>
-          Zalının dərs cədvəlini özün yazırsan və zal profilinə yazılır. Bu versiyada üzvlər tətbiq daxilində dərsə
-          yazıla bilmir — yer sayı və növbə göstərmirik, çünki belə bir sistem yoxdur.
+          Zalının dərs cədvəlini özün yazırsan və saxlanılır, amma hazırda yalnız bu paneldə görünür — müştərinin
+          gördüyü zal səhifəsində cədvəl bölməsi hələ yoxdur. Üzvlər tətbiq daxilində dərsə də yazıla bilmir: yer
+          sayı və növbə göstərmirik, çünki belə bir sistem yoxdur.
         </AppText>
 
         {!items.length ? (

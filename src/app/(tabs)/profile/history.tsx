@@ -69,10 +69,15 @@ export default function History() {
     };
   }, [workouts, year, month]);
 
-  const sessions = useMemo(
-    () => [...workouts].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 20),
-    [workouts]
-  );
+  /* The list was `slice(0, 20)` with nothing else: no counter, no «daha çox», no
+     word that it had been cut. Somebody whose profile card says «140 məşq» taps
+     it, lands here, and 120 of their own recorded sessions are unreachable from
+     the screen whose whole job is to show them. The window grows on demand and
+     the footer says how much of the history is on screen. */
+  const PAGE = 20;
+  const [shown, setShown] = useState(PAGE);
+  const sorted = useMemo(() => [...workouts].sort((a, b) => b.at.localeCompare(a.at)), [workouts]);
+  const sessions = useMemo(() => sorted.slice(0, shown), [sorted, shown]);
 
   return (
     <Screen edges={['top']}>
@@ -155,6 +160,18 @@ export default function History() {
                 </View>
               );
             })}
+            {sorted.length > sessions.length ? (
+              <PressableScale activeScale={0.98} onPress={() => setShown((n) => n + PAGE)} style={styles.more}>
+                <AppText style={{ fontSize: 14, fontWeight: '600' }}>Daha çox göstər</AppText>
+                <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
+                  {sessions.length} / {sorted.length} məşq göstərilir
+                </AppText>
+              </PressableScale>
+            ) : sorted.length > PAGE ? (
+              <AppText style={{ fontSize: 12, color: palette.tertiary, textAlign: 'center', paddingVertical: 10 }}>
+                Hamısı göstərilir · {sorted.length} məşq
+              </AppText>
+            ) : null}
           </View>
         )}
       </ScrollView>
@@ -184,4 +201,5 @@ const styles = StyleSheet.create({
   sessionIcon: { width: 40, height: 40, borderRadius: 11, backgroundColor: '#F0F0F3', alignItems: 'center', justifyContent: 'center' },
   tag: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7, backgroundColor: palette.grouped },
   empty: { alignItems: 'center', paddingVertical: 40 },
+  more: { backgroundColor: palette.white, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
 });

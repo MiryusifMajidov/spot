@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
@@ -21,7 +21,13 @@ export default function ProfileStep() {
   const [nameTouched, setNameTouched] = useState(false);
   const [ageTouched, setAgeTouched] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [taken, setTaken] = useState<string | null>(null); // handle we know is somebody else's
+  /* Handle we know is somebody else's. It can arrive as a param: the LAST step
+     («SPOT-a başla») is where Postgres rejects a duplicate handle, and that screen
+     has no field to correct — so it sends the person back here with the offending
+     name, instead of asking them to retry a save that can never succeed. */
+  const params = useLocalSearchParams<{ taken?: string }>();
+  const rejectedHandle = typeof params.taken === 'string' ? params.taken.trim().toLowerCase() : '';
+  const [taken, setTaken] = useState<string | null>(rejectedHandle || null);
 
   const handle = profile.username ?? '';
   const nameErr = displayNameError(profile.name);
@@ -118,6 +124,9 @@ export default function ProfileStep() {
           placeholderTextColor={palette.caption}
           autoCapitalize="none"
           autoCorrect={false}
+          // Sent back here because the server refused this exact handle: put the
+          // cursor in the one field that has to change.
+          autoFocus={!!rejectedHandle}
           maxLength={20}
           style={styles.handleInput}
         />

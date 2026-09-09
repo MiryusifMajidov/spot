@@ -6,7 +6,7 @@ import { Icon, IconName } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
-import { exerciseLibrary, gymById, useAllPrograms, useDb, useLatestWeight, useStats, useWeekStats } from '@/store/db';
+import { exerciseLibrary, exercisesWithVideo, gymById, useAllPrograms, useDb, useLatestWeight, useStats, useWeekStats } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { getMyAssignedProgram, type AssignedProgram } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
@@ -35,6 +35,10 @@ export default function WorkoutToday() {
   const week = useWeekStats();
   const weight = useLatestWeight();
   const nutrition = useNutritionSummary();
+  /* Read on every render, not memoised: the footage map is filled from the
+     server after bootstrap (`loadExerciseVideos`), so a cached 0 would keep
+     saying «no video» on the day the first clip lands. */
+  const videoCount = exercisesWithVideo();
   // Never substitute a catalogue gym for one the user has not chosen.
   const homeGymId = useAppStore((s) => s.profile.homeGymId);
   const homeGym = homeGymId ? gymById(homeGymId) : undefined;
@@ -234,7 +238,10 @@ export default function WorkoutToday() {
 
         {/* Quick tiles */}
         <View style={styles.tiles}>
-          <QuickTile icon="qr" title="Check-in" sub={homeGym?.name ?? 'Zal seç'} onPress={() => router.push('/(tabs)/workout/checkin')} />
+          {/* A pin, not a QR glyph: check-in is GPS — the app has no scanner, and the
+              QR icon sent people looking for one. Same reason the achievements badge
+              icon changed. */}
+          <QuickTile icon="pin" title="Check-in" sub={homeGym?.name ?? 'Zal seç'} onPress={() => router.push('/(tabs)/workout/checkin')} />
           <QuickTile
             icon="meal"
             title="Qida"
@@ -300,7 +307,15 @@ export default function WorkoutToday() {
           <PressableScale activeScale={0.97} onPress={() => router.push('/(tabs)/workout/exercises')} style={styles.tool}>
             <Icon name="grid" size={20} color={palette.inkText} />
             <AppText style={{ fontSize: 13.5, fontWeight: '600', marginTop: 9 }}>Hərəkət kitabxanası</AppText>
-            <AppText style={{ fontSize: 11.5, color: palette.caption, marginTop: 3 }}>{exerciseLibrary.length} hərəkət · video</AppText>
+            {/* «· video» was hardcoded here while not one of the 18 movements has
+                any footage: every library entry ships with an empty `videoUrl`
+                and the server's `exercises` rows carry no `video_url` either. The
+                tile promised technique clips and the exercise screen then
+                honestly showed none. The count comes from the data now, so the
+                word appears only when a real clip is behind it. */}
+            <AppText style={{ fontSize: 11.5, color: palette.caption, marginTop: 3 }}>
+              {videoCount > 0 ? `${exerciseLibrary.length} hərəkət · ${videoCount} video` : `${exerciseLibrary.length} hərəkət`}
+            </AppText>
           </PressableScale>
           <PressableScale activeScale={0.97} onPress={() => router.push('/(tabs)/workout/home')} style={styles.tool}>
             <Icon name="dumbbell" size={20} color={palette.inkText} />

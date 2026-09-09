@@ -103,7 +103,11 @@ export default function Chats() {
         id,
         name,
         kind,
-        last: last ? (last.kind === 'invite' ? `📅 ${last.invite?.when ?? 'Məşq təklifi'}` : last.text) : 'Söhbətə başla',
+        // The preview is the message. It used to special-case `kind === 'invite'`
+        // into «📅 <vaxt>», which outlived the invite cards themselves — the branch
+        // could only ever fire on a leftover row in an upgraded install's storage,
+        // and it dressed a message nobody received up as a scheduled meeting.
+        last: last ? last.text : 'Söhbətə başla',
         at: last?.at ?? '',
         time: last ? timeAgoAz(last.at) : '',
         // Unread = they wrote after I last opened the thread — not "they wrote last".

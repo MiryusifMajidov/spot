@@ -231,7 +231,15 @@ export default function ProgramDetail() {
             <Tag label={`${p.minutes} dəq`} />
             <Tag label={p.level} />
             <Tag label={p.goal} />
-            {p.hasMealPlan ? <Tag label="Qida planı daxil" /> : null}
+            {/* No «Qida planı daxil» tag. Nothing in SPOT attaches meals to a
+                program: `useMeals()` returns ONE global list, and the Qida screen
+                labels it «Nümunə yeməklər — Hamı üçün eyni nümunə gün» while
+                saying outright that it knows nothing about this person's weight,
+                goal or calorie target. There is no route from a program to any
+                meal content at all, so the badge sent whoever picked
+                «8 həftəlik arıqlama» for its promised plan looking for something
+                that was never there. It comes back when a program can really
+                carry meals. */}
           </View>
 
           {p.rating > 0 || p.doneBy > 0 ? (

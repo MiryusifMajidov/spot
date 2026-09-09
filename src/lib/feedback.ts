@@ -23,6 +23,24 @@ const SOURCES = {
 
 const players: Partial<Record<Tone, AudioPlayer>> = {};
 
+/**
+ * Swallow the rejection of a promise nobody awaits.
+ *
+ * The try/catch blocks below could not do this. `Haptics.notificationAsync`,
+ * `impactAsync`, `selectionAsync` and `AudioPlayer.seekTo` all return promises,
+ * so the very failure the catch documents — no vibrator, audio focus refused, the
+ * native module missing from the build — rejected ASYNCHRONOUSLY and walked
+ * straight past the synchronous handler. Nothing else attached one, and
+ * `tapFeedback()` runs from `PressableScale.onPressIn`, i.e. from every tappable
+ * surface in SPOT: on such a device every single press printed «Possible
+ * Unhandled Promise Rejection», which in development is a LogBox card thrown over
+ * whatever the person was doing. The try/catch stays for the SYNCHRONOUS throw of
+ * a missing module.
+ */
+function ignore(p: unknown): void {
+  if (p && typeof (p as Promise<unknown>).catch === 'function') (p as Promise<unknown>).catch(() => {});
+}
+
 function play(tone: Tone) {
   if (!useAppStore.getState().sounds) return;
   try {
@@ -32,8 +50,8 @@ function play(tone: Tone) {
       p.volume = tone === 'tap' ? 0.35 : 0.5;
       players[tone] = p;
     }
-    p.seekTo(0);
-    p.play();
+    ignore(p.seekTo(0));
+    ignore(p.play());
   } catch {
     /* audio is a nicety — never let it break an interaction */
   }
@@ -42,10 +60,10 @@ function play(tone: Tone) {
 function buzz(style: 'light' | 'medium' | 'success' | 'error') {
   if (!useAppStore.getState().haptics) return;
   try {
-    if (style === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    else if (style === 'error') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    else if (style === 'medium') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    else Haptics.selectionAsync();
+    if (style === 'success') ignore(Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
+    else if (style === 'error') ignore(Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error));
+    else if (style === 'medium') ignore(Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium));
+    else ignore(Haptics.selectionAsync());
   } catch {
     /* no vibrator on this device */
   }

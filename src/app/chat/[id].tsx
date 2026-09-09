@@ -1,8 +1,7 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { tapFeedback } from '@/lib/feedback';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -11,7 +10,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { usePartner, useTrainers } from '@/lib/hooks';
 import { showModerationSheet } from '@/lib/moderation';
-import { gymById, timeAgoAz, useDb } from '@/store/db';
+import { timeAgoAz, useDb } from '@/store/db';
 import {
   ChatError, chatRefusalText, findThread, getMessages, markThreadRead,
   openThread, sendMessage, subscribeToThread, type ChatMessageRow,
@@ -38,8 +37,6 @@ export default function Conversation() {
   const partner = usePartner(trainer ? '' : id);
 
   const match = useDb((s) => s.matches[id]);
-  const acceptInvite = useDb((s) => s.acceptInvite);
-  const localThread = useDb((s) => s.threads[id]);
   const markThreadReadLocal = useDiscoverPrefs((s) => s.markThreadRead);
 
   /* The conversation now lives on the server (schema42). `threadId` is null until
@@ -55,7 +52,6 @@ export default function Conversation() {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const insets = useSafeAreaInsets();
   // Never invent a name: when nobody could be resolved we say so instead of
   // labelling the thread (and the block dialog) with a placeholder.
   const resolvedName = partner?.name ?? trainer?.name ?? (nameParam?.trim() || null);
@@ -125,7 +121,12 @@ export default function Conversation() {
   const lift = useKeyboardLift();
   const composerLift = Platform.OS === 'android' ? lift : 0;
 
-  // db.threads is keyed by an arbitrary id, so partner and trainer threads use one path.
+  /* One path for both partner and trainer threads: `open_thread` keys a thread by
+     the two profile ids and decides for itself whether the pair is allowed to
+     talk, so this screen needs no branch. The comment here used to say the same
+     about `db.threads` being «keyed by an arbitrary id» — a leftover from when
+     sending also wrote a device-local copy. It does not: nothing below touches
+     the store, and after the invite cards went so did the last local writer. */
   const send = async (body: string) => {
     const text = body.trim();
     if (!text || !id || sending) return;
@@ -155,10 +156,19 @@ export default function Conversation() {
     }
   };
 
-  // Server messages are the conversation. The device copy is kept only for the
-  // workout-invite cards, which are still a local construct.
+  /* Server messages are the whole conversation.
+   *
+   * The «MƏŞQ TƏKLİFİ» cards that used to be drawn above them came from the
+   * device-only `useDb.threads` slice, and their «Qəbul et» button called
+   * the store's `acceptInvite` — a local `set(...)` and nothing else. So a person
+   * could «accept» a proposal on the same phone that made it: the card turned
+   * green, announced «Təqvimə əlavə olundu» although SPOT has no calendar
+   * integration on any platform, no row existed on the server, and the other side
+   * was never told. Once they stopped being rendered nothing wrote an invite
+   * either, so the writer and the accept action have both since been deleted from
+   * src/store/db.ts; the only invites left anywhere are inert rows in an upgraded
+   * install's AsyncStorage, which show as the plain text they carry. */
   const messages = serverMsgs;
-  const invites = (localThread ?? []).filter((m) => m.kind === 'invite');
 
   return (
     <Screen edges={['top', 'bottom']}>
@@ -197,7 +207,7 @@ export default function Conversation() {
                 Söhbət yüklənmədi — neçə mesaj olduğunu bilmirik. İnternet qayıdanda yenidən aç.
               </AppText>
             </View>
-          ) : messages.length === 0 && invites.length === 0 ? (
+          ) : messages.length === 0 ? (
             <View style={styles.startNote}>
               <AppText variant="footnote" color={palette.caption} center style={{ lineHeight: 19 }}>
                 {!resolvedName
@@ -213,15 +223,6 @@ export default function Conversation() {
             </View>
           ) : (
             <>
-              {invites.map((m) => (
-                <InviteCard
-                  key={m.id}
-                  when={m.invite?.when ?? ''}
-                  gymName={gymById(m.invite?.gymId ?? '')?.name ?? 'Zal'}
-                  accepted={!!m.invite?.accepted}
-                  onAccept={() => acceptInvite(id, m.id)}
-                />
-              ))}
               {messages.map((m) => (
                 <View key={m.id} style={[styles.bubbleWrap, m.mine ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }]}>
                   <View style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}>
@@ -273,46 +274,10 @@ export default function Conversation() {
   );
 }
 
-function InviteCard({ when, gymName, accepted, onAccept }: { when: string; gymName: string; accepted: boolean; onAccept: () => void }) {
-  return (
-    <View style={[styles.proposal, accepted && styles.proposalDone]}>
-      <View style={styles.proposalHead}>
-        <Icon name="dumbbell" size={16} color={accepted ? palette.voltDeep : palette.inkText} />
-        <AppText variant="overline" color={accepted ? palette.voltDeep : palette.caption}>
-          {accepted ? 'TƏSDİQLƏNDİ' : 'MƏŞQ TƏKLİFİ'}
-        </AppText>
-      </View>
-      <AppText variant="title3" style={{ marginTop: 8 }}>
-        {when}
-      </AppText>
-      <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 4 }}>
-        {gymName} · birlikdə məşq
-      </AppText>
-      {accepted ? (
-        <View style={styles.acceptedRow}>
-          <Icon name="check" size={16} color={palette.voltDeep} />
-          <AppText variant="subhead" color={palette.voltDeep} style={{ fontWeight: '600' }}>
-            Təqvimə əlavə olundu
-          </AppText>
-        </View>
-      ) : (
-        <PressableScale activeScale={0.97} onPress={onAccept} style={styles.acceptBtn}>
-          <AppText style={{ color: palette.inkText, fontWeight: '600', fontSize: 14 }}>Qəbul et</AppText>
-        </PressableScale>
-      )}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 16 },
   privacyNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: palette.white, borderRadius: 12, padding: 11, marginBottom: 12 },
   startNote: { paddingVertical: 24, paddingHorizontal: 20 },
-  proposal: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: palette.separator },
-  proposalDone: { backgroundColor: 'rgba(198,255,61,0.14)', borderColor: 'rgba(198,255,61,0.5)' },
-  proposalHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  acceptBtn: { marginTop: 14, height: 42, borderRadius: 12, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
-  acceptedRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
   bubbleWrap: { marginBottom: 8 },
   bubble: { maxWidth: '82%', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
   mine: { backgroundColor: palette.ink, borderBottomRightRadius: 5 },

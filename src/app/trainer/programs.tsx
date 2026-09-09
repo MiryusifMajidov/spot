@@ -116,9 +116,19 @@ export default function TrainerPrograms() {
       // call to make, not ours to make quietly.
       const losing = existingDays.slice(daysPerWeek).filter((d) => (d.exercises?.length ?? 0) > 0);
 
+      /* WHERE THESE PROGRAMS ACTUALLY LIVE.
+         Nothing in this editor talks to Supabase — `useDb` is AsyncStorage on this
+         phone — yet the toasts said «yaradıldı / yeniləndi / silindi» as if the
+         work had been filed somewhere. A trainer wrote a 4-week program, assigned
+         it to a student, and the student's screen answered «Müəllimin təyin etdiyi
+         bu proqram hələ SPOT-a yüklənməyib»; a reinstall or a new phone destroyed
+         every program with no warning at all. Until the server copy exists (it
+         needs an owner DELETE policy on `public.programs`, which does not exist
+         yet — a mirrored program could never be taken back down), every message
+         here says where the program is. */
       const apply = () => {
         updateProgram(draft.id!, { title: draft.title.trim(), goal, weeks, daysPerWeek, minutes, level, days });
-        toast('Proqram yeniləndi');
+        toast('Proqram yeniləndi — dəyişiklik yalnız bu cihazdadır');
         setDraft(null);
       };
 
@@ -155,7 +165,7 @@ export default function TrainerPrograms() {
         saves: 0,
         days: buildDays(daysPerWeek),
       });
-      toast('Proqram yaradıldı');
+      toast('Proqram yaradıldı — yalnız bu cihazda saxlanılır');
     }
     setDraft(null);
   };
@@ -176,7 +186,7 @@ export default function TrainerPrograms() {
                 style: 'destructive',
                 onPress: () => {
                   deleteProgram(p.id);
-                  toast('Proqram silindi', 'info');
+                  toast('Proqram bu cihazdan silindi', 'info');
                 },
               },
             ]),
@@ -189,7 +199,7 @@ export default function TrainerPrograms() {
     <Screen edges={['top']}>
       <LargeHeader
         title="Proqramlar"
-        subtitle="Yaratdığın proqramlar. Hamısı pulsuzdur."
+        subtitle="Yaratdığın proqramlar. Hamısı pulsuzdur və yalnız bu cihazda saxlanılır."
         right={
           <PressableScale
             activeScale={0.9}
@@ -261,7 +271,9 @@ export default function TrainerPrograms() {
         )}
 
         <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.caption, marginTop: 18 }}>
-          Proqramlar bu cihazda saxlanılır. Şagirdə təyin edəndə proqramın adı və qeydin ona göndərilir — SPOT-da ödəniş yoxdur, bütün proqramlar pulsuzdur.
+          Proqramlar yalnız bu cihazda saxlanılır — serverə yüklənmir, ona görə tətbiqi silsən və ya telefonu
+          dəyişsən qayıtmır. Şagirdə təyin edəndə ona yalnız proqramın adı və qeydin gedir; günləri və hərəkətləri
+          onun telefonunda açılmır, onları özün çatdırmalısan. SPOT-da ödəniş yoxdur, bütün proqramlar pulsuzdur.
         </AppText>
       </ScrollView>
 

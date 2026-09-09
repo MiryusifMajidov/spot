@@ -82,8 +82,10 @@ export default function NotificationSettings() {
             <Icon name="bell" size={18} color={palette.streak} />
             <View style={{ flex: 1 }}>
               <AppText variant="subhead">Telefon bildirişləri bağlıdır</AppText>
+              {/* «Aşağıdaki» put a front-vowel suffix on a back-vowel stem; the
+                  form Azerbaijani takes here is «Aşağıdakı». */}
               <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3, lineHeight: 18 }}>
-                Aşağıdaki ayarlar işləyir, amma telefon SPOT-a bildiriş göstərməyə icazə vermir — mesaj və məşq
+                Aşağıdakı ayarlar işləyir, amma telefon SPOT-a bildiriş göstərməyə icazə vermir — mesaj və məşq
                 təklifi yalnız tətbiqi açanda görünəcək. {perm === 'undetermined' ? 'İcazə vermək üçün toxun.' : 'Telefon ayarlarını açmaq üçün toxun.'}
               </AppText>
             </View>

@@ -10,7 +10,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { getMyProfile } from '@/lib/api';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
-import { addTrainerCert, pickImage, shootImage, signedCertUrl } from '@/lib/images';
+import { addTrainerCert, imageTooLargeMessage, pickImage, shootImage, signedCertUrl } from '@/lib/images';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { actionSheet, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -81,7 +81,15 @@ export default function Verify() {
         if (!me?.user_id) return { row: null, tid: null as string | null, certs: [] as string[], badge: false };
         const { data, error } = await supabase
           .from('trainer_verifications')
-          .select('*')
+          /* Named columns, not `*`. schema70 took `internal_note` out of the
+             column grant — it is the moderator's working note, and
+             `tv_admin_read` lets the applicant read their own row, so a grant
+             meant the trainer being judged read every word about themselves. A
+             `select('*')` that touches an ungranted column is refused outright,
+             which would have made this screen say the request does not exist. */
+          .select(
+            'id,trainer_id,user_id,status,doc_id_url,doc_cert_url,gym_confirm,intro_video_url,reject_reason,sla_due_at,created_at'
+          )
           .eq('user_id', me.user_id)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -171,9 +179,12 @@ export default function Verify() {
       if (!row) toast('Sertifikat yükləndi — yoxlanması üçün doğrulama sorğusu göndər', 'info');
       else if (row.status === 'approved') toast('Sertifikat saxlanıldı — açıq sorğun yoxdur, ona görə növbəyə düşmür', 'info');
       else toast('Sertifikat yükləndi və sorğuna əlavə olundu');
-    } catch {
+    } catch (e) {
       errorFeedback();
-      toast('Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      /* A diploma photographed at full resolution is routinely over the 10 MB
+         `certs` ceiling, and «yenidən cəhd et» kept a trainer re-uploading the
+         same file while their verification sat undocumented. Name the limit. */
+      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
     } finally {
       setCertBusy(false);
     }

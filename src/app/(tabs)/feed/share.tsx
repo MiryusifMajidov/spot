@@ -34,11 +34,7 @@ export default function Share() {
   const MAX_BYTES = 100 * 1024 * 1024;
   const MAX_SECONDS = 60;
 
-  const pick = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: MAX_SECONDS });
-    if (res.canceled || !res.assets[0]) return;
-    const a = res.assets[0];
-
+  const accept = (a: ImagePicker.ImagePickerAsset) => {
     /* Checked from the PICKER's metadata, before the file is opened. The upload
        used to do `fetch(uri).arrayBuffer()` straight away — a 4K clip from the
        phone's camera is 200 MB+ and that call pulls the whole thing into JS
@@ -51,8 +47,11 @@ export default function Share() {
       return;
     }
     if (a.fileSize != null && a.fileSize > MAX_BYTES) {
+      /* One decimal, comma-separated: a 100,4 MB clip rounded to whole MB read as
+         «Video 100 MB-dır — 100 MB-a qədər qəbul olunur», i.e. the app refusing a
+         file that fits. The decimal separator in Azerbaijani is a comma. */
       toast(
-        `Video ${Math.round(a.fileSize / 1048576)} MB-dır — ${Math.round(MAX_BYTES / 1048576)} MB-a qədər qəbul olunur. Telefonun kamera ayarından daha aşağı keyfiyyət seç.`,
+        `Video ${(a.fileSize / 1048576).toFixed(1).replace('.', ',')} MB-dır — ${Math.round(MAX_BYTES / 1048576)} MB-a qədər qəbul olunur. Telefonun kamera ayarından daha aşağı keyfiyyət seç.`,
         'error'
       );
       return;
@@ -60,6 +59,38 @@ export default function Share() {
     setUri(a.uri);
     setMeta({ durationSec: secs, sizeBytes: a.fileSize ?? null });
   };
+
+  const fromLibrary = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: MAX_SECONDS });
+    if (res.canceled || !res.assets[0]) return;
+    accept(res.assets[0]);
+  };
+
+  /* The card says «Video çək və ya seç» and there was no way to çək: this screen
+     only ever opened the gallery. Somebody who finished a set and came here to
+     film it had nothing to pick and nothing to record, so their first video never
+     happened. `videoMaxDuration` does cap the recording itself. */
+  const fromCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      toast('Kamera üçün icazə verilməyib — cihaz Ayarlarından SPOT-a kamera icazəsi ver', 'error');
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: MAX_SECONDS });
+    if (res.canceled || !res.assets[0]) return;
+    accept(res.assets[0]);
+  };
+
+  const pick = () =>
+    actionSheet({
+      title: 'Texnika videosu',
+      message: `Maksimum ${MAX_SECONDS} saniyə.`,
+      actions: [
+        { label: 'Çək', onPress: fromCamera },
+        { label: 'Qalereyadan seç', onPress: fromLibrary },
+        { label: 'Ləğv et', style: 'cancel' as const },
+      ],
+    });
 
   // Real picker over the programs that actually exist (the user's own first, then the
   // catalog) — the video's "Proqrama bax" card must point somewhere that opens.
@@ -149,7 +180,7 @@ export default function Share() {
             {uri ? 'Video seçildi' : 'Video çək və ya seç'}
           </AppText>
           <AppText variant="footnote" color="rgba(255,255,255,0.5)" style={{ marginTop: 4 }}>
-            {uri ? 'Dəyişmək üçün toxun' : 'Qalereyadan seç · maksimum 60 saniyə'}
+            {uri ? 'Dəyişmək üçün toxun' : `Çək və ya qalereyadan seç · maksimum ${MAX_SECONDS} saniyə`}
           </AppText>
         </PressableScale>
 

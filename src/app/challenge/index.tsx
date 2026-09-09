@@ -11,14 +11,29 @@ import { Screen } from '@/components/ui/Screen';
 import { Challenge } from '@/data/challenges';
 import { useChallenges } from '@/lib/hooks';
 import { useAppStore } from '@/store/appStore';
-import { gymById, useChallengeProgress, useDb } from '@/store/db';
+import { dayKey, gymById, useChallengeProgress, useDb } from '@/store/db';
 import { palette, spacing } from '@/theme';
 
-/** A "gym day" runs 04:00 → 04:00, same boundary the engine's streak uses. */
-function dayKey(iso: string): string {
-  const d = new Date(iso);
-  d.setHours(d.getHours() - 4);
-  return d.toISOString().slice(0, 10);
+/* `dayKey` is imported, not re-implemented.
+ *
+ * This file used to carry its own copy that did `d.setHours(d.getHours() - 4)`
+ * and then read the UTC date — which puts the boundary at 08:00 Baku, not 04:00.
+ * The engine's streak (store/db.ts) shifts by (offset − boundary) = 0 and reads
+ * the UTC date, i.e. 04:00. So a 05:30 workout was filed under YESTERDAY by this
+ * strip while the streak badge right beside it counted it as today: the last cell
+ * stayed dark next to a number that said the person had trained. */
+
+/** A positive target is the only kind that can be divided by.
+ *
+ *  `challenges.target` is a nullable int with no CHECK, so a row written by SQL
+ *  rather than through the admin form can carry null. `(progress / null) * 100`
+ *  was interpolated straight into a percentage width: «NaN%» with no progress
+ *  (Yoga drops it, the bar silently vanishes) and Infinity — clamped to a full
+ *  bar — with any progress at all, telling the user a goal with no target was
+ *  already complete. */
+function positiveTarget(t: unknown): number | null {
+  const n = Number(t);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 /** The last 7 gym-days as booleans (oldest → newest) from the user's REAL logs. */
@@ -53,6 +68,7 @@ export default function Challenges() {
   // never read from a seed literal, and never over the calendar month, which used
   // to count September sessions towards an August challenge.
   const activeProgress = useChallengeProgress(a?.unit ?? '', { startsAt: a?.startsAt, endsAt: a?.endsAt });
+  const activeTarget = positiveTarget(a?.target);
   const streakDays = useChallengeProgress('gün') ?? 0;
   const streakLeft = Math.max(0, streakChallenge.target - streakDays);
   const joined = useAppStore((s) => s.joinedChallenges);
@@ -90,22 +106,28 @@ export default function Challenges() {
               ) : null}
             </View>
             <AppText style={styles.activeTitle}>{a.title}</AppText>
-            {activeProgress === null ? (
+            {activeTarget === null ? (
+              /* No target on the row at all — there is no fraction to draw and no
+                 «x / y» to print. Saying so is the only honest option. */
+              <AppText style={{ color: 'rgba(255,255,255,0.62)', fontSize: 12.5, marginTop: 14, lineHeight: 18 }}>
+                Bu challenge-in hədəfi yazılmayıb — irəliləyişini ölçə bilmirik.
+              </AppText>
+            ) : activeProgress === null ? (
               /* The unit is not something SPOT can measure (a «5 dartma» target is
                  not in any workout row). A session count under a pull-up label
                  would be a wrong measurement dressed as a right one. */
               <AppText style={{ color: 'rgba(255,255,255,0.62)', fontSize: 12.5, marginTop: 14, lineHeight: 18 }}>
-                Bu challenge-in hədəfi ({a.target} {a.unit}) qeyd etdiyin məşqlərdən avtomatik ölçülmür — irəliləyişi
-                özün izləyirsən.
+                Bu challenge-in hədəfi ({activeTarget} {a.unit}) qeyd etdiyin məşqlərdən avtomatik ölçülmür —
+                irəliləyişi özün izləyirsən.
               </AppText>
             ) : (
               <>
                 <View style={styles.activeProgress}>
                   <View style={styles.activeTrack}>
-                    <View style={[styles.activeFill, { width: `${Math.min(100, (activeProgress / a.target) * 100)}%` }]} />
+                    <View style={[styles.activeFill, { width: `${Math.min(100, (activeProgress / activeTarget) * 100)}%` }]} />
                   </View>
                   <AppText style={{ color: palette.white, fontSize: 14, fontWeight: '700' }}>
-                    {activeProgress} / {a.target}
+                    {activeProgress} / {activeTarget}
                   </AppText>
                 </View>
                 <AppText style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11.5, marginTop: 10 }}>
@@ -122,8 +144,13 @@ export default function Challenges() {
         ) : (
           <View style={styles.noneCard}>
             <AppText variant="headline">Hazırda gedən challenge yoxdur</AppText>
+            {/* «streak» was English on an Azerbaijani-only screen; the counter is
+                «seriya» everywhere it is named to the user (profile badge,
+                check-in, analitika, nailiyyətlər). The white card below still
+                carries the title «Streak-i qırma», which lives in
+                src/data/challenges.ts and has to be renamed there. */}
             <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 5, lineHeight: 19 }}>
-              Yeni challenge başlayanda burada görünəcək. Aşağıdaki streak isə həmişə sənindir — heç kimdən asılı deyil.
+              Yeni challenge başlayanda burada görünəcək. Aşağıdakı seriya isə həmişə sənindir — heç kimdən asılı deyil.
             </AppText>
           </View>
         )}

@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
 import * as Location from 'expo-location';
-import { useNavigation, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, BackHandler, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { PlaceholderImage } from '@/components/PlaceholderImage';
@@ -15,9 +15,9 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { errorFeedback, successFeedback, tapFeedback } from '@/lib/feedback';
 import { GymGate, updateMyGym, useMyGym } from '@/lib/gymOwner';
-import { addGymPhoto, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
+import { addGymPhoto, imageTooLargeMessage, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
-import { actionSheet, confirm, toast, type UiAction } from '@/store/ui';
+import { actionSheet, confirm, toast, useUi, type UiAction } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
 type Coords = { lat: number; lng: number };
@@ -133,9 +133,12 @@ export default function GymEdit() {
     try {
       setCover(await setGymCover(gymId, uri));
       successFeedback();
-    } catch {
+    } catch (e) {
       errorFeedback();
-      toast('Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      /* The one failure retrying cannot fix: the file is over the bucket ceiling
+         and will be over it again next time. «yenidən cəhd et» made the owner
+         re-pick the same photo; this says the size and the limit instead. */
+      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
     }
     setCoverBusy(false);
   };
@@ -170,9 +173,9 @@ export default function GymEdit() {
     try {
       setPhotos(await addGymPhoto(gymId, uri));
       successFeedback();
-    } catch {
+    } catch (e) {
       errorFeedback();
-      toast('Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
     }
     setPhotoBusy(false);
   };
@@ -236,13 +239,50 @@ export default function GymEdit() {
     setLocating(false);
   };
 
+  // `setDirty(false)` before leaving: this screen is inside a Tabs navigator and
+  // stays mounted, so a form still marked dirty kept blocking the re-seed effect —
+  // coming back showed the abandoned edits as though they had been saved.
+  const discardAndLeave = () => {
+    setDirty(false);
+    router.back();
+  };
+
   const back = () => {
     if (!dirty) return router.back();
     confirm('Dəyişikliklər saxlanılmayıb', 'Saxlamadan çıxmaq istəyirsən?', [
       { label: 'Qal', style: 'cancel' },
-      { label: 'Çıx', style: 'destructive', onPress: () => router.back() },
+      { label: 'Çıx', style: 'destructive', onPress: discardAndLeave },
     ]);
   };
+
+  /* Android's hardware back never ran that guard.
+   *
+   * The tab bar above is hidden precisely so the chevron — which asks — is the
+   * only way out, but the system back button is not a tab: bottom-tabs' default
+   * `backBehavior` ('firstRoute') simply left for the Panel tab and unmounted the
+   * form. An owner who had retyped the monthly price, rewritten «Haqqında» and
+   * toggled three amenities pressed back out of habit and lost every one of them
+   * without being asked anything.
+   *
+   * Registered on FOCUS, so it is added after React Navigation's own handler and
+   * therefore runs before it (BackHandler fires the newest subscription first),
+   * and removed again the moment the editor loses focus. */
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (!dirtyRef.current) return false; // nothing to lose — let the system leave
+        // While a dialog is open UiHost owns the back button; never stack a second one.
+        if (useUi.getState().dialog) return true;
+        confirm('Dəyişikliklər saxlanılmayıb', 'Saxlamadan çıxmaq istəyirsən?', [
+          { label: 'Qal', style: 'cancel' },
+          { label: 'Çıx', style: 'destructive', onPress: discardAndLeave },
+        ]);
+        return true;
+      });
+      return () => sub.remove();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router])
+  );
 
   const save = async () => {
     if (!gym || saving) return;

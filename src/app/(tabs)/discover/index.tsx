@@ -55,7 +55,14 @@ export default function Discover() {
   useFocusEffect(
     useCallback(() => {
       let alive = true;
-      getUnreadCount().then((n) => alive && setNotifUnread(n && n > 0 ? n : null));
+      /* `.catch` is not optional here: getUnreadCount → getMyProfile → getUserId
+         RETHROWS every auth error that is not «no session», so on a cold start
+         with no signal this rejection escaped and the app's first screen fired a
+         «Possible Unhandled Promise Rejection». A failed read leaves the badge
+         unset, which is exactly what `null` already means. */
+      getUnreadCount()
+        .then((n) => alive && setNotifUnread(n && n > 0 ? n : null))
+        .catch(() => {});
       return () => { alive = false; };
     }, [])
   );
@@ -96,7 +103,12 @@ export default function Discover() {
     return trainers.filter((t) => norm(t.name).includes(q) || norm(t.specialty).includes(q));
   }, [trainers, q]);
 
-  const filteredPartners = useMemo(() => applyPartnerFilter(allPartners, partnerFilter, isWoman), [allPartners, partnerFilter]);
+  // `isWoman` belongs in the deps: without it the safety filter kept applying the
+  // value it had when the list was first computed, even after the gender changed.
+  const filteredPartners = useMemo(
+    () => applyPartnerFilter(allPartners, partnerFilter, isWoman),
+    [allPartners, partnerFilter, isWoman]
+  );
   const visiblePartners = useMemo(() => {
     if (!q) return filteredPartners;
     return filteredPartners.filter(

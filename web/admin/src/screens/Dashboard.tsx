@@ -32,9 +32,23 @@ export function Dashboard({ go }: ScreenProps) {
   const [checkInsToday, setCheckInsToday] = useState<number | null>(null);
   const [kpiFailed, setKpiFailed] = useState(false);
   const [queuesFailed, setQueuesFailed] = useState(false);
+  const [gymsFailed, setGymsFailed] = useState(false);
 
   useEffect(() => {
     (async () => {
+      /* Wrapped: a throw here left every «failed» flag false, so the previews
+         below drew «Növbə boşdur» over queues nobody had managed to read. */
+      try {
+        await loadAll();
+      } catch {
+        setKpiFailed(true);
+        setQueuesFailed(true);
+        setGymsFailed(true);
+        setCheckInsToday(null);
+      }
+    })();
+
+    async function loadAll() {
       /* The error is kept, not discarded. It used to be dropped, so when the
          RPC was broken every queue count silently became 0 — a moderator read
          «Şikayətlər 0» with five open reports listed underneath. */
@@ -42,7 +56,10 @@ export function Dashboard({ go }: ScreenProps) {
       setKpiFailed(!!kpiErr);
       setK((kpi ?? null) as DashboardKpis | null);
       const [v, r, c, g, ci] = await Promise.all([
-        supabase.from('trainer_verifications').select('*').eq('status', 'pending').order('sla_due_at').limit(3),
+        // Named columns, not `*`: schema70 withheld `internal_note` with a column
+        // grant, and a `select('*')` touching an ungranted column is refused
+        // outright — which would have emptied this queue card.
+        supabase.from('trainer_verifications').select('id,trainer_id,user_id,status,doc_id_url,doc_cert_url,gym_confirm,intro_video_url,reject_reason,sla_due_at,created_at').eq('status', 'pending').order('sla_due_at').limit(3),
         supabase.from('reports').select('*').eq('status', 'open').order('sla_due_at').limit(3),
         supabase.from('gym_claims').select('*').eq('status', 'pending').order('sla_due_at').limit(3),
         supabase.from('gyms').select('*').order('members', { ascending: false }).limit(4),
@@ -54,10 +71,12 @@ export function Dashboard({ go }: ScreenProps) {
       setVerifs((v.data as TrainerVerification[]) ?? []);
       setReports((r.data as Report[]) ?? []);
       setClaims((c.data as GymClaim[]) ?? []);
+      // «Zal yoxdur» is a claim about the catalogue; a refused read is not one.
+      setGymsFailed(!!g.error);
       setGyms((g.data as Gym[]) ?? []);
       // `count` is null when the query errored — keep '—' rather than a fake 0.
       setCheckInsToday(ci.error ? null : ci.count ?? 0);
-    })();
+    }
   }, []);
 
   const kpis = [
@@ -104,13 +123,21 @@ export function Dashboard({ go }: ScreenProps) {
           {gyms.map((g) => (
             <tr key={g.id} style={{ cursor: 'pointer' }} onClick={() => go('gyms')}>
               <td style={{ fontWeight: 600 }}>{g.name}{g.verified ? <Icon name="verified" size={13} color="var(--blue)" /> : null}</td>
-              <td style={{ color: 'var(--muted2)' }}>{g.district}</td>
-              <td>{g.members}</td>
-              <td>★ {g.rating}</td>
+              <td style={{ color: 'var(--muted2)' }}>{g.district ?? '—'}</td>
+              <td>{g.members ?? '—'}</td>
+              {/* «★ 0» stood here unguarded. `gyms.rating` is `numeric default 0`
+                  and is never null, so an unrated gym was given a printed score
+                  of zero — the guard has to be the review count, which is the
+                  only evidence a rating exists at all. */}
+              <td>{(g.review_count ?? 0) > 0 ? `★ ${g.rating}` : <span style={{ color: 'var(--muted)' }}>rəy yoxdur</span>}</td>
               <td><span className={'badge ' + (g.claim_status === 'claimed' ? 'green' : g.claim_status === 'pending' ? 'orange' : 'grey')}>{g.claim_status}</span></td>
             </tr>
           ))}
-          {gyms.length === 0 ? <tr><td colSpan={5} className="empty">Zal yoxdur</td></tr> : null}
+          {gyms.length === 0 ? (
+            <tr><td colSpan={5} className="empty">
+              {gymsFailed ? 'Zal siyahısı yüklənmədi — bu «zal yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Zal yoxdur'}
+            </td></tr>
+          ) : null}
         </tbody>
       </table>
     </>
