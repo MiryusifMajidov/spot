@@ -724,52 +724,17 @@ export async function createCommunityPost(p: { author: string; gym: string; body
 }
 
 // -------------------- account roles (trainer / gym) --------------------
-/** Turn the current user into a trainer: flag their profile + publish a trainer listing.
- *  Requires schema3.sql (role/specialty columns + trainers owner_id + insert policy). */
-export async function becomeTrainer(input: { specialty: string; bio: string; priceFrom: number; name: string; homeGymId: string | null }): Promise<void> {
-  const me = await getMyProfile();
-  if (!me) throw new Error('no profile');
-  // Each write is checked: «Müəllim hesabın hazırdır» may only be said about
-  // rows that actually landed, and a half-written trainer (listing without a
-  // verification row) would sit in nobody's queue forever.
-  const { error: roleErr } = await supabase
-    .from('profiles')
-    .update({ role: 'trainer', specialty: input.specialty, price_from: input.priceFrom })
-    .eq('id', me.id);
-  if (roleErr) throw roleErr;
-  // `verified`, `verify_status`, `rating` and `clients` are NOT written here.
-  // schema27 withholds those four columns from every client: a trainer who could
-  // set them was one request away from publishing themselves as an approved coach
-  // with a 5.0 rating and 120 students. Their real values come from the database:
-  // the defaults (false / 'unverified' / 0 / 0), the `trainer_verifications`
-  // trigger that moves the status to «pending», the admin's decision, and the
-  // trigger that counts accepted students.
-  const { error: listErr } = await supabase.from('trainers').upsert({
-    id: me.id,
-    name: input.name || me.name || 'Müəllim',
-    gym_id: input.homeGymId,
-    specialty: input.specialty,
-    /* No `response_time`. It used to write «~1 saat» on every new trainer —
-       a promise about how fast a person answers, invented at the moment their
-       account was created, before they had ever received a message. Nothing
-       measures it, so nothing states it. */
-    price_from: input.priceFrom,
-    bio: input.bio,
-    certifications: [],
-    owner_id: me.id,
-  });
-  if (listErr) throw listErr;
-  // Queue the trainer for admin verification (Müəllim doğrulanması).
-  const { error: verErr } = await supabase.from('trainer_verifications').insert({
-    trainer_id: me.id,
-    user_id: me.user_id,
-    status: 'pending',
-    gym_confirm: false,
-  });
-  if (verErr) throw verErr;
-  // The catalogue is cached for a minute; a brand-new trainer must not wait for it.
-  invalidateFocusCache('trainers');
-}
+/* `becomeTrainer` used to live here and nothing called it. `publishTrainer` in
+   src/app/(tabs)/profile/become-trainer.tsx replaced it, because publishing has
+   to distinguish a FIRST publish from an edit: the version here upserted the
+   whole `trainers` row every time, which on an edit reset the admin-owned
+   columns and stripped an approved coach's badge, and it inserted a fresh
+   `trainer_verifications` row on every save, flooding the moderation queue.
+   Its `profiles` update was also checked on `error` alone — and an RLS refusal
+   is `error: null` with zero rows — so a profile whose role never changed could
+   still have reported «Müəllim hesabın hazırdır». It is deleted rather than
+   repaired: two publish paths for the same account, one of them unreachable and
+   wrong, is how the badge bug came back the first time. */
 
 /** Create a gym listing owned by the current user. Returns the new gym id.
  *  Requires schema3.sql (gyms owner_id + insert policy).

@@ -14,7 +14,7 @@ import { DAYS, GOALS, LEVELS, TIME_SLOTS, WORKOUT_TYPES } from '@/data/mock';
 import { USERNAME_TAKEN_MSG, displayNameError, getMyProfile, isUsernameTaken, suggestUsername, usernameError } from '@/lib/api';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { useGyms } from '@/lib/hooks';
-import { imageTooLargeMessage, pickImage, setMyAvatar, shootImage } from '@/lib/images';
+import { imageTooLargeMessage, isNotSavedError, pickImage, setMyAvatar, shootImage } from '@/lib/images';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, toast } from '@/store/ui';
@@ -96,7 +96,16 @@ export default function EditProfile() {
          «yenidən cəhd et» sent people back to tap the same photo at a wall. That
          one case names itself, and only its message can say how big the file is
          and what actually fits. */
-      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      /* A refused write is not a flaky one. The file reached storage and the
+         row would not take it, so «yenidən cəhd et» would send the person back
+         to tap the same photo at the same wall. */
+      toast(
+        imageTooLargeMessage(e) ??
+          (isNotSavedError(e)
+            ? 'Şəkil serverdə saxlanılmadı — profilə yazmaq alınmadı'
+            : 'Şəkil yüklənmədi — yenidən cəhd et'),
+        'error'
+      );
     } finally {
       setUploading(false);
     }

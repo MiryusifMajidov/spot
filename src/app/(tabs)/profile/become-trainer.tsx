@@ -34,11 +34,18 @@ async function publishTrainer(input: { specialty: string; bio: string; priceFrom
   const me = await getMyProfile();
   if (!me?.id) throw new Error('no profile');
 
-  const { error: pErr } = await supabase
+  /* `.select('id')`, because an RLS refusal is not an error: the statement runs,
+     matches nothing, and returns `error: null`. Without the row count a profile
+     whose `role` never moved off «user» could still reach «Müəllim hesabın
+     hazırdır» — a listing published by an account the rest of the app does not
+     treat as a trainer, so the panel it points at refuses to open. */
+  const { data: pRow, error: pErr } = await supabase
     .from('profiles')
     .update({ role: 'trainer', specialty: input.specialty, price_from: input.priceFrom })
-    .eq('id', me.id);
+    .eq('id', me.id)
+    .select('id');
   if (pErr) throw pErr;
+  if (!pRow?.length) throw new Error('profile-not-saved');
 
   // An EDIT must never touch the admin-owned columns. The old unconditional
   // upsert reset `verified`/`verify_status`, which silently stripped an approved
@@ -361,8 +368,13 @@ export default function BecomeTrainer() {
             try {
               const me = await getMyProfile();
               if (!me?.id) throw new Error('no profile');
-              const { error: rErr } = await supabase.from('profiles').update({ role: 'user' }).eq('id', me.id);
+              /* Same rule on the way out. If the role does not come back to
+                 «user» the account keeps a trainer's panel and a trainer's
+                 navigation while the person has been told it is closed. */
+              const { data: rRow, error: rErr } = await supabase
+                .from('profiles').update({ role: 'user' }).eq('id', me.id).select('id');
               if (rErr) throw rErr;
+              if (!rRow?.length) throw new Error('role-not-restored');
 
               const { data: t } = await supabase.from('trainers').select('id').eq('owner_id', me.id).maybeSingle();
               const trainerId = (t as { id: string } | null)?.id ?? me.id;

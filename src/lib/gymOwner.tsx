@@ -165,18 +165,27 @@ export async function updateMyGym(gymId: string, patch: GymPatch): Promise<{ ext
     else core[k] = v;
   }
 
+  /* `.select('id')` on both halves, and the row count is what decides.
+     `gyms_owner_update` is `owner_id = my_profile_id()`, and RLS does not raise:
+     for anyone else the statement runs, matches nothing, and comes back
+     `error: null`. Checking only the error meant an owner whose claim had been
+     revoked — or a second manager the claim never covered — pressed «Saxla»,
+     read «Zal profili yeniləndi», and left a gym still advertising last year's
+     price to everyone in Kəşf. */
   if (Object.keys(core).length) {
-    const { error } = await supabase.from('gyms').update(core).eq('id', gymId);
+    const { data, error } = await supabase.from('gyms').update(core).eq('id', gymId).select('id');
     if (error) throw error;
+    if (!data?.length) throw new Error('gym-not-saved');
     // The public catalogue caches gyms for a minute — without this the Kəşf card
     // keeps showing the old name/price the app no longer holds as true.
     invalidateFocusCache('gyms');
   }
   if (!Object.keys(extras).length) return { extrasSaved: true };
 
-  const { error } = await supabase.from('gyms').update(extras).eq('id', gymId);
-  if (!error) invalidateFocusCache('gyms');
-  return { extrasSaved: !error };
+  const { data, error } = await supabase.from('gyms').update(extras).eq('id', gymId).select('id');
+  const saved = !error && !!data?.length;
+  if (saved) invalidateFocusCache('gyms');
+  return { extrasSaved: saved };
 }
 
 // ----------------------------------------------------------------- claim ----

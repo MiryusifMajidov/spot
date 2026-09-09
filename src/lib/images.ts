@@ -258,6 +258,27 @@ export async function signedCertUrl(pathOrUrl: string, ttlSec = 300): Promise<st
   return data?.signedUrl ?? null;
 }
 
+/* ---------------- a write that touched no row is not a write ----------------
+ *
+ * Every update below used to be checked with `if (error) throw error` alone.
+ * PostgREST does not report an RLS refusal as an error: the statement runs, the
+ * policy filters the row out, and the result comes back `error: null` with zero
+ * rows changed. So a gym cover uploaded by someone whose claim on that gym was
+ * never approved — or an avatar written while the profile is frozen — went to
+ * storage, the row kept its old value, and the app said «Profil şəklin
+ * yeniləndi» and drew the new picture. It came back as the old one on the next
+ * launch, with nothing in between to explain it.
+ *
+ * `.select('id')` makes the affected rows visible, and no rows is a failure the
+ * caller already knows how to show: every one of them reverts its preview and
+ * says the photo was not saved. */
+const NOT_SAVED = 'image-not-saved';
+
+/** True when the message came from the check above, so a screen can say «icazə
+ *  yoxdur» instead of «yenidən cəhd et» for something retrying cannot fix. */
+export const isNotSavedError = (e: unknown): boolean =>
+  e instanceof Error && e.message === NOT_SAVED;
+
 /** Pick → upload → write `profiles.avatar_url`. Returns the new URL. */
 export async function setMyAvatar(localUri: string): Promise<string> {
   const me = await getMyProfile();
@@ -266,8 +287,10 @@ export async function setMyAvatar(localUri: string): Promise<string> {
   // not declare it, so it is read through a narrow cast rather than left unused.
   const previous = (me as { avatar_url?: string | null }).avatar_url ?? null;
   const url = await uploadImage('avatars', localUri, `p-${me.id}`);
-  const { error } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', me.id);
+  const { data: saved, error } = await supabase
+    .from('profiles').update({ avatar_url: url }).eq('id', me.id).select('id');
   if (error) throw error;
+  if (!saved?.length) throw new Error(NOT_SAVED);
   /* Column first, THEN the old object: a failed delete leaves an unreachable
      orphan, while a failed write would have left the row pointing at a file that
      no longer exists. Replacing an avatar used to leave the old face public. */
@@ -283,8 +306,10 @@ export async function setTrainerPhoto(trainerId: string, localUri: string): Prom
   const { data: before } = await supabase.from('trainers').select('photo_url').eq('id', trainerId).maybeSingle();
   const previous = (before as { photo_url?: string | null } | null)?.photo_url ?? null;
   const url = await uploadImage('avatars', localUri, `t-${trainerId}`);
-  const { error } = await supabase.from('trainers').update({ photo_url: url }).eq('id', trainerId);
+  const { data: saved, error } = await supabase
+    .from('trainers').update({ photo_url: url }).eq('id', trainerId).select('id');
   if (error) throw error;
+  if (!saved?.length) throw new Error(NOT_SAVED);
   if (previous && previous !== url) await removeObject('avatars', previous);
   invalidateFocusCache('trainers');
   return url;
@@ -315,8 +340,10 @@ export async function addTrainerCert(trainerId: string, localUri: string): Promi
   if (readErr) throw readErr;
   if (!data) throw new Error('trainer not found');
   const next = [...(((data as { cert_urls?: string[] | null }).cert_urls) ?? []), path];
-  const { error } = await supabase.from('trainers').update({ cert_urls: next }).eq('id', trainerId);
+  const { data: saved, error } = await supabase
+    .from('trainers').update({ cert_urls: next }).eq('id', trainerId).select('id');
   if (error) throw error;
+  if (!saved?.length) throw new Error(NOT_SAVED);
   return next;
 }
 
@@ -328,8 +355,10 @@ export async function setGymCover(gymId: string, localUri: string): Promise<stri
   const prev = before as { image_url?: string | null; photos?: string[] | null } | null;
   const previous = prev?.image_url ?? null;
   const url = await uploadImage('gyms', localUri, `g-${gymId}`);
-  const { error } = await supabase.from('gyms').update({ image_url: url }).eq('id', gymId);
+  const { data: saved, error } = await supabase
+    .from('gyms').update({ image_url: url }).eq('id', gymId).select('id');
   if (error) throw error;
+  if (!saved?.length) throw new Error(NOT_SAVED);
   if (previous && previous !== url && !(prev?.photos ?? []).includes(previous)) {
     await removeObject('gyms', previous);
   }
@@ -346,8 +375,10 @@ export async function addGymPhoto(gymId: string, localUri: string): Promise<stri
   if (readErr) throw readErr;
   if (!data) throw new Error('gym not found');
   const next = [...(((data as { photos?: string[] | null }).photos) ?? []), url];
-  const { error } = await supabase.from('gyms').update({ photos: next }).eq('id', gymId);
+  const { data: saved, error } = await supabase
+    .from('gyms').update({ photos: next }).eq('id', gymId).select('id');
   if (error) throw error;
+  if (!saved?.length) throw new Error(NOT_SAVED);
   invalidateFocusCache('gyms');
   return next;
 }
@@ -361,8 +392,10 @@ export async function removeGymPhoto(gymId: string, url: string): Promise<string
   if (!data) throw new Error('gym not found');
   const row = data as { photos?: string[] | null; image_url?: string | null };
   const next = (row.photos ?? []).filter((u) => u !== url);
-  const { error } = await supabase.from('gyms').update({ photos: next }).eq('id', gymId);
+  const { data: saved, error } = await supabase
+    .from('gyms').update({ photos: next }).eq('id', gymId).select('id');
   if (error) throw error;
+  if (!saved?.length) throw new Error(NOT_SAVED);
   /* «Sil» on a gallery photo is a privacy action — the owner deletes the shot
      that caught a member's face. Dropping it from the array alone left the file
      serving over plain HTTP to anyone holding the link, with the gallery showing

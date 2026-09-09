@@ -15,7 +15,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { createGym } from '@/lib/api';
 import { errorFeedback, successFeedback, tapFeedback } from '@/lib/feedback';
-import { addGymPhoto, imageTooLargeMessage, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
+import { addGymPhoto, imageTooLargeMessage, isNotSavedError, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, confirm, toast, type UiAction } from '@/store/ui';
@@ -39,7 +39,11 @@ type CoverFail = { text: string; retry: boolean };
 
 const coverFailOf = (e: unknown): CoverFail => {
   const tooLarge = imageTooLargeMessage(e);
-  return tooLarge ? { text: tooLarge, retry: false } : { text: 'Şəkil yüklənmədi — yenidən cəhd et.', retry: true };
+  if (tooLarge) return { text: tooLarge, retry: false };
+  /* The upload landed and the row refused it — the same photo will be refused
+     again, so this one does not offer a retry. */
+  if (isNotSavedError(e)) return { text: 'Şəkil zalın məlumatına yazılmadı — bu zalı dəyişməyə icazən yoxdur.', retry: false };
+  return { text: 'Şəkil yüklənmədi — yenidən cəhd et.', retry: true };
 };
 
 
@@ -281,8 +285,12 @@ export default function CreateGym() {
     // Coordinates live on the gym row; a trigger syncs the PostGIS column the
     // customer map queries. If the column is missing we say so — never pretend.
     if (picked) {
-      const { error: locError } = await supabase.from('gyms').update({ lat: picked.lat, lng: picked.lng }).eq('id', gymId);
-      setLocSaved(!locError);
+      /* The row count, not just the error: `gyms_owner_update` filters rather
+         than raising, so a refused write returns `error: null` and «Yeri
+         xəritədə göstərildi» would be said about a pin that was never stored. */
+      const { data: locRow, error: locError } = await supabase
+        .from('gyms').update({ lat: picked.lat, lng: picked.lng }).eq('id', gymId).select('id');
+      setLocSaved(!locError && !!locRow?.length);
     } else {
       setLocSaved(false); // map never loaded — the owner sets the pin from the panel
     }
