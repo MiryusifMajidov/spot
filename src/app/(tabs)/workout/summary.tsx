@@ -42,6 +42,12 @@ export default function Summary() {
     setRpe(i);
     const workouts = useDb.getState().workouts;
     const last = workouts[0];
+    /* `rate` is only ever reached from the «Necə keçdi?» buttons' onPress, so this
+       clock read happens on a tap and never while rendering; react-hooks/purity
+       flags it because the function is declared in the component body. Reading the
+       clock is the whole point — the rating may only land on a session that is
+       still open, and «still» has to be measured at the moment of the tap. */
+    // eslint-disable-next-line react-hooks/purity
     const fresh = !!last && Date.now() - new Date(last.at).getTime() < 30 * 60 * 1000;
     if (!fresh) {
       setStored(false);

@@ -111,7 +111,11 @@ export default function MealDetail() {
           ) : (
             <View style={styles.altEmpty}>
               <AppText variant="footnote" color={palette.caption} style={{ lineHeight: 18 }}>
-                Planda başqa yemək yoxdur. Öz yeməyini "Qida" səhifəsindən əlavə edə bilərsən.
+                {/* The quotation marks around «Qida» are part of the sentence — it names the
+                    tab the reader has to open. As bare JSX text the straight quotes trip
+                    react/no-unescaped-entities, and an HTML entity would render a different
+                    glyph, so the sentence is passed as a string literal instead. */}
+                {'Planda başqa yemək yoxdur. Öz yeməyini "Qida" səhifəsindən əlavə edə bilərsən.'}
               </AppText>
             </View>
           )}

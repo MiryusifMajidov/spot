@@ -15,7 +15,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { errorFeedback, successFeedback, tapFeedback } from '@/lib/feedback';
 import { GymGate, updateMyGym, useMyGym } from '@/lib/gymOwner';
-import { addGymPhoto, imageTooLargeMessage, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
+import { addGymPhoto, imageTooLargeMessage, isNotSavedError, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
 import { actionSheet, confirm, toast, useUi, type UiAction } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -69,9 +69,15 @@ export default function GymEdit() {
 
   const gymId = gym?.id;
 
-  // `dirty` in a ref so the seeding effect can read it without re-running.
+  // `dirty` in a ref so the seeding effect can read it without re-running. The
+  // ref is put in step from an effect and not from the render body, because a
+  // render React throws away must not be able to tell the seeding effect that
+  // the form is dirty. It is declared above that effect, so in any commit where
+  // both run the flag is already current by the time the seeding effect reads it.
   const dirtyRef = useRef(false);
-  dirtyRef.current = dirty;
+  useEffect(() => {
+    dirtyRef.current = dirty;
+  }, [dirty]);
 
   // Seed the form from the gym's REAL row (never from literals). A focus refetch
   // hands back a NEW gym object, so this effect re-runs while the owner is still
@@ -138,7 +144,13 @@ export default function GymEdit() {
       /* The one failure retrying cannot fix: the file is over the bucket ceiling
          and will be over it again next time. «yenidən cəhd et» made the owner
          re-pick the same photo; this says the size and the limit instead. */
-      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      toast(
+        imageTooLargeMessage(e) ??
+          (isNotSavedError(e)
+            ? 'Şəkil zalın məlumatına yazılmadı — bu zalı dəyişməyə icazən yoxdur'
+            : 'Şəkil yüklənmədi — yenidən cəhd et'),
+        'error'
+      );
     }
     setCoverBusy(false);
   };
@@ -175,7 +187,13 @@ export default function GymEdit() {
       successFeedback();
     } catch (e) {
       errorFeedback();
-      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      toast(
+        imageTooLargeMessage(e) ??
+          (isNotSavedError(e)
+            ? 'Şəkil zalın məlumatına yazılmadı — bu zalı dəyişməyə icazən yoxdur'
+            : 'Şəkil yüklənmədi — yenidən cəhd et'),
+        'error'
+      );
     }
     setPhotoBusy(false);
   };
@@ -312,8 +330,13 @@ export default function GymEdit() {
       // a failure here must not be reported as a successful profile save.
       let locOk = true;
       if (picked) {
-        const { error } = await supabase.from('gyms').update({ lat: picked.lat, lng: picked.lng }).eq('id', gym.id);
-        locOk = !error;
+        /* The row count as well as the error. `gyms_owner_update` filters
+           instead of raising, so a refused write comes back `error: null` and
+           «Zal profili yeniləndi» would have been said about a pin that never
+           moved. */
+        const { data: locRow, error } = await supabase
+          .from('gyms').update({ lat: picked.lat, lng: picked.lng }).eq('id', gym.id).select('id');
+        locOk = !error && !!locRow?.length;
       }
       setDirty(false);
       state.reload();

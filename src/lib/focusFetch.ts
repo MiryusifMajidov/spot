@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { afterTransition } from '@/lib/afterTransition';
 
@@ -86,9 +86,16 @@ export function invalidateFocusPrefix(prefix: string) {
  *  An empty `key` disables the hook entirely (used when a local value already wins). */
 export function useFocusFetch<T>(key: string, fallback: T, load: () => Promise<T | null>): T {
   const [data, setData] = useState<T>(() => (focusCache.get(key)?.value as T) ?? fallback);
-  // Held in a ref so callers don't each have to memoise their fetcher.
+  // Held in a ref so callers don't each have to memoise their fetcher. The ref
+  // is put in step from an effect rather than from the render body, so a render
+  // React throws away cannot leave it pointing at a fetcher that never committed.
+  // This effect is declared above the focus effect, so within a commit it runs
+  // first — and the fetch itself only reads the ref inside `afterTransition`,
+  // well after every effect in that commit has run.
   const loadRef = useRef(load);
-  loadRef.current = load;
+  useEffect(() => {
+    loadRef.current = load;
+  });
 
   useFocusEffect(
     useCallback(() => {

@@ -38,9 +38,14 @@ export default function StudentDetail() {
   const student = useMemo(() => active.find((s) => s.profileId === id) ?? null, [active, id]);
   const name = student?.name ?? nameParam ?? 'Şagird';
 
+  // The title is read out of the student first, so the memo really depends on
+  // the one field the lookup uses. Written as `student?.programTitle` inline it
+  // read as a dependency on the whole student row, which is a different — and
+  // more often changing — thing than the title itself.
+  const programTitle = student?.programTitle;
   const matched = useMemo(
-    () => (student?.programTitle ? myPrograms.find((p) => p.title === student.programTitle) ?? null : null),
-    [myPrograms, student?.programTitle]
+    () => (programTitle ? myPrograms.find((p) => p.title === programTitle) ?? null : null),
+    [myPrograms, programTitle]
   );
 
   const [selectedId, setSelectedId] = useState<string | null>(null);

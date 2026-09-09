@@ -51,8 +51,14 @@ export default function TrainerPanel() {
       alive = false;
     };
   }, []);
+  /* The latch is queued, not written straight from the effect body: it records
+     something that has already happened rather than anything this pass renders
+     from, and writing it here would put a second render pass on top of the one
+     that just delivered the numbers. Nothing can see the gap — `everLoaded` is
+     only ever read while `loading` is true, and here it is false. */
   useEffect(() => {
-    if (!loading && !failed && !offline) setEverLoaded(true);
+    if (loading || failed || offline) return;
+    queueMicrotask(() => setEverLoaded(true));
   }, [loading, failed, offline]);
   const counted = !failed && !offline && (!loading || everLoaded);
   const hasRows = pending.length > 0 || active.length > 0;

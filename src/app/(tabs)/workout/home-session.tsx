@@ -129,16 +129,6 @@ export default function HomeSession() {
     };
   }, [paused, restored, idx]);
 
-  useEffect(() => {
-    if (remaining > 0 || advancing.current) return;
-    advancing.current = true;
-    if (timer.current) clearInterval(timer.current);
-    successFeedback();
-    next();
-    setTimeout(() => (advancing.current = false), 300);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remaining]);
-
   const saveAndFinish = (completed: number) => {
     const done = plan.moves.slice(0, completed);
     // Bodyweight work is real work: each completed move is one set at the user's
@@ -183,6 +173,22 @@ export default function HomeSession() {
     setRemaining(homeMoveSeconds(plan.moves[completed]));
   };
 
+  /* Auto-advance when the countdown hits zero. This sits below `next` rather than
+     up next to the countdown interval: the other way round it referenced a binding
+     that was still in its temporal dead zone at that point in the body — harmless
+     at runtime, since an effect only runs once the whole body has been evaluated,
+     but it is the shape that hides a stale closure and it reads backwards. The
+     `advancing` latch keeps the tick from racing a manual tap on «Bitdi». */
+  useEffect(() => {
+    if (remaining > 0 || advancing.current) return;
+    advancing.current = true;
+    if (timer.current) clearInterval(timer.current);
+    successFeedback();
+    next();
+    setTimeout(() => (advancing.current = false), 300);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remaining]);
+
   const prev = () => {
     if (idx === 0) return;
     setIdx(idx - 1);
@@ -210,7 +216,13 @@ export default function HomeSession() {
      back to. It now asks exactly what the × asks. The ref keeps the listener
      registered once while still calling the current closure. */
   const quitRef = useRef(quit);
-  quitRef.current = quit;
+  /* The write is an effect, not a bare statement in the body: a render React
+     throws away (a concurrent re-render, StrictMode's double pass) would otherwise
+     leave the ref pointing at a closure that was never committed. Every render
+     that does commit still refreshes it before any back press can arrive. */
+  useEffect(() => {
+    quitRef.current = quit;
+  });
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       quitRef.current();

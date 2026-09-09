@@ -53,7 +53,10 @@ export default function GymClaim() {
   }, []);
 
   useEffect(() => {
-    if (gymId) loadClaim(gymId);
+    if (!gymId) return;
+    void (async () => {
+      await loadClaim(gymId);
+    })();
   }, [gymId, loadClaim]);
 
   if (!gym) {

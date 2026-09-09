@@ -57,7 +57,10 @@ export default function GymMembers() {
   }, []);
 
   useEffect(() => {
-    if (gym) load(gym.id);
+    if (!gym) return;
+    void (async () => {
+      await load(gym.id);
+    })();
   }, [gym, load]);
 
   const counts = useMemo(

@@ -39,9 +39,19 @@ export function useKeyboardOverlap(): number {
   const [overlap, setOverlap] = useState(() => {
     const m = Keyboard.metrics?.();
     if (!m) return 0;
-    screenY.current = m.screenY;
     return Math.max(0, Math.round(height - m.screenY));
   });
+
+  /* The initial measurement above seeds `overlap`, but it may not seed the ref:
+     a state initialiser runs while rendering, and a render React discards would
+     leave the ref holding a keyboard position that nothing on screen matches.
+     The metrics are read again here instead. This effect is declared before the
+     re-measure effect below, so on mount the ref is already in place the first
+     time that one looks at it. */
+  useEffect(() => {
+    const m = Keyboard.metrics?.();
+    if (m) screenY.current = m.screenY;
+  }, []);
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {

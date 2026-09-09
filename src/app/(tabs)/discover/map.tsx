@@ -21,7 +21,7 @@ import { useAppStore } from '@/store/appStore';
 import { applyGymFilter, useDiscoverPrefs } from '@/store/discoverPrefs';
 import { palette, radius, shadow, spacing } from '@/theme';
 
-type Status = 'idle' | 'asking' | 'loading' | 'ok' | 'denied' | 'error';
+type Status = 'asking' | 'loading' | 'ok' | 'denied' | 'error';
 
 /** A gym can only be plotted if someone actually recorded its coordinates. */
 const hasCoords = (g: Gym): g is Gym & { lat: number; lng: number } =>
@@ -45,7 +45,12 @@ export default function GymMap() {
   const fallback = useGyms();
   const [near, setNear] = useState<Gym[] | null>(null);
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
-  const [status, setStatus] = useState<Status>('idle');
+  /* «asking» from the very first render, because the request below is started
+     during mount and there is no moment at which we are not asking. The screen
+     used to start at an 'idle' status that no notice described, so the first
+     frame read «Xəritə sənin yerinə görə mərkəzləndi» — a claim about a position
+     we had not obtained yet. */
+  const [status, setStatus] = useState<Status>('asking');
   const [tab, setTab] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -75,9 +80,12 @@ export default function GymMap() {
     }
   }, []);
 
+  // `locate` is stable, so this asks exactly once, when the screen mounts.
   useEffect(() => {
-    if (status === 'idle') locate();
-  }, [status, locate]);
+    void (async () => {
+      await locate();
+    })();
+  }, [locate]);
 
   const list = useMemo(() => applyGymFilter(near ?? fallback, gymFilter), [near, fallback, gymFilter]);
   const plottable = useMemo(() => list.filter(hasCoords), [list]);

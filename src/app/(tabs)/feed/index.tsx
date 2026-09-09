@@ -38,6 +38,11 @@ type Mode = 'video' | 'community';
 const videoKey = (id: string) => `video:${id}`;
 const postKey = (id: string) => `post:${id}`;
 
+/* FlatList refuses a `viewabilityConfig` whose identity changes between renders
+   («Changing viewabilityConfig on the fly is not supported»), and this one depends
+   on nothing the component knows, so module scope is the stable home for it. */
+const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 60 };
+
 /* ---------------- comment counts, or none at all ----------------
  *
  * `feed_videos.comments` / `community_posts.comments` are seeded columns that no
@@ -295,11 +300,15 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
      not rendered yet. */
   const getItemLayout = useCallback((_: unknown, index: number) => ({ length: h, offset: h * index, index }), [h]);
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+  /* Held in state, not in a ref: FlatList also rejects a changing
+     `onViewableItemsChanged`, and a lazy state initialiser gives the same
+     never-changing identity without reading a ref while rendering. The callback
+     only ever calls `setActiveIndex`, which React keeps stable, so the closure
+     captured on the first render stays correct for the life of the screen. */
+  const [onViewableItemsChanged] = useState(() => ({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const first = viewableItems.find((it) => it.isViewable);
     if (first?.index != null) setActiveIndex(first.index);
-  }).current;
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
+  });
 
   const openCreator = () => {
     const av = videos[activeIndex];
@@ -349,7 +358,7 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
               />
             )}
             onViewableItemsChanged={onViewableItemsChanged}
-            viewabilityConfig={viewabilityConfig}
+            viewabilityConfig={VIEWABILITY_CONFIG}
             windowSize={2}
             maxToRenderPerBatch={1}
             initialNumToRender={1}
@@ -450,8 +459,15 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
   const duration = player.duration || 0;
   const progress = dragRatio != null ? dragRatio : duration > 0 ? Math.min(1, currentTime / duration) : 0;
 
+  /* `player` is not a React value: expo-video hands back a handle onto the native
+     player, and https://docs.expo.dev/versions/v57.0.0/sdk/video/ documents
+     `currentTime` and `muted` as properties you assign to — there is no setter to
+     call instead. react-hooks/immutability cannot tell that apart from mutating
+     state returned by a hook, and both assignments happen in a gesture handler or
+     an effect, never while rendering. */
   const commitSeek = (ratio: number) => {
     const d = player.duration || 0;
+    // eslint-disable-next-line react-hooks/immutability
     if (d > 0) player.currentTime = ratio * d;
     setDragRatio(null);
   };
@@ -462,17 +478,28 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
     .onUpdate((e) => runOnJS(setDragRatio)(Math.min(1, Math.max(0, e.x / width))))
     .onEnd((e) => runOnJS(commitSeek)(Math.min(1, Math.max(0, e.x / width))));
 
-  // Play only the visible page; pause the rest. Reset manual pause when it scrolls away.
+  // Play only the visible page; pause the rest.
   useEffect(() => {
     if (active && !paused) player.play();
     else player.pause();
   }, [active, paused, player]);
 
-  useEffect(() => {
+  /* A tap-to-pause lasts only as long as the page is on screen: scroll away and
+     back, and the clip plays again rather than greeting you with a frozen frame.
+     Comparing against the previous `active` during render is React's own way of
+     resetting state when a prop changes — the component simply re-runs with the
+     new value before anything is committed, whereas doing this in an effect
+     committed the stale `paused` first and then cascaded a second render on top.
+     Nothing visible differs either way: both readers of `paused` (the play/pause
+     effect above and the play badge below) already require `active` too. */
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
     if (!active) setPaused(false);
-  }, [active]);
+  }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     player.muted = muted;
   }, [muted, player]);
 

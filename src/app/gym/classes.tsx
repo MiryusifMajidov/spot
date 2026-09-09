@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -6,7 +6,7 @@ import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
-import { EmptyNote, GymGate, updateMyGym, useMyGym, type ScheduleItem } from '@/lib/gymOwner';
+import { EmptyNote, GymGate, updateMyGym, useMyGym, type OwnedGym, type ScheduleItem } from '@/lib/gymOwner';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -22,13 +22,20 @@ export default function GymClasses() {
   const state = useMyGym();
   const gym = state.gym;
 
-  const [items, setItems] = useState<ScheduleItem[]>([]);
+  /* The schedule as the gym row really has it. Derived here rather than copied
+     into state by an effect: an effect runs AFTER the render that first has a
+     loaded gym, so the screen printed «Hələ cədvəl yoxdur» for a frame while the
+     rows were already in hand — the one thing this app must never say when it
+     knows better. */
+  const saved = useMemo(() => (gym ? [...gym.schedule].sort(sortByTime) : []), [gym]);
+  /* A locally changed list, tagged with the gym object it was made from. A focus
+     refetch hands back a NEW gym object, and the tag then stops matching — which
+     drops the local list at exactly the moment the old effect used to overwrite
+     it with the server's answer. */
+  const [edited, setEdited] = useState<{ from: OwnedGym; items: ScheduleItem[] } | null>(null);
+  const items = edited && edited.from === gym ? edited.items : saved;
   const [editing, setEditing] = useState<{ index: number | null; time: string; name: string; trainer: string } | null>(null);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (gym) setItems([...gym.schedule].sort(sortByTime));
-  }, [gym]);
 
   if (!gym) {
     return (
@@ -40,18 +47,22 @@ export default function GymClasses() {
 
   const persist = async (next: ScheduleItem[]) => {
     const prev = items;
-    setItems(next);
+    setEdited({ from: gym, items: next });
     setSaving(true);
     try {
       const { extrasSaved } = await updateMyGym(gym.id, { schedule: next });
       if (!extrasSaved) {
-        setItems(prev);
-        toast('Cədvəl saxlanılmadı — supabase/schema7_gym_owner.sql işlədilməyib', 'error');
+        setEdited({ from: gym, items: prev });
+        /* Not «the migration is missing» any more. `updateMyGym` now reports
+           `extrasSaved: false` for a write that touched no row as well — which
+           is what an RLS refusal looks like — and naming a .sql file as the
+           cause of that would send the owner after the wrong thing. */
+        toast('Cədvəl saxlanılmadı — serverdə yazıla bilmədi', 'error');
       } else {
         toast('Cədvəl yeniləndi');
       }
     } catch {
-      setItems(prev);
+      setEdited({ from: gym, items: prev });
       toast('Cədvəl saxlanılmadı — bağlantını yoxla', 'error');
     }
     setSaving(false);

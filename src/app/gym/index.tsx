@@ -125,7 +125,10 @@ export default function GymPanel() {
   }, []);
 
   useEffect(() => {
-    if (gym) load(gym.id);
+    if (!gym) return;
+    void (async () => {
+      await load(gym.id);
+    })();
   }, [gym, load]);
 
   const refresh = async () => {

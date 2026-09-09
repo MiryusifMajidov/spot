@@ -6,7 +6,13 @@ import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
 
 function tab(name: IconName) {
-  return ({ color }: { color: ColorValue }) => <Icon name={name} size={24} color={color as string} />;
+  // A named declaration rather than a bare arrow: the tab bar renders this as a
+  // component, and an anonymous component has no name anywhere it matters — in
+  // React DevTools, in a component stack, in a warning about the icon.
+  function TabIcon({ color }: { color: ColorValue }) {
+    return <Icon name={name} size={24} color={color as string} />;
+  }
+  return TabIcon;
 }
 
 export default function TrainerLayout() {

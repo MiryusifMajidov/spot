@@ -55,15 +55,24 @@ export default function ExerciseVideo() {
     if (playing) player.play();
     else player.pause();
   }, [playing, player]);
+  /* `player` is not a React value: expo-video hands back a handle onto the native
+     player, and https://docs.expo.dev/versions/v57.0.0/sdk/video/ documents
+     `playbackRate`, `muted` and `currentTime` as properties you assign to — there
+     is no setter to call instead. react-hooks/immutability cannot tell that apart
+     from mutating state returned by a hook, and every assignment below happens in
+     an effect or a gesture handler, never while rendering. */
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     player.playbackRate = half ? 0.5 : 1;
   }, [half, player]);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     player.muted = muted;
   }, [muted, player]);
 
   const commitSeek = (ratio: number) => {
     const d = player.duration || 0;
+    // eslint-disable-next-line react-hooks/immutability
     if (d > 0) player.currentTime = ratio * d;
     setDragRatio(null);
   };

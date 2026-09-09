@@ -42,7 +42,10 @@ export default function GymReviews() {
   }, []);
 
   useEffect(() => {
-    if (gym) load(gym.id);
+    if (!gym) return;
+    void (async () => {
+      await load(gym.id);
+    })();
   }, [gym, load]);
 
   const summary = useMemo(() => {
