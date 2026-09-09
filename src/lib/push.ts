@@ -122,10 +122,13 @@ export async function registerPush(): Promise<{ token: string | null; reason?: s
     cachedToken = token;
     lastReason = null;
     return { token };
-  } catch {
+  } catch (e) {
     lastReason = 'failed';
     // Registration is best-effort by design. The in-app notification centre is
-    // the record either way.
+    // the record either way — but swallowing the cause entirely made a device
+    // that could not register look exactly like one that did, so in development
+    // the reason is at least printed.
+    if (__DEV__) console.warn('[push] registration failed:', String((e as Error)?.message ?? e));
     return { token: null, reason: 'failed' };
   }
 }

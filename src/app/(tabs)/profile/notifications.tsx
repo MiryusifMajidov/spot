@@ -9,7 +9,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { tapFeedback } from '@/lib/feedback';
 import { NOTIF_TYPES, getNotifPrefs, setNotifPref, type NotifType } from '@/lib/notifications';
-import { pushPermission, registerPush } from '@/lib/push';
+import { pushPermission, pushRegistrationProblem, registerPush } from '@/lib/push';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -24,6 +24,11 @@ export default function NotificationSettings() {
      notifications that Android or iOS is silently dropping — the app claiming
      something only the system can grant. */
   const [perm, setPerm] = useState<'granted' | 'denied' | 'undetermined' | 'unavailable' | null>(null);
+  /* The OS said yes and the device STILL could not be registered — most often
+     because the push service has no credentials for this project yet. Without
+     this the screen showed twelve switches, all on, to somebody who can never
+     receive a single notification, and said nothing at all. */
+  const [regProblem, setRegProblem] = useState<string | null>(null);
 
   const load = useCallback(() => {
     if (!hasSupabaseConfig) {
@@ -45,6 +50,7 @@ export default function NotificationSettings() {
       // Re-read on every focus: the person may have just come back from the
       // system settings having changed it.
       void pushPermission().then(setPerm);
+      setRegProblem(pushRegistrationProblem());
     }, [load])
   );
 
@@ -69,6 +75,19 @@ export default function NotificationSettings() {
       <NavBar title="Bildirişlər" />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        {perm === 'granted' && regProblem ? (
+          <View style={[styles.permCard, { borderColor: palette.red }]}>
+            <Icon name="x" size={18} color={palette.red} />
+            <View style={{ flex: 1 }}>
+              <AppText variant="subhead">Bu cihaz bildiriş üçün qeydə alınmadı</AppText>
+              <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3, lineHeight: 18 }}>
+                Telefon icazə verib, amma cihazın ünvanı alınmadı — aşağıdakı ayarlar saxlanılır, lakin bu
+                telefona push gəlməyəcək. Mesaj və məşq təklifini yalnız tətbiqi açanda görəcəksən.
+              </AppText>
+            </View>
+          </View>
+        ) : null}
+
         {perm === 'denied' || perm === 'undetermined' ? (
           <PressableScale
             activeScale={0.98}
