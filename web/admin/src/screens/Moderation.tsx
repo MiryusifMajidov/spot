@@ -81,28 +81,38 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
   const [tab, setTab] = useState<'open' | 'closed'>('open');
   const [rows, setRows] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [resolvedToday, setResolvedToday] = useState<number>(0);
+  // null = the count could not be read. Rendered as «—», never as 0.
+  const [resolvedToday, setResolvedToday] = useState<number | null>(0);
 
   const [active, setActive] = useState<Report | null>(null);
   const [msgs, setMsgs] = useState<ReportMessage[]>([]);
   const [msgLoading, setMsgLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  /* «Şikayət yoxdur» is a claim about the queue. It may only be made after a read
+     that landed. */
+  const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   const load = useCallback(async () => {
     setLoading(true);
     const q = supabase.from('reports').select('*');
-    const { data } = tab === 'open'
+    /* PostgREST does not throw: a refused or dropped read returns
+       `{data: null, error}`. Reading only `data` turned that into `[]`, and the
+       screen then stated «Açıq şikayət yoxdur» and «Bugün həll olundu: 0» over a
+       queue holding open safety reports. Dashboard.tsx was fixed for exactly
+       this; the queue itself was not. */
+    const { data, error } = tab === 'open'
       ? await q.eq('status', 'open').order('sla_due_at', { ascending: true })
       : await q.in('status', ['resolved', 'dismissed']).order('created_at', { ascending: false }).limit(60);
+    setFailed(!!error);
     setRows((data as Report[]) ?? []);
 
     const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
-    const { count } = await supabase
+    const { count, error: cErr } = await supabase
       .from('reports').select('id', { count: 'exact', head: true })
       .in('status', ['resolved', 'dismissed'])
       .gte('resolved_at', startOfDay.toISOString());
-    setResolvedToday(count ?? 0);
+    setResolvedToday(cErr ? null : (count ?? 0));
     setLoading(false);
   }, [tab]);
 
@@ -189,14 +199,20 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
     //    failure this ordering prevents.
     if (rung.status) {
       const until = rung.days == null ? null : new Date(Date.now() + rung.days * 864e5).toISOString();
-      const { data: hit, error: pErr } = await supabase
-        .from('profiles')
-        .update({ status: rung.status, status_reason: reason, status_until: until })
-        .eq('id', active.target_id)
-        .select('id');
-      if (pErr || !hit?.length) {
+      /* Through admin_set_profile_status, not a table UPDATE: the three sanction
+         columns have no UPDATE grant for `authenticated` and must not get one
+         (profiles_update matches a user's own row, so a banned account could
+         lift its own ban). Before schema64 there was no working path at all —
+         every rung here returned 42501 and the report stayed open. */
+      const { error: pErr } = await supabase.rpc('admin_set_profile_status', {
+        p_profile: active.target_id,
+        p_status: rung.status,
+        p_reason: reason,
+        p_until: until,
+      });
+      if (pErr) {
         setBusy(false);
-        toast(pErr ? 'Profil yenilənmədi: ' + pErr.message : 'Profil yenilənmədi — icazə yoxdur. Şikayət açıq qaldı');
+        toast('Profil yenilənmədi: ' + pErr.message + '. Şikayət açıq qaldı');
         return;
       }
     }
@@ -268,7 +284,7 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
           </div>
         </div>
         <div style={{ font: '400 12.5px/1 var(--font)', color: 'var(--muted)' }}>
-          Bugün həll olundu: <b style={{ fontWeight: 600, color: 'var(--ink2)' }}>{resolvedToday}</b> · SLA: təhlükəsizlik 2 saat · digər 24 saat
+          Bugün həll olundu: <b style={{ fontWeight: 600, color: 'var(--ink2)' }}>{resolvedToday ?? '—'}</b> · SLA: təhlükəsizlik 2 saat · təqib 6 saat · digər 24 saat
         </div>
       </div>
 
@@ -299,7 +315,11 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <tr><td colSpan={6} className="empty">{tab === 'open' ? 'Açıq şikayət yoxdur' : 'Bağlanmış şikayət yoxdur'}</td></tr>
+              <tr><td colSpan={6} className="empty">
+                {failed
+                  ? 'Şikayətlər yüklənmədi — bu «şikayət yoxdur» demək DEYİL. Səhifəni yenilə.'
+                  : tab === 'open' ? 'Açıq şikayət yoxdur' : 'Bağlanmış şikayət yoxdur'}
+              </td></tr>
             ) : rows.map((r) => {
               const sla = slaBadge(r.sla_due_at);
               const cat = CAT[r.category];

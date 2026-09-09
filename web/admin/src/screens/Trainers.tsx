@@ -42,6 +42,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
 
   // reject modal
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [sendReason, setSendReason] = useState(true);
 
@@ -52,6 +53,10 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
       supabase.from('trainer_verifications').select('*').eq('status', 'rejected').order('created_at', { ascending: false }),
       supabase.from('trainers').select('*').eq('verified', true).order('name'),
     ]);
+    /* PostgREST resolves on failure, so reading `data` alone made a refused or
+       dropped read look like an empty verification queue — the screen then said
+       «Növbə boşdur» over people waiting to be reviewed. */
+    setFailed(!!pv.error || !!rv.error || !!vt.error);
     const pendingRows = (pv.data as TrainerVerification[]) ?? [];
     const rejectedRows = (rv.data as TrainerVerification[]) ?? [];
     const activeRows = (vt.data as Trainer[]) ?? [];
@@ -224,7 +229,9 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
               </div>
             </div>
             {filteredPending.length === 0 ? (
-              <div className="empty" style={{ padding: 40 }}>Növbə boşdur</div>
+              <div className="empty" style={{ padding: 40 }}>
+                {failed ? 'Növbə yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Növbə boşdur'}
+              </div>
             ) : filteredPending.map((v) => {
               const { name, sub } = label(v);
               const b = slaBadge(v.sla_due_at);
@@ -295,7 +302,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
                   <td><span className="badge green">Doğrulanmış</span></td>
                 </tr>
               ))}
-            {active.length === 0 ? <tr><td colSpan={6} className="empty">Doğrulanmış müəllim yoxdur</td></tr> : null}
+            {active.length === 0 ? <tr><td colSpan={6} className="empty">{failed ? 'Siyahı yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Doğrulanmış müəllim yoxdur'}</td></tr> : null}
           </tbody>
         </table>
       ) : null}
@@ -315,7 +322,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
                 </tr>
               );
             })}
-            {rejected.length === 0 ? <tr><td colSpan={4} className="empty">Rədd edilmiş müraciət yoxdur</td></tr> : null}
+            {rejected.length === 0 ? <tr><td colSpan={4} className="empty">{failed ? 'Siyahı yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Rədd edilmiş müraciət yoxdur'}</td></tr> : null}
           </tbody>
         </table>
       ) : null}
@@ -362,6 +369,32 @@ function VerificationDetail({
   onApprove: () => void;
   onReject: () => void;
 }) {
+  /* The evidence lives in the PRIVATE `certs` bucket and the column holds a
+     storage PATH, not a URL — the mobile app mints a signed URL to read it
+     (src/lib/images.ts). This panel rendered the raw path in a plain anchor, so
+     «Böyüt» navigated to https://<admin-host>/<path> and 404'd: the reviewer
+     could not see one pixel of the document they were deciding on, while the
+     card printed a green check and «Sənəd yükləndi». */
+  const [signed, setSigned] = useState<Record<string, string | null>>({});
+  const [signFailed, setSignFailed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const paths = [v.doc_id_url, v.doc_cert_url].filter((x): x is string => !!x);
+    (async () => {
+      const out: Record<string, string | null> = {};
+      let bad = false;
+      for (const path of paths) {
+        const { data, error } = await supabase.storage.from('certs').createSignedUrl(path, 300);
+        if (error || !data?.signedUrl) bad = true;
+        out[path] = data?.signedUrl ?? null;
+      }
+      if (!alive) return;
+      setSigned(out);
+      setSignFailed(bad);
+    })();
+    return () => { alive = false; };
+  }, [v.doc_id_url, v.doc_cert_url]);
+
   const name = trainer?.name ?? (v.trainer_id ? `Müəllim ${v.trainer_id.slice(0, 6)}` : 'Naməlum müəllim');
   const meta = [
     v.trainer_id ? `#${v.trainer_id}` : null,
@@ -398,6 +431,15 @@ function VerificationDetail({
         </div>
       </div>
 
+      {signFailed ? (
+        <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: 'var(--orange)' }}>
+          <div style={{ font: '400 12.5px/1.5 var(--font)', color: 'var(--text3)' }}>
+            Sənədlərin bir hissəsi açılmadı — fayl yerindədir, amma linki almaq alınmadı. Görmədiyin sənədə
+            görə qərar vermə: səhifəni yenilə və yenidən cəhd et.
+          </div>
+        </div>
+      ) : null}
+
       {/* 3 documents side by side */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
         {docs.map((d) => (
@@ -411,9 +453,15 @@ function VerificationDetail({
                   <Icon name="check" size={13} color="var(--ink2)" />
                 </div>
               ) : null}
-              {d.url ? (
-                <a href={d.url} target="_blank" rel="noreferrer"
+              {d.url && signed[d.url] ? (
+                <a href={signed[d.url] as string} target="_blank" rel="noreferrer"
                   style={{ position: 'absolute', bottom: 9, right: 9, padding: '4px 8px', borderRadius: 6, background: 'rgba(255,255,255,.9)', font: '600 10px/1 var(--font)', color: 'var(--ink2)' }}>Böyüt</a>
+              ) : d.url ? (
+                /* The file exists but we could not mint a link for it. Saying so
+                   is the difference between «review this» and «you cannot». */
+                <div style={{ position: 'absolute', bottom: 9, right: 9, padding: '4px 8px', borderRadius: 6, background: 'rgba(255,255,255,.9)', font: '600 10px/1 var(--font)', color: 'var(--orange-deep)' }}>
+                  {signFailed ? 'Açılmadı' : 'Yüklənir…'}
+                </div>
               ) : null}
             </div>
             <div style={{ padding: '12px 14px' }}>

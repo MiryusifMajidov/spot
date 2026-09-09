@@ -108,19 +108,27 @@ export function Users({ search }: ScreenProps) {
   const [pending, setPending] = useState<Pending | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  /* Two failures, told apart: the roster read and the counters read. «0 users»
+     must never stand in for «we could not ask». */
+  const [failed, setFailed] = useState(false);
+  const [statsFailed, setStatsFailed] = useState(false);
   // Phones that ops explicitly unmasked this session (id -> real number).
   const [revealed, setRevealed] = useState<Record<string, string>>({});
 
   async function load() {
     setLoading(true);
-    const [{ data: profs }, { data: gyms }, { data: stats }] = await Promise.all([
+    const [{ data: profs, error: profErr }, { data: gyms }, { data: stats, error: statErr }] = await Promise.all([
       // Never request `phone`: schema9 revokes column access to it, so `select('*')`
       // would fail outright — and the masked value shown here is meant to come from
       // the audited admin_unmask_phone RPC, not from the raw row.
       supabase
         .from('profiles')
         .select(
-          'id,user_id,name,gender,age,home_gym_id,level,goals,types,time_slot,bio,visibility,show_in_gym_list,role,specialty,price_from,avatar_url,created_at,status,status_reason,status_until,last_active_at'
+          // No `status_reason`: schema57 revoked SELECT on it, and PostgREST fails
+          // the WHOLE select when one column is ungranted — which turned a
+          // permission error into «0 istifadəçi» over a full database. It now
+          // arrives through admin_profile_stats(), which checks the admin role.
+          'id,user_id,name,gender,age,home_gym_id,level,goals,types,time_slot,bio,visibility,show_in_gym_list,role,specialty,price_from,avatar_url,created_at,status,status_until,last_active_at'
         )
         .order('created_at', { ascending: false }),
       supabase.from('gyms').select('id,name'),
@@ -134,7 +142,13 @@ export function Users({ search }: ScreenProps) {
     );
     // The row as it comes out of `profiles`: the four counters are not columns
     // there, so they are absent until merged in below.
-    type ProfileRow = Omit<Profile, 'reports_count' | 'requests_sent' | 'requests_answered' | 'checkin_streak'>;
+    type ProfileRow = Omit<Profile, 'reports_count' | 'requests_sent' | 'requests_answered' | 'checkin_streak' | 'status_reason'>;
+    // A refused read is not an empty platform. Without this the screen stated
+    // «0 istifadəçi · 0 aktiv» over a database full of people, and the sanction
+    // ladder — which lives in the row drawer — became unreachable with no
+    // explanation anywhere on screen.
+    setFailed(!!profErr);
+    setStatsFailed(!!statErr);
     setRows(
       ((profs as ProfileRow[]) ?? []).map((p) => {
         const s = stat.get(p.id);
@@ -144,6 +158,7 @@ export function Users({ search }: ScreenProps) {
           requests_sent: s?.requests_sent ?? 0,
           requests_answered: s?.requests_answered ?? 0,
           checkin_streak: s?.checkin_streak ?? 0,
+          status_reason: s?.status_reason ?? null,
         };
       })
     );
@@ -233,17 +248,21 @@ export function Users({ search }: ScreenProps) {
       // mute rung a SEVEN-DAY ban rather than a permanent one, and what the
       // server-side check reads to decide whether the sanction is still live.
       const until = meta.days == null ? null : new Date(Date.now() + meta.days * 864e5).toISOString();
-      const { data: rows, error } = await supabase
-        .from('profiles')
-        .update({ status: meta.status, status_reason: r, status_until: until })
-        .eq('id', target.id)
-        .select('id');
+      /* Through the RPC, not a table UPDATE. `status`, `status_reason` and
+         `status_until` have no UPDATE grant for `authenticated` and must not get
+         one: `profiles_update` matches a user's OWN row, so a column grant would
+         let a banned account lift its own ban. Until schema64 there was no other
+         path either, which is why every rung of this ladder returned 42501 and
+         nobody on SPOT could be sanctioned at all. The RPC also writes the audit
+         entry, so a sanction can no longer exist without a record. */
+      const { error } = await supabase.rpc('admin_set_profile_status', {
+        p_profile: target.id,
+        p_status: meta.status,
+        p_reason: r,
+        p_until: until,
+      });
       if (error) {
         say(`Alınmadı: ${error.message}`);
-        return false;
-      }
-      if (!rows?.length) {
-        say('Profil yenilənmədi — icazə yoxdur');
         return false;
       }
     }
@@ -268,17 +287,14 @@ export function Users({ search }: ScreenProps) {
   /** Lifts a sanction. Without this the ladder is one-way: a wrongly banned
    *  account, or one whose 7-day mute has lapsed, could never be put back. */
   async function applyRestore(target: Profile, r: string): Promise<boolean> {
-    const { data: hit, error } = await supabase
-      .from('profiles')
-      .update({ status: 'active', status_reason: r, status_until: null })
-      .eq('id', target.id)
-      .select('id');
+    const { error } = await supabase.rpc('admin_set_profile_status', {
+      p_profile: target.id,
+      p_status: 'active',
+      p_reason: r,
+      p_until: null,
+    });
     if (error) {
       toast(`Alınmadı: ${error.message}`);
-      return false;
-    }
-    if (!hit?.length) {
-      toast('Profil yenilənmədi — icazə yoxdur');
       return false;
     }
     const { error: mErr } = await supabase.from('moderation_actions').insert({
@@ -404,8 +420,12 @@ export function Users({ search }: ScreenProps) {
     <>
       {/* toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-        <div style={{ font: '400 13px/1 var(--font)', color: 'var(--muted)' }}>
-          {loading ? '—' : `${rows.length.toLocaleString('az')} nəfər · ${activeCount.toLocaleString('az')} aktiv`}
+        <div style={{ font: '400 13px/1 var(--font)', color: failed ? 'var(--red)' : 'var(--muted)' }}>
+          {loading
+            ? '—'
+            : failed
+              ? 'İstifadəçi siyahısı yüklənmədi'
+              : `${rows.length.toLocaleString('az')} nəfər · ${activeCount.toLocaleString('az')} aktiv`}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
           <button className="btn" onClick={exportCsv}>
@@ -455,6 +475,17 @@ export function Users({ search }: ScreenProps) {
         </button>
       </div>
 
+      {/* The counters come from admin_profile_stats(); when THAT read fails but the
+          roster loads, every number in the table would silently be 0. Say so. */}
+      {!loading && !failed && statsFailed ? (
+        <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: 'var(--orange)' }}>
+          <div style={{ font: '400 12.5px/1.5 var(--font)', color: 'var(--text3)' }}>
+            Sayğaclar yüklənmədi — şikayət sayı, sorğu sayı və seriya sütunları boşdur. Sıfırlar ölçülmüş
+            rəqəm deyil.
+          </div>
+        </div>
+      ) : null}
+
       {/* table */}
       {loading ? (
         <div className="spinner" />
@@ -485,7 +516,9 @@ export function Users({ search }: ScreenProps) {
               const sMeta = STATUS_META[effectiveStatus(p)];
               const until = untilLabel(p);
               const reports = p.reports_count ?? 0;
-              const shownPhone = revealed[p.id] ?? maskPhone(p.phone);
+              // `p.phone` is never selected, so there is nothing to mask: say the
+              // number is hidden rather than printing a mask of `undefined`.
+              const shownPhone = revealed[p.id] ?? 'gizli';
               return (
                 <tr
                   key={p.id}
@@ -525,7 +558,11 @@ export function Users({ search }: ScreenProps) {
                       <span style={{ font: '400 12.5px/1 var(--font)', color: revealed[p.id] ? 'var(--ink2)' : 'var(--muted2)' }}>
                         {shownPhone}
                       </span>
-                      {canUnmask && p.phone && !revealed[p.id] ? (
+                      {/* NOT gated on `p.phone`. The panel deliberately never selects
+                          that column (schema9 revokes it), so the value is always
+                          undefined and this button could never render — the audited
+                          admin_unmask_phone path was unreachable from the UI. */}
+                      {canUnmask && !revealed[p.id] ? (
                         <button
                           className="link"
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}
@@ -565,7 +602,9 @@ export function Users({ search }: ScreenProps) {
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={8} className="empty">
-                  İstifadəçi tapılmadı
+                  {failed
+                    ? 'İstifadəçi siyahısı yüklənmədi — bu, platformada istifadəçi olmadığı demək DEYİL. Səhifəni yenilə; problem qalarsa, icazələri yoxla.'
+                    : 'İstifadəçi tapılmadı'}
                 </td>
               </tr>
             ) : null}

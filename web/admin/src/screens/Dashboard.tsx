@@ -31,6 +31,7 @@ export function Dashboard({ go }: ScreenProps) {
   const [gyms, setGyms] = useState<Gym[]>([]);
   const [checkInsToday, setCheckInsToday] = useState<number | null>(null);
   const [kpiFailed, setKpiFailed] = useState(false);
+  const [queuesFailed, setQueuesFailed] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -47,6 +48,9 @@ export function Dashboard({ go }: ScreenProps) {
         supabase.from('gyms').select('*').order('members', { ascending: false }).limit(4),
         supabase.from('check_ins').select('id', { count: 'exact', head: true }).gte('created_at', dayStart().toISOString()),
       ]);
+      /* The KPI strip beside these was fixed to report failure; the previews
+         under it were not, so a refused read still drew «növbə boşdur». */
+      setQueuesFailed(!!v.error || !!r.error || !!c.error);
       setVerifs((v.data as TrainerVerification[]) ?? []);
       setReports((r.data as Report[]) ?? []);
       setClaims((c.data as GymClaim[]) ?? []);
@@ -60,8 +64,13 @@ export function Dashboard({ go }: ScreenProps) {
     { label: 'İstifadəçi · ümumi', val: k ? k.users_total.toLocaleString('az') : '—' },
     { label: 'Zallar', val: k ? String(k.gyms_total) : '—' },
     { label: 'Açıq şikayət', val: k ? String(k.reports_open) : '—', accent: k && k.reports_overdue > 0 ? 'red' : undefined, sub: k && k.reports_overdue ? `${k.reports_overdue} gecikib` : undefined },
-    { label: 'Bugün check-in', val: checkInsToday != null ? checkInsToday.toLocaleString('az') : '—', sub: '04:00-dan' },
-    { label: 'Aktiv day-pass', val: k ? String(k.daypass_active) : '—', dark: true, sub: 'canlı' },
+    /* «Aktiv day-pass · canlı» used to sit here reading the literal string
+       "undefined": schema58 removed the key because nothing ever moves a pass out
+       of 'active', so the number counted every pass ever created and the word
+       «canlı» was false. The gym owner's own panel shows today's live and
+       redeemed counts, which are measured. */
+    { label: 'Bugün check-in', val: checkInsToday != null ? checkInsToday.toLocaleString('az') : '—', dark: true, sub: '04:00-dan' },
+    { label: 'Gözləyən müəllim', val: k ? String(k.trainers_pending) : '—', sub: 'doğrulama' },
   ];
 
   return (
@@ -81,11 +90,11 @@ export function Dashboard({ go }: ScreenProps) {
       <div className="section-head"><h2>Növbələr · SLA</h2></div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
         <QueueCard icon="verified" color="var(--blue)" title="Müəllim doğrulanması" count={kpiFailed || !k ? null : k.trainers_pending} onOpen={() => go('trainers')}
-          rows={verifs.map((v) => ({ label: v.trainer_id || 'Müəllim', badge: slaBadge(v.sla_due_at) }))} empty="Növbə boşdur" />
+          rows={verifs.map((v) => ({ label: v.trainer_id || 'Müəllim', badge: slaBadge(v.sla_due_at) }))} empty={queuesFailed ? 'Növbə yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Növbə boşdur'} />
         <QueueCard icon="shield" color="var(--red)" title="Şikayətlər" count={kpiFailed || !k ? null : k.reports_open} onOpen={() => go('moderation')}
-          rows={reports.map((r) => ({ label: `${r.category} · #${r.id.slice(0, 4)}`, badge: slaBadge(r.sla_due_at) }))} empty="Açıq şikayət yoxdur" />
+          rows={reports.map((r) => ({ label: `${r.category} · #${r.id.slice(0, 4)}`, badge: slaBadge(r.sla_due_at) }))} empty={queuesFailed ? 'Şikayətlər yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Açıq şikayət yoxdur'} />
         <QueueCard icon="pin" color="var(--green)" title="Zal sahibliyi (claim)" count={kpiFailed || !k ? null : k.claims_pending} onOpen={() => go('gyms')}
-          rows={claims.map((c) => ({ label: c.gym_id || 'Zal', badge: slaBadge(c.sla_due_at) }))} empty="Claim növbəsi boşdur" />
+          rows={claims.map((c) => ({ label: c.gym_id || 'Zal', badge: slaBadge(c.sla_due_at) }))} empty={queuesFailed ? 'Claim növbəsi yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Claim növbəsi boşdur'} />
       </div>
 
       <div className="section-head"><h2>Ən aktiv zallar</h2><button className="link" onClick={() => go('gyms')}>Hamısına bax</button></div>

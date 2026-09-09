@@ -67,6 +67,7 @@ export function Content({ search, refreshCounts }: ScreenProps) {
 
   // remove-reason modal
   const [target, setTarget] = useState<RemoveTarget | null>(null);
+  const [failed, setFailed] = useState(false);
   const [reason, setReason] = useState('');
   const [tpl, setTpl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -80,6 +81,9 @@ export function Content({ search, refreshCounts }: ScreenProps) {
       // which content ids were already removed (moderator+ can read; ignore on error)
       supabase.from('moderation_actions').select('target_id').eq('target_type', 'content').eq('action', 'content_remove'),
     ]);
+    // «Yoxlanılacaq proqram yoxdur» is a statement about the platform's content.
+    // It may only be made after a read that landed.
+    setFailed(!!p.error || !!v.error || !!c.error);
     setPrograms((p.data as Program[]) ?? []);
     setVideos((v.data as FeedVideo[]) ?? []);
     setPosts((c.data as CommunityPost[]) ?? []);
@@ -149,18 +153,21 @@ export function Content({ search, refreshCounts }: ScreenProps) {
     //    forever — the log is the record of a takedown, not the takedown.
     //    `.select('id')` is mandatory: an RLS-filtered UPDATE returns
     //    `error: null` with zero rows changed.
-    const { data: hidden, error: hErr } = await supabase
-      .from(target.table)
-      .update({ hidden_at: new Date().toISOString() })
-      .eq('id', target.targetId)
-      .select('id');
-    if (hErr || !hidden?.length) {
+    /* One audited path for all three tables (schema64). `programs.hidden_at` had
+       no UPDATE grant at all, so an abusive program could never be taken down;
+       and it could not simply be granted, because `programs` — unlike
+       feed_videos and community_posts — has an OWNER update policy, so the
+       author would have been able to un-hide their own moderated program. The
+       RPC checks the admin role, writes the row and writes the audit entry. */
+    const { error: hErr } = await supabase.rpc('admin_set_content_hidden', {
+      p_table: target.table,
+      p_id: target.targetId,
+      p_hidden: true,
+      p_reason: why,
+    });
+    if (hErr) {
       setSaving(false);
-      toast(
-        hErr
-          ? 'Məzmun silinmədi: ' + hErr.message
-          : 'Məzmun silinmədi — icazə yoxdur. Məzmun hələ də canlıdır',
-      );
+      toast('Məzmun silinmədi: ' + hErr.message + '. Məzmun hələ də canlıdır');
       return;
     }
 
@@ -216,7 +223,7 @@ export function Content({ search, refreshCounts }: ScreenProps) {
             <div className="spinner" />
           ) : tab === 'programs' ? (
             visiblePrograms.length === 0 ? (
-              <div className="card"><div className="empty">Yoxlanılacaq proqram yoxdur</div></div>
+              <div className="card"><div className="empty">{failed ? 'Proqramlar yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Yoxlanılacaq proqram yoxdur'}</div></div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {visiblePrograms.map((p) => (
@@ -225,7 +232,7 @@ export function Content({ search, refreshCounts }: ScreenProps) {
               </div>
             )
           ) : feedItems.length === 0 ? (
-            <div className="card"><div className="empty">Feed məzmunu yoxdur</div></div>
+            <div className="card"><div className="empty">{failed ? 'Feed məzmunu yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Feed məzmunu yoxdur'}</div></div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {feedItems.map((i) => (

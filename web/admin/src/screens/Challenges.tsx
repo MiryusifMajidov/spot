@@ -53,6 +53,7 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
   const [rows, setRows] = useState<ChallengeRow[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
   const [busy, setBusy] = useState<string | null>(null); // id currently toggling
+  const [failed, setFailed] = useState(false);
 
   // create modal
   const [showNew, setShowNew] = useState(false);
@@ -61,11 +62,14 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
 
   async function loadData() {
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('challenges')
       .select('*')
       .order('active', { ascending: false })
       .order('ends_at', { ascending: true, nullsFirst: false });
+    // A refused read is not «no challenges»: the KPI strip below counts `rows`,
+    // so it would print four confident zeroes over a table nobody managed to ask.
+    setFailed(!!error);
     setRows((data as ChallengeRow[]) ?? []);
     setLoading(false);
   }
@@ -187,7 +191,7 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
       {loading ? (
         <div className="spinner" />
       ) : visible.length === 0 ? (
-        <div className="card"><div className="empty">Challenge yoxdur</div></div>
+        <div className="card"><div className="empty">{failed ? 'Challenge-lər yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Challenge yoxdur'}</div></div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 16 }}>
           {visible.map((c) => (

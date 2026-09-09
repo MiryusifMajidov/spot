@@ -54,6 +54,12 @@ export interface ProfileStats {
   requests_answered: number;
   checkin_streak: number;
   last_check_in: string | null;
+  /* The moderator's note about this account. It travels here rather than in the
+     profiles select because schema57 revoked SELECT on `profiles.status_reason`
+     from every role — a column grant is role-wide, so granting it back would
+     show every user the sanction notes written about everybody else. This RPC is
+     admin-gated (schema64). */
+  status_reason: string | null;
 }
 
 export interface Gym {
@@ -216,5 +222,9 @@ export interface DashboardKpis {
   reports_overdue: number;
   claims_pending: number;
   gyms_total: number;
-  daypass_active: number;
+  /* No `daypass_active`. schema58 removed the key from admin_dashboard() —
+     nothing expires a pass, so the count would have been every pass ever
+     created under the label «canlı». The field stayed here and the Dashboard
+     rendered `String(undefined)`, printing the literal word "undefined" as a
+     KPI. */
 }

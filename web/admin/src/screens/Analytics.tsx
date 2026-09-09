@@ -12,6 +12,8 @@ interface Metrics {
   withGoals: number | null;
   matchTotal: number | null;
   matchAccepted: number | null;
+  /** DISTINCT people on an accepted request — what «Yoldaşı olan» means. */
+  matchedProfiles: number | null;
   feedVideos: number | null;
   communityPosts: number | null;
 }
@@ -33,17 +35,34 @@ export function Analytics(_props: ScreenProps) {
     (async () => {
       // NOTE: `select('*')` on profiles is rejected outright (column privileges
       // withhold `phone`), so every projection here names a granted column.
-      const [profilesTotal, withGym, withGoals, matchTotal, matchAccepted, feedVideos, communityPosts] = await Promise.all([
+      const [profilesTotal, withGym, withGoals, feedVideos, communityPosts] = await Promise.all([
         countOf(supabase.from('profiles').select('id', { count: 'exact', head: true })),
         countOf(supabase.from('profiles').select('id', { count: 'exact', head: true }).not('home_gym_id', 'is', null)),
         countOf(supabase.from('profiles').select('id', { count: 'exact', head: true }).neq('goals', '{}')),
-        countOf(supabase.from('match_requests').select('id', { count: 'exact', head: true })),
-        countOf(supabase.from('match_requests').select('id', { count: 'exact', head: true }).eq('status', 'accepted')),
         countOf(supabase.from('feed_videos').select('id', { count: 'exact', head: true })),
         countOf(supabase.from('community_posts').select('id', { count: 'exact', head: true })),
       ]);
 
-      setM({ profilesTotal, withGym, withGoals, matchTotal, matchAccepted, feedVideos, communityPosts });
+      /* NOT a table count. `match_read` has no admin branch, so an admin's own
+         count of match_requests is permanently 0 whatever the table holds — and
+         counting ROWS answers the wrong question anyway: one accepted row is two
+         people, and one person can hold many. admin_match_stats() (schema65)
+         computes it server-side, including the DISTINCT headcount that
+         «Yoldaşı olan» claims to be. */
+      const { data: ms } = await supabase.rpc('admin_match_stats');
+      const mm = (ms ?? null) as
+        | { requests_total: number; requests_accepted: number; matched_profiles: number }
+        | null;
+      setM({
+        profilesTotal,
+        withGym,
+        withGoals,
+        matchTotal: mm ? mm.requests_total : null,
+        matchAccepted: mm ? mm.requests_accepted : null,
+        matchedProfiles: mm ? mm.matched_profiles : null,
+        feedVideos,
+        communityPosts,
+      });
       setLoading(false);
     })();
   }, []);
@@ -54,11 +73,12 @@ export function Analytics(_props: ScreenProps) {
   // `total` stays null when the profiles count could not be read — a failed read
   // must never be rendered as the number 0.
   const total = m.profilesTotal;
-  const withPartner = m.matchAccepted; // accepted matches ≈ users who found a partner
+  // People, not rows: DISTINCT profiles appearing on an accepted request.
+  const withPartner = m.matchedProfiles;
   const partnerShare = withPartner != null && total != null && total > 0 ? pct(withPartner, total) : null;
   const alone = withPartner != null && total != null ? Math.max(0, total - withPartner) : null;
   const hypoConclusion =
-    total == null || m.matchAccepted == null
+    total == null || withPartner == null
       ? 'Göstəriciləri oxumaq mümkün olmadı — hipotezi qiymətləndirmək olmur.'
       : total === 0 || (withPartner ?? 0) === 0
         ? 'Hipotezi yoxlamaq üçün hələ kifayət data yoxdur — qəbul edilmiş match sayı çox azdır.'
