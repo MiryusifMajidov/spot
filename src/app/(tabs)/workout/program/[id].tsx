@@ -1,5 +1,4 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { CreatorBadge } from '@/components/CreatorBadge';
@@ -9,8 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Tag } from '@/components/ui/Tag';
-import { useProgram } from '@/lib/hooks';
-import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+import { useProgram, useProgramPhase } from '@/lib/hooks';
+import { hasSupabaseConfig } from '@/lib/supabase';
 import { seedById, useAllPrograms, useDb } from '@/store/db';
 import { actionSheet, confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -28,40 +27,24 @@ export default function ProgramDetail() {
 
   const p = all.find((x) => x.id === id) ?? remote;
 
-  // useProgram() is local-first and cannot tell "still fetching" from "no such
-  // row" from "the fetch failed" — it returns null for all three. A tiny parallel
-  // probe on the same id supplies that missing state so the screen can say which
-  // one it is instead of rendering an empty void. Loading, failed and genuinely
-  // absent must read differently.
-  const [probe, setProbe] = useState<'pending' | 'missing' | 'failed'>(
-    hasSupabaseConfig && id ? 'pending' : 'missing'
-  );
-  useEffect(() => {
-    if (p) return; // already resolved — no need to ask the server anything
-    if (!hasSupabaseConfig || !id) {
-      setProbe('missing');
-      return;
-    }
-    let alive = true;
-    supabase
-      .from('programs')
-      .select('id')
-      .eq('id', id)
-      .maybeSingle()
-      .then(
-        ({ data, error }) => {
-          if (!alive) return;
-          // A row that exists while the screen still has no program means the load
-          // failed, not that the program is gone — «tapılmadı» would be a lie.
-          setProbe(error || data ? 'failed' : 'missing');
-        },
-        () => alive && setProbe('failed')
-      );
-    return () => {
-      alive = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, !p]);
+  /* The phase comes from the hook now, not from a second request. `useProgram`
+     sits on `useFocusFetch`, which records loading/ready/failed under the same
+     key — so «Yüklənir…», «Proqram yüklənmədi» and «Proqram tapılmadı» stay
+     three different sentences without this screen paying for a duplicate round
+     trip on every open. */
+  const fetchPhase = useProgramPhase(id);
+  const probe: 'pending' | 'missing' | 'failed' =
+    fetchPhase === 'failed'
+      ? 'failed'
+      : fetchPhase === 'ready'
+        ? 'missing'
+        : // 'loading', and also 'idle': the focus effect has not run yet on the
+          // very first render. Reading idle as «missing» would flash «Proqram
+          // tapılmadı» before anything had even been asked for. Without a server
+          // configured nothing ever will be asked, and then missing is the truth.
+          hasSupabaseConfig
+          ? 'pending'
+          : 'missing';
 
   if (!p) {
     // A trainer's own programs live only on their device (id `mine-…`), so an

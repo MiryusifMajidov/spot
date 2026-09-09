@@ -31,10 +31,11 @@ function endsText(endsAt: string): string {
   return `${days} gün`;
 }
 
-/** The row, mapped here rather than through `useChallenge`.
+/** The row, mapped and read here.
  *
- *  `useChallenge` is built on `useOne`, whose value is `null` both while the read
- *  is in flight AND after it fails. This screen turned that one null into
+ *  It used to come from `useChallenge`, which sat on `useOne` — a hook whose
+ *  value was `null` both while the read was in flight AND after it failed. Both
+ *  are deleted now. This screen turned that one null into
  *  `return null` — BEFORE `<Screen>` and `<NavBar>` — so opening a challenge
  *  offline (or from a push deep link) produced a completely blank frame with no
  *  title, no message and no back arrow, and the same blank flashed on every

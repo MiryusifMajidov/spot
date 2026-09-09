@@ -35,22 +35,12 @@ function useList<T>(fallback: T[], fetcher: () => Promise<T[]>, deps: unknown[] 
   return data;
 }
 
-function useOne<T>(fallback: T | null, fetcher: () => Promise<T | null>, deps: unknown[] = []): T | null {
-  // Local-first: show seed data immediately; Supabase (if configured) overrides on load.
-  const [data, setData] = useState<T | null>(fallback);
-  useEffect(() => {
-    if (!hasSupabaseConfig) return;
-    let alive = true;
-    fetcher()
-      .then((d) => alive && setData(d))
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-  return data;
-}
+/* `useOne` is gone. It swallowed every fetch error with `.catch(() => {})` and
+   kept no phase, so its null meant «loading», «failed» and «not found» all at
+   once — and every screen built on it either printed a definite absence over a
+   read that never landed, or paid for a second request to work out which was
+   which. Both of its callers now use `useFocusFetch`, which records the phase
+   under the same key. */
 
 
 /** Module-level so an empty list keeps the same reference across renders — a
@@ -181,16 +171,26 @@ export const usePrograms = () => {
   }, [mine, remote]);
 };
 
-/** A program the user created is a first-class program — look there first. */
+/** A program the user created is a first-class program — look there first.
+ *
+ *  On `useFocusFetch` rather than `useOne`, so the screen can tell «still
+ *  loading» from «no such program» from «the read failed». It could not before:
+ *  `useOne` returned null for all three and swallowed the error, which is why
+ *  the program screen had to fire a SECOND request of its own — a duplicate
+ *  round trip on every open — purely to recover the state the hook had thrown
+ *  away. `useProgramPhase(id)` replaces that probe. */
 export const useProgram = (id: string) => {
   const mine = useDb((s) => s.myPrograms.find((p) => p.id === id));
-  const fetched = useOne<Program>(mockPrograms.find((p) => p.id === id) ?? null, async () => {
+  const seed = useMemo(() => mockPrograms.find((p) => p.id === id) ?? null, [id]);
+  const fetched = useFocusFetch<Program | null>(id ? `program:${id}` : '', seed, async () => {
     const { data, error } = await supabase.from('programs').select('*').eq('id', id).is('hidden_at', null).maybeSingle();
     if (error) throw error;
     return data ? mapProgram(data) : null;
-  }, [id]);
+  });
   return mine ?? fetched;
 };
+
+export const useProgramPhase = (id: string) => useFetchPhase(id ? `program:${id}` : '');
 
 export const useGyms = () => {
   // Local-first: seeds render instantly, the server overrides once it answers.
@@ -377,12 +377,11 @@ export const useChallenges = () => {
   return { active, joinable, streak: streakChallenge, live };
 };
 
-export const useChallenge = (id: string) =>
-  useOne<Challenge>(null, async () => {
-    const { data, error } = await supabase.from('challenges').select('*').eq('id', id).maybeSingle();
-    if (error) throw error;
-    return data ? mapChallenge(data) : null;
-  }, [id]);
+/* `useChallenge` used to live here, on `useOne`. It had exactly the blind spot
+   described above — null for loading, for missing and for failed — and the
+   challenge detail screen rendered a blank frame for all three. That screen now
+   reads the row itself through `useFocusFetch` and says which of the three
+   happened, so nothing calls this any more. */
 
 /** The ranking for one challenge, counted on the server from real workout rows.
  *  `[]` means nobody has joined; a THROW means we could not read it, and the
