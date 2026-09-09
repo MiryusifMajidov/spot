@@ -854,6 +854,13 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'web/admin/src/screens/Challenges.tsx:114 toggles challenges.active. Same gap: RLS on, SELECT-only policy set.'
   union all
+  select 'grant', 'authenticated may DELETE its own prs row',
+         case when exists (select 1 from information_schema.role_table_grants
+                           where grantee = 'authenticated' and table_schema = 'public'
+                             and table_name = 'prs' and privilege_type = 'DELETE')
+              then 'OK' else 'MISSING' end,
+         'schema72. Deleting a workout has to take back the personal record that workout wrote (src/lib/removeWorkout.ts), or the profile keeps showing a record no session the person recognises stands behind. schema62 granted only SELECT/INSERT/UPDATE on prs. RLS still scopes it: prs_write is profile_id in (select id from profiles where user_id = auth.uid()).'
+  union all
   select 'function', 'tg_notify_review_reply carries the gym id',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                            where n.nspname = 'public' and p.proname = 'tg_notify_review_reply'

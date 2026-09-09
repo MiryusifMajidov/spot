@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { successFeedback, tapFeedback } from '@/lib/feedback';
+import { LIFTS } from '@/lib/lifts';
 import { parseDecimal } from '@/lib/az';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -61,12 +62,6 @@ function baseRepOf(reps: string): number {
 }
 const isTimed = (reps: string) => /san/i.test(reps);
 const isBodyweight = (eq: string) => eq === 'Bədən' || eq === 'Turnik' || eq === 'Bar';
-
-const LIFTS: { lift: string; test: (n: string) => boolean }[] = [
-  { lift: 'Skvat', test: (n) => n.toLowerCase().includes('skvat') },
-  { lift: 'Bench', test: (n) => n.toLowerCase().includes('bench') },
-  { lift: 'Deadlift', test: (n) => n.toLowerCase().includes('deadlift') && !n.toLowerCase().includes('romanian') },
-];
 
 export default function Session() {
   const router = useRouter();

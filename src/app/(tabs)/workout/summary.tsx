@@ -9,10 +9,15 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
+import { setMyWorkoutRpe } from '@/lib/api';
+import { hasSupabaseConfig } from '@/lib/supabase';
 import { useDb, useStats } from '@/store/db';
 import { palette } from '@/theme';
 
 const RPE = ['Asan', 'Normal', 'Ağır'];
+/** The workout ids the server knows are uuids (src/lib/ids.ts). A local-only
+ *  row has nothing to update up there. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function Summary() {
   const router = useRouter();
@@ -55,6 +60,19 @@ export default function Summary() {
     }
     useDb.setState({ workouts: [{ ...last, rpe: i }, ...workouts.slice(1)] });
     setStored(true);
+    /* And up to the server, so the answer survives a new phone. It is sent from
+       here because `trainingSync` skips a workout the server already has, and by
+       the time this screen is open the row has been there for a minute — which
+       is why every rating anyone had ever given was device-only until now.
+       Nothing on screen depends on it: the confirmation below promises the next
+       weight suggestion, and that reads the LOCAL copy written above. A phone
+       with no signal keeps the rating where it is useful and loses only the
+       backup. */
+    if (hasSupabaseConfig && UUID.test(last.id)) {
+      void setMyWorkoutRpe(last.id, RPE[i]).catch((e) => {
+        if (__DEV__) console.warn('[summary] rpe not synced:', String((e as Error)?.message ?? e));
+      });
+    }
   };
 
   const share = () =>

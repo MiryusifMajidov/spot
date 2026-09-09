@@ -1033,6 +1033,80 @@ export async function logPR(lift: string, value: number, delta?: string): Promis
   await supabase.from('prs').insert({ profile_id: me.id, lift, value, delta: delta ?? null });
 }
 
+/**
+ * Write the «Necə keçdi?» rating onto the workout row that is already on the
+ * server.
+ *
+ * The rating is chosen on the summary screen, AFTER the session screen has
+ * already inserted the workout — and `trainingSync` skips any workout the
+ * server already has, so nothing ever carried the rating up. It stayed on the
+ * device that logged it: the next-weight suggestion still worked there, and the
+ * moment the person reinstalled or changed phones the answer was gone.
+ *
+ * The row count is checked, and no caller states anything about the result: the
+ * confirmation on that screen only promises the next weight suggestion, which
+ * the LOCAL write is what powers. This is durability, not the promise.
+ */
+export async function setMyWorkoutRpe(id: string, rpe: string): Promise<boolean> {
+  const { data, error } = await supabase.from('workouts').update({ rpe }).eq('id', id).select('id');
+  if (error) throw error;
+  return !!data?.length;
+}
+
+/**
+ * Remove one workout row.
+ *
+ * Returns 'deleted' when the row was really removed, 'absent' when there was
+ * nothing there to remove (a workout that never reached the server, or one
+ * already deleted from another device). Both are success; anything else throws.
+ *
+ * The row count is checked and then confirmed with a read, because an
+ * RLS-filtered DELETE is not an error — it comes back `error: null` with zero
+ * rows changed, exactly like a delete of something that was already gone. The
+ * caller has to tell those apart: it removes the local copy only when the
+ * server side is genuinely clear, or the next sync would upload the workout
+ * again and the person would watch a deleted session come back.
+ */
+export async function deleteMyWorkout(id: string): Promise<'deleted' | 'absent'> {
+  const { data, error } = await supabase.from('workouts').delete().eq('id', id).select('id');
+  if (error) throw error;
+  if (data?.length) return 'deleted';
+  const { data: still, error: readErr } = await supabase.from('workouts').select('id').eq('id', id).maybeSingle();
+  if (readErr) throw readErr;
+  if (still) throw new Error('workout-not-deleted');
+  return 'absent';
+}
+
+/**
+ * Take back the personal record a workout wrote, and nothing else.
+ *
+ * `prs` has no link to the workout that produced it, so the row is matched on
+ * what it would have to look like: the same lift, the same value, written in
+ * the same few minutes as the workout (`logPR` runs immediately after
+ * `logWorkout` in the session screen). It is deliberately NOT a recomputation
+ * of the person's records from what remains — a workout restored from another
+ * device has no set detail, so recomputing would delete real history it cannot
+ * see. Undo exactly this workout's own record, or nothing.
+ *
+ * Returns how many rows went.
+ */
+export async function deleteMyPRAt(lift: string, value: number, atIso: string): Promise<number> {
+  const at = new Date(atIso).getTime();
+  if (!Number.isFinite(at)) return 0;
+  const from = new Date(at - 5 * 60 * 1000).toISOString();
+  const to = new Date(at + 5 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('prs')
+    .delete()
+    .eq('lift', lift)
+    .eq('value', value)
+    .gte('created_at', from)
+    .lte('created_at', to)
+    .select('id');
+  if (error) throw error;
+  return data?.length ?? 0;
+}
+
 /** Log a bodyweight entry (kg) to the progress table. */
 export async function logWeight(kg: number, id?: string, at?: string): Promise<void> {
   const me = await getMyProfile();

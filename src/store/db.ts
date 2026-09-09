@@ -337,6 +337,9 @@ interface DbState {
   setServerPRs: (rows: { lift: string; value: number; delta?: string }[]) => void;
   /** Bring server-stored history into the device engine — see the implementation. */
   mergeFromServer: (incoming: { workouts: Workout[]; weights: WeightLog[]; checkIns?: CheckIn[] }) => void;
+  /** Drop a logged workout from this device. Call it only after the server copy
+   *  is known to be gone — see `removeWorkout` in src/lib/removeWorkout.ts. */
+  forgetWorkout: (id: string) => void;
   /** Adopt the id the server accepted, for a row written before ids were shared. */
   renameWorkout: (oldId: string, newId: string) => void;
   renameWeight: (at: string, id: string) => void;
@@ -430,6 +433,8 @@ export const useDb = create<DbState>()(
       },
 
       setServerPRs: (rows) => set({ serverPRs: rows }),
+
+      forgetWorkout: (id) => set((s) => ({ workouts: s.workouts.filter((w) => w.id !== id) })),
 
       renameWorkout: (oldId, id) =>
         set((s) => ({ workouts: s.workouts.map((w) => (w.id === oldId ? { ...w, id } : w)) })),

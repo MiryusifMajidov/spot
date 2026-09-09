@@ -7,7 +7,11 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
+import { errorFeedback, successFeedback } from '@/lib/feedback';
+import { bestsInWorkout } from '@/lib/lifts';
+import { removeWorkout } from '@/lib/removeWorkout';
 import { seedById, useDb, type Workout } from '@/store/db';
+import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
 const AZ_MONTHS = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
@@ -196,6 +200,59 @@ export default function History() {
   );
 }
 
+/** «Məşqi sil» — the only way out of a session logged by mistake.
+ *
+ *  It sits inside the opened panel rather than on the row, so it cannot be hit
+ *  while scrolling, and it asks first. The confirmation names what will happen
+ *  to the personal record too, because deleting a workout that set one takes
+ *  the record with it and that is not obvious from the word «sil». */
+function DeleteWorkout({ workout }: { workout: Workout }) {
+  const [busy, setBusy] = useState(false);
+  const ask = () => {
+    const bests = bestsInWorkout(workout);
+    confirm(
+      'Bu məşqi siləsən?',
+      bests.length
+        ? `${workout.title} — həmişəlik silinir. Bu məşqin yazdığı şəxsi rekord (${bests
+            .map((b) => `${b.lift} ${b.value} kq`)
+            .join(', ')}) da geri götürülür.`
+        : `${workout.title} — həmişəlik silinir.`,
+      [
+        { label: 'Ləğv et', style: 'cancel' },
+        {
+          label: 'Sil',
+          style: 'destructive',
+          onPress: () => {
+            setBusy(true);
+            void (async () => {
+              const r = await removeWorkout(workout);
+              setBusy(false);
+              if (!r.ok) {
+                errorFeedback();
+                // The workout is still on both sides. Saying «silindi» here and
+                // letting the next sync bring it back is the exact failure this
+                // whole path is written to avoid.
+                toast('Məşq silinmədi — serverə çatmadı. Bağlantını yoxla.', 'error');
+                return;
+              }
+              successFeedback();
+              toast(r.prsRemoved > 0 ? 'Məşq və onun rekordu silindi' : 'Məşq silindi');
+            })();
+          },
+        },
+      ]
+    );
+  };
+  return (
+    <PressableScale activeScale={0.97} disabled={busy} onPress={ask} style={styles.deleteRow}>
+      <Icon name="x" size={14} color={palette.red} />
+      <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.red }}>
+        {busy ? 'Silinir…' : 'Məşqi sil'}
+      </AppText>
+    </PressableScale>
+  );
+}
+
 /** What was actually lifted, set by set.
  *
  *  Three cases, and they are three different sentences:
@@ -215,6 +272,7 @@ function SessionDetail({ workout }: { workout: Workout }) {
             ? 'Bu məşq serverdən bərpa olunub. Set-lər yalnız yazıldığı cihazda saxlanılır — SPOT serverində məşqin yalnız ümumi rəqəmləri var.'
             : 'Bu məşqdə set qeyd olunmayıb.'}
         </AppText>
+        <DeleteWorkout workout={workout} />
       </View>
     );
   }
@@ -253,6 +311,7 @@ function SessionDetail({ workout }: { workout: Workout }) {
           </View>
         );
       })}
+      <DeleteWorkout workout={workout} />
     </View>
   );
 }
@@ -279,6 +338,7 @@ const styles = StyleSheet.create({
   detail: { marginTop: 12, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(60,60,67,0.12)' },
   setRows: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 7 },
   setChip: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 7, backgroundColor: palette.grouped },
+  deleteRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 14, paddingVertical: 4 },
   sessionHead: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   sessionIcon: { width: 40, height: 40, borderRadius: 11, backgroundColor: '#F0F0F3', alignItems: 'center', justifyContent: 'center' },
   tag: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7, backgroundColor: palette.grouped },
