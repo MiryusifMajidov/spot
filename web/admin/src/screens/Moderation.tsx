@@ -32,8 +32,18 @@ function actionTarget(t: Report['target_type']): 'user' | 'content' | 'gym' | 't
   return t === 'message' || t === 'support' ? 'content' : t;
 }
 
-function slaBadge(due: string): { cls: string; text: string; overdue: boolean } {
-  const ms = new Date(due).getTime() - Date.now();
+/* `now` is passed in rather than read here, and the caller passes the ticking
+   `now` state. Read from `Date.now()` this badge froze at whatever moment the
+   queue last happened to re-render: a report that went overdue while the
+   moderator was reading the list kept showing «3 saat» until something else
+   caused a render. The deadline is the point of this badge. */
+/** The end of a fresh 15-minute row lock, as the ISO string the column stores.
+ *  Module scope, beside `slaBadge`, because it is the rule — a lock lasts a
+ *  quarter of an hour — and not a piece of this screen's state. */
+const lockWindowEnd = (): string => new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+function slaBadge(due: string, now: number): { cls: string; text: string; overdue: boolean } {
+  const ms = new Date(due).getTime() - now;
   if (ms < 0) {
     const mins = Math.round(-ms / 60000);
     return { cls: 'red', text: mins < 90 ? `${mins} dəq` : `${Math.round(mins / 60)}s gecikib`, overdue: true };
@@ -103,7 +113,10 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
   /* «Şikayət yoxdur» is a claim about the queue. It may only be made after a read
      that landed. */
   const [failed, setFailed] = useState(false);
-  const [now, setNow] = useState(Date.now());
+  /* The wall clock, ticked below. Lazy initialiser: `useState(Date.now())`
+     evaluates on every render and throws the result away, which is both waste
+     and an impure read in the render path. */
+  const [now, setNow] = useState(() => Date.now());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -138,23 +151,43 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
     }
   }, [tab]);
 
-  useEffect(() => { load(); }, [load]);
-
-  // tick the lock countdown every second while a report is open
   useEffect(() => {
-    if (!active) return;
-    const t = setInterval(() => setNow(Date.now()), 1000);
+    /* Started from inside an async body rather than as a bare `load()`: `load`
+       raises the spinner with a setState, and a setState reached synchronously
+       from an effect body makes React render twice before it can paint. None of
+       the queue's honesty rests on that flag going up a microtask earlier —
+       `loading` starts true, so no frame can claim «Şikayət yoxdur» before the
+       first read has landed. */
+    void (async () => {
+      await load();
+    })();
+  }, [load]);
+
+  /* The clock ticks whether or not a report is open.
+   *
+   *  It used to stop the moment the detail panel closed (`if (!active) return`),
+   *  while the QUEUE reads the same clock for three things: whether a row is
+   *  locked by another moderator, how long is left on its SLA, and the «gecikib»
+   *  count in the header. All three froze at the moment of the last render — a
+   *  lock that expired ten minutes ago still greyed the row out, and a report
+   *  that went past its deadline while the moderator was looking straight at it
+   *  never turned red. One second while a report is open (the lock countdown is
+   *  on screen), fifteen otherwise. */
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), active ? 1000 : 15000);
     return () => clearInterval(t);
   }, [active]);
 
+  /* Against `now`, not `Date.now()`: a lock is a fact with an expiry, and the
+     list must stop calling an expired one a lock without waiting for an
+     unrelated render to notice. */
   function lockedByOther(r: Report): boolean {
-    return !!(r.locked_by && r.locked_by !== myUid && r.locked_until && new Date(r.locked_until).getTime() > Date.now());
+    return !!(r.locked_by && r.locked_by !== myUid && r.locked_until && new Date(r.locked_until).getTime() > now);
   }
 
   async function openReport(r: Report) {
     if (lockedByOther(r)) { toast('Bu şikayət başqa moderatorda kilidlidir'); return; }
-    // 15-min row lock
-    const lockedUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    const lockedUntil = lockWindowEnd();
     const { data: locked } = await supabase
       .from('reports')
       .update({ locked_by: myUid, locked_until: lockedUntil })
@@ -171,6 +204,12 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
     const opened = (locked as Report | null) ?? r;
     setLockFailed(!locked);
     setActive(opened);
+    /* `openReport` runs on a click and never during render, which the compiler's
+       purity rule cannot see — hence the directive rather than a rewrite. The
+       clock has to be the real one here: the ticker below is on a 15-second
+       beat until a report is open, so without this the countdown's first second
+       would show a time we did not measure. */
+    // eslint-disable-next-line react-hooks/purity
     setNow(Date.now());
     if (locked) setRows((prev) => prev.map((x) => (x.id === opened.id ? opened : x)));
 
@@ -292,7 +331,7 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
 
   // header stat + KPI counts (computed from the loaded open queue)
   const open = rows.filter((r) => r.status === 'open');
-  const overdue = open.filter((r) => new Date(r.sla_due_at).getTime() < Date.now()).length;
+  const overdue = open.filter((r) => new Date(r.sla_due_at).getTime() < now).length;
   const safety = open.filter((r) => r.category === 'safety').length;
   const spamFake = open.filter((r) => r.category === 'spam' || r.category === 'fake').length;
   const harass = open.filter((r) => r.category === 'harassment').length;
@@ -352,7 +391,7 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
                   : tab === 'open' ? 'Açıq şikayət yoxdur' : 'Bağlanmış şikayət yoxdur'}
               </td></tr>
             ) : rows.map((r) => {
-              const sla = slaBadge(r.sla_due_at);
+              const sla = slaBadge(r.sla_due_at, now);
               const cat = CAT[r.category];
               const locked = lockedByOther(r);
               const closed = r.status !== 'open';

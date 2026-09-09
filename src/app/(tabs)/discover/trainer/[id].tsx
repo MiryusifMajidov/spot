@@ -41,14 +41,24 @@ export default function TrainerDetail() {
   const trainer = useTrainer(id);
   const phase = useTrainerPhase(id);
   const [request, setRequest] = useState<TrainerRequestRow | null>(null);
+  /* A null `request` used to mean two things: «you have never written to this
+     coach» and «we could not find out». Only the first is a fact about the
+     person, and the difference matters on the very next screen — sending a new
+     request UPSERTS on (trainer_id, from_profile), so one sent over a request
+     the coach had already ACCEPTED resets it to pending. */
+  const [requestFailed, setRequestFailed] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       if (!hasSupabaseConfig || !id) return;
       let alive = true;
       getMyRequestTo(id)
-        .then((r) => alive && setRequest(r))
-        .catch(() => {});
+        .then((r) => {
+          if (!alive) return;
+          setRequest(r);
+          setRequestFailed(false);
+        })
+        .catch(() => alive && setRequestFailed(true));
       return () => {
         alive = false;
       };
@@ -141,6 +151,13 @@ export default function TrainerDetail() {
             <AppText variant="footnote" color={palette.text3} style={{ flex: 1, lineHeight: 18 }}>
               {STATE_AZ[request.status]}
               {request.preferred_time ? ` · ${request.preferred_time}` : ''}
+            </AppText>
+          </View>
+        ) : requestFailed ? (
+          <View style={styles.stateCard}>
+            <Icon name="x" size={17} color={palette.red} />
+            <AppText variant="footnote" color={palette.text3} style={{ flex: 1, lineHeight: 18 }}>
+              Bu müəllimlə sorğunun vəziyyəti yüklənmədi — bağlantını yoxla.
             </AppText>
           </View>
         ) : null}

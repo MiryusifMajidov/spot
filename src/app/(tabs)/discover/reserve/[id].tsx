@@ -52,6 +52,14 @@ export default function Reserve() {
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
   const [request, setRequest] = useState<TrainerRequestRow | null>(null);
+  /* `request === null` used to cover both «you have never asked this coach» and
+     «the read failed», and the whole booking form hangs off that null. The two
+     are not interchangeable here: `requestTrainer` UPSERTS on
+     (trainer_id, from_profile) (src/lib/roles.ts), so a request sent over one
+     the coach had already ACCEPTED overwrites it and puts the pair back to
+     `pending` — an accepted arrangement quietly undone because a read had
+     failed a minute earlier. */
+  const [requestFailed, setRequestFailed] = useState(false);
 
   // Real upcoming dates, generated from today — never a fixed 18…23 strip.
   const days = useMemo(() => {
@@ -65,18 +73,22 @@ export default function Reserve() {
     return out;
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!hasSupabaseConfig || !id) return;
-      let alive = true;
-      getMyRequestTo(id)
-        .then((r) => alive && setRequest(r))
-        .catch(() => {});
-      return () => {
-        alive = false;
-      };
-    }, [id])
-  );
+  const loadRequest = useCallback(() => {
+    if (!hasSupabaseConfig || !id) return () => {};
+    let alive = true;
+    getMyRequestTo(id)
+      .then((r) => {
+        if (!alive) return;
+        setRequest(r);
+        setRequestFailed(false);
+      })
+      .catch(() => alive && setRequestFailed(true));
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+
+  useFocusEffect(loadRequest);
 
   if (!trainer) {
     return (
@@ -190,6 +202,16 @@ export default function Reserve() {
                 SPOT ödəniş qəbul etmir. Qiymət və ödəniş şərtləri birbaşa müəllimlə razılaşdırılır.
               </AppText>
             </>
+          ) : requestFailed ? (
+            <View style={styles.stateCard}>
+              <Icon name="x" size={20} color={palette.red} />
+              <View style={{ flex: 1 }}>
+                <AppText variant="headline">Sorğunun vəziyyəti oxunmadı</AppText>
+                <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 4, lineHeight: 18 }}>
+                  Bu müəllimə əvvəllər sorğu göndərib-göndərmədiyin yoxlanıla bilmədi. İndi yeni sorğu göndərsən, köhnəsinin — hətta müəllimin artıq qəbul etdiyi sorğunun — üstünə yazıla bilər. Bağlantını yoxla və yenidən yoxla.
+                </AppText>
+              </View>
+            </View>
           ) : (
             <>
               <AppText variant="overline" color={palette.caption} style={{ marginTop: 22, marginBottom: 12 }}>
@@ -244,6 +266,11 @@ export default function Reserve() {
         <View style={[styles.footer, { marginBottom: lift }]}>
           {request && request.status !== 'declined' && request.status !== 'ended' ? (
             <Button title="Müəllimə mesaj yaz" icon="msg" full onPress={() => router.push({ pathname: '/chat/[id]', params: { id: trainer.id } })} />
+          ) : requestFailed ? (
+            /* Retry, not «Sorğu göndər». The button that sends is the one that can
+               overwrite an accepted request, and it stays out of reach until the
+               app knows what it would be overwriting. */
+            <Button title="Yenidən yoxla" icon="clock" full onPress={() => loadRequest()} />
           ) : (
             <>
               <View style={styles.footerInfo}>
