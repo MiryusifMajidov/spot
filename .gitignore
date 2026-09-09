@@ -52,3 +52,9 @@ example
 /audit_fixes.json
 /bugs.json
 /rules.json
+
+# Firebase config for FCM. The API key inside is not a password, but it is
+# project-identifying and the repo may be public — the file only needs to exist
+# on the machine that builds. If EAS Build (cloud) is ever used, upload it there
+# as a file secret instead of committing it.
+google-services.json
