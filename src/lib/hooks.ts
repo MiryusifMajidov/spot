@@ -75,6 +75,12 @@ function mapProgram(r: any): Program {
   return {
     id: r.id,
     title: r.title,
+    /* `description` was written by the create screen and read back by nobody:
+       this mapper listed every other column and simply skipped it, so the
+       paragraph the author typed — who the program is for, what equipment it
+       needs — was visible only on the phone that wrote it. Everyone else saw a
+       program with no description and no sign that one existed. */
+    desc: r.description ?? undefined,
     creatorName: r.creator_name,
     creatorType: r.creator_type,
     creatorVerified: r.creator_verified,

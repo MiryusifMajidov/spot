@@ -298,7 +298,13 @@ function SessionDetail({ workout }: { workout: Workout }) {
               {e.sets.map((x, j) => (
                 <View key={j} style={styles.setChip}>
                   <AppText style={{ fontSize: 11.5, fontWeight: '600', color: '#3A3A42' }}>
-                    {x.weight} kq × {x.reps}
+                    {/* A zero here is not a measurement — it is an absence. The
+                        session screen stores `parseDecimal(s.kg) ?? 0` for a set
+                        ticked with an empty kq field, and the home session stores
+                        `bodyweight ?? 0` for every set when the person has never
+                        logged a weight. «0 kq × 10» states a load nobody entered;
+                        the rep count is the part we actually know. */}
+                    {x.weight > 0 ? `${x.weight} kq × ${x.reps}` : `${x.reps} təkrar`}
                     {/* Per-set RPE, if a writer ever records one. Today «Necə
                         keçdi?» on the summary screen rates the whole session,
                         so this stays empty rather than inventing a number for

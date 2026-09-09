@@ -1054,6 +1054,30 @@ export async function setMyWorkoutRpe(id: string, rpe: string): Promise<boolean>
 }
 
 /**
+ * Withdraw a program the person authored.
+ *
+ * `useDb.deleteProgram` only ever dropped it from the device list, while the
+ * row it had published stayed in `public.programs` — still carrying the
+ * author's name, still readable by everyone, and back in Kitabxana within a
+ * minute (the catalogue cache) or on the next launch. schema68 added
+ * `programs_delete` and the DELETE grant precisely so an author CAN take a
+ * program back; nothing had used them.
+ *
+ * 'absent' means there was nothing on the server (a program that never
+ * published). Zero rows with the row still there means RLS refused it — the
+ * caller must not report a deletion.
+ */
+export async function deleteMyProgram(id: string): Promise<'deleted' | 'absent'> {
+  const { data, error } = await supabase.from('programs').delete().eq('id', id).select('id');
+  if (error) throw error;
+  if (data?.length) return 'deleted';
+  const { data: still, error: readErr } = await supabase.from('programs').select('id').eq('id', id).maybeSingle();
+  if (readErr) throw readErr;
+  if (still) throw new Error('program-not-deleted');
+  return 'absent';
+}
+
+/**
  * Remove one workout row.
  *
  * Returns 'deleted' when the row was really removed, 'absent' when there was

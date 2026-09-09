@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { successFeedback, tapFeedback } from '@/lib/feedback';
+import { useProgram } from '@/lib/hooks';
 import { LIFTS } from '@/lib/lifts';
 import { parseDecimal } from '@/lib/az';
 import { StatusBar } from 'expo-status-bar';
@@ -24,7 +25,6 @@ import {
   OverloadSuggestion,
   seedById,
   suggestNext,
-  useAllPrograms,
   useDb,
   useLatestWeight,
 } from '@/store/db';
@@ -73,8 +73,13 @@ export default function Session() {
   const logWorkout = useDb((s) => s.logWorkout);
   const bodyweight = useLatestWeight();
 
-  const programs = useAllPrograms();
-  const program = params.programId ? programs.find((p) => p.id === params.programId) : undefined;
+  /* Same source as the day screen: `useAllPrograms()` holds only this device's
+     own programs and the seeds, so a program read from the server resolved to
+     `undefined` here — and the session was then built from moves the app had
+     derived from the day TITLE and presented as the author's programming. */
+  const programId = params.programId ?? '';
+  const remoteProgram = useProgram(programId);
+  const program = programId ? (remoteProgram ?? undefined) : undefined;
   const dayIndex = Number(params.dayIndex) || 0;
   const title = params.title || program?.days?.[dayIndex]?.title || 'Sərbəst məşq';
   const partner = params.partnerId ? seedById(params.partnerId) : null;
@@ -105,7 +110,7 @@ export default function Session() {
 
   // Build the exercise plan + prefill each set with a progressive-overload target.
   const initial = useMemo<ExLog[]>(() => {
-    const exs = resolveDayExercises(program, dayIndex, title);
+    const exs = resolveDayExercises(program, dayIndex, title, !!programId);
     return exs.map((ex) => {
       const timed = isTimed(ex.reps);
       const bw = isBodyweight(ex.equipment);

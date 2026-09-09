@@ -10,6 +10,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Tag } from '@/components/ui/Tag';
 import { useProgram, useProgramPhase } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { removeProgram } from '@/lib/removeProgram';
 import { seedById, useAllPrograms, useDb } from '@/store/db';
 import { actionSheet, confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -96,7 +97,7 @@ export default function ProgramDetail() {
   const days = p.days ?? [];
   const hasDays = days.length > 0;
   const isSaved = saved.includes(p.id);
-  const desc = (p as { desc?: string }).desc?.trim();
+  const desc = p.desc?.trim();
 
   const start = (partnerId?: string) => {
     if (!hasDays) return;
@@ -145,9 +146,18 @@ export default function ProgramDetail() {
                     label: 'Sil',
                     style: 'destructive',
                     onPress: () => {
-                      useDb.getState().deleteProgram(p.id);
-                      toast('Proqram silindi');
-                      router.back();
+                      void (async () => {
+                        const r = await removeProgram(p.id);
+                        if (!r.ok) {
+                          // It is still published, under this author's name. Saying
+                          // «silindi» and letting the library serve it again a minute
+                          // later is what this whole path was.
+                          toast('Proqram silinmədi — serverə çatmadı. Bağlantını yoxla.', 'error');
+                          return;
+                        }
+                        toast('Proqram silindi');
+                        router.back();
+                      })();
                     },
                   },
                 ]),

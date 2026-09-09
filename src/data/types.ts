@@ -139,5 +139,10 @@ export interface Program {
   hasMealPlan?: boolean;
   tags: string[];
   saves: number;
+  /** What the author wrote about the program («Təsvir» on the create screen).
+   *  It was declared nowhere for a long time while `create.tsx` wrote it to
+   *  `programs.description` and the detail screen read it through a cast — so
+   *  the only reader that ever saw it was the author's own device copy. */
+  desc?: string;
   days: { title: string; focus: string; exercises: Exercise[] }[];
 }

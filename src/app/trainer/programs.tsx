@@ -8,6 +8,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
 import { Level, Program } from '@/data/types';
+import { removeProgram } from '@/lib/removeProgram';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useDb } from '@/store/db';
 import { actionSheet, confirm, toast } from '@/store/ui';
@@ -49,7 +50,6 @@ export default function TrainerPrograms() {
   const programs = useDb((s) => s.myPrograms);
   const createProgram = useDb((s) => s.createProgram);
   const updateProgram = useDb((s) => s.updateProgram);
-  const deleteProgram = useDb((s) => s.deleteProgram);
 
   const [draft, setDraft] = useState<Draft | null>(null);
 
@@ -185,8 +185,17 @@ export default function TrainerPrograms() {
                 label: 'Sil',
                 style: 'destructive',
                 onPress: () => {
-                  deleteProgram(p.id);
-                  toast('Proqram bu cihazdan silindi', 'info');
+                  void (async () => {
+                    const r = await removeProgram(p.id);
+                    // «bu cihazdan silindi» was the honest wording while the row
+                    // stayed published. Now it really goes, so the sentence can be
+                    // the plain one — and the failure has its own.
+                    if (!r.ok) {
+                      toast('Proqram silinmədi — serverə çatmadı. Bağlantını yoxla.', 'error');
+                      return;
+                    }
+                    toast('Proqram silindi');
+                  })();
                 },
               },
             ]),

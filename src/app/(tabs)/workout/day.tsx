@@ -9,13 +9,13 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Program } from '@/data/types';
+import { useProgram, useProgramPhase } from '@/lib/hooks';
 import {
   exerciseById,
   LibExercise,
   lastLoggedSet,
   programDayExercises,
   sessionExercises,
-  useAllPrograms,
   useDb,
 } from '@/store/db';
 import { palette, spacing } from '@/theme';
@@ -121,11 +121,25 @@ export function isHomeProgram(p: Program | undefined): boolean {
  *     the app must never invent moves from a day title and present them as a
  *     trainer's (or any author's) programming.
  *  The title-derived plan below serves only the program-less «Sərbəst məşq»
- *  session, where the app is openly the one choosing the moves. */
-export function resolveDayExercises(program: Program | undefined, dayIndex: number, title: string): LibExercise[] {
+ *  session, where the app is openly the one choosing the moves.
+ *
+ *  `programRequested` is what closes the hole between 2) and 3). The caller used
+ *  to pass only the resolved program, so an UNRESOLVED one — every program that
+ *  lives on the server rather than on this device — arrived as `undefined` and
+ *  fell straight through to the title plan. Opening «Gün 2 · Pull» of somebody
+ *  else's program showed five moves derived from the word «Pull»: squat, bench,
+ *  row, overhead press, plank, presented as that author's programming and
+ *  loggable as a workout. A program was asked for; if it is not here, the answer
+ *  is nothing, not a guess. */
+export function resolveDayExercises(
+  program: Program | undefined,
+  dayIndex: number,
+  title: string,
+  programRequested = false
+): LibExercise[] {
   const day = program?.days?.[dayIndex];
   if (day?.exercises?.length) return programDayExercises(program, dayIndex);
-  if (program) return [];
+  if (program || programRequested) return [];
   return sessionExercises(title || '');
 }
 
@@ -147,14 +161,21 @@ export default function DayDetail() {
   const router = useRouter();
   const params = useLocalSearchParams<{ programId?: string; dayIndex?: string; title?: string; focus?: string }>();
   const workouts = useDb((s) => s.workouts);
-  const programs = useAllPrograms();
-  const program = params.programId ? programs.find((p) => p.id === params.programId) : undefined;
+  /* `useProgram`, not `useAllPrograms().find()`. The list hook holds only what is
+     on this device — the person's own programs and the seeds — so any program
+     read from the server was simply absent here, and the day opened with
+     invented moves (see `resolveDayExercises`). `useProgram` is the same hook
+     the program screen uses: own copy first, then the server. */
+  const programId = params.programId ?? '';
+  const remote = useProgram(programId);
+  const phase = useProgramPhase(programId);
+  const program = programId ? (remote ?? undefined) : undefined;
   const dayIndex = Number(params.dayIndex) || 0;
   const day = program?.days?.[dayIndex];
   const title = params.title || day?.title || 'Gün 1';
   const focus = params.focus || day?.focus || 'Tam bədən';
 
-  const exercises = useMemo(() => resolveDayExercises(program, dayIndex, title), [program, dayIndex, title]);
+  const exercises = useMemo(() => resolveDayExercises(program, dayIndex, title, !!programId), [program, dayIndex, title, programId]);
   const minutes = program?.minutes || estimateDurationMin(exercises);
 
   const start = () =>
@@ -175,11 +196,22 @@ export default function DayDetail() {
         {exercises.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="dumbbell" size={22} color={palette.tertiary} />
+            {/* Three different reasons for an empty day, and they are not the
+                same sentence. Blaming the author for a day we could not read is
+                the same class of lie as inventing the moves was. */}
             <AppText variant="headline" style={{ marginTop: 10 }}>
-              Bu günə hərəkət əlavə olunmayıb
+              {programId && !program
+                ? phase === 'failed'
+                  ? 'Proqram yüklənmədi'
+                  : 'Proqram yüklənir…'
+                : 'Bu günə hərəkət əlavə olunmayıb'}
             </AppText>
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 6, textAlign: 'center', lineHeight: 18 }}>
-              Proqramın müəllifi bu günün hərəkətlərini hələ yazmayıb. Hərəkət kitabxanasından özün seçib başlaya bilərsən.
+              {programId && !program
+                ? phase === 'failed'
+                  ? 'Bu günün hərəkətlərini oxuya bilmədik — bu, günün boş olduğu demək deyil. Bağlantını yoxla və yenidən aç.'
+                  : 'Bir az gözlə.'
+                : 'Proqramın müəllifi bu günün hərəkətlərini hələ yazmayıb. Hərəkət kitabxanasından özün seçib başlaya bilərsən.'}
             </AppText>
             <Button title="Hərəkət kitabxanası" variant="secondary" onPress={() => router.push('/(tabs)/workout/exercises')} style={{ marginTop: 14 }} />
             {isHomeProgram(program) ? (

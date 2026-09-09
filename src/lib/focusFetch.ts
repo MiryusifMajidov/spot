@@ -109,7 +109,13 @@ export function useFocusFetch<T>(key: string, fallback: T, load: () => Promise<T
         return; // still fresh — no network, no render
       }
 
-      if (!hit) setPhase(key, 'loading');
+      /* 'loading' whenever a request is really about to go out, not only on the
+         very first one. `phases` is module-level and outlives the screen, so a
+         key whose last attempt ended 'failed' kept saying «yüklənmədi» while the
+         retry was already in flight — a verdict about an attempt that had not
+         finished. Same for 'ready': a genuinely missing row would read
+         «tapılmadı» again before the second look had been taken. */
+      setPhase(key, 'loading');
 
       const cancel = afterTransition(() => {
         loadRef
