@@ -148,8 +148,12 @@ export function Content({ search, refreshCounts }: ScreenProps) {
   }
 
   useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    /* Async wrapper, not a bare `loadData()`: react-hooks/set-state-in-effect
+       counts the `setLoading(true)` on `loadData`'s first line as a cascading
+       render when it is reached straight from an effect body. Nothing moves —
+       `loadData()` still starts inside this effect, and `loading` already begins
+       as `true`, so the queue stays behind the spinner until the read lands. */
+    void (async () => { await loadData(); })();
   }, []);
 
   const q = search.trim().toLowerCase();

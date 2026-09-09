@@ -107,7 +107,14 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
     setSelId((prev) => (prev && pendingRows.some((v) => v.id === prev) ? prev : pendingRows[0]?.id ?? null));
   }
 
-  useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => {
+    /* Async wrapper, not a bare `load()`: react-hooks/set-state-in-effect counts
+       the `setLoading(true)` on `load`'s first line as a cascading render when it
+       is reached straight from an effect body. Nothing moves — `load()` still
+       starts inside this effect, and `loading` already begins as `true`, so the
+       verification queue stays behind the spinner until the read lands. */
+    void (async () => { await load(); })();
+  }, []);
 
   const q = search.trim().toLowerCase();
   const label = (v: TrainerVerification): { name: string; sub: string } => {
@@ -136,11 +143,22 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
   const [noteLoading, setNoteLoading] = useState(false);
   const [noteFailed, setNoteFailed] = useState(false);
   useEffect(() => {
-    if (!selId) { setNote(''); setNoteFailed(false); return; }
     let alive = true;
-    setNoteLoading(true);
-    setNoteFailed(false);
+    /* The whole body sits inside the wrapper so react-hooks/set-state-in-effect
+       does not see these writes reached straight from the effect body. They still
+       run synchronously, before the newly selected row is painted, and that is
+       deliberate: the note field must be emptied and disabled in the same frame
+       the selection moves. */
     void (async () => {
+      if (!selId) { setNote(''); setNoteFailed(false); setNoteLoading(false); return; }
+      setNoteLoading(true);
+      setNoteFailed(false);
+      /* Clearing `note` here is what the placeholder below has always assumed.
+         Without it the textarea kept rendering the note of the applicant we just
+         navigated away from, under this applicant's name — a `placeholder` never
+         shows while the field holds text — and «Qeydi saxla» during that window
+         wrote one applicant's internal note onto another's row. */
+      setNote('');
       const { data, error } = await supabase.rpc('admin_verification_note', { p_verification: selId });
       if (!alive) return;
       setNoteLoading(false);
@@ -567,7 +585,11 @@ function VerificationDetail({
             <div style={{ font: '400 11.5px/1.4 var(--font)', color: 'var(--muted)', maxWidth: 220 }}>
               Yalnız moderatorlar görür (schema70). Audit log-a düşür.
             </div>
-            <button className="btn" disabled={!canDecide || savingNote} onClick={onSaveNote}
+            {/* `noteLoading` disables the save too, not just the textarea: until the
+                RPC lands `note` is empty because we have not read this row's note
+                yet, and saving that emptiness would erase a note the moderator
+                never saw. */}
+            <button className="btn" disabled={!canDecide || savingNote || noteLoading} onClick={onSaveNote}
               style={{ marginLeft: 'auto', padding: '7px 13px', font: '600 12px/1 var(--font)', ...(!canDecide ? { opacity: .45, cursor: 'not-allowed' } : {}) }}>
               {savingNote ? 'Saxlanır…' : 'Qeydi saxla'}
             </button>

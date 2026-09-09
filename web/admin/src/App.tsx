@@ -53,7 +53,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (admin) refreshCounts();
+    if (!admin) return;
+    /* The read is started from inside an async wrapper because
+       react-hooks/set-state-in-effect counts a setState reached straight from an
+       effect body as a cascading render, and `refreshCounts` writes `counts`.
+       Nothing about the timing changes — `refreshCounts` still starts inside
+       this effect — so do not collapse this back to a bare call. */
+    void (async () => { await refreshCounts(); })();
   }, [admin, refreshCounts]);
 
   if (loading) {

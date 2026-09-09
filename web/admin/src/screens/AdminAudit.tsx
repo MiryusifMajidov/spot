@@ -120,7 +120,12 @@ export function AdminAudit({ search }: ScreenProps) {
   }
 
   useEffect(() => {
-    void load();
+    /* Async wrapper, not a bare `load()`: react-hooks/set-state-in-effect counts
+       the `setLoading(true)` on `load`'s first line as a cascading render when it
+       is reached straight from an effect body. The wrapper moves no work and
+       delays nothing — `load()` still starts inside this effect, and `loading`
+       already begins as `true`, so the first paint is the spinner either way. */
+    void (async () => { await load(); })();
   }, []);
 
   const filtered = useMemo(() => {

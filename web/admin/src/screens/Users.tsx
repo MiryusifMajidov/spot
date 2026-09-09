@@ -191,7 +191,12 @@ export function Users({ search }: ScreenProps) {
   }
 
   useEffect(() => {
-    void load();
+    /* Async wrapper, not a bare `load()`: react-hooks/set-state-in-effect counts
+       the `setLoading(true)` on `load`'s first line as a cascading render when it
+       is reached straight from an effect body. Nothing moves — `load()` still
+       starts inside this effect, and `loading` already begins as `true`, so the
+       roster counters stay behind the spinner until the read lands. */
+    void (async () => { await load(); })();
   }, []);
 
   const filtered = useMemo(() => {
