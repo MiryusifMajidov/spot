@@ -854,6 +854,13 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'web/admin/src/screens/Challenges.tsx:114 toggles challenges.active. Same gap: RLS on, SELECT-only policy set.'
   union all
+  select 'function', 'tg_notify_review_reply carries the gym id',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                           where n.nspname = 'public' and p.proname = 'tg_notify_review_reply'
+                             and pg_get_functiondef(p.oid) like '%new.gym_id::text%')
+              then 'OK' else 'MISSING' end,
+         'schema71. The trigger used to pass only the review id (entity_id) and leave target_key null, so src/lib/notifications.ts had to read public.reviews again on every tap just to find the gym whose page it should open — a round trip that fails whenever the network does. target_key is the gym now; entity_id stays the review.'
+  union all
   select 'policy', 'day_passes SELECT for the gym owner',
          case when exists (select 1 from pg_policies
                            where schemaname='public' and tablename='day_passes'

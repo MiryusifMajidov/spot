@@ -229,7 +229,7 @@ export function notifTarget(
   | { kind: 'requests' }
   | { kind: 'chat'; profileId: string }
   | { kind: 'profile'; profileId: string }
-  | { kind: 'review'; reviewId: string }
+  | { kind: 'review'; reviewId: string; gymId: string | null }
   | null {
   switch (n.type) {
     case 'comment_like':
@@ -249,9 +249,13 @@ export function notifTarget(
       /* This case was missing, so «Zal rəyinə cavab yazdı» fell through to
          `default: return null` — the row in Bildirişlər and the push on the lock
          screen both did nothing at all when tapped. `entity_id` holds the REVIEW's
-         id (schema35 §4h writes `new.id`), not the gym's, so the gym is resolved
-         in openNotifTarget before the page can be opened. */
-      return n.entityId ? { kind: 'review', reviewId: n.entityId } : null;
+         id (schema35 §4h wrote `new.id` alone), not the gym's. schema71 also puts
+         the gym id in `target_key`, so a tap on a new row needs no second
+         request; rows written before it have a null target_key and are still
+         resolved by the lookup in `openReview`. */
+      return n.entityId || n.targetKey
+        ? { kind: 'review', reviewId: n.entityId ?? '', gymId: n.targetKey ?? null }
+        : null;
     case 'video_like':
     case 'post_like':
       // The like is on my own content; there is no useful second screen for it.
@@ -272,15 +276,26 @@ export function openNotifTarget(t: ReturnType<typeof notifTarget>): void {
   if (t.kind === 'comments') openComments(t.key);
   else if (t.kind === 'chat') router.push({ pathname: '/chat/[id]', params: { id: t.profileId } });
   else if (t.kind === 'profile') router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: t.profileId } });
-  else if (t.kind === 'review') openReview(t.reviewId);
+  else if (t.kind === 'review') openReview(t.reviewId, t.gymId);
   else router.push('/chat/requests');
 }
 
-/** The gym whose page carries this review. The notification only knows the review
- *  id, and `reviews` is world-readable (schema2's `reviews_read`), so one small
- *  lookup turns it into a destination. A failed lookup says so rather than doing
+/** The gym whose page carries this review.
+ *
+ *  Since schema71 the notification carries the gym id itself, and the page then
+ *  opens with no request at all. Rows written before it know only the review id;
+ *  `reviews` is world-readable (schema2's `reviews_read`), so one small lookup
+ *  turns that into a destination. A failed lookup says so rather than doing
  *  nothing — a tap that silently goes nowhere is what this whole path was. */
-function openReview(reviewId: string): void {
+function openReview(reviewId: string, knownGymId: string | null): void {
+  if (knownGymId) {
+    router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: knownGymId, seg: 'reviews' } });
+    return;
+  }
+  if (!reviewId) {
+    toast('Rəyin aid olduğu zal açılmadı', 'error');
+    return;
+  }
   void (async () => {
     const { data, error } = await supabase.from('reviews').select('gym_id').eq('id', reviewId).maybeSingle();
     const gymId = error ? null : ((data as { gym_id: string } | null)?.gym_id ?? null);

@@ -91,9 +91,19 @@ export default function Done() {
             value={homeGym ? homeGym.name : profile.homeGymId ? 'Ad yüklənmədi' : 'Evdə məşq'}
           />
           <View style={styles.sep} />
-          <RecapRow icon="target" label="Məqsəd" value={profile.goals[0] ?? 'Seçilməyib'} />
+          {/* Every goal, not `goals[0]`. The goal step is deliberately
+              multi-select — its button even counts them, «Davam et · 3» — and
+              then this summary showed one and dropped the rest, so the last
+              screen of onboarding contradicted the choice made two screens
+              earlier. */}
+          <RecapRow
+            icon="target"
+            label={profile.goals.length > 1 ? 'Məqsədlər' : 'Məqsəd'}
+            value={profile.goals.length ? profile.goals.join(', ') : 'Seçilməyib'}
+          />
           <View style={styles.sep} />
-          <RecapRow icon="flame" label="Səviyyə" value={profile.level || 'seçilməyib'} />
+          {/* «Seçilməyib», with the same capital as the row above it. */}
+          <RecapRow icon="flame" label="Səviyyə" value={profile.level || 'Seçilməyib'} />
         </View>
       </View>
 

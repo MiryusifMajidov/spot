@@ -347,7 +347,14 @@ interface DbState {
   reconcileMatches: (rows: { otherProfileId: string; status: 'pending' | 'accepted' | 'declined'; iSent: boolean }[]) => void;
   acceptMatch: (partnerId: string) => void;
   declineMatch: (partnerId: string) => void;
-  sendMessage: (partnerId: string, text: string) => void;
+  /* `sendMessage` used to be here. It appended a message to the device-local
+     `threads` slice and stopped there — nothing sent it anywhere. Nothing ever
+     called it either, which is the only reason it never shipped a message that
+     looked delivered and reached nobody. Real chat goes through
+     `src/lib/chat.ts` → `chat_messages`, and the inbox prefers the server's row
+     over the local one for exactly this reason. `threads` is now read-only: it
+     holds an empty array per accepted match, plus whatever an upgraded install
+     still carries from before schema42. */
   resetDomain: () => void;
 }
 
@@ -564,14 +571,6 @@ export const useDb = create<DbState>()(
 
       declineMatch: (partnerId) =>
         set((s) => ({ matches: { ...s.matches, [partnerId]: { partnerId, state: 'declined', at: new Date().toISOString() } } })),
-
-      sendMessage: (partnerId, text) =>
-        set((s) => ({
-          threads: {
-            ...s.threads,
-            [partnerId]: [...(s.threads[partnerId] ?? []), { id: `m-${Date.now()}`, from: 'me', text, at: new Date().toISOString() }],
-          },
-        })),
 
       resetDomain: () =>
         set({ checkIns: [], workouts: [], weights: [], matches: {}, threads: {}, savedPrograms: [] }),

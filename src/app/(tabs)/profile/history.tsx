@@ -7,7 +7,7 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
-import { seedById, useDb } from '@/store/db';
+import { seedById, useDb, type Workout } from '@/store/db';
 import { palette, spacing } from '@/theme';
 
 const AZ_MONTHS = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
@@ -76,6 +76,14 @@ export default function History() {
      the footer says how much of the history is on screen. */
   const PAGE = 20;
   const [shown, setShown] = useState(PAGE);
+  /* Which sessions are open. Every set the person logged — the weight, the reps,
+     the RPE — was written to this device and then had nowhere to be read: the
+     rows were plain `View`s and there is no per-workout screen. The detail is
+     opened in place rather than on a new route, because it only ever exists on
+     the device that recorded it (`public.workouts` stores the summary alone,
+     which is what keeps a gym owner or an admin from ever reading a member's
+     training). */
+  const [open, setOpen] = useState<Record<string, boolean>>({});
   const sorted = useMemo(() => [...workouts].sort((a, b) => b.at.localeCompare(a.at)), [workouts]);
   const sessions = useMemo(() => sorted.slice(0, shown), [sorted, shown]);
 
@@ -137,9 +145,14 @@ export default function History() {
               // `setsDone` is the number that was actually recorded.
               const setsN = s.setsDone ?? s.exercises.reduce((a, e) => a + e.sets.length, 0);
               const partner = s.partnerId ? seedById(s.partnerId) : null;
+              const isOpen = !!open[s.id];
               return (
                 <View key={s.id} style={styles.session}>
-                  <View style={styles.sessionHead}>
+                  <PressableScale
+                    activeScale={0.99}
+                    onPress={() => setOpen((o) => ({ ...o, [s.id]: !o[s.id] }))}
+                    style={styles.sessionHead}
+                  >
                     <View style={[styles.sessionIcon, { backgroundColor: 'rgba(198,255,61,0.3)' }]}>
                       <Icon name="dumbbell" size={19} color="#5B7F00" />
                     </View>
@@ -149,7 +162,10 @@ export default function History() {
                         {d.getDate()} {AZ_MON_SHORT[d.getMonth()]} · {fmtDur(s.durationMin || 0)} · {(s.volumeKg / 1000).toFixed(1)} t · {setsN} set
                       </AppText>
                     </View>
-                  </View>
+                    <View style={isOpen ? styles.chevOpen : undefined}>
+                      <Icon name="chevD" size={17} color={palette.tertiary} />
+                    </View>
+                  </PressableScale>
                   {partner ? (
                     <View style={{ flexDirection: 'row', gap: 7, marginTop: 11 }}>
                       <View style={styles.tag}>
@@ -157,6 +173,7 @@ export default function History() {
                       </View>
                     </View>
                   ) : null}
+                  {isOpen ? <SessionDetail workout={s} /> : null}
                 </View>
               );
             })}
@@ -179,6 +196,61 @@ export default function History() {
   );
 }
 
+/** What was actually lifted, set by set.
+ *
+ *  Three cases, and they are three different sentences:
+ *   · the sets are here — they are listed, exactly as they were logged;
+ *   · the row came back from the server without them (`summaryOnly`, or simply
+ *     an empty `exercises` on a row with a real `setsDone`) — that is said
+ *     plainly, because «no detail» is not «no work»;
+ *   · a set that was left unfinished is counted separately rather than being
+ *     quietly dropped or quietly included. */
+function SessionDetail({ workout }: { workout: Workout }) {
+  const withSets = workout.exercises.filter((e) => e.sets.length > 0);
+  if (!withSets.length) {
+    return (
+      <View style={styles.detail}>
+        <AppText style={{ fontSize: 12.5, color: palette.textSecondary, lineHeight: 18 }}>
+          {workout.summaryOnly || (workout.setsDone ?? 0) > 0
+            ? 'Bu məşq serverdən bərpa olunub. Set-lər yalnız yazıldığı cihazda saxlanılır — SPOT serverində məşqin yalnız ümumi rəqəmləri var.'
+            : 'Bu məşqdə set qeyd olunmayıb.'}
+        </AppText>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.detail}>
+      {withSets.map((e, i) => {
+        const done = e.sets.filter((x) => x.done);
+        const skipped = e.sets.length - done.length;
+        return (
+          <View key={`${e.name}-${i}`} style={i > 0 ? { marginTop: 12 } : undefined}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+              <AppText style={{ fontSize: 13.5, fontWeight: '600', flexShrink: 1 }}>{e.name}</AppText>
+              <AppText style={{ fontSize: 11, color: palette.tertiary }}>{e.muscle}</AppText>
+            </View>
+            <View style={styles.setRows}>
+              {done.map((x, j) => (
+                <View key={j} style={styles.setChip}>
+                  <AppText style={{ fontSize: 11.5, fontWeight: '600', color: '#3A3A42' }}>
+                    {x.weight} kq × {x.reps}
+                    {x.rpe ? ` · RPE ${x.rpe}` : ''}
+                  </AppText>
+                </View>
+              ))}
+            </View>
+            {skipped > 0 ? (
+              <AppText style={{ fontSize: 11, color: palette.tertiary, marginTop: 6 }}>
+                {skipped} set tamamlanmayıb
+              </AppText>
+            ) : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 function CalStat({ value, label }: { value: string; label: string }) {
   return (
     <View>
@@ -197,6 +269,10 @@ const styles = StyleSheet.create({
   calStats: { flexDirection: 'row', gap: 14, marginTop: 14, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(60,60,67,0.12)' },
   vdiv: { width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(60,60,67,0.12)' },
   session: { backgroundColor: palette.white, borderRadius: 16, padding: 14 },
+  chevOpen: { transform: [{ rotate: '180deg' }] },
+  detail: { marginTop: 12, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(60,60,67,0.12)' },
+  setRows: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 7 },
+  setChip: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 7, backgroundColor: palette.grouped },
   sessionHead: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   sessionIcon: { width: 40, height: 40, borderRadius: 11, backgroundColor: '#F0F0F3', alignItems: 'center', justifyContent: 'center' },
   tag: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7, backgroundColor: palette.grouped },
