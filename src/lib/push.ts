@@ -44,6 +44,16 @@ function projectId(): string | null {
 }
 
 let cachedToken: string | null = null;
+/* Why the last registration did not produce a token. Every caller used to throw
+   the reason away (`void registerPush()`), so a device that could not be
+   registered looked exactly like one that was — a settings screen full of
+   switches for notifications that could never arrive. */
+let lastReason: string | null = null;
+
+/** `null` when this device is registered (or has not tried yet). */
+export function pushRegistrationProblem(): string | null {
+  return lastReason;
+}
 
 /**
  * Ask for permission (once), get the Expo push token, and store it against the
@@ -57,6 +67,7 @@ export async function registerPush(): Promise<{ token: string | null; reason?: s
     // Push is delivered by the OS to a real device; a simulator has no address.
     if (!Device.isDevice) return { token: null, reason: 'simulator' };
     if (!hasSupabaseConfig) return { token: null, reason: 'no-server' };
+    lastReason = null;
 
     const pid = projectId();
     if (!pid) return { token: null, reason: 'no-project-id' };
@@ -79,7 +90,11 @@ export async function registerPush(): Promise<{ token: string | null; reason?: s
     if (status !== 'granted' && existing.canAskAgain) {
       status = (await Notifications.requestPermissionsAsync()).status;
     }
-    if (status !== 'granted') return { token: null, reason: 'denied' };
+    if (status !== 'granted') {
+      // Not a problem to report as a failure — the OS permission screen already
+      // covers this, and it is a choice rather than a fault.
+      return { token: null, reason: 'denied' };
+    }
 
     const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId: pid });
     if (!token) return { token: null, reason: 'no-token' };
@@ -87,17 +102,28 @@ export async function registerPush(): Promise<{ token: string | null; reason?: s
     const me = await getMyProfile();
     if (!me?.id) return { token: null, reason: 'no-profile' };
 
-    // The token is the primary key: re-registering it under this profile moves it
-    // here, so a device handed to somebody else stops delivering to its old owner.
-    const { error } = await supabase
-      .from('push_tokens')
-      .upsert({ token, profile_id: me.id, platform: Platform.OS, updated_at: new Date().toISOString() },
-              { onConflict: 'token' });
-    if (error) return { token: null, reason: 'not-saved' };
+    /* Through the RPC, not an upsert. `push_tokens.token` is the primary key and
+       `push_tokens_own` is `using (profile_id = my_profile_id())`, so ON CONFLICT
+       is evaluated against the OLD row — whose owner is the phone's previous
+       user — and the write was refused. schema61 documents the opposite as a
+       requirement, and the failure was discarded here: somebody who took over a
+       phone saw twelve notification switches, all on, and never received a
+       single push, while the previous owner's messages kept arriving on it.
+       `register_push_token` (schema67) moves the row. */
+    const { error } = await supabase.rpc('register_push_token', {
+      p_token: token,
+      p_platform: Platform.OS,
+    });
+    if (error) {
+      lastReason = 'not-saved';
+      return { token: null, reason: 'not-saved' };
+    }
 
     cachedToken = token;
+    lastReason = null;
     return { token };
   } catch {
+    lastReason = 'failed';
     // Registration is best-effort by design. The in-app notification centre is
     // the record either way.
     return { token: null, reason: 'failed' };

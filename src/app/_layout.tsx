@@ -130,7 +130,18 @@ export default function RootLayout() {
         ) : (
           <View style={{ flex: 1, backgroundColor: palette.inkText }} />
         )}
-        <UiHost />
+        {/* Its own boundary. `UiHost` is a SIBLING of the Stack, not a
+            descendant, so the boundary around the Stack cannot catch anything it
+            throws — and `UiHost` mounts `CommentsSheet`, the largest subtree in
+            the app and the one rendering the most untrusted server data. A throw
+            in there unwound to the React root and took the whole app with it:
+            white screen, no tab bar, no «Yenidən cəhd et», force-quit the only
+            way out — exactly what AppErrorBoundary exists to prevent. Keeping it
+            OUTSIDE the Stack's boundary is still right (a toast must be drawable
+            over a failed screen); it just needs one of its own. */}
+        <AppErrorBoundary label="Bu pəncərə açılmadı">
+          <UiHost />
+        </AppErrorBoundary>
         <StatusBar style="dark" />
       </SafeAreaProvider>
     </GestureHandlerRootView>

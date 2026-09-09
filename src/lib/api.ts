@@ -642,14 +642,25 @@ export async function getPartner(id: string): Promise<Partner | null> {
  * etmək istəyir» with no time in it while the sender believed they had proposed
  * Wednesday 19:00. schema54 added the column.
  */
+/**
+ * Send — or re-send — a partner request.
+ *
+ * Through `send_match_request` (schema67), not a bare INSERT. `match_requests`
+ * had no unique constraint on the pair, so a request re-sent after a decline
+ * created a SECOND row while the declined one survived. `reconcileMatches` keys
+ * a Map by the other person's id and the query has no ORDER BY, so whichever
+ * duplicate Postgres returned last won: the same pair read «Gözləyir» on one
+ * launch and «rədd edildi» on the next, with nobody having touched it, and the
+ * recipient saw two identical incoming cards of which only one could be
+ * answered. The RPC keeps one row per pair, moves it back to pending on a
+ * re-send, refuses a blocked or sanctioned sender, and will not re-open a match
+ * that was already accepted.
+ */
 export async function sendMatchRequest(toProfileId: string, note?: string): Promise<void> {
-  const me = await getMyProfile();
-  if (!me) throw new Error('no profile');
   const clean = (note ?? '').trim().slice(0, 200);
-  const { error } = await supabase.from('match_requests').insert({
-    from_profile: me.id,
-    to_profile: toProfileId,
-    ...(clean ? { note: clean } : {}),
+  const { error } = await supabase.rpc('send_match_request', {
+    p_to: toProfileId,
+    p_note: clean || null,
   });
   if (error) throw error;
 }
@@ -1037,7 +1048,16 @@ export async function logWeight(kg: number, id?: string, at?: string): Promise<v
   if (error) throw error;
 }
 
-/** Chronological bodyweight history (oldest→newest) for the progress chart. */
+/**
+ * Chronological bodyweight history (oldest→newest) for the progress chart.
+ *
+ * The LAST `limit` measurements, not the first. It used to order ascending and
+ * then apply the limit, which returns the twelve OLDEST weigh-ins ever recorded
+ * — and the progress card treats the last element as the current weight. On a
+ * new phone, before the local store is filled, somebody with thirty entries
+ * running 95 kg → 82 kg was shown «90 kq» as today's weight, with a chart that
+ * stopped four months ago. Descending with the limit, then reversed.
+ */
 export async function getWeightHistory(limit = 12): Promise<number[]> {
   const me = await getMyProfile();
   if (!me) return [];
@@ -1045,10 +1065,13 @@ export async function getWeightHistory(limit = 12): Promise<number[]> {
     .from('progress')
     .select('weight,created_at')
     .eq('profile_id', me.id)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(limit);
   if (error) return [];
-  return (data ?? []).map((r: { weight: number | null }) => Number(r.weight)).filter((n) => !Number.isNaN(n));
+  return (data ?? [])
+    .map((r: { weight: number | null }) => Number(r.weight))
+    .filter((n) => !Number.isNaN(n))
+    .reverse();
 }
 
 /** Latest logged bodyweight, or null if none. */

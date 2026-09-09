@@ -109,7 +109,17 @@ function Cover({ gym, height, children }: { gym: Gym; height: number; children?:
   );
 }
 
+/* A blank price is an ABSENCE, not «free».
+   `create-gym.tsx` does not require the price fields and coerces a blank to zero
+   (`Number(priceMonth) || 0`), so a gym owner who prices per quarter and left
+   «Aylıq (₼)» empty was advertised at «0 ₼/ay» next to gyms at 45 and 60 — read
+   by every new user as free membership. Nobody measured a zero here. */
 function Price({ value }: { value: number }) {
+  if (!value || value <= 0) {
+    return (
+      <AppText style={{ fontSize: 12, color: palette.caption }}>Qiymət göstərilməyib</AppText>
+    );
+  }
   return (
     <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
       <AppText style={{ fontSize: 16, fontWeight: '700', color: palette.inkText }}>{value} ₼</AppText>
