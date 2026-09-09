@@ -120,17 +120,21 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
      would make it vanish instantly instead of sliding away. `mounted` keeps it
      up until the slide-out has finished. */
   const [mounted, setMounted] = useState(visible);
+  /* Put back up during the render that first sees `visible`, not in the effect below:
+     React re-runs this component straight away, so the panel is in the tree in the same
+     commit that starts the slide-in. Off-screen at rest — `translateY` still sits at
+     SHEET_H and the backdrop at zero opacity — so nothing shows before it animates. */
+  if (visible && !mounted) setMounted(true);
   useEffect(() => {
     if (visible) {
-      setMounted(true);
-      translateY.value = SHEET_H;
-      translateY.value = withTiming(0, { duration: 260 });
+      translateY.set(SHEET_H);
+      translateY.set(withTiming(0, { duration: 260 }));
       return;
     }
     Keyboard.dismiss();
-    translateY.value = withTiming(SHEET_H, { duration: 220 }, (done) => {
+    translateY.set(withTiming(SHEET_H, { duration: 220 }, (done) => {
       if (done) runOnJS(setMounted)(false);
-    });
+    }));
   }, [visible, SHEET_H, translateY]);
 
   /* The raw overlap — NOT `useKeyboardLift`, which subtracts `insets.bottom` for
@@ -171,15 +175,33 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
     [targetKey]
   );
 
+  /* The component never unmounts, so opening another thread has to wipe the old one by
+     hand. That happens during the render which first sees the new target rather than in
+     an effect: an effect runs only after the previous video's comments have been
+     committed, which is exactly the frame of stale comments under the new header this is
+     meant to avoid. `status` goes back to 'loading' along with them, or that same frame
+     would claim «Hələ şərh yoxdur» about a thread nobody has read yet. */
+  const openKey = visible && targetKey ? targetKey : null;
+  const [shownKey, setShownKey] = useState<string | null>(null);
+  if (openKey !== shownKey) {
+    setShownKey(openKey);
+    if (openKey) {
+      setStatus('loading');
+      setRows([]);
+      setOpenThreads({});
+      setReplyTo(null);
+      setSuggestions([]);
+      setText('');
+    }
+  }
+
   useEffect(() => {
     if (!visible || !targetKey) return;
-    // The component never unmounts, so a new thread has to wipe the old one by hand —
-    // otherwise the previous video's comments would flash under the new header.
-    setRows([]);
-    setOpenThreads({});
-    setReplyTo(null);
-    setSuggestions([]);
-    setText('');
+    /* Reading the thread on open is what this effect is for: `load` writes its rows once
+       the network has answered, and the one flag it raises synchronously — status back to
+       'loading' — is already what the reset above put there, so nothing cascades. The rule
+       reports the call whatever it does, having no view past the `await` inside it. */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [visible, targetKey, load]);
 
@@ -248,11 +270,13 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
 
   /** Guards against an older, slower answer overwriting a newer one. */
   const suggReq = useRef(0);
+  /* The strip only belongs to a live `@token`. Emptying it here rather than in the effect
+     below means it goes in the same commit the token closes in, instead of surviving one
+     more frame — and it also catches a lookup that lands after the caret has already left
+     the token, which the effect's cleanup cannot cancel once the request is in flight. */
+  if (!mentionQuery && suggestions.length > 0) setSuggestions([]);
   useEffect(() => {
-    if (!mentionQuery) {
-      setSuggestions([]);
-      return;
-    }
+    if (!mentionQuery) return;
     const mine = ++suggReq.current;
     const t = setTimeout(async () => {
       try {
@@ -387,9 +411,9 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
 
   // ------------------------------------------------------------- animation
 
-  const panelStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
+  const panelStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.get() }] }));
   const backdropStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(translateY.value, [0, SHEET_H], [1, 0], Extrapolation.CLAMP),
+    opacity: interpolate(translateY.get(), [0, SHEET_H], [1, 0], Extrapolation.CLAMP),
   }));
 
   const onScroll = useAnimatedScrollHandler((e) => {
@@ -415,18 +439,18 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
           dragFrom.value = e.translationY; // zero point, so the sheet doesn't jump
         } else return;
       }
-      translateY.value = Math.max(0, e.translationY - dragFrom.value);
+      translateY.set(Math.max(0, e.translationY - dragFrom.value));
     })
     .onEnd((e) => {
       if (!dragging.value) return;
-      if (translateY.value > CLOSE_DISTANCE || (e.velocityY > CLOSE_VELOCITY && translateY.value > 8)) {
-        translateY.value = withTiming(SHEET_H, { duration: 220 }, () => runOnJS(onClose)());
+      if (translateY.get() > CLOSE_DISTANCE || (e.velocityY > CLOSE_VELOCITY && translateY.get() > 8)) {
+        translateY.set(withTiming(SHEET_H, { duration: 220 }, () => runOnJS(onClose)()));
       } else {
-        translateY.value = withTiming(0, { duration: 180 });
+        translateY.set(withTiming(0, { duration: 180 }));
       }
     })
     .onFinalize((_e, success) => {
-      if (dragging.value && !success) translateY.value = withTiming(0, { duration: 180 }); // cancelled mid-drag
+      if (dragging.value && !success) translateY.set(withTiming(0, { duration: 180 })); // cancelled mid-drag
       dragging.value = false;
     });
 
@@ -518,21 +542,23 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                       <View key={t.root.id}>
                         <CommentItem
                           c={t.root}
+                          parentId={t.root.id}
                           mine={t.root.mine}
-                          onLike={() => like(t.root)}
-                          onReply={() => startReply(t.root, t.root.id)}
-                          onMore={() => more(t.root)}
+                          onLike={like}
+                          onReply={startReply}
+                          onMore={more}
                           onMention={openHandle}
                         />
                         {shown.map((r) => (
                           <CommentItem
                             key={r.id}
                             c={r}
+                            parentId={t.root.id}
                             reply
                             mine={r.mine}
-                            onLike={() => like(r)}
-                            onReply={() => startReply(r, t.root.id)}
-                            onMore={() => more(r)}
+                            onLike={like}
+                            onReply={startReply}
+                            onMore={more}
                             onMention={openHandle}
                           />
                         ))}
@@ -628,9 +654,16 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
   );
 }
 
-/** One comment — top-level or an indented reply under its thread. */
+/**
+ * One comment — top-level or an indented reply under its thread.
+ *
+ * The handlers take the comment rather than being pre-bound per row on the parent's
+ * side. That keeps them plain props here, and it keeps the thread's root id — which
+ * a reply must answer, never its own id — attached to the row that carries it.
+ */
 function CommentItem({
   c,
+  parentId,
   reply,
   mine,
   onLike,
@@ -639,17 +672,19 @@ function CommentItem({
   onMention,
 }: {
   c: Comment;
+  /** The top-level comment this row hangs under; a reply to a reply joins the same thread. */
+  parentId: string;
   reply?: boolean;
   mine: boolean;
-  onLike: () => void;
-  onReply: () => void;
-  onMore: () => void;
+  onLike: (c: Comment) => void;
+  onReply: (c: Comment, parentId: string) => void;
+  onMore: (c: Comment) => void;
   onMention: (handle: string) => void;
 }) {
   const name = c.authorName;
   const uname = c.authorUsername?.trim();
   return (
-    <Pressable onLongPress={onMore} delayLongPress={350} style={[styles.row, reply && styles.rowReply]}>
+    <Pressable onLongPress={() => onMore(c)} delayLongPress={350} style={[styles.row, reply && styles.rowReply]}>
       <Avatar name={name} size={reply ? 28 : 38} uri={c.authorAvatar} />
       <View style={{ flex: 1 }}>
         <View style={styles.nameRow}>
@@ -675,12 +710,12 @@ function CommentItem({
         <Body body={c.body} onMention={onMention} />
 
         <View style={styles.actions}>
-          <PressableScale haptic={false} activeScale={0.95} onPress={onReply} hitSlop={6}>
+          <PressableScale haptic={false} activeScale={0.95} onPress={() => onReply(c, parentId)} hitSlop={6}>
             <AppText variant="caption" color={palette.textSecondary} style={{ fontWeight: '600' }}>
               Cavab yaz
             </AppText>
           </PressableScale>
-          <PressableScale haptic={false} activeScale={0.9} onPress={onMore} hitSlop={6} style={{ paddingHorizontal: 2 }}>
+          <PressableScale haptic={false} activeScale={0.9} onPress={() => onMore(c)} hitSlop={6} style={{ paddingHorizontal: 2 }}>
             <Icon name="more" size={14} color={palette.tertiary} />
           </PressableScale>
         </View>
@@ -689,7 +724,7 @@ function CommentItem({
       <PressableScale
         activeScale={0.85}
         haptic={false}
-        onPress={onLike}
+        onPress={() => onLike(c)}
         style={{ alignItems: 'center', gap: 3, paddingHorizontal: 4 }}>
         <Icon name="heart" size={16} color={c.likedByMe ? palette.streak : palette.tertiary} />
         {c.likes > 0 ? (

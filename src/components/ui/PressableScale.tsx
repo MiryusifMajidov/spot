@@ -32,12 +32,12 @@ export function PressableScale({
   return (
     <AnimatedPressable
       onPressIn={(e) => {
-        scale.value = withTiming(activeScale, { duration: 110 });
+        scale.set(withTiming(activeScale, { duration: 110 }));
         if (haptic) tapFeedback(); // respects the user's haptics/sounds settings
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        scale.value = withSpring(1, { damping: 20, stiffness: 260 });
+        scale.set(withSpring(1, { damping: 20, stiffness: 260 }));
         onPressOut?.(e);
       }}
       style={[animatedStyle, style]}

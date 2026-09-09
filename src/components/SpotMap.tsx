@@ -49,8 +49,14 @@ export function SpotMap({ markers = [], center, zoom = 12, pickable = false, pic
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [attempt, setAttempt] = useState(0);
 
+  /* The callback lives in a ref so that a parent passing a fresh arrow on every
+     render cannot make the announcement below re-fire and report the same status
+     twice. The ref is refreshed after the commit rather than during render: a
+     render can be started and thrown away, and must leave nothing behind. */
   const report = useRef(onStatus);
-  report.current = onStatus;
+  useEffect(() => {
+    report.current = onStatus;
+  });
   useEffect(() => {
     report.current?.(status);
   }, [status]);
@@ -65,6 +71,12 @@ export function SpotMap({ markers = [], center, zoom = 12, pickable = false, pic
     setStatus('loading');
     setAttempt((a) => a + 1);
   };
+
+  /* The markers are keyed by their serialised contents, not by array identity: a
+     caller that rebuilds the array on every render must not rebuild the map with
+     it. The same string is embedded in the document below, so what the memo is
+     keyed on and what it renders can never drift apart. */
+  const markersKey = JSON.stringify(markers);
 
   // Built once: re-rendering the HTML would reset the user's pan/zoom.
   const html = useMemo(
@@ -118,7 +130,7 @@ export function SpotMap({ markers = [], center, zoom = 12, pickable = false, pic
   if (pickMarker) pickMarker.on('dragend', function (e) { var p = e.target.getLatLng(); post({ t: 'pick', lat: p.lat, lng: p.lng }); });
   if (pickable) map.on('click', function (e) { placePin(e.latlng.lat, e.latlng.lng); });
 
-  var data = ${JSON.stringify(markers)};
+  var data = ${markersKey};
   var group = [];
   data.forEach(function (m) {
     var mk = L.marker([m.lat, m.lng], { icon: icon(!!m.active) }).addTo(map);
@@ -138,7 +150,7 @@ export function SpotMap({ markers = [], center, zoom = 12, pickable = false, pic
   post({ t: 'ready' });
 </script></body></html>`,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(markers), pickable]
+    [markersKey, pickable]
   );
 
   const onMessage = (e: WebViewMessageEvent) => {
