@@ -221,8 +221,15 @@ function SessionDetail({ workout }: { workout: Workout }) {
   return (
     <View style={styles.detail}>
       {withSets.map((e, i) => {
-        const done = e.sets.filter((x) => x.done);
-        const skipped = e.sets.length - done.length;
+        /* Every stored set is shown, with no `done` filter.
+         *
+         * A workout only ever holds the sets that were COMPLETED: the session
+         * screen filters on `done` before it writes (src/app/(tabs)/workout/
+         * session.tsx), and the home session only reaches finished moves. So a
+         * filter here could never remove anything a current build wrote — but
+         * on a row persisted by an older version it could remove a set that the
+         * stored volume above was still counting, and the detail would then
+         * contradict its own «0.7 t». What is written is what is shown. */
         return (
           <View key={`${e.name}-${i}`} style={i > 0 ? { marginTop: 12 } : undefined}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
@@ -230,20 +237,19 @@ function SessionDetail({ workout }: { workout: Workout }) {
               <AppText style={{ fontSize: 11, color: palette.tertiary }}>{e.muscle}</AppText>
             </View>
             <View style={styles.setRows}>
-              {done.map((x, j) => (
+              {e.sets.map((x, j) => (
                 <View key={j} style={styles.setChip}>
                   <AppText style={{ fontSize: 11.5, fontWeight: '600', color: '#3A3A42' }}>
                     {x.weight} kq × {x.reps}
+                    {/* Per-set RPE, if a writer ever records one. Today «Necə
+                        keçdi?» on the summary screen rates the whole session,
+                        so this stays empty rather than inventing a number for
+                        each set. */}
                     {x.rpe ? ` · RPE ${x.rpe}` : ''}
                   </AppText>
                 </View>
               ))}
             </View>
-            {skipped > 0 ? (
-              <AppText style={{ fontSize: 11, color: palette.tertiary, marginTop: 6 }}>
-                {skipped} set tamamlanmayıb
-              </AppText>
-            ) : null}
           </View>
         );
       })}
