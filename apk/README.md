@@ -38,5 +38,13 @@ cd android && ./gradlew assembleRelease
 
 Nəticə: `android/app/build/outputs/apk/release/app-release.apk`
 
-Hər yeni buraxılışda `android/app/build.gradle` içindəki `versionCode`-u bir
-artır (1 → 2 → 3…), yoxsa Android yeniləməni köhnə sayır.
+Hər yeni buraxılışda `versionCode`-u bir artır (1 → 2 → 3…), yoxsa Android
+yeniləməni köhnə sayır. **İKİ yerdə:** `app.json` və
+`android/app/build.gradle`. Normalda birincini ikinciyə `expo prebuild`
+köçürür, amma biz onu işlətmirik — prebuild bütün `android/` qovluğunu, yəni
+yuxarıdakı imza açarını da silir.
+
+İkonu dəyişmək lazım olsa: `python scripts/make_icons.py` və
+`python scripts/make_native_icons.py` (bax `scripts/README.md`). Yalnız
+`app.json`-u dəyişmək kifayət deyil — launcherin göstərdiyi fayllar
+`android/` içindədir və orada bir dəfə yaradılır.

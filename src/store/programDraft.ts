@@ -17,14 +17,14 @@
  * is the honest way to handle leaving — asking first, rather than silently
  * keeping it forever.
  */
-import { create } from 'zustand';
+import { create } from "zustand";
 
-import { Program } from '@/data/types';
-import { exerciseLibrary } from './db';
+import { Program } from "@/data/types";
+import { exerciseLibrary } from "./db";
 
 /** Repetitions or a hold. Both end up in one `reps` string on the wire — see
  *  `itemReps` — because the session logger reads «san» as timed already. */
-export type ItemMode = 'reps' | 'time';
+export type ItemMode = "reps" | "time";
 
 export interface DraftItem {
   /** Stable across re-orders and renames; the library id is not unique in a day
@@ -56,19 +56,20 @@ const nextKey = () => `k${Date.now().toString(36)}-${(seq += 1)}`;
  *  treat it as a hold rather than as forty-five repetitions. */
 export function itemReps(it: DraftItem): string {
   const v = it.value.trim();
-  if (!v) return '';
-  return it.mode === 'time' ? (/san/i.test(v) ? v : `${v} san`) : v;
+  if (!v) return "";
+  return it.mode === "time" ? (/san/i.test(v) ? v : `${v} san`) : v;
 }
 
 /** Parse a saved `reps` string back into the two fields the builder edits. */
 export function splitReps(reps: string): { mode: ItemMode; value: string } {
-  const r = (reps ?? '').trim();
-  if (/san/i.test(r)) return { mode: 'time', value: r.replace(/\s*san.*$/i, '').trim() };
-  return { mode: 'reps', value: r };
+  const r = (reps ?? "").trim();
+  if (/san/i.test(r))
+    return { mode: "time", value: r.replace(/\s*san.*$/i, "").trim() };
+  return { mode: "reps", value: r };
 }
 
 export function newDay(index: number): DraftDay {
-  return { key: nextKey(), title: `Gün ${index + 1}`, focus: '', items: [] };
+  return { key: nextKey(), title: `Gün ${index + 1}`, focus: "", items: [] };
 }
 
 export function itemFromLibrary(id: string): DraftItem | null {
@@ -95,10 +96,10 @@ export function itemFromName(name: string): DraftItem {
     key: nextKey(),
     exerciseId: null,
     name: name.trim(),
-    muscle: '',
+    muscle: "",
     sets: 3,
-    mode: 'reps',
-    value: '10',
+    mode: "reps",
+    value: "10",
     videoUrl: null,
   };
 }
@@ -114,66 +115,95 @@ interface DraftState {
 
   startNew: () => void;
   startEdit: (p: Program) => void;
-  set: (patch: Partial<Pick<DraftState, 'title' | 'desc'>>) => void;
+  set: (patch: Partial<Pick<DraftState, "title" | "desc">>) => void;
   addDay: () => void;
   removeDay: (key: string) => void;
-  patchDay: (key: string, patch: Partial<Pick<DraftDay, 'title' | 'focus'>>) => void;
+  patchDay: (
+    key: string,
+    patch: Partial<Pick<DraftDay, "title" | "focus">>,
+  ) => void;
   addItems: (dayKey: string, items: DraftItem[]) => void;
-  patchItem: (dayKey: string, itemKey: string, patch: Partial<DraftItem>) => void;
+  patchItem: (
+    dayKey: string,
+    itemKey: string,
+    patch: Partial<DraftItem>,
+  ) => void;
   removeItem: (dayKey: string, itemKey: string) => void;
 }
 
 export const useProgramDraft = create<DraftState>((set) => ({
   editingId: null,
-  title: '',
-  desc: '',
+  title: "",
+  desc: "",
   days: [newDay(0)],
   touched: false,
 
-  startNew: () => set({ editingId: null, title: '', desc: '', days: [newDay(0)], touched: false }),
-
-  startEdit: (p) =>
+  startNew: () =>
     set({
-      editingId: p.id,
-      title: p.title ?? '',
-      desc: p.desc ?? '',
-      days: (p.days ?? []).map((d, i) => ({
-        key: nextKey(),
-        title: d.title || `Gün ${i + 1}`,
-        focus: d.focus ?? '',
-        items: (d.exercises ?? []).map((e) => {
-          const { mode, value } = splitReps(e.reps);
-          return {
-            key: nextKey(),
-            // A row read back from `exercise_ids` has a library id; one the
-            // author typed has the synthetic `own-…` id the mapper made, which
-            // is not a library move and must not pretend to be.
-            exerciseId: exerciseLibrary.some((x) => x.id === e.id) ? e.id : null,
-            name: e.name,
-            muscle: e.muscle ?? '',
-            sets: e.sets || 3,
-            mode,
-            value,
-            videoUrl: e.videoUrl ?? null,
-          };
-        }),
-      })) || [newDay(0)],
+      editingId: null,
+      title: "",
+      desc: "",
+      days: [newDay(0)],
       touched: false,
     }),
 
+  startEdit: (p) => {
+    /* `(p.days ?? []).map(...) || [newDay(0)]` was the intent here and could
+       never fire: `[].map()` returns `[]`, which is truthy. A program with no
+       days opened the editor with no day and no row to type into. */
+    const days = (p.days ?? []).map((d, i) => ({
+      key: nextKey(),
+      title: d.title || `Gün ${i + 1}`,
+      focus: d.focus ?? "",
+      items: (d.exercises ?? []).map((e) => {
+        const { mode, value } = splitReps(e.reps);
+        return {
+          key: nextKey(),
+          // A row read back from `exercise_ids` has a library id; one the
+          // author typed has the synthetic `own-…` id the mapper made, which
+          // is not a library move and must not pretend to be.
+          exerciseId: exerciseLibrary.some((x) => x.id === e.id) ? e.id : null,
+          name: e.name,
+          muscle: e.muscle ?? "",
+          sets: e.sets || 3,
+          mode,
+          value,
+          videoUrl: e.videoUrl ?? null,
+        };
+      }),
+    }));
+    set({
+      editingId: p.id,
+      title: p.title ?? "",
+      desc: p.desc ?? "",
+      days: days.length ? days : [newDay(0)],
+      touched: false,
+    });
+  },
+
   set: (patch) => set((s) => ({ ...s, ...patch, touched: true })),
 
-  addDay: () => set((s) => ({ days: [...s.days, newDay(s.days.length)], touched: true })),
+  addDay: () =>
+    set((s) => ({ days: [...s.days, newDay(s.days.length)], touched: true })),
 
   removeDay: (key) =>
-    set((s) => (s.days.length > 1 ? { days: s.days.filter((d) => d.key !== key), touched: true } : s)),
+    set((s) =>
+      s.days.length > 1
+        ? { days: s.days.filter((d) => d.key !== key), touched: true }
+        : s,
+    ),
 
   patchDay: (key, patch) =>
-    set((s) => ({ days: s.days.map((d) => (d.key === key ? { ...d, ...patch } : d)), touched: true })),
+    set((s) => ({
+      days: s.days.map((d) => (d.key === key ? { ...d, ...patch } : d)),
+      touched: true,
+    })),
 
   addItems: (dayKey, items) =>
     set((s) => ({
-      days: s.days.map((d) => (d.key === dayKey ? { ...d, items: [...d.items, ...items] } : d)),
+      days: s.days.map((d) =>
+        d.key === dayKey ? { ...d, items: [...d.items, ...items] } : d,
+      ),
       touched: true,
     })),
 
@@ -181,15 +211,24 @@ export const useProgramDraft = create<DraftState>((set) => ({
     set((s) => ({
       days: s.days.map((d) =>
         d.key === dayKey
-          ? { ...d, items: d.items.map((it) => (it.key === itemKey ? { ...it, ...patch } : it)) }
-          : d
+          ? {
+              ...d,
+              items: d.items.map((it) =>
+                it.key === itemKey ? { ...it, ...patch } : it,
+              ),
+            }
+          : d,
       ),
       touched: true,
     })),
 
   removeItem: (dayKey, itemKey) =>
     set((s) => ({
-      days: s.days.map((d) => (d.key === dayKey ? { ...d, items: d.items.filter((it) => it.key !== itemKey) } : d)),
+      days: s.days.map((d) =>
+        d.key === dayKey
+          ? { ...d, items: d.items.filter((it) => it.key !== itemKey) }
+          : d,
+      ),
       touched: true,
     })),
 }));
@@ -199,13 +238,13 @@ export function draftDaysForSave(days: DraftDay[]) {
   return days
     .filter((d) => d.items.length > 0)
     .map((d) => ({
-      title: d.title.trim() || 'Gün',
+      title: d.title.trim() || "Gün",
       focus:
         d.focus.trim() ||
         d.items
           .map((it) => it.muscle)
           .filter((m, i, a) => !!m && a.indexOf(m) === i)
-          .join(', '),
+          .join(", "),
       items: d.items.map((it) => ({
         name: it.name.trim(),
         exercise_id: it.exerciseId,
@@ -216,6 +255,8 @@ export function draftDaysForSave(days: DraftDay[]) {
       /* Written alongside `items` for the moves the library knows. A phone still
          running the previous build reads only this field, and without it every
          day of a newly written program would look empty there. */
-      exercise_ids: d.items.map((it) => it.exerciseId).filter((x): x is string => !!x),
+      exercise_ids: d.items
+        .map((it) => it.exerciseId)
+        .filter((x): x is string => !!x),
     }));
 }
