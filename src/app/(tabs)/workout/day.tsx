@@ -18,6 +18,7 @@ import {
   sessionExercises,
   useDb,
 } from '@/store/db';
+import { estimateDuration } from '@/lib/duration';
 import { palette, spacing } from '@/theme';
 
 /* ------------------------------------------------------------------ *
@@ -52,14 +53,13 @@ export function resolveDayExercises(
   return sessionExercises(title || '');
 }
 
-/** One shared duration estimate (work + rest per set), so no two screens disagree. */
+/** One shared duration estimate, so no two screens disagree — the rule itself
+ *  now lives in src/lib/duration.ts, because the program SAVE path needs the
+ *  same answer and a screen is the wrong place for a library to import from. */
 export function estimateDurationMin(exercises: LibExercise[]): number {
-  if (!exercises.length) return 0;
-  const min = exercises.reduce((a, e) => {
-    const perSet = e.equipment === 'Bədən' ? 1.2 : e.isCompound ? 2.8 : 2.2; // dəq/set (iş + fasilə)
-    return a + e.defaultSets * perSet;
-  }, 0);
-  return Math.max(10, Math.round(min + 5)); // + isinmə
+  return estimateDuration(
+    exercises.map((e) => ({ sets: e.defaultSets, reps: e.reps, equipment: e.equipment, isCompound: e.isCompound }))
+  );
 }
 
 /* ------------------------------------------------------------------ *

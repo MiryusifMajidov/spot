@@ -7,27 +7,40 @@
  * Create and edit now go through the same function and report the same three
  * outcomes, honestly:
  *
- *   'saved'  — the server has it.
- *   'local'  — the device has it, the server does not, and the caller SAYS so.
- *   'failed' — nothing was written anywhere.
+ *   'saved'   — the server has it.
+ *   'local'   — the device has it, the server does not, and the caller SAYS so.
+ *   'refused' — the server READ it and said no (schema76), with a reason.
+ *   'failed'  — nothing was written anywhere.
  *
- * There is no fourth, quieter outcome. A write that did not happen never
- * reports success.
+ * 'refused' is separate from 'local' on purpose. Both mean «not on the server»,
+ * but 'local' is a connection that will work later and 'refused' is a program
+ * that will never save until something in it changes. Telling somebody their
+ * work is «hələlik bu cihazda» when in fact a video URL was rejected sends them
+ * to retry forever.
  */
 import { Program } from '@/data/types';
 import { getMyProfile } from '@/lib/api';
+import { estimateDuration } from '@/lib/duration';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useDb } from '@/store/db';
 import { DraftDay, draftDaysForSave, itemReps } from '@/store/programDraft';
 
-export type SaveResult = 'saved' | 'local' | 'failed';
+export type SaveResult = 'saved' | 'local' | 'failed' | 'refused';
 
-/** Rough minutes for one day's work. Rendered as «~X dəq», never as a fact. */
+export interface SaveOutcome {
+  result: SaveResult;
+  id: string;
+  /** Set only for 'refused': what the server objected to, in Azerbaijani. */
+  problem?: string;
+}
+
+/** Rough minutes for one day's work. Rendered as «~X dəq», never as a fact.
+ *  Delegates, so a program cannot be «~45 dəq» on the save toast and «~38 dəq»
+ *  on the screen that opens it. */
 export function estimateMinutes(days: DraftDay[]): number {
   const day = days.find((d) => d.items.length > 0);
   if (!day) return 0;
-  const min = day.items.reduce((a, it) => a + it.sets * (it.mode === 'time' ? 1.2 : 2.5), 0);
-  return Math.max(10, Math.round(min + 5));
+  return estimateDuration(day.items.map((it) => ({ sets: it.sets, reps: itemReps(it) })));
 }
 
 /** The Program the device keeps, built from the draft. */
@@ -93,7 +106,7 @@ export async function saveProgramDraft(input: {
   days: DraftDay[];
   creatorName: string;
   creatorType: 'trainer' | 'user';
-}): Promise<{ result: SaveResult; id: string }> {
+}): Promise<SaveOutcome> {
   const program = toLocalProgram(input);
   const wireDays = draftDaysForSave(input.days);
 
@@ -160,7 +173,9 @@ export async function saveProgramDraft(input: {
     });
     if (error) throw error;
     return { result: 'saved', id };
-  } catch {
+  } catch (e) {
+    const problem = dayProblemMessage((e as { message?: string })?.message ?? '');
+    if (problem) return { result: 'refused', id, problem };
     return { result: 'local', id };
   }
 }

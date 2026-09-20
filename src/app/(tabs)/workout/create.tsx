@@ -155,7 +155,7 @@ export default function CreateProgram() {
         return;
       }
       setSaving(true);
-      const { result } = await saveProgramDraft({
+      const { result, problem } = await saveProgramDraft({
         editingId: draft.editingId,
         title: draft.title,
         desc: draft.desc,
@@ -168,6 +168,14 @@ export default function CreateProgram() {
       if (result === 'failed') {
         errorFeedback();
         toast('Proqram saxlanılmadı. Yenidən cəhd et.', 'error');
+        return;
+      }
+      if (result === 'refused') {
+        /* The server read it and said no. Staying on the form is the point:
+           «yenidən cəhd et» would be a lie about something that cannot succeed
+           until the person changes what the message names. */
+        errorFeedback();
+        toast(problem ?? 'Server proqramı qəbul etmədi.', 'error');
         return;
       }
       if (result === 'local') {
