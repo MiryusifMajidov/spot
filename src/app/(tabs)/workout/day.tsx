@@ -29,108 +29,17 @@ import { palette, spacing } from '@/theme';
  *  exercise library (which is barbell-first), so they are declared here with the
  *  same shape. `videoUrl` is empty on purpose — we do not pretend a form clip
  *  exists; screens check `exerciseById(id)` before offering a video. */
-export const HOME_MOVES: LibExercise[] = [
-  { id: 'h-pushup', name: 'Şınov', muscle: 'Sinə', equipment: 'Bədən', defaultSets: 3, reps: '12', videoUrl: '', commonMistake: 'Beli sallamaq. Bədən bir düz xətt olmalıdır.', substitutes: ['Dizüstü şınov', 'Divara şınov'], isCompound: true },
-  { id: 'h-squat', name: 'Çöməltmə (squat)', muscle: 'Ayaq', equipment: 'Bədən', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Dabanı yerdən qaldırmaq. Ağırlıq dabanda qalsın.', substitutes: ['Stula oturub-durma'], isCompound: true },
-  { id: 'h-plank', name: 'Plank', muscle: 'Qarın', equipment: 'Bədən', defaultSets: 3, reps: '40 san', videoUrl: '', commonMistake: 'Kalçanı qaldırmaq və ya sallamaq.', substitutes: ['Dizüstü plank'], isCompound: false },
-  { id: 'h-lunge', name: 'Addımlı çöküş (lunge)', muscle: 'Ayaq', equipment: 'Bədən', defaultSets: 3, reps: '10 hər ayaq', videoUrl: '', commonMistake: 'Dizi barmaqdan çox qabağa çıxarmaq.', substitutes: ['Yerində çöküş'], isCompound: true },
-  { id: 'h-burpee', name: 'Burpee', muscle: 'Tam bədən', equipment: 'Bədən', defaultSets: 3, reps: '8', videoUrl: '', commonMistake: 'Tələsib formanı itirmək. Yavaş, amma düzgün.', substitutes: ['Dağ dırmaşması'], isCompound: true },
-  { id: 'h-superman', name: 'Superman', muscle: 'Kürək', equipment: 'Bədən', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Boynu arxaya qatlamaq. Baxış aşağıda qalsın.', substitutes: ['Bird-dog'], isCompound: false },
-  { id: 'h-climber', name: 'Dağ dırmaşması', muscle: 'Qarın', equipment: 'Bədən', defaultSets: 3, reps: '30 san', videoUrl: '', commonMistake: 'Kalçanı yuxarı qaldırmaq.', substitutes: ['Plank'], isCompound: false },
-  { id: 'h-bridge', name: 'Glute bridge', muscle: 'Gluteus', equipment: 'Bədən', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Beli aşırı əymək. Qabırğanı aşağı saxla.', substitutes: ['Hip thrust'], isCompound: false },
-  { id: 'h-db-press', name: 'Dumbbell sinə press', muscle: 'Sinə', equipment: 'Dumbbell', defaultSets: 3, reps: '10–12', videoUrl: '', commonMistake: 'Dirsəkləri 90° açmaq.', substitutes: ['Şınov'], isCompound: true },
-  { id: 'h-db-row', name: 'Dumbbell dartma', muscle: 'Kürək', equipment: 'Dumbbell', defaultSets: 3, reps: '10–12', videoUrl: '', commonMistake: 'Gövdəni yelləmək.', substitutes: ['Rezinlə dartma'], isCompound: true },
-  { id: 'h-goblet', name: 'Goblet squat', muscle: 'Ayaq', equipment: 'Dumbbell', defaultSets: 3, reps: '12', videoUrl: '', commonMistake: 'Dirsəkləri yana açmaq.', substitutes: ['Çöməltmə'], isCompound: true },
-  { id: 'h-band-row', name: 'Rezinlə dartma', muscle: 'Kürək', equipment: 'Rezin', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Çiyni yuxarı qaldırmaq.', substitutes: ['Dumbbell dartma'], isCompound: false },
-  { id: 'h-band-press', name: 'Rezinlə çiyin press', muscle: 'Çiyin', equipment: 'Rezin', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Beli əymək.', substitutes: ['Dumbbell çiyin press'], isCompound: false },
-  { id: 'h-kb-swing', name: 'Kettlebell swing', muscle: 'Arxa ayaq', equipment: 'Kettlebell', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Skvata çevirmək. Hərəkət kalçadandır.', substitutes: ['Glute bridge'], isCompound: true },
-  { id: 'h-step-up', name: 'Skamyaya qalxma', muscle: 'Ayaq', equipment: 'Skamya', defaultSets: 3, reps: '10 hər ayaq', videoUrl: '', commonMistake: 'Arxa ayaqla itələmək.', substitutes: ['Addımlı çöküş'], isCompound: true },
-  { id: 'h-bench-dip', name: 'Skamyada dips', muscle: 'Triseps', equipment: 'Skamya', defaultSets: 3, reps: '12', videoUrl: '', commonMistake: 'Çiyni qulağa yaxınlaşdırmaq.', substitutes: ['Şınov'], isCompound: false },
-];
+/* The «Evdə məşq» engine used to live here: HOME_MOVES, homeCircuit,
+   homeWorkoutPlan, homeMoveReps, isHomeProgram — a second, parallel way of
+   building and logging a workout, with its own screen and its own session
+   logger. Having two of everything is most of why this tab was impossible to
+   follow: a person could not tell which kind of workout they were in, and the
+   program builder could only reach one of the two exercise lists.
 
-const homeMove = (id: string) => HOME_MOVES.find((m) => m.id === id)!;
+   The sixteen bodyweight moves were not deleted with it — they are ordinary
+   exercises and now sit in `exerciseLibrary` (src/store/db.ts) beside the
+   barbell ones, so there is one library, one builder and one logger. */
 
-/** Seconds of work for a home move (drives the session countdown). */
-export function homeMoveSeconds(ex: LibExercise): number {
-  const m = ex.reps.match(/(\d+)\s*san/);
-  if (m) return Number(m[1]);
-  if (ex.id === 'h-burpee') return 30;
-  return 40;
-}
-
-/** Repetitions a completed home move is worth (for real volume). */
-export function homeMoveReps(ex: LibExercise): number {
-  const n = Number(ex.reps.replace(/[^\d]/g, '').slice(0, 2));
-  return Number.isFinite(n) && n > 0 ? n : 10;
-}
-
-/** The circuit for a home workout: only moves the user's equipment allows. */
-export function homeCircuit(equipment: string[], count: number): LibExercise[] {
-  const has = (e: string) => equipment.includes(e);
-  const pool = HOME_MOVES.filter((m) => m.equipment === 'Bədən' || has(m.equipment));
-  // Turnik → the real library pull-up (it has a form video).
-  const pullup = exerciseById('pullup');
-  const full = has('Turnik') && pullup ? [...pool, pullup] : pool;
-  // Alternate muscle groups so a circuit does not stack two leg moves in a row.
-  const order = ['Sinə', 'Ayaq', 'Kürək', 'Qarın', 'Tam bədən', 'Gluteus', 'Çiyin', 'Triseps', 'Arxa ayaq'];
-  const sorted = [...full].sort((a, b) => order.indexOf(a.muscle) - order.indexOf(b.muscle));
-  const out: LibExercise[] = [];
-  const byMuscle = new Map<string, LibExercise[]>();
-  for (const m of sorted) byMuscle.set(m.muscle, [...(byMuscle.get(m.muscle) ?? []), m]);
-  const groups = [...byMuscle.values()];
-  let i = 0;
-  while (out.length < count && groups.some((g) => g.length)) {
-    const g = groups[i % groups.length];
-    const next = g.shift();
-    if (next) out.push(next);
-    i += 1;
-  }
-  return out;
-}
-
-export interface HomePlan {
-  circuit: LibExercise[];
-  rounds: number;
-  /** flattened running order: circuit repeated `rounds` times */
-  moves: LibExercise[];
-  minutes: number;
-}
-
-/** A real home-workout plan whose move count and round count match the
- *  equipment and the minutes the user actually picked. */
-export function homeWorkoutPlan(equipment: string[], minutes: number): HomePlan {
-  const mins = Math.max(5, Math.min(90, minutes || 20));
-  const count = mins <= 10 ? 4 : mins <= 20 ? 5 : 6;
-  const circuit = homeCircuit(equipment, count);
-  const perMove = 55; // ~40 san iş + ~15 san keçid
-  const rounds = Math.max(1, Math.round((mins * 60) / (Math.max(1, circuit.length) * perMove)));
-  const moves: LibExercise[] = [];
-  for (let r = 0; r < rounds; r += 1) moves.push(...circuit);
-  return { circuit, rounds, moves, minutes: Math.round((moves.length * perMove) / 60) };
-}
-
-const HOME_TAGS = ['evdə', 'avadanlıqsız', 'bodyweight', 'ev'];
-export function isHomeProgram(p: Program | undefined): boolean {
-  if (!p) return false;
-  return (p.tags ?? []).some((t) => HOME_TAGS.includes(t.toLowerCase()));
-}
-
-/** The exercises of a program day.
- *  1) the day's own exercises when the program's author really wrote them,
- *  2) otherwise NOTHING. A program day whose author left it empty stays empty —
- *     the app must never invent moves from a day title and present them as a
- *     trainer's (or any author's) programming.
- *  The title-derived plan below serves only the program-less «Sərbəst məşq»
- *  session, where the app is openly the one choosing the moves.
- *
- *  `programRequested` is what closes the hole between 2) and 3). The caller used
- *  to pass only the resolved program, so an UNRESOLVED one — every program that
- *  lives on the server rather than on this device — arrived as `undefined` and
- *  fell straight through to the title plan. Opening «Gün 2 · Pull» of somebody
- *  else's program showed five moves derived from the word «Pull»: squat, bench,
- *  row, overhead press, plank, presented as that author's programming and
- *  loggable as a workout. A program was asked for; if it is not here, the answer
- *  is nothing, not a guess. */
 export function resolveDayExercises(
   program: Program | undefined,
   dayIndex: number,
@@ -214,14 +123,6 @@ export default function DayDetail() {
                 : 'Proqramın müəllifi bu günün hərəkətlərini hələ yazmayıb. Hərəkət kitabxanasından özün seçib başlaya bilərsən.'}
             </AppText>
             <Button title="Hərəkət kitabxanası" variant="secondary" onPress={() => router.push('/(tabs)/workout/exercises')} style={{ marginTop: 14 }} />
-            {isHomeProgram(program) ? (
-              <Button
-                title="Evdə məşq qur"
-                variant="secondary"
-                onPress={() => router.push('/(tabs)/workout/home')}
-                style={{ marginTop: 8 }}
-              />
-            ) : null}
           </View>
         ) : (
           <View style={{ marginTop: 20 }}>

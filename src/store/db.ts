@@ -14,7 +14,6 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { programs as seedPrograms } from '@/data/mock';
 import { cachedGym } from '@/lib/gymCache';
-import { DAILY_TARGET, meals as mealsData } from '@/data/nutrition';
 import { Gym, Level, Partner, Program } from '@/data/types';
 import { newId } from '@/lib/ids';
 
@@ -170,6 +169,31 @@ export const exerciseLibrary: LibExercise[] = [
   { id: 'calf', name: 'Baldır qaldırma (calf raise)', muscle: 'Baldır', equipment: 'Maşın', defaultSets: 4, reps: '12–15', videoUrl: NO_VIDEO, commonMistake: 'Yarım amplituda. Tam uzat və qaldır.', substitutes: ['Ayaqüstə calf', 'Oturaq calf'], isCompound: false },
   { id: 'plank', name: 'Plank', muscle: 'Qarın', equipment: 'Bədən', defaultSets: 3, reps: '45 san', videoUrl: NO_VIDEO, commonMistake: 'Kalçanı qaldırmaq və ya sallamaq. Bədən düz xətt.', substitutes: ['Ab wheel', 'Dead bug'], isCompound: false },
   { id: 'hip', name: 'Hip thrust', muscle: 'Gluteus', equipment: 'Ştanq', defaultSets: 3, reps: '8–12', videoUrl: NO_VIDEO, commonMistake: 'Beli aşırı əymək. Qabırğanı aşağı saxla.', substitutes: ['Glute bridge', 'Kabel pull-through'], isCompound: false },
+
+  /* ---- avadanlıqsız (öz çəkinlə) ----
+     These sixteen moves used to live in a second library of their own, feeding a
+     separate «Evdə məşq» engine with its own screen, its own session logger and
+     its own way of writing a workout. Two engines meant two answers to «where do
+     exercises come from», and the program builder could only see one of them.
+     The engine is gone; the moves are exercises like any other and belong here,
+     where the builder, the library screen and the session logger all read from
+     one list. */
+  { id: 'h-pushup', name: 'Şınov', muscle: 'Sinə', equipment: 'Bədən', defaultSets: 3, reps: '12', videoUrl: '', commonMistake: 'Beli sallamaq. Bədən bir düz xətt olmalıdır.', substitutes: ['Dizüstü şınov', 'Divara şınov'], isCompound: true },
+  { id: 'h-squat', name: 'Çöməltmə (squat)', muscle: 'Ayaq', equipment: 'Bədən', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Dabanı yerdən qaldırmaq. Ağırlıq dabanda qalsın.', substitutes: ['Stula oturub-durma'], isCompound: true },
+  { id: 'h-plank', name: 'Plank', muscle: 'Qarın', equipment: 'Bədən', defaultSets: 3, reps: '40 san', videoUrl: '', commonMistake: 'Kalçanı qaldırmaq və ya sallamaq.', substitutes: ['Dizüstü plank'], isCompound: false },
+  { id: 'h-lunge', name: 'Addımlı çöküş (lunge)', muscle: 'Ayaq', equipment: 'Bədən', defaultSets: 3, reps: '10 hər ayaq', videoUrl: '', commonMistake: 'Dizi barmaqdan çox qabağa çıxarmaq.', substitutes: ['Yerində çöküş'], isCompound: true },
+  { id: 'h-burpee', name: 'Burpee', muscle: 'Tam bədən', equipment: 'Bədən', defaultSets: 3, reps: '8', videoUrl: '', commonMistake: 'Tələsib formanı itirmək. Yavaş, amma düzgün.', substitutes: ['Dağ dırmaşması'], isCompound: true },
+  { id: 'h-superman', name: 'Superman', muscle: 'Kürək', equipment: 'Bədən', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Boynu arxaya qatlamaq. Baxış aşağıda qalsın.', substitutes: ['Bird-dog'], isCompound: false },
+  { id: 'h-climber', name: 'Dağ dırmaşması', muscle: 'Qarın', equipment: 'Bədən', defaultSets: 3, reps: '30 san', videoUrl: '', commonMistake: 'Kalçanı yuxarı qaldırmaq.', substitutes: ['Plank'], isCompound: false },
+  { id: 'h-bridge', name: 'Glute bridge', muscle: 'Gluteus', equipment: 'Bədən', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Beli aşırı əymək. Qabırğanı aşağı saxla.', substitutes: ['Hip thrust'], isCompound: false },
+  { id: 'h-db-press', name: 'Dumbbell sinə press', muscle: 'Sinə', equipment: 'Dumbbell', defaultSets: 3, reps: '10–12', videoUrl: '', commonMistake: 'Dirsəkləri 90° açmaq.', substitutes: ['Şınov'], isCompound: true },
+  { id: 'h-db-row', name: 'Dumbbell dartma', muscle: 'Kürək', equipment: 'Dumbbell', defaultSets: 3, reps: '10–12', videoUrl: '', commonMistake: 'Gövdəni yelləmək.', substitutes: ['Rezinlə dartma'], isCompound: true },
+  { id: 'h-goblet', name: 'Goblet squat', muscle: 'Ayaq', equipment: 'Dumbbell', defaultSets: 3, reps: '12', videoUrl: '', commonMistake: 'Dirsəkləri yana açmaq.', substitutes: ['Çöməltmə'], isCompound: true },
+  { id: 'h-band-row', name: 'Rezinlə dartma', muscle: 'Kürək', equipment: 'Rezin', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Çiyni yuxarı qaldırmaq.', substitutes: ['Dumbbell dartma'], isCompound: false },
+  { id: 'h-band-press', name: 'Rezinlə çiyin press', muscle: 'Çiyin', equipment: 'Rezin', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Beli əymək.', substitutes: ['Dumbbell çiyin press'], isCompound: false },
+  { id: 'h-kb-swing', name: 'Kettlebell swing', muscle: 'Arxa ayaq', equipment: 'Kettlebell', defaultSets: 3, reps: '15', videoUrl: '', commonMistake: 'Skvata çevirmək. Hərəkət kalçadandır.', substitutes: ['Glute bridge'], isCompound: true },
+  { id: 'h-step-up', name: 'Skamyaya qalxma', muscle: 'Ayaq', equipment: 'Skamya', defaultSets: 3, reps: '10 hər ayaq', videoUrl: '', commonMistake: 'Arxa ayaqla itələmək.', substitutes: ['Addımlı çöküş'], isCompound: true },
+  { id: 'h-bench-dip', name: 'Skamyada dips', muscle: 'Triseps', equipment: 'Skamya', defaultSets: 3, reps: '12', videoUrl: '', commonMistake: 'Çiyni qulağa yaxınlaşdırmaq.', substitutes: ['Şınov'], isCompound: false },
 ];
 
 // ------------------------------------------------------------------ compatibility (design formula)
@@ -314,15 +338,12 @@ interface DbState {
   matches: Record<string, Match>;
   threads: Record<string, ChatMessage[]>;
   savedPrograms: string[];
-  nutrition: { day: string; eaten: string[]; water: number };
   myReviews: Record<string, { rating: number; text: string; at: string }[]>; // gymId → reviews I wrote
   myPrograms: Program[];                       // programs this user/trainer created
   // Comments are NOT here: they live on the server (src/lib/comments.ts). Keeping
   // them in this device-local store meant a comment reached nobody.
 
   setHydrated: () => void;
-  toggleMeal: (id: string) => void;
-  addWater: (delta: number) => void;
   addReview: (gymId: string, rating: number, text: string) => void;
   createProgram: (p: Omit<Program, 'id'> & { id?: string }) => string;
   updateProgram: (id: string, patch: Partial<Program>) => void;
@@ -375,7 +396,6 @@ export const useDb = create<DbState>()(
       matches: {},
       threads: {},
       savedPrograms: [],
-      nutrition: { day: dayKey(new Date().toISOString()), eaten: [], water: 0 },
       myReviews: {},
       myPrograms: [],
 
@@ -394,21 +414,6 @@ export const useDb = create<DbState>()(
         set((s) => ({
           myReviews: { ...s.myReviews, [gymId]: [{ rating, text, at: new Date().toISOString() }, ...(s.myReviews[gymId] ?? [])] },
         })),
-
-      toggleMeal: (id) =>
-        set((s) => {
-          const day = dayKey(new Date().toISOString());
-          const n = s.nutrition.day === day ? s.nutrition : { day, eaten: [], water: 0 };
-          const eaten = n.eaten.includes(id) ? n.eaten.filter((x) => x !== id) : [...n.eaten, id];
-          return { nutrition: { ...n, eaten } };
-        }),
-
-      addWater: (delta) =>
-        set((s) => {
-          const day = dayKey(new Date().toISOString());
-          const n = s.nutrition.day === day ? s.nutrition : { day, eaten: [], water: 0 };
-          return { nutrition: { ...n, water: Math.max(0, Math.min(12, n.water + delta)) } };
-        }),
 
       checkIn: (gymId) =>
         set((s) => ({ checkIns: [{ id: `c-${Date.now()}`, gymId, at: new Date().toISOString() }, ...s.checkIns] })),
@@ -591,7 +596,6 @@ export const useDb = create<DbState>()(
         matches: s.matches,
         threads: s.threads,
         savedPrograms: s.savedPrograms,
-        nutrition: s.nutrition,
         myReviews: s.myReviews,
         myPrograms: s.myPrograms,
       }),
@@ -927,34 +931,12 @@ export function useLatestWeight(): number | null {
   return weights.length ? weights[weights.length - 1].kg : null;
 }
 
-export interface NutritionToday {
-  eaten: string[];
-  water: number;
-  consumed: number;
-  target: number;
-  protein: number;
-  carb: number;
-  fat: number;
-}
-export function useNutritionToday(): NutritionToday {
-  const nutrition = useDb((s) => s.nutrition);
-  return useMemo(() => {
-    const day = dayKey(new Date().toISOString());
-    const isToday = nutrition.day === day;
-    const eaten = isToday ? nutrition.eaten : [];
-    const water = isToday ? nutrition.water : 0;
-    const done = mealsData.filter((m) => eaten.includes(m.id));
-    return {
-      eaten,
-      water,
-      target: DAILY_TARGET,
-      consumed: done.reduce((s, m) => s + m.kcal, 0),
-      protein: done.reduce((s, m) => s + m.protein, 0),
-      carb: done.reduce((s, m) => s + m.carb, 0),
-      fat: done.reduce((s, m) => s + m.fat, 0),
-    };
-  }, [nutrition]);
-}
+/* The daily meal plan lived here — `NutritionToday`, `useNutritionToday`, the
+   calorie/protein/water totals. SPOT is an app for finding a gym, finding
+   somebody to train with, and writing down what you lifted. A meal planner is a
+   different product: it needs a food database, portions, and somebody keeping it
+   accurate, and none of that existed — the numbers came from one hardcoded list
+   of meals that was the same for every person. */
 
 /** NOT a crowd count. This reports only what this device actually knows: 1 when
  *  *I* have an unexpired check-in at `gymId`, otherwise 0.

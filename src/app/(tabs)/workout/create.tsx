@@ -17,13 +17,14 @@ import { useAppStore } from '@/store/appStore';
 import { exerciseById, exerciseLibrary, LibExercise, useDb } from '@/store/db';
 import { actionSheet, toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
-import { estimateDurationMin, HOME_MOVES } from './day';
+import { estimateDurationMin } from './day';
 
 const GOAL_OPTIONS = ['Forma saxlamaq', 'Güc', 'Kütlə yığmaq', 'Arıqlamaq'];
 const WEEK_OPTIONS = [2, 4, 8, 12];
 
-/** Everything the user can put in a program: the gym library + the home moves. */
-const ALL_MOVES: LibExercise[] = [...exerciseLibrary, ...HOME_MOVES];
+/** Everything the user can put in a program. One list — the bodyweight moves
+ *  live in `exerciseLibrary` now, so there is no second source to merge in. */
+const ALL_MOVES: LibExercise[] = exerciseLibrary;
 const GROUPS: { label: string; muscles: string[] }[] = [
   { label: 'Sinə', muscles: ['Sinə'] },
   { label: 'Bel', muscles: ['Kürək'] },

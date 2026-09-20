@@ -17,7 +17,7 @@ import { palette, spacing } from '@/theme';
 
 /** Ad-hoc AsyncStorage keys written outside the zustand stores. Kept here so the
  *  wipe below really empties everything this app stores on the device. */
-const LOOSE_KEYS = ['spot-shopping', 'spot-nutrition-custom', 'spot-progress-photos'];
+const LOOSE_KEYS = ['spot-progress-photos'];
 
 function Toggle({ value, onValueChange }: { value: boolean; onValueChange: (v: boolean) => void }) {
   return <Switch value={value} onValueChange={onValueChange} trackColor={{ true: palette.voltDeep, false: palette.separator }} />;
@@ -49,7 +49,6 @@ export default function PrivacyDetails() {
       checkIns: db.checkIns,
       workouts: db.workouts,
       weights: db.weights,
-      nutrition: db.nutrition,
       myReviews: db.myReviews,
       myPrograms: db.myPrograms,
       // Comments are server rows now, not device data — see the wipe copy below.
@@ -89,7 +88,6 @@ export default function PrivacyDetails() {
     // Engine: the domain reset + the slices resetDomain() does not cover.
     useDb.getState().resetDomain();
     useDb.setState({
-      nutrition: { day: '', eaten: [], water: 0 },
       myReviews: {},
       myPrograms: [],
     });
@@ -188,7 +186,7 @@ export default function PrivacyDetails() {
   const wipeDeviceOnly = () =>
     confirm(
       'Bu cihazdakı nüsxəni sil',
-      'Məşq, çəki, check-in, qidalanma, saxlanılanlar və filtrlər bu telefondan silinir. Hesabın SİLİNMİR — serverdəki profilin, videoların və şərhlərin yerində qalır və tətbiqi yenidən açanda geri gəlir. Hesabı həmişəlik silmək üçün aşağıdakı «Hesabı tamamilə sil» düyməsindən istifadə et.',
+      'Məşq, check-in, saxlanılanlar və filtrlər bu telefondan silinir. Hesabın SİLİNMİR — serverdəki profilin, videoların və şərhlərin yerində qalır və tətbiqi yenidən açanda geri gəlir. Hesabı həmişəlik silmək üçün aşağıdakı «Hesabı tamamilə sil» düyməsindən istifadə et.',
       [
         { label: 'Ləğv et', style: 'cancel' },
         {
@@ -240,7 +238,7 @@ export default function PrivacyDetails() {
             icon="arrowU"
             iconBg={palette.blue}
             title="Datanı yüklə"
-            subtitle="Profil, məşq, çəki, check-in və qeydlərin JSON kimi"
+            subtitle="Profil, məşq, check-in və qeydlərin JSON kimi"
             onPress={exportData}
           />
           <ListRow

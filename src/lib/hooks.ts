@@ -9,7 +9,6 @@ import { communityPosts as mockPosts, feedVideos as mockVideos, CommunityPost, F
 // people are never seeded into a list the user can act on.
 import { programs as mockPrograms, pushExercises } from '@/data/mock';
 import { cacheGyms } from '@/lib/gymCache';
-import { meals as mockMeals, shoppingList as mockShop, Meal, ShopItem } from '@/data/nutrition';
 import { Exercise, Gym, Partner, Program, Trainer } from '@/data/types';
 import { getPartner as apiGetPartner, byCompatibility, getGyms, getPartnersAtGym } from '@/lib/api';
 import { supabase, hasSupabaseConfig } from '@/lib/supabase';
@@ -151,11 +150,6 @@ const mapPost = (r: any): CommunityPost => ({
   type: r.type, text: r.body,
   stats: r.stats ?? undefined, likes: r.likes ?? 0, comments: r.comments ?? 0, trainerComment: r.trainer_comment ?? undefined,
 });
-const mapMeal = (r: any): Meal => ({
-  id: r.id, name: r.name, time: r.slot, kcal: r.kcal, protein: r.protein, carb: r.carb, fat: r.fat,
-  eaten: /Səhər|Nahar/.test(r.slot ?? ''), postWorkout: r.post_workout, ingredients: r.ingredients ?? [],
-});
-const mapShop = (r: any): ShopItem => ({ id: r.id, name: r.name, qty: r.qty, price: Number(r.price), got: false });
 
 /* Moderator takedowns stamp `hidden_at` (schema18). Every catalogue read below
    filters on it — without that, content the admin panel reports as removed stays
@@ -484,19 +478,10 @@ export const useCommunityPosts = () => {
    owner/participant model before anything may read them again. The chat inbox
    builds from `useDb.threads`, which holds only what this device really did. */
 
-export const useMeals = () =>
-  useList<Meal>(mockMeals, async () => {
-    const { data, error } = await supabase.from('meals').select('*').order('ord');
-    if (error) throw error;
-    return (data ?? []).map(mapMeal);
-  });
-
-export const useShopItems = () =>
-  useList<ShopItem>(mockShop, async () => {
-    const { data, error } = await supabase.from('shop_items').select('*').order('ord');
-    if (error) throw error;
-    return (data ?? []).map(mapShop);
-  });
+/* `useMeals` and `useShopItems` went with the meal planner. They read
+   `public.meals` and `public.shop_items` — ONE global list of meals and one
+   shopping list, identical for every person in the country. A food feature that
+   cannot tell two people apart is not a food feature. */
 
 /** Real reviews only — an empty gym shows an empty list, never invented praise. */
 export const useReviews = (gymId: string) =>
