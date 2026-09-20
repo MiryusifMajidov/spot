@@ -19,7 +19,7 @@ import { Segmented } from '@/components/ui/Segmented';
 import { Tag } from '@/components/ui/Tag';
 import { Gym, Partner } from '@/data/types';
 import { createDayPass, DayPass, getGym, getMyDayPass, getMyProfile, getWhoIsHere } from '@/lib/api';
-import { useAuthGate } from '@/lib/authGate';
+import { useAuthGate, useIsGuest } from '@/lib/authGate';
 import { usePartnersForGym, usePartnersPhase, useTrainersForGym, useTrainersForGymPhase } from '@/lib/hooks';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { showModerationSheet } from '@/lib/moderation';
@@ -137,7 +137,20 @@ export default function GymDetail() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const gate = useAuthGate();
-  const [seg, setSeg] = useState(segParam === 'reviews' ? 3 : 0);
+  const guest = useIsGuest();
+  /* «Üzvlər» lists the real people who chose this gym — their names, their
+     photos, and a tap into each full profile. A guest is an unregistered
+     visitor; handing them a browsable directory of a gym's members is not what
+     «baxış rejimi» means, and the spec for guest mode is the gym list and the
+     trainer list. So the tab is not there for them, and neither is the route
+     into a member's profile.
+     Addressed by NAME rather than by index, because dropping one option shifts
+     every number after it — «Rəylər» was 3 and would silently become 2. */
+  const SEGS = guest
+    ? (['Haqqında', 'Müəllimlər', 'Rəylər'] as const)
+    : (['Haqqında', 'Müəllimlər', 'Üzvlər', 'Rəylər'] as const);
+  const [seg, setSeg] = useState(segParam === 'reviews' ? (guest ? 2 : 3) : 0);
+  const tab = SEGS[Math.min(seg, SEGS.length - 1)];
   const checkIns = useDb((s) => s.checkIns);
   /* Android edge-to-edge never resizes the window, so the KeyboardAvoidingView below
      is inert there and the review composer's «Göndər» ended up under the IME. The
@@ -510,8 +523,11 @@ export default function GymDetail() {
                 icon="pin"
                 /* Straight to the scanner. It takes no gym id any more: the QR on the
                    wall names the gym, so the app cannot check somebody into a gym
-                   they merely had open on screen. */
-                onPress={() => router.push('/(tabs)/checkin')}
+                   they merely had open on screen.
+                   Through the gate: a guest has no Check-in tab, and this button
+                   pushed them into it anyway — a camera, a scan, and a refusal
+                   from the server at the end of it. Ask for the account first. */
+                onPress={() => gate(() => router.push('/(tabs)/checkin'), 'Check-in etmək üçün')}
                 style={{ flex: 1, height: 46 }}
               />
               <Button
@@ -571,9 +587,11 @@ export default function GymDetail() {
               </View>
             ) : null}
 
-            {/* Live banner — only when someone is really checked in */}
-            {gym.liveCount > 0 ? (
-              <PressableScale activeScale={0.98} onPress={() => setSeg(2)} style={styles.liveBanner}>
+            {/* Live banner — only when someone is really checked in, and never
+                for a guest: it exists to open «Üzvlər», which a guest does not
+                have, so for them it was a banner leading nowhere. */}
+            {gym.liveCount > 0 && !guest ? (
+              <PressableScale activeScale={0.98} onPress={() => setSeg((SEGS as readonly string[]).indexOf('Üzvlər'))} style={styles.liveBanner}>
                 {visibleHere.length > 0 ? (
                   <View style={styles.avatars}>
                     {visibleHere.slice(0, 3).map((p, i) => (
@@ -599,11 +617,11 @@ export default function GymDetail() {
             ) : null}
 
             <View style={{ marginTop: 16 }}>
-              <Segmented options={['Haqqında', 'Müəllimlər', 'Üzvlər', 'Rəylər']} value={seg} onChange={setSeg} />
+              <Segmented options={[...SEGS]} value={Math.min(seg, SEGS.length - 1)} onChange={setSeg} />
             </View>
 
             <View style={{ marginTop: 16 }}>
-              {seg === 0 && (
+              {tab === 'Haqqında' && (
                 <>
                   {gym.about ? (
                     <AppText variant="body" color={palette.text3} style={{ lineHeight: 22 }}>
@@ -729,7 +747,7 @@ export default function GymDetail() {
                 </>
               )}
 
-              {seg === 1 && (
+              {tab === 'Müəllimlər' && (
                 <View>
                   {gymTrainers.length === 0 ? (
                     /* «Bu zalda hələ müəllim yoxdur» is a statement about the gym.
@@ -755,7 +773,7 @@ export default function GymDetail() {
                 </View>
               )}
 
-              {seg === 2 && (
+              {tab === 'Üzvlər' && (
                 <View>
                   {members.length === 0 ? (
                     <EmptyState
@@ -784,7 +802,7 @@ export default function GymDetail() {
                 </View>
               )}
 
-              {seg === 3 && (
+              {tab === 'Rəylər' && (
                 <View>
                   {/* Already reviewed → no compose button. The database allows one
                       review per person per gym, so the button could only produce a

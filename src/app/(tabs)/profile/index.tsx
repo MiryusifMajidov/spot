@@ -81,7 +81,7 @@ export default function Profile() {
             </View>
             <AppText variant="title2" style={{ marginTop: 16 }}>Qonaq rejimi</AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, lineHeight: 21, maxWidth: 290 }}>
-              Zallara və proqramlara baxırsan. Yoldaş tapmaq, söhbət, check-in və məşq tarixçəsi üçün qısa profil yarat — 30 saniyə.
+              Zallara və müəllimlərə baxırsan. Yoldaş tapmaq, söhbət, check-in və məşq tarixçəsi üçün qısa profil yarat — ad və istifadəçi adı, bir ekran.
             </AppText>
             <Button title="Daxil ol" onPress={() => router.push('/onboarding/welcome')} style={{ marginTop: 20, alignSelf: 'stretch' }} />
           </View>
@@ -90,7 +90,9 @@ export default function Profile() {
             {[
               { icon: 'users' as const, t: 'Məşq yoldaşı tap', s: 'Zal, saat, səviyyə və məqsədə görə uyğunluq' },
               { icon: 'dumbbell' as const, t: 'Proqramları izlə', s: 'Gün-gün hərəkət, set və təkrar' },
-              { icon: 'flame' as const, t: 'Seriya və statistika', s: 'Check-in, çəki, həcm, PR-lar' },
+              // «çəki» was in this list after the weight tracker was deleted —
+              // three promises, one of them for a screen that no longer exists.
+              { icon: 'flame' as const, t: 'Seriya və statistika', s: 'Check-in, həcm, şəxsi rekordlar' },
             ].map((p) => (
               <View key={p.t} style={styles.perkRow}>
                 <View style={styles.perkIcon}>

@@ -332,9 +332,13 @@ export default function Discover() {
                   />
                   <View style={{ height: 14 }} />
                 </>
-              ) : !homeGymId ? (
-                // Only when no gym was ever chosen — a home gym hidden by the current
-                // filter/search must not be reported as "not chosen".
+              ) : !homeGymId && !guest ? (
+                /* Only when no gym was ever chosen — a home gym hidden by the current
+                   filter/search must not be reported as "not chosen".
+                   And never to a guest: they have no profile to set it on, the
+                   Profil tab it pushed into is hidden from them, and the reason
+                   it gives («yoldaşlar zala görə tapılır») is about a section a
+                   guest does not have either. */
                 <PressableScale activeScale={0.98} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.weeklyBanner}>
                   <View style={styles.weeklyIcon}>
                     <Icon name="pin" size={18} color={palette.voltDeep} />
