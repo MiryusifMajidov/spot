@@ -523,7 +523,7 @@ export default function Session() {
             <View style={{ flex: 1 }}>
               <AppText style={{ color: palette.white, fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>{current.ex.name}</AppText>
               <AppText style={{ color: dark.textSecondary, fontSize: 13.5, marginTop: 4 }}>
-                {current.sets.length} set · {current.ex.reps} · {current.ex.muscle}
+                {[`${current.sets.length} set`, current.ex.reps, current.ex.muscle].filter(Boolean).join(' · ')}
               </AppText>
             </View>
           </View>

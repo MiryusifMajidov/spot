@@ -175,7 +175,11 @@ function ExerciseRow({ ex, last, onPress }: { ex: LibExercise; last: { weight: n
       <View style={{ flex: 1 }}>
         <AppText variant="headline">{ex.name}</AppText>
         <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3 }}>
-          {ex.defaultSets} set × {ex.reps} · {ex.muscle}
+          {/* Joined, not concatenated with «·» between fixed slots. An
+              exercise the author typed themselves has no muscle — the library
+              is where that comes from — and the fixed version rendered
+              «3 set × 45 san · » with a dangling separator. */}
+          {[`${ex.defaultSets} set × ${ex.reps}`.trim(), ex.muscle].filter(Boolean).join(' · ')}
         </AppText>
         {last ? (
           <View style={styles.lastRow}>
