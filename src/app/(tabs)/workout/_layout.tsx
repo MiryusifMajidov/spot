@@ -6,7 +6,8 @@ export default function WorkoutLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="weight" options={{ presentation: 'modal' }} />
+      {/* `weight` was declared here after the screen file was deleted — a
+          route expo-router had to reconcile against nothing. */}
     </Stack>
   );
 }

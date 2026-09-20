@@ -48,9 +48,11 @@ export default function ProgramDetail() {
           : 'missing';
 
   if (!p) {
-    // A trainer's own programs live only on their device (id `mine-…`), so an
-    // assigned one can never be resolved here. Say that plainly rather than
-    // implying the program was deleted.
+    /* A `mine-…` id is a program written on somebody's phone. It reaches the
+       server now (lib/saveProgram.ts), so this is no longer the ordinary case —
+       but it is still what an id looks like when the author's save fell back to
+       'local', and then the assigned program genuinely is on their device
+       alone. Saying «silinib» about it would blame the wrong thing. */
     const trainerLocal = typeof id === 'string' && id.startsWith('mine-');
     const heading =
       probe === 'pending' ? 'Yüklənir…' : probe === 'failed' ? 'Proqram yüklənmədi' : 'Proqram tapılmadı';
@@ -60,7 +62,7 @@ export default function ProgramDetail() {
         : probe === 'failed'
           ? 'Bağlantı ilə problem oldu. İnternetini yoxla, geri qayıdıb yenidən aç.'
           : trainerLocal
-            ? 'Müəllimin təyin etdiyi bu proqram hələ SPOT-a yüklənməyib — məzmunu yalnız müəllimin cihazındadır. Detalları ondan soruş.'
+            ? 'Bu proqram serverə yüklənməyib — məzmunu yalnız onu yazan adamın cihazındadır. Ondan yenidən yadda saxlamasını xahiş et.'
             : 'Bu proqram silinib və ya ünvan səhvdir.';
     return (
       <View style={{ flex: 1, backgroundColor: palette.grouped }}>
