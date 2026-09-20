@@ -32,6 +32,11 @@ export interface Profile {
 interface AppState {
   hydrated: boolean; // persisted store rehydrated
   ready: boolean; // supabase session bootstrapped
+  /** Has bootstrap finished ASKING the server whether this person has a profile?
+   *  Not persisted — it is about this launch, not about the account. The gate
+   *  uses it so a returning user is never shown a login screen while the answer
+   *  «you already have an account» is still in flight. */
+  profileChecked: boolean;
   onboarded: boolean;
   guest: boolean; // browsing without an account (read-only catalog)
   profile: Profile;
@@ -191,6 +196,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       hydrated: false,
       ready: false,
+      profileChecked: false,
       onboarded: false,
       profileId: null,
       sanction: null,
@@ -304,6 +310,14 @@ export const useAppStore = create<AppState>()(
           const db = await getMyProfile();
           if (db) {
             set((s) => ({
+              /* Having a profile on the server IS being onboarded. Without this
+                 a person who signs in on a new phone — whose account, name and
+                 @ad all exist — was still sent through registration, told their
+                 own @ad was «tutulub», and made to write a SECOND profile row.
+                 `guest` goes for the same reason: somebody who signed in through
+                 a magic link kept seeing one tab and «Qonaq rejimi». */
+              onboarded: true,
+              guest: false,
               profileId: db.id,
               sanction: sanctionOf(db),
               // The server is the authority on the privacy flags: a reinstall must not
@@ -356,6 +370,10 @@ export const useAppStore = create<AppState>()(
           }
         } catch (e) {
           console.warn('[bootstrap] profile', e);
+        } finally {
+          // Answered or failed, the gate may stop waiting. A read that FAILED
+          // must not strand somebody on the splash screen for ever.
+          set({ profileChecked: true });
         }
         // Gym ownership is a SERVER fact (gyms.owner_id), not a device fact. Without
         // this, a reinstall / second device leaves ownsGym=false and the account

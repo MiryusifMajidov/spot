@@ -163,15 +163,35 @@ export async function currentIdentity(): Promise<{ kind: IdentityKind; label: st
  * Google on an Android phone could never be opened on an iPhone, which is the
  * exact «account you cannot reach» problem this whole module exists to end.
  */
-export const SOCIAL_PROVIDER: 'google' | 'apple' = Platform.OS === 'ios' ? 'apple' : 'google';
+/**
+ * Which social button to put FIRST. Not which one to offer — both are offered on
+ * both platforms now.
+ *
+ * Locking the choice to the platform is what made the sign-in screen unable to
+ * satisfy its own promise: an Android phone showed Google and never Apple, an
+ * iPhone showed Apple and never Google, so a person who opened their account
+ * with Google could not get back into it from an iPhone, and vice versa. That is
+ * the «account you cannot reach» problem this module exists to end, reintroduced
+ * by the button layout.
+ *
+ * Apple still goes first on iOS: the App Store requires Sign in with Apple to be
+ * offered alongside other social logins, and offering it second reads as
+ * reluctance. Google goes first everywhere else because that is the account
+ * almost every Android phone already has.
+ */
+export const SOCIAL_FIRST: 'google' | 'apple' = Platform.OS === 'ios' ? 'apple' : 'google';
 
-/** Google on Android, Apple on iOS — same browser flow, same linking rules. */
+/** Kept so existing callers keep working; prefer naming the provider. */
 export async function signInWithSocial(): Promise<void> {
-  return signInWithProvider(SOCIAL_PROVIDER);
+  return signInWithProvider(SOCIAL_FIRST);
 }
 
 export async function signInWithGoogle(): Promise<void> {
   return signInWithProvider('google');
+}
+
+export async function signInWithApple(): Promise<void> {
+  return signInWithProvider('apple');
 }
 
 async function signInWithProvider(provider: 'google' | 'apple'): Promise<void> {
@@ -205,7 +225,14 @@ async function signInWithProvider(provider: 'google' | 'apple'): Promise<void> {
     const m = String(start.error.message ?? '').toLowerCase();
     const taken =
       m.includes('already') || m.includes('exists') || m.includes('in use') || m.includes('registered');
-    if (taken) start = await oauth();
+    /* «Manual linking is disabled» belongs here too, and used to fall through to
+       the branch below instead — which matches on the word «disabled» and told
+       the person «Google girişi hələ açılmayıb». It is not a provider problem:
+       the provider works, the project simply does not allow LINKING, and a plain
+       sign-in was available the whole time. Linking is an optimisation (it keeps
+       an anonymous session's local data); signing in is the actual goal. */
+    const noLinking = m.includes('manual linking') || m.includes('linking is disabled');
+    if (taken || noLinking) start = await oauth();
   }
 
   if (start.error) {

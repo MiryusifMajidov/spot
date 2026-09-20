@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
@@ -12,8 +12,9 @@ import {
   AuthSetupError,
   confirmEmailCode,
   sendEmailCode,
-  SOCIAL_PROVIDER,
-  signInWithSocial,
+  signInWithApple,
+  signInWithGoogle,
+  SOCIAL_FIRST,
 } from '@/lib/auth';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { hasSupabaseConfig } from '@/lib/supabase';
@@ -22,12 +23,19 @@ import { toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 
 /**
- * «Hesabını qoru» — the screen that makes an account reachable.
+ * Sign in — in two moods, because two different people arrive here.
  *
- * It is not a login wall. The person is already signed in (anonymously) and
- * already has their data; this attaches a way back to it. The copy promises what
- * actually happens — the SAME account, openable from another phone — instead of
- * implying a new one is being created. `lib/auth` links the identity to the
+ * `mode=login` (from the opening gate): somebody who HAS an account and wants it
+ * back, usually on a new phone. Until now this screen could not serve them at
+ * all: it was titled «Hesabını qoru» and its first line told them their account
+ * «yalnız bu telefonda yaşayır» — a sentence that is simply false for a person
+ * whose account is on the server, and which reads as «you have nothing here».
+ *
+ * `mode=protect` (from Parametrlər): somebody already using the app anonymously,
+ * attaching a way back to the data they already have. For them the old copy was
+ * right, so it is kept for that mode and only that mode.
+ *
+ * Both moods run the same code. `lib/auth` links the identity to the
  * existing anonymous user, so the profile id, the @username, the streak and the
  * videos are untouched.
  *
@@ -49,18 +57,25 @@ import { palette, radius, spacing } from '@/theme';
 
 export default function SignIn() {
   const router = useRouter();
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const login = mode === 'login';
   const profileName = useAppStore((s) => s.profile.name);
+  const bootstrap = useAppStore((s) => s.bootstrap);
 
-  const [busy, setBusy] = useState<null | 'social' | 'email'>(null);
+  const [busy, setBusy] = useState<null | 'google' | 'apple' | 'email'>(null);
   const [sent, setSent] = useState<{ to: string; linking: boolean } | null>(null);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
 
-  /* Android shows Google, iOS shows Apple — see SOCIAL_PROVIDER. The label is
-     derived from it so the two never drift apart. */
-  const socialLabel = SOCIAL_PROVIDER === 'apple' ? 'Apple' : 'Google';
+  /* Both providers, both platforms. `SOCIAL_FIRST` only decides which one is on
+     top — Apple first on iOS (App Store rule), Google first elsewhere. */
+  const providers: ('google' | 'apple')[] = SOCIAL_FIRST === 'apple' ? ['apple', 'google'] : ['google', 'apple'];
+
+  /* From the gate there is nothing to go «back» to — the gate IS the root of the
+     stack — so a signed-in person is sent into the app instead. */
+  const done = () => (login ? router.replace('/(tabs)/discover') : router.back());
 
   const setupMessage = (e: unknown): string | null => {
     if (!(e instanceof AuthSetupError)) return null;
@@ -73,18 +88,25 @@ export default function SignIn() {
     return `${what} hələ açılmayıb. Bu, tətbiqin deyil, serverin ayarıdır.`;
   };
 
-  const social = async () => {
+  const social = async (provider: 'google' | 'apple') => {
     if (!hasSupabaseConfig) return toast('Server bağlantısı yoxdur', 'error');
-    setBusy('social');
+    const label = provider === 'apple' ? 'Apple' : 'Google';
+    setBusy(provider);
     try {
-      await signInWithSocial();
+      await (provider === 'apple' ? signInWithApple() : signInWithGoogle());
+      /* Re-read the account. Without this the store keeps the name, @ad and
+         `profileId` of the session that was just abandoned, while the session
+         itself belongs to the account signed into — and every ownership check
+         keyed on `profileId` points at the wrong person until the app is killed.
+         The e-mail path already does this from the deep-link handler. */
+      await bootstrap();
       successFeedback();
-      toast(`Hesabın ${socialLabel} ilə qorundu`);
-      router.back();
+      toast(login ? `${label} ilə daxil oldun` : `Hesabın ${label} ilə qorundu`);
+      done();
     } catch (e) {
       if (String((e as Error)?.message ?? '') === 'cancelled') return; // browser closed
       errorFeedback();
-      toast(setupMessage(e) ?? `${socialLabel} girişi alınmadı — yenidən cəhd et`, 'error');
+      toast(setupMessage(e) ?? `${label} girişi alınmadı — yenidən cəhd et`, 'error');
     } finally {
       setBusy(null);
     }
@@ -122,8 +144,8 @@ export default function SignIn() {
     try {
       await confirmEmailCode(sent.to, code, sent.linking);
       successFeedback();
-      toast('Hesabın qorundu');
-      router.back();
+      toast(login ? 'Daxil oldun' : 'Hesabın qorundu');
+      done();
     } catch (e) {
       errorFeedback();
       const m = String((e as Error)?.message ?? '').toLowerCase();
@@ -142,17 +164,24 @@ export default function SignIn() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <NavBar title="Hesabını qoru" />
+      <NavBar title={login ? 'Daxil ol' : 'Hesabını qoru'} />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+        {/* Two different people, two different true sentences. Telling somebody
+            who is signing in on a new phone that «hesabın yalnız bu telefonda
+            yaşayır» is false — their account is on the server, which is the only
+            reason this screen can work for them at all. */}
         <View style={styles.hero}>
           <Icon name="shield" size={22} color={palette.voltDeep} />
           <AppText variant="body" color={palette.text3} style={{ lineHeight: 22, flex: 1 }}>
-            {profileName.trim() ? `${profileName.trim()}, hesabın` : 'Hesabın'} hazırda yalnız bu telefonda yaşayır.
-            Tətbiqi silsən və ya telefonu dəyişsən, məşq tarixçən, @adın və videoların qayıtmır.
+            {login
+              ? 'Hesabını hansı üsulla açmısansa, onu seç — məşq tarixçən, @adın və videoların geri qayıdacaq.'
+              : `${profileName.trim() ? `${profileName.trim()}, hesabın` : 'Hesabın'} hazırda yalnız bu telefonda yaşayır. Tətbiqi silsən və ya telefonu dəyişsən, məşq tarixçən, @adın və videoların qayıtmır.`}
           </AppText>
         </View>
         <AppText variant="caption" color={palette.caption} style={{ marginTop: 10, lineHeight: 18 }}>
-          Bu, yeni hesab açmır — indiki hesabına giriş yolu əlavə edir. Heç nə itmir.
+          {login
+            ? 'Hesabın yoxdursa, geri qayıt və «Başla» ilə yeni hesab aç.'
+            : 'Bu, yeni hesab açmır — indiki hesabına giriş yolu əlavə edir. Heç nə itmir.'}
         </AppText>
 
         {sent ? (
@@ -200,19 +229,26 @@ export default function SignIn() {
           </>
         ) : (
           <>
-            {/* The platform's own provider first and on its own: it is one tap,
-                it needs nothing typed, and on iOS the App Store requires Apple to
-                be offered. E-poçt sits underneath as the way back in when that
-                fails — not as an equal choice. */}
-            <PressableScale activeScale={0.98} onPress={social} disabled={!!busy} style={styles.googleBtn}>
-              {busy === 'social' ? (
-                <ActivityIndicator color={palette.inkText} />
-              ) : (
-                <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
-                  {socialLabel} ilə davam et
-                </AppText>
-              )}
-            </PressableScale>
+            {/* Both providers, both platforms. An account opened with Google on
+                an Android phone has to be openable from an iPhone, and the old
+                one-button-per-platform layout is precisely what made that
+                impossible. E-poçt sits under the divider as the third way. */}
+            {providers.map((prov) => (
+              <PressableScale
+                key={prov}
+                activeScale={0.98}
+                onPress={() => void social(prov)}
+                disabled={!!busy}
+                style={styles.googleBtn}>
+                {busy === prov ? (
+                  <ActivityIndicator color={palette.inkText} />
+                ) : (
+                  <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
+                    {prov === 'apple' ? 'Apple' : 'Google'} ilə davam et
+                  </AppText>
+                )}
+              </PressableScale>
+            ))}
 
             <View style={styles.orRow}>
               <View style={styles.orLine} />

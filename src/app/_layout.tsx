@@ -125,10 +125,14 @@ export default function RootLayout() {
                   While it lived in the Məşq stack, opening it from Kəşf switched
                   the focused tab and its own «geri» then popped inside Məşq,
                   stranding the person on Məşq home. */}
-              <Stack.Screen name="checkin" />
               <Stack.Screen name="trainer" />
               <Stack.Screen name="gym" />
               <Stack.Screen name="onboarding" />
+              {/* The sign-in screen. Undeclared until now — it worked only
+                  because expo-router falls back to defaults for a route nothing
+                  configures, which is also why nothing ever noticed it had a
+                  single entry point in the whole app. */}
+              <Stack.Screen name="auth" />
               <Stack.Screen name="chat" />
             </Stack>
           </AppErrorBoundary>
