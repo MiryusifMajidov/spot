@@ -83,7 +83,7 @@ export default function Profile() {
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, lineHeight: 21, maxWidth: 290 }}>
               Zallara və proqramlara baxırsan. Yoldaş tapmaq, söhbət, check-in və məşq tarixçəsi üçün qısa profil yarat — 30 saniyə.
             </AppText>
-            <Button title="Profil yarat" onPress={() => router.push('/onboarding/goal')} style={{ marginTop: 20, alignSelf: 'stretch' }} />
+            <Button title="Daxil ol" onPress={() => router.push('/onboarding/welcome')} style={{ marginTop: 20, alignSelf: 'stretch' }} />
           </View>
 
           <View style={styles.guestPerks}>

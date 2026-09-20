@@ -19,6 +19,9 @@ export default function ProfileStep() {
   // Only follow the typed name while the person has not written their own handle.
   const [handleTouched, setHandleTouched] = useState(() => !!useAppStore.getState().profile.username);
   const [nameTouched, setNameTouched] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const saveProfile = useAppStore((s) => s.saveProfile);
+  const complete = useAppStore((s) => s.completeOnboarding);
   const [ageTouched, setAgeTouched] = useState(false);
   const [checking, setChecking] = useState(false);
   /* Handle we know is somebody else's. It can arrive as a param: the LAST step
@@ -77,18 +80,48 @@ export default function ProfileStep() {
     } finally {
       setChecking(false);
     }
-    router.push('/onboarding/privacy');
+    /* This is the last screen of registration, so the save happens here rather
+       than on a recap step of its own. Everything the app used to ask before
+       this — məqsəd, səviyyə, cədvəl, zal — is editable in Profil → Redaktə and
+       is asked for nowhere now: demanding six answers from somebody who has not
+       seen a single gym yet is the slowest possible way to lose them. */
+    setSaving(true);
+    const result = await saveProfile();
+    setSaving(false);
+
+    if (result === 'failed') {
+      /* Two people called Aysel get the same suggested handle: the check above
+         passed while it was still free (or could not run at all), and Postgres
+         refused the duplicate here. That is not a connection problem, and the
+         handle field is on THIS screen — so say it and stay. */
+      if (useAppStore.getState().lastSaveError === 'username-taken') {
+        setTaken(handle.trim().toLowerCase());
+        errorFeedback();
+        toast(`${USERNAME_TAKEN_MSG} — başqa istifadəçi adı seç`, 'error');
+        return;
+      }
+      errorFeedback();
+      toast('Server profili qəbul etmədi. Bir az sonra yenidən cəhd et.', 'error');
+      return;
+    }
+    if (result === 'local') {
+      // Also the offline first launch. bootstrap() sends it up on the next
+      // launch that has a session, so say that instead of blocking them here.
+      toast('Profil hələlik yalnız bu cihazda saxlanıldı — internet olanda göndəriləcək.', 'info');
+    }
+    complete();
+    router.replace('/(tabs)/discover');
   };
 
   return (
     <OnboardingScaffold
-      step={5}
-      totalSteps={6}
-      title="Profilini yarat"
-      subtitle="Bu, yoldaşların səni tanıması üçündür. Adını və bio-nu sonra da dəyişə bilərsən."
+      step={1}
+      totalSteps={1}
+      title="Səni necə çağıraq?"
+      subtitle="Qalan hər şeyi sonra Profil → Redaktə-dən dəyişə bilərsən."
       onNext={next}
-      nextLabel={checking ? 'Yoxlanılır…' : 'Davam et'}
-      nextDisabled={!!nameErr || !!handleErr || !!ageErr || checking}>
+      nextLabel={saving ? 'Yadda saxlanılır…' : checking ? 'Yoxlanılır…' : 'SPOT-a başla'}
+      nextDisabled={!!nameErr || !!handleErr || !!ageErr || checking || saving}>
       <AppText variant="overline" color={palette.caption} style={styles.label}>
         Ad
       </AppText>

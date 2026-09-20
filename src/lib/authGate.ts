@@ -19,11 +19,14 @@ export function useAuthGate() {
   return (action: () => void, reason = 'Bu funksiya üçün') => {
     if (guest || !onboarded) {
       confirm(
-        'Qısa profil lazımdır',
-        `${reason} 30 saniyəlik profil yarat — zalın, məqsədin, cədvəlin. Onsuz sadəcə baxış rejimindəsən.`,
+        'Hesab lazımdır',
+        // It no longer asks for «zalın, məqsədin, cədvəlin» — registration is a
+        // name and an @ad. Promising a questionnaire that was deleted is the
+        // kind of small lie that makes people close the dialog.
+        `${reason} Google, Apple və ya e-poçtla daxil ol. Onsuz sadəcə baxış rejimindəsən.`,
         [
           { label: 'İndi yox', style: 'cancel' },
-          { label: 'Profil yarat', style: 'primary', onPress: () => router.push('/onboarding/goal') },
+          { label: 'Daxil ol', style: 'primary', onPress: () => router.push('/onboarding/welcome') },
         ]
       );
       return;
