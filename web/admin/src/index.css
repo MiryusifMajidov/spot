@@ -139,6 +139,7 @@ table.tbl { width: 100%; border-collapse: collapse; background: #fff; border-rad
 .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
 .btn.volt { background: var(--volt); color: var(--ink2); border-color: var(--volt); }
 .btn.danger { background: #fff; color: var(--red); border-color: rgba(255,59,48,.4); }
+.btn.small { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
 
 .avatar { border-radius: 50%; background: linear-gradient(135deg,#D2D2D8,#EDEDF0); flex: none; }
 

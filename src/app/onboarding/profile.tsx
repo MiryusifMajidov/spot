@@ -110,7 +110,12 @@ export default function ProfileStep() {
       toast('Profil hələlik yalnız bu cihazda saxlanıldı — internet olanda göndəriləcək.', 'info');
     }
     complete();
-    router.replace('/(tabs)/discover');
+    /* The account exists from this line on — `complete()` has already flipped
+       `onboarded`, so killing the app on the next screen still lands them
+       inside. That is what lets the trainer suggestion be genuinely optional:
+       it is an offer after registration, not a sixth question inside it. It
+       shows itself only if the server actually has people to suggest. */
+    router.replace('/onboarding/trainers');
   };
 
   return (

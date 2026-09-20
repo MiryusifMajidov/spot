@@ -861,6 +861,21 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema74. The check-in code must never sit on public.gyms: that table carries a TABLE-level SELECT grant, and a table grant defeats any column-level revoke, so a code there would be readable by every signed-in person — who could then check in from home forever. Its own table, owner-only policy, and check_in_with_code() resolves a scan with row security off.'
   union all
+  select 'table', 'featured_trainers is admin-written, publicly read',
+         case when exists (select 1 from pg_tables where schemaname='public' and tablename='featured_trainers')
+               and not has_table_privilege('authenticated','public.featured_trainers','insert')
+               and has_table_privilege('authenticated','public.featured_trainers','select')
+              then 'OK' else 'MISSING' end,
+         'schema75. The list a new member is shown during registration. Read by everybody — it IS a public recommendation — but writable only through admin_set_featured_trainer, so a trainer cannot feature themselves. Deliberately not a column on public.trainers, whose client UPDATE grant is column-scoped and would have to be policed by hand on every column added later.'
+  union all
+  select 'function', 'suggested_trainers has a working fallback',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                           where n.nspname='public' and p.proname='suggested_trainers'
+                             and pg_get_functiondef(p.oid) like '%random()%'
+                             and pg_get_functiondef(p.oid) like '%owner_id is not null%')
+              then 'OK' else 'MISSING' end,
+         'schema75. With nothing featured the screen must still have real answers, so the query falls through to the listed trainers. The shuffle is the point: trainers.rating is numeric default 0 that schema27 pinned and made unwritable, and reviews carries a gym_id with no trainer_id, so nothing in SPOT can rate a coach — ordering by rating would look principled and hand the same people every placement forever. owner_id is required because following is what the screen offers and follows is keyed on a profile id.'
+  union all
   select 'function', 'check_in_with_code replaces the GPS rule',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                            where n.nspname='public' and p.proname='check_in_with_code')

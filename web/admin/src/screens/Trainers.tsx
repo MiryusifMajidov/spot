@@ -33,6 +33,11 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
   const [rejected, setRejected] = useState<TrainerVerification[]>([]);
   const [active, setActive] = useState<Trainer[]>([]);
   const [trainerMap, setTrainerMap] = useState<Record<string, Trainer>>({});
+  /* Who the app suggests to a brand-new member (schema75). `null` is not «none»
+     — it means the read did not come back, and an unlit «Tövsiyə et» button
+     over an unknown state invites an admin to turn on something already on. */
+  const [featured, setFeatured] = useState<Set<string> | null>(null);
+  const [featuring, setFeaturing] = useState<string | null>(null);
   const [gymMap, setGymMap] = useState<Record<string, string>>({});
 
   const [selId, setSelId] = useState<string | null>(null);
@@ -60,7 +65,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
   }
 
   async function loadInner() {
-    const [pv, rv, vt] = await Promise.all([
+    const [pv, rv, vt, ft] = await Promise.all([
       /* Named columns, not `*`. schema70 took `internal_note` out of the
          column grant — it is the moderator's working note and
          `tv_admin_read` lets the applicant read their own row, so granting
@@ -70,6 +75,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
       supabase.from('trainer_verifications').select('id,trainer_id,user_id,status,doc_id_url,doc_cert_url,gym_confirm,intro_video_url,reject_reason,sla_due_at,created_at').eq('status', 'pending').order('sla_due_at'),
       supabase.from('trainer_verifications').select('id,trainer_id,user_id,status,doc_id_url,doc_cert_url,gym_confirm,intro_video_url,reject_reason,sla_due_at,created_at').eq('status', 'rejected').order('created_at', { ascending: false }),
       supabase.from('trainers').select('*').eq('verified', true).order('name'),
+      supabase.from('featured_trainers').select('trainer_id'),
     ]);
     /* PostgREST resolves on failure, so reading `data` alone made a refused or
        dropped read look like an empty verification queue — the screen then said
@@ -81,6 +87,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
     setPending(pendingRows);
     setRejected(rejectedRows);
     setActive(activeRows);
+    setFeatured(ft.error ? null : new Set(((ft.data as { trainer_id: string }[]) ?? []).map((r) => r.trainer_id)));
 
     // trainer + gym lookups for the queue rows
     const ids = Array.from(
@@ -190,6 +197,36 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
     if (error) { toast(`Qeyd saxlanmadı: ${error.message}`); return; }
     toast('Qeyd saxlanıldı');
     // The row no longer carries the note, so there is nothing to patch back in.
+  }
+
+  /**
+   * Put a trainer on — or take them off — the list a new member is shown on
+   * their first day (schema75).
+   *
+   * Nothing is written here optimistically. The server re-checks the admin role
+   * and can refuse, and a star that lights up on a refused write would tell an
+   * admin they had promoted somebody they had not.
+   */
+  async function toggleFeatured(t: Trainer) {
+    if (!canDecide || featuring || featured === null) return;
+    const on = !featured.has(t.id);
+    setFeaturing(t.id);
+    const { error } = await supabase.rpc('admin_set_featured_trainer', {
+      p_trainer_id: t.id,
+      p_on: on,
+      p_ord: on ? featured.size : 0,
+    });
+    setFeaturing(null);
+    if (error) {
+      toast(`Dəyişmədi: ${error.message}`);
+      return;
+    }
+    setFeatured((prev) => {
+      const next = new Set(prev ?? []);
+      if (on) next.add(t.id); else next.delete(t.id);
+      return next;
+    });
+    toast(on ? `${t.name} qeydiyyatda tövsiyə olunacaq` : `${t.name} tövsiyədən çıxarıldı`);
   }
 
   async function approve() {
@@ -340,6 +377,16 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
       ) : null}
 
       {!loading && tab === 'active' ? (
+        <>
+        {/* An admin cannot see the registration screen, so the rule it follows
+            has to be written down where the switch is. Without this, «Tövsiyə»
+            reads as an award rather than as the placement it is — and an empty
+            list looks broken instead of like the fallback doing its job. */}
+        <div className="card" style={{ padding: '12px 14px', marginBottom: 12, color: 'var(--muted2)', fontSize: 13, lineHeight: 1.5 }}>
+          Qeydiyyatı bitirən hər yeni istifadəçiyə burada seçilmiş müəllimlər göstərilir (ən çoxu 5). Heç kim seçilməyibsə,
+          tətbiq özü doğrulanmış müəllimlərdən təsadüfi 5-ni göstərir — yəni bu siyahı boş olsa da ekran işləyir.
+          Seçilmiş müəllim öz elanını gizlədərsə, onsuz da göstərilmir.
+        </div>
         <table className="tbl">
           {/* No «Reytinq» column. `reviews` has a `gym_id` and no `trainer_id` at
               all, so nothing on SPOT can rate a coach; `trainers.rating` is
@@ -347,7 +394,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
               The old `t.rating != null` guard was therefore always true and this
               column printed «★ 0» next to every applicant — read as a terrible
               score rather than as an impossible measurement. */}
-          <thead><tr><th>Müəllim</th><th>İxtisas</th><th>Zal</th><th>Müştəri</th><th>Status</th></tr></thead>
+          <thead><tr><th>Müəllim</th><th>İxtisas</th><th>Zal</th><th>Müştəri</th><th>Status</th><th>Qeydiyyatda tövsiyə</th></tr></thead>
           <tbody>
             {active
               .filter((t) => !q || t.name.toLowerCase().includes(q) || (t.specialty ?? '').toLowerCase().includes(q))
@@ -360,11 +407,28 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
                   <td style={{ color: 'var(--muted2)' }}>{t.gym_id ? gymMap[t.gym_id] ?? '—' : 'zalsız'}</td>
                   <td>{t.clients ?? 0}</td>
                   <td><span className="badge green">Doğrulanmış</span></td>
+                  <td>
+                    {featured === null ? (
+                      /* The read failed. Not «tövsiyə olunmur» — we do not know,
+                         and a button offering to turn it on would be a lie about
+                         the current state. */
+                      <span style={{ color: 'var(--muted2)' }} title="Siyahı yüklənmədi — səhifəni yenilə">oxunmadı</span>
+                    ) : (
+                      <button
+                        className={featured.has(t.id) ? 'btn small volt' : 'btn small'}
+                        disabled={!canDecide || featuring === t.id}
+                        onClick={() => void toggleFeatured(t)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        {featuring === t.id ? '…' : featured.has(t.id) ? <><Icon name="check" size={13} /> Tövsiyədə</> : 'Tövsiyə et'}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
-            {active.length === 0 ? <tr><td colSpan={5} className="empty">{failed ? 'Siyahı yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Doğrulanmış müəllim yoxdur'}</td></tr> : null}
+            {active.length === 0 ? <tr><td colSpan={6} className="empty">{failed ? 'Siyahı yüklənmədi — bu «yoxdur» demək DEYİL. Səhifəni yenilə.' : 'Doğrulanmış müəllim yoxdur'}</td></tr> : null}
           </tbody>
         </table>
+        </>
       ) : null}
 
       {!loading && tab === 'rejected' ? (
