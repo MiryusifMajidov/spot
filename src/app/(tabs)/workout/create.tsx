@@ -7,8 +7,6 @@ import { AppText } from '@/components/ui/AppText';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
-import { Segmented } from '@/components/ui/Segmented';
-import { LEVELS } from '@/data/mock';
 import { Exercise, Level, Program } from '@/data/types';
 import { getMyProfile } from '@/lib/api';
 import { useAuthGate } from '@/lib/authGate';
@@ -19,8 +17,6 @@ import { actionSheet, toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 import { estimateDurationMin } from './day';
 
-const GOAL_OPTIONS = ['Forma saxlamaq', 'Güc', 'Kütlə yığmaq', 'Arıqlamaq'];
-const WEEK_OPTIONS = [2, 4, 8, 12];
 
 /** Everything the user can put in a program. One list — the bodyweight moves
  *  live in `exerciseLibrary` now, so there is no second source to merge in. */
@@ -59,9 +55,10 @@ export default function CreateProgram() {
   const name = profile.name || 'Sən';
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
-  const [level, setLevel] = useState(1);
-  const [goal, setGoal] = useState(0);
-  const [weeks, setWeeks] = useState(1); // index into WEEK_OPTIONS
+  /* Not asked for any more, and therefore not claimed. A program the person did
+     not describe as «Orta · Güc · 8 həftə» must not arrive carrying those words:
+     the program screen shows a tag only when the field actually holds something,
+     so an empty level is an absent tag rather than a guess. */
   const [days, setDays] = useState<DraftDay[]>([{ title: 'Gün 1', focus: '', ids: [] }]);
   const [saving, setSaving] = useState(false);
 
@@ -135,10 +132,10 @@ export default function CreateProgram() {
         creatorName: name,
         creatorType: profile.role === 'trainer' ? 'trainer' : 'user',
         creatorVerified: false,
-        weeks: WEEK_OPTIONS[weeks],
+        weeks: 0,
         daysPerWeek: built.length,
-        level: LEVELS[level] as Level,
-        goal: GOAL_OPTIONS[goal],
+        level: '' as Level,
+        goal: '',
         paid: false,
         rating: 0,
         minutes: estimateDurationMin(allMoves.length ? moves(days.find((d) => d.ids.length)!) : []),
@@ -245,14 +242,11 @@ export default function CreateProgram() {
           style={[styles.input, { height: 92, paddingTop: 12, textAlignVertical: 'top' }]}
         />
 
-        <Label text="Səviyyə" />
-        <Segmented options={[...LEVELS]} value={level} onChange={setLevel} />
-
-        <Label text="Məqsəd" />
-        <Segmented options={GOAL_OPTIONS} value={goal} onChange={setGoal} />
-
-        <Label text="Neçə həftə" />
-        <Segmented options={WEEK_OPTIONS.map((w) => `${w} həftə`)} value={weeks} onChange={setWeeks} />
+        {/* Səviyyə, Məqsəd and «Neçə həftə» used to be asked here. Three more
+            decisions before the first exercise, on a form whose whole purpose is
+            «write down the days». Nothing read them either: the library filters
+            by who wrote a program, not by its level, and the program screen
+            shows the days. A program is a name and a list of days. */}
 
         {/* ---- day builder ---- */}
         <Label text="Proqram günləri" />

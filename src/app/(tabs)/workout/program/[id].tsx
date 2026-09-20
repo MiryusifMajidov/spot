@@ -219,11 +219,15 @@ export default function ProgramDetail() {
           ) : null}
 
           <View style={styles.metaChips}>
-            <Tag label={`${p.weeks} həftə`} />
-            <Tag label={`${days.length || p.daysPerWeek} gün/həftə`} />
-            <Tag label={`${p.minutes} dəq`} />
-            <Tag label={p.level} />
-            <Tag label={p.goal} />
+            {/* A tag per fact the program actually carries. SPOT's own starter
+                plans describe their length, level and goal; a program somebody
+                wrote in the app is a name and a list of days, and nothing here
+                invents the rest for them. */}
+            {p.weeks > 0 ? <Tag label={`${p.weeks} həftə`} /> : null}
+            {days.length || p.daysPerWeek ? <Tag label={`${days.length || p.daysPerWeek} gün`} /> : null}
+            {p.minutes > 0 ? <Tag label={`${p.minutes} dəq`} /> : null}
+            {p.level ? <Tag label={p.level} /> : null}
+            {p.goal ? <Tag label={p.goal} /> : null}
             {/* No «Qida planı daxil» tag. Nothing in SPOT attaches meals to a
                 program: `useMeals()` returns ONE global list, and the Qida screen
                 labels it «Nümunə yeməklər — Hamı üçün eyni nümunə gün» while

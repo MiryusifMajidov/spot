@@ -854,6 +854,13 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'web/admin/src/screens/Challenges.tsx:114 toggles challenges.active. Same gap: RLS on, SELECT-only policy set.'
   union all
+  select 'function', 'open_thread lets anyone write to a listed trainer',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                           where n.nspname = 'public' and p.proname = 'open_thread'
+                             and pg_get_functiondef(p.oid) like '%is_listed_trainer%')
+              then 'OK' else 'MISSING' end,
+         'schema73. Reserving a session and asking a question are different things. open_thread used to require has_relationship_with — an ACCEPTED match or an ACCEPTED trainer request — so the chat refused to open until after the decision it exists to help make. has_relationship_with is untouched because it also drives profiles_read (schema39); the rule lives in open_thread alone, and the block check still runs first.'
+  union all
   select 'grant', 'authenticated may DELETE its own prs row',
          case when exists (select 1 from information_schema.role_table_grants
                            where grantee = 'authenticated' and table_schema = 'public'
