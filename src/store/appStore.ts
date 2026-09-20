@@ -47,7 +47,6 @@ interface AppState {
    *  written by the follow button were wiped and every «İzlənir» pill reset. */
   following: string[];
   likedPosts: string[]; // community post ids liked
-  joinedChallenges: string[]; // challenge ids joined
   visibility: 'match-only' | 'everyone'; // who can message
   showInGymList: boolean;
   blocked: string[]; // partner/trainer ids this user blocked — filtered out everywhere
@@ -67,12 +66,11 @@ interface AppState {
   /** Replace the social lists with what the server holds (F-19). The server is
    *  the authority: a follow this device recorded but never sent is not a follow
    *  anybody received. */
-  setSocialFromServer: (v: { following: string[]; joinedChallenges: string[] }) => void;
+  setSocialFromServer: (v: { following: string[] }) => void;
   /** Replace the cached like/save flags for the ids that were actually checked
    *  against the server. `checked` holds the same keys as `likedPosts`. */
   reconcileSocial: (checked: string[], likedKeys: string[], savedIds?: string[]) => void;
   toggleLikedPost: (id: string) => void;
-  joinChallenge: (id: string) => void;
   toggleBlocked: (id: string) => void;
   setFeedback: (patch: { haptics?: boolean; sounds?: boolean }) => void;
   isBlocked: (id: string) => boolean;
@@ -205,7 +203,6 @@ export const useAppStore = create<AppState>()(
       savedVideos: [],
       following: [],
       likedPosts: [],
-      joinedChallenges: [],
       visibility: 'match-only',
       showInGymList: true,
       blocked: [],
@@ -228,7 +225,7 @@ export const useAppStore = create<AppState>()(
           savedVideos: s.savedVideos.includes(id) ? s.savedVideos.filter((x) => x !== id) : [...s.savedVideos, id],
         })),
       setSocialFromServer: (v) =>
-        set({ following: v.following, joinedChallenges: v.joinedChallenges }),
+        set({ following: v.following }),
 
       /* The server is the authority on what you liked and saved.
          The device lists are an instant-feedback cache, and until now nothing
@@ -256,8 +253,6 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           likedPosts: s.likedPosts.includes(id) ? s.likedPosts.filter((x) => x !== id) : [...s.likedPosts, id],
         })),
-      joinChallenge: (id) =>
-        set((s) => (s.joinedChallenges.includes(id) ? s : { joinedChallenges: [...s.joinedChallenges, id] })),
       toggleBlocked: (id) =>
         set((s) => ({ blocked: s.blocked.includes(id) ? s.blocked.filter((x) => x !== id) : [...s.blocked, id] })),
       isBlocked: (id) => get().blocked.includes(id),
@@ -437,7 +432,6 @@ export const useAppStore = create<AppState>()(
         savedVideos: s.savedVideos,
         following: s.following,
         likedPosts: s.likedPosts,
-        joinedChallenges: s.joinedChallenges,
         visibility: s.visibility,
         showInGymList: s.showInGymList,
         blocked: s.blocked,

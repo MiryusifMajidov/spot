@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { exerciseLibrary, timeAgoAz, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 
-import { gymRanking as mockRanking, streakChallenge, Challenge, Standing } from '@/data/challenges';
 import { communityPosts as mockPosts, feedVideos as mockVideos, CommunityPost, FeedVideo } from '@/data/feed';
 // NOTE: `trainers` and `partnersForGym` are deliberately NOT imported any more —
 // people are never seeded into a list the user can act on.
@@ -45,7 +44,6 @@ function useList<T>(fallback: T[], fetcher: () => Promise<T[]>, deps: unknown[] 
 /** Module-level so an empty list keeps the same reference across renders — a
  *  selector that builds a fresh array every time loops React forever. */
 const NO_PARTNERS: Partner[] = [];
-const NO_CHALLENGES: Challenge[] = [];
 const NO_GYMS: Gym[] = [];
 const NO_TRAINERS: Trainer[] = [];
 
@@ -108,24 +106,6 @@ const mapTrainer = (r: any): Trainer => ({
    A challenge has no single progress — only each participant's — and the ranking
    is counted by `challenge_standings()` from real workout rows. `daysLeft` is
    gone too; `endsAt` is a date the app can actually compare against now. */
-/* `target` is clamped here, not passed through.
- *
- * `challenges.target` is a nullable int with no CHECK, so a row written by SQL
- * rather than through the admin form arrived as null while `Challenge.target`
- * promised a number. That null went straight into a percentage width:
- * «NaN%» with no progress — the bar silently disappears — and Infinity, clamped
- * to a full bar, with any progress at all, announcing a goal that has no target
- * as already complete. 0 now means «no target» and the screens say so. */
-const positiveTarget = (t: unknown): number => {
-  const n = Number(t);
-  return Number.isFinite(n) && n > 0 ? n : 0;
-};
-const mapChallenge = (r: any): Challenge => ({
-  id: r.id, title: r.title, scope: r.scope, scopeLabel: r.scope_label, description: r.description,
-  target: positiveTarget(r.target), unit: r.unit, reward: r.reward ?? null,
-  active: !!r.active, startsAt: r.starts_at ?? null, endsAt: r.ends_at ?? null,
-  participants: r.participants ?? 0,
-});
 /* There is no stand-in for a video nobody uploaded.
  *
  * This used to substitute Big Buck Bunny / Sintel / a jellyfish clip whenever a
@@ -345,74 +325,14 @@ export const useDayExercises = () =>
     }));
   });
 
-/** Published challenges that have not ended, soonest deadline first.
- *
- *  The featured one used to be `all.find(c => c.id === 'aug-12')` — hardcoded to
- *  a single seeded row. That is why the admin panel's «Dayandır» did nothing
- *  visible (it writes `active`, which nobody read), why a newly activated
- *  challenge could never be featured, and why an August challenge was still on
- *  everybody's screen in September. `active` and `endsAt` decide now.
- *
- *  There is no seed fallback. `useList` keeps its fallback when a fetch returns
- *  an empty list, so a seeded array here would have survived schema60 deleting
- *  the fabricated rows and kept showing them forever. `null` means «SPOT has no
- *  live challenge», and the screen says exactly that. */
-export const useChallenges = () => {
-  const live = useList<Challenge>(NO_CHALLENGES, async () => {
-    // Published and not finished, soonest deadline first — asked of the database
-    // rather than filtered afterwards, so «now» is read when the request is made
-    // and not on every render.
-    const nowIso = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('challenges')
-      .select('*')
-      .eq('active', true)
-      .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
-      .order('ends_at', { ascending: true, nullsFirst: false });
-    if (error) throw error;
-    return (data ?? []).map(mapChallenge);
-  });
-  const active = live[0] ?? null;
-  const joinable = live.slice(1);
-  return { active, joinable, streak: streakChallenge, live };
-};
-
-/* `useChallenge` used to live here, on `useOne`. It had exactly the blind spot
-   described above — null for loading, for missing and for failed — and the
-   challenge detail screen rendered a blank frame for all three. That screen now
-   reads the row itself through `useFocusFetch` and says which of the three
-   happened, so nothing calls this any more. */
-
-/** The ranking for one challenge, counted on the server from real workout rows.
- *  `[]` means nobody has joined; a THROW means we could not read it, and the
- *  screen must not draw either as the other. */
-export async function challengeStandings(id: string): Promise<Standing[]> {
-  const { data, error } = await supabase.rpc('challenge_standings', { cid: id });
-  if (error) throw error;
-  return ((data ?? []) as any[]).map((r) => ({
-    profileId: r.profile_id,
-    name: r.name ?? '',
-    username: r.username ?? null,
-    avatarUrl: r.avatar_url ?? null,
-    done: r.done === null || r.done === undefined ? null : Number(r.done),
-    isMe: !!r.is_me,
-  }));
-}
-
-export const useGymRanking = () =>
-  useList(mockRanking, async () => {
-    const { data, error } = await supabase.from('gyms').select('id,name,members,tons');
-    if (error) throw error;
-    return (data ?? [])
-      .map((g: any) => ({
-        gym: g.name,
-        tons: Number(g.tons ?? 0),
-        members: g.members ?? 1,
-        perMember: Math.round((Number(g.tons ?? 0) * 1000) / Math.max(1, g.members ?? 1)),
-        me: g.id === 'iron-bay',
-      }))
-      .sort((a, b) => b.perMember - a.perMember);
-  });
+/* The whole Challenge feature used to live here — `useChallenges`,
+   `challengeStandings`, `useGymRanking`, and the mappers behind them. It is
+   gone from the app. It was a monthly competition with a leaderboard that only
+   worked if somebody published a new challenge every month from the admin
+   panel, and nobody ever had: the tab showed «Hazırda gedən challenge yoxdur»
+   to every person who opened it. A feature that needs content nobody is
+   producing is not a v1 feature. The `challenges` tables are left in the
+   database — deleting them is not the app's call to make. */
 
 /**
  * Feed videos, reloaded on focus so a newly uploaded video shows up.

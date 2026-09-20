@@ -77,13 +77,10 @@ export interface CheckIn {
   gymId: string;
   at: string; // ISO
 }
-export interface WeightLog {
-  /** Shared with `progress.id` on the server. Optional because rows written
-   *  before this existed have none — the sync pushes those up under a new id. */
-  id?: string;
-  at: string; // ISO
-  kg: number;
-}
+/* `WeightLog` lived here. Bodyweight tracking — the «Çəki» screen, the graph and
+   the before/after photos on «İrəliləyiş» — is gone from the app; the
+   `public.progress` table is left alone, because dropping somebody's stored
+   weigh-ins is not a decision this refactor gets to make. */
 export type MatchState = 'requested' | 'incoming' | 'accepted' | 'declined';
 export interface Match {
   partnerId: string;
@@ -334,7 +331,6 @@ interface DbState {
   installedAt: string;
   checkIns: CheckIn[];
   workouts: Workout[];
-  weights: WeightLog[];
   matches: Record<string, Match>;
   threads: Record<string, ChatMessage[]>;
   savedPrograms: string[];
@@ -350,20 +346,18 @@ interface DbState {
   deleteProgram: (id: string) => void;
   checkIn: (gymId: string) => void;
   logWorkout: (w: Omit<Workout, 'id' | 'at'> & { at?: string; id?: string }) => string;
-  logWeight: (kg: number, at?: string, id?: string) => string;
   /** PRs the server holds. A workout restored from another device has no set
    *  detail, so a record set there cannot be recomputed here — it is read from
    *  the `prs` table instead of being lost. */
   serverPRs: { lift: string; value: number; delta?: string }[];
   setServerPRs: (rows: { lift: string; value: number; delta?: string }[]) => void;
   /** Bring server-stored history into the device engine — see the implementation. */
-  mergeFromServer: (incoming: { workouts: Workout[]; weights: WeightLog[]; checkIns?: CheckIn[] }) => void;
+  mergeFromServer: (incoming: { workouts: Workout[]; checkIns?: CheckIn[] }) => void;
   /** Drop a logged workout from this device. Call it only after the server copy
    *  is known to be gone — see `removeWorkout` in src/lib/removeWorkout.ts. */
   forgetWorkout: (id: string) => void;
   /** Adopt the id the server accepted, for a row written before ids were shared. */
   renameWorkout: (oldId: string, newId: string) => void;
-  renameWeight: (at: string, id: string) => void;
   toggleSavedProgram: (id: string) => void;
   sendMatchRequest: (partnerId: string, question?: string) => void;
   /** Bring the device's match state back in line with the server. See the
@@ -392,7 +386,6 @@ export const useDb = create<DbState>()(
       checkIns: [],
       workouts: [],
       serverPRs: [],
-      weights: [],
       matches: {},
       threads: {},
       savedPrograms: [],
@@ -429,23 +422,12 @@ export const useDb = create<DbState>()(
         return id;
       },
 
-      logWeight: (kg, at, id) => {
-        const rowId = id ?? newId();
-        set((s) => ({
-          weights: [...s.weights, { id: rowId, at: at ?? new Date().toISOString(), kg }],
-        }));
-        return rowId;
-      },
-
       setServerPRs: (rows) => set({ serverPRs: rows }),
 
       forgetWorkout: (id) => set((s) => ({ workouts: s.workouts.filter((w) => w.id !== id) })),
 
       renameWorkout: (oldId, id) =>
         set((s) => ({ workouts: s.workouts.map((w) => (w.id === oldId ? { ...w, id } : w)) })),
-
-      renameWeight: (at, id) =>
-        set((s) => ({ weights: s.weights.map((w) => (w.at === at && !w.id ? { ...w, id } : w)) })),
 
       /** Merge rows pulled from the server. Server rows the device already has
        *  (same id) are left alone — the local copy carries the set detail the
@@ -467,17 +449,9 @@ export const useDb = create<DbState>()(
         set((s) => {
           const wKey = (w: { at: string; title?: string; volumeKg?: number }) =>
             `${new Date(w.at).setMilliseconds(0)}|${w.title ?? ''}|${Math.round(w.volumeKg ?? 0)}`;
-          const pKey = (p: { at: string; kg: number }) =>
-            `${new Date(p.at).setMilliseconds(0)}|${Math.round(p.kg * 10)}`;
-
           const have = new Set(s.workouts.map((w) => w.id));
           const haveContent = new Set(s.workouts.map(wKey));
           const added = incoming.workouts.filter((w) => !have.has(w.id) && !haveContent.has(wKey(w)));
-          const haveW = new Set(s.weights.map((w) => w.id).filter(Boolean) as string[]);
-          const haveWContent = new Set(s.weights.map(pKey));
-          const addedW = incoming.weights.filter(
-            (w) => (!w.id || !haveW.has(w.id)) && !haveWContent.has(pKey(w))
-          );
 
           /* Check-ins, same rules. A check-in written by this device carries a
              local `c-<ms>` id and the server's copy of it a UUID, so the id
@@ -492,10 +466,9 @@ export const useDb = create<DbState>()(
           const haveCContent = new Set(s.checkIns.map(cKey));
           const addedC = (incoming.checkIns ?? []).filter((c) => !haveC.has(c.id) && !haveCContent.has(cKey(c)));
 
-          if (!added.length && !addedW.length && !addedC.length) return {};
+          if (!added.length && !addedC.length) return {};
           return {
             workouts: [...added, ...s.workouts].sort((a, b) => b.at.localeCompare(a.at)),
-            weights: [...s.weights, ...addedW].sort((a, b) => a.at.localeCompare(b.at)),
             checkIns: [...addedC, ...s.checkIns].sort((a, b) => b.at.localeCompare(a.at)),
           };
         }),
@@ -583,7 +556,7 @@ export const useDb = create<DbState>()(
         set((s) => ({ matches: { ...s.matches, [partnerId]: { partnerId, state: 'declined', at: new Date().toISOString() } } })),
 
       resetDomain: () =>
-        set({ checkIns: [], workouts: [], weights: [], matches: {}, threads: {}, savedPrograms: [] }),
+        set({ checkIns: [], workouts: [], matches: {}, threads: {}, savedPrograms: [] }),
     }),
     {
       name: 'spot-db',
@@ -592,7 +565,6 @@ export const useDb = create<DbState>()(
         installedAt: s.installedAt,
         checkIns: s.checkIns,
         workouts: s.workouts,
-        weights: s.weights,
         matches: s.matches,
         threads: s.threads,
         savedPrograms: s.savedPrograms,
@@ -925,10 +897,6 @@ export function computeWeekStats(workouts: Workout[]): WeekStats {
 export function useWeekStats(): WeekStats {
   const workouts = useDb((s) => s.workouts);
   return useMemo(() => computeWeekStats(workouts), [workouts]);
-}
-export function useLatestWeight(): number | null {
-  const weights = useDb((s) => s.weights);
-  return weights.length ? weights[weights.length - 1].kg : null;
 }
 
 /* The daily meal plan lived here — `NutritionToday`, `useNutritionToday`, the

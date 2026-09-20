@@ -130,7 +130,6 @@ export default function RootLayout() {
               <Stack.Screen name="gym" />
               <Stack.Screen name="onboarding" />
               <Stack.Screen name="chat" />
-              <Stack.Screen name="challenge" />
             </Stack>
           </AppErrorBoundary>
         ) : (

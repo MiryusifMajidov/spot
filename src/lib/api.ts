@@ -723,6 +723,11 @@ export async function createCommunityPost(p: { author: string; gym: string; body
   invalidateFocusCache('community_posts');
 }
 
+/* Bodyweight went with the «Çəki» screen: `getMyProgress`, `logWeight` and
+   `getWeightHistory` had no callers left once the graph and the weigh-in form
+   were removed. `public.progress` keeps whatever people already weighed in —
+   that is their data, not this refactor's to drop. */
+
 // -------------------- account roles (trainer / gym) --------------------
 /* `becomeTrainer` used to live here and nothing called it. `publishTrainer` in
    src/app/(tabs)/profile/become-trainer.tsx replaced it, because publishing has
@@ -1013,19 +1018,6 @@ export async function getMyWorkouts(limit = 200): Promise<ServerWorkout[]> {
 }
 
 /** Bodyweight history with ids, so it can be reconciled like workouts. */
-export async function getMyProgress(limit = 200): Promise<{ id: string; at: string; kg: number }[]> {
-  const me = await getMyProfile();
-  if (!me) return [];
-  const { data, error } = await supabase
-    .from('progress')
-    .select('id,weight,created_at')
-    .eq('profile_id', me.id)
-    .order('created_at')
-    .limit(limit);
-  if (error) throw error;
-  return ((data ?? []) as { id: string; weight: number | null; created_at: string }[])
-    .map((r) => ({ id: r.id, at: r.created_at, kg: Number(r.weight ?? 0) }));
-}
 
 export async function logPR(lift: string, value: number, delta?: string): Promise<void> {
   const me = await getMyProfile();
@@ -1132,43 +1124,8 @@ export async function deleteMyPRAt(lift: string, value: number, atIso: string): 
 }
 
 /** Log a bodyweight entry (kg) to the progress table. */
-export async function logWeight(kg: number, id?: string, at?: string): Promise<void> {
-  const me = await getMyProfile();
-  if (!me) throw new Error('no profile');
-  const { error } = await supabase.from('progress').upsert(
-    { ...(id ? { id } : {}), profile_id: me.id, weight: kg, ...(at ? { created_at: at } : {}) },
-    { onConflict: 'id' }
-  );
-  if (error) throw error;
-}
 
-/**
- * Chronological bodyweight history (oldest→newest) for the progress chart.
- *
- * The LAST `limit` measurements, not the first. It used to order ascending and
- * then apply the limit, which returns the twelve OLDEST weigh-ins ever recorded
- * — and the progress card treats the last element as the current weight. On a
- * new phone, before the local store is filled, somebody with thirty entries
- * running 95 kg → 82 kg was shown «90 kq» as today's weight, with a chart that
- * stopped four months ago. Descending with the limit, then reversed.
- */
-export async function getWeightHistory(limit = 12): Promise<number[]> {
-  const me = await getMyProfile();
-  if (!me) return [];
-  const { data, error } = await supabase
-    .from('progress')
-    .select('weight,created_at')
-    .eq('profile_id', me.id)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (error) return [];
-  return (data ?? [])
-    .map((r: { weight: number | null }) => Number(r.weight))
-    .filter((n) => !Number.isNaN(n))
-    .reverse();
-}
 
-/** Latest logged bodyweight, or null if none. */
 export async function getLatestWeight(): Promise<number | null> {
   const me = await getMyProfile();
   if (!me) return null;

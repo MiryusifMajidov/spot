@@ -26,7 +26,6 @@ import {
   seedById,
   suggestNext,
   useDb,
-  useLatestWeight,
 } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
 import { dark, palette } from '@/theme';
@@ -71,7 +70,10 @@ export default function Session() {
   // Records set on a device whose set detail never left it — see `save` below.
   const serverPRs = useDb((s) => s.serverPRs);
   const logWorkout = useDb((s) => s.logWorkout);
-  const bodyweight = useLatestWeight();
+  /* Bodyweight tracking is gone, so there is nothing to pre-fill a bodyweight
+     exercise with. `null` keeps every downstream check («do we know their
+     weight?») answering honestly instead of guessing a number. */
+  const bodyweight: number | null = null;
 
   /* Same source as the day screen: `useAllPrograms()` holds only this device's
      own programs and the seeds, so a program read from the server resolved to

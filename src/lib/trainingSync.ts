@@ -1,7 +1,7 @@
 /**
  * One training history, not two (F-09).
  *
- * `logWorkout`, `logPR` and `logWeight` wrote to the server and nothing ever
+ * `logWorkout` and `logPR` wrote to the server and nothing ever
  * read them back: `getMyStats`, `getMyWeekStats`, `getMyPRs`, `getLatestWeight`
  * and `getMyPartnerCount` were called from nowhere, and every number on screen
  * came from `useDb` alone. So the profile said «0 məşq» about an account the
@@ -21,9 +21,9 @@
  * suggesting a next weight from a workout whose sets we do not have would be a
  * guess dressed as a recommendation.
  */
-import { getMyPRs, getMyProfile, getMyProgress, getMyWorkouts, logWeight, logWorkout } from './api';
+import { getMyPRs, getMyProfile, getMyWorkouts, logWorkout } from './api';
 import { isUuid, newId } from './ids';
-import { myChallenges, myFollowing } from './social';
+import { myFollowing } from './social';
 import { hasSupabaseConfig, supabase } from './supabase';
 import { setExerciseVideos, useDb, type CheckIn, type Workout } from '@/store/db';
 
@@ -60,8 +60,8 @@ async function myCheckIns(): Promise<CheckIn[]> {
  *  already has (same id) keeps its local copy, which is the richer one. */
 export async function pullTrainingHistory(): Promise<void> {
   if (!hasSupabaseConfig) return;
-  const [serverWorkouts, serverWeights, serverPRs, serverCheckIns] = await Promise.all([
-    getMyWorkouts(), getMyProgress(), getMyPRs(), myCheckIns(),
+  const [serverWorkouts, serverPRs, serverCheckIns] = await Promise.all([
+    getMyWorkouts(), getMyPRs(), myCheckIns(),
   ]);
 
   // Records set on a device whose sets never left it — see `computeStats`.
@@ -82,11 +82,7 @@ export async function pullTrainingHistory(): Promise<void> {
     rpe: w.rpe === 'Asan' ? 0 : w.rpe === 'Ağır' ? 2 : w.rpe === 'Normal' ? 1 : undefined,
   }));
 
-  useDb.getState().mergeFromServer({
-    workouts,
-    weights: serverWeights.map((p) => ({ id: p.id, at: p.at, kg: p.kg })),
-    checkIns: serverCheckIns,
-  });
+  useDb.getState().mergeFromServer({ workouts, checkIns: serverCheckIns });
 }
 
 /**
@@ -99,9 +95,8 @@ export async function pullTrainingHistory(): Promise<void> {
  */
 export async function pushLocalHistory(): Promise<void> {
   if (!hasSupabaseConfig) return;
-  const [serverWorkouts, serverWeights] = await Promise.all([getMyWorkouts(), getMyProgress()]);
+  const serverWorkouts = await getMyWorkouts();
   const haveW = new Set(serverWorkouts.map((w) => w.id));
-  const haveP = new Set(serverWeights.map((p) => p.id));
 
   /* Content keys, not just ids. A workout written before the ids were shared has
      a local `w-<ms>` id and a server-generated UUID for the same session, so an
@@ -109,9 +104,7 @@ export async function pushLocalHistory(): Promise<void> {
      on every launch. The pair shares its timestamp; that is the join. */
   const wKey = (at: string, title: string, volumeKg: number) =>
     `${new Date(at).setMilliseconds(0)}|${title}|${Math.round(volumeKg)}`;
-  const pKey = (at: string, kg: number) => `${new Date(at).setMilliseconds(0)}|${Math.round(kg * 10)}`;
   const haveWContent = new Set(serverWorkouts.map((w) => wKey(w.at, w.title, w.volumeKg)));
-  const havePContent = new Set(serverWeights.map((p) => pKey(p.at, p.kg)));
 
   const db = useDb.getState();
 
@@ -138,17 +131,6 @@ export async function pushLocalHistory(): Promise<void> {
     }
   }
 
-  for (const p of db.weights) {
-    if (p.id && haveP.has(p.id)) continue;
-    if (havePContent.has(pKey(p.at, p.kg))) continue;
-    const id = p.id && isUuid(p.id) ? p.id : newId();
-    try {
-      await logWeight(p.kg, id, p.at);
-      if (id !== p.id) useDb.getState().renameWeight(p.at, id);
-    } catch {
-      /* retried next launch */
-    }
-  }
 }
 
 /** Called once at start-up: bring the device up to date, then hand up whatever
@@ -188,11 +170,10 @@ export async function syncTrainingHistory(): Promise<void> {
  * `appStore` — which imports this one. That cycle would leave `useAppStore`
  * undefined at module-eval time and take the whole app down at the first render.
  */
-export async function syncSocial(): Promise<{ following: string[]; joinedChallenges: string[] } | null> {
+export async function syncSocial(): Promise<{ following: string[] } | null> {
   if (!hasSupabaseConfig) return null;
   try {
-    const [following, challenges] = await Promise.all([myFollowing(), myChallenges()]);
-    return { following: [...following], joinedChallenges: [...challenges] };
+    return { following: [...(await myFollowing())] };
   } catch {
     // The device copy stays; it is simply not confirmed yet.
     return null;

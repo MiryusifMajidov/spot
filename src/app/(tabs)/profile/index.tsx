@@ -2,7 +2,6 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, Share, StyleSheet, View } from 'react-native';
 
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { Icon } from '@/components/Icon';
 import { VideoPoster } from '@/components/VideoPoster';
@@ -11,7 +10,6 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
-import { Segmented } from '@/components/ui/Segmented';
 import { getMyProfile } from '@/lib/api';
 import { useIsGuest } from '@/lib/authGate';
 import { useCommunityPosts, useFeedVideos, useGyms } from '@/lib/hooks';
@@ -28,7 +26,6 @@ function avatarOf(row: unknown): string | null {
 
 export default function Profile() {
   const router = useRouter();
-  const [seg, setSeg] = useState(0);
   const [avatar, setAvatar] = useState<string | null>(null);
   const isGuest = useIsGuest();
   const profile = useAppStore((s) => s.profile);
@@ -39,9 +36,6 @@ export default function Profile() {
   const stats = useStats();
   const prs = stats.prs;
   const partners = useDb((s) => Object.values(s.matches).filter((m) => m.state === 'accepted').length);
-  const joinedCount = useAppStore((s) => s.joinedChallenges.length);
-  const weights = useDb((s) => s.weights);
-  const weightDelta = weights.length >= 2 ? weights[weights.length - 1].kg - weights[0].kg : 0;
 
   // The user's REAL content — nothing is rendered unless they actually published it.
   const allVideos = useFeedVideos();
@@ -217,18 +211,16 @@ export default function Profile() {
           )}
         </View>
 
-        <View style={{ marginTop: 14 }}>
-          {/* «Progress» was English on an Azerbaijani-only screen, and it named a
-              tab that calls itself something else: the screen it opens says
-              «İrəliləyiş» in its title, its section header and its button, so the
-              person tapped one word and landed on another.
-              «Challenge» stays as it is — the app uses it as a proper noun for the
-              feature (NavBar «Challenge-lər», every screen under /challenge), and
-              renaming it here alone would have given one feature two names. */}
-          <Segmented options={['Postlar', 'İrəliləyiş', 'Challenge']} value={seg} onChange={setSeg} />
-        </View>
+        {/* One section, so no switcher. «İrəliləyiş» (a bodyweight graph and
+            before/after photos) and «Challenge» (a monthly competition nobody
+            ever published one of) are both gone: the first is a different
+            product from finding a gym and writing down what you lifted, and the
+            second told every person who opened it that there was nothing there. */}
+        <AppText variant="title3" style={{ marginTop: 20, marginBottom: 12 }}>
+          Paylaşdıqların
+        </AppText>
 
-        {seg === 0 && (
+        {(
           myVideos.length + myPosts.length === 0 ? (
             <View style={styles.placeholderBox}>
               <Icon name="cam" size={26} color={palette.tertiary} />
@@ -273,31 +265,6 @@ export default function Profile() {
               ))}
             </View>
           )
-        )}
-        {seg === 1 && (
-          <PressableScale activeScale={0.98} onPress={() => router.push('/(tabs)/profile/progress')} style={styles.placeholderBox}>
-            <Icon name="scale" size={26} color={palette.voltDeep} />
-            <AppText variant="headline" style={{ marginTop: 12 }}>
-              {weights.length >= 2 ? `${weightDelta > 0 ? '+' : ''}${weightDelta.toFixed(1)} kq` : weights.length === 1 ? `${weights[0].kg} kq` : 'Çəki qeyd et'}
-            </AppText>
-            {/* The destination screen calls these «İrəliləyiş fotoları»; this
-                line called them «progress fotoları», an English word for the same
-                photos two taps apart. */}
-            <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 4 }}>
-              Çəki qrafikini və irəliləyiş fotolarını gör
-            </AppText>
-          </PressableScale>
-        )}
-        {seg === 2 && (
-          <PressableScale activeScale={0.98} onPress={() => router.push('/challenge')} style={styles.placeholderBox}>
-            <Icon name="trophy" size={26} color={palette.voltDeep} />
-            <AppText variant="headline" style={{ marginTop: 12 }}>
-              {joinedCount > 0 ? `${joinedCount} aktiv challenge` : 'Challenge-ə qoşul'}
-            </AppText>
-            <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 4 }}>
-              Hamısını gör və yenisinə qoşul
-            </AppText>
-          </PressableScale>
         )}
       </ScrollView>
     </Screen>

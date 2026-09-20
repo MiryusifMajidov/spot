@@ -48,14 +48,12 @@ export default function PrivacyDetails() {
       privacy: { visibility: app.visibility, showInGymList: app.showInGymList },
       checkIns: db.checkIns,
       workouts: db.workouts,
-      weights: db.weights,
       myReviews: db.myReviews,
       myPrograms: db.myPrograms,
       // Comments are server rows now, not device data — see the wipe copy below.
       savedPrograms: db.savedPrograms,
       bookmarks: app.bookmarks,
       savedVideos: app.savedVideos,
-      joinedChallenges: app.joinedChallenges,
       following: app.following,
       blocked: app.blocked,
     };
@@ -101,7 +99,6 @@ export default function PrivacyDetails() {
       savedVideos: [],
       following: [],
       likedPosts: [],
-      joinedChallenges: [],
       visibility: 'match-only',
       showInGymList: true,
       blocked: [],
