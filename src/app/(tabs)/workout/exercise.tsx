@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
-import { exerciseById, exerciseLibrary } from '@/store/db';
+import { exerciseById, LibExercise } from '@/store/db';
 import { dark, palette } from '@/theme';
 
 const { width } = Dimensions.get('window');
@@ -25,8 +25,46 @@ function fmt(s: number) {
 export default function ExerciseVideo() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id?: string }>();
-  const ex = (id ? exerciseById(id) : null) ?? exerciseLibrary[0];
+  /* `name`/`video`/`sets`/`reps` arrive when the move came from somebody's
+     PROGRAM rather than from SPOT's library: a coach may write a move the
+     library has never heard of and film it themselves (schema76), and that clip
+     has to be watchable by the person following the program. */
+  const params = useLocalSearchParams<{
+    id?: string;
+    name?: string;
+    video?: string;
+    sets?: string;
+    reps?: string;
+    muscle?: string;
+  }>();
+  const id = params.id;
+  const known = id ? exerciseById(id) : null;
+  /* NOT `?? exerciseLibrary[0]`. An id the library does not have used to open
+     this screen showing «Ştanqla skvat» — its video, its target sets, its common
+     mistake — under whatever the person had tapped. A wrong exercise presented
+     with full confidence is worse than no screen. */
+  const ex: LibExercise | null = known
+    ? {
+        ...known,
+        // The author's own clip beats the library's, when they filmed one.
+        videoUrl: params.video || known.videoUrl,
+        defaultSets: Number(params.sets) || known.defaultSets,
+        reps: params.reps || known.reps,
+      }
+    : params.name
+      ? {
+          id: id ?? 'own',
+          name: params.name,
+          muscle: params.muscle ?? '',
+          equipment: '—',
+          defaultSets: Number(params.sets) || 3,
+          reps: params.reps ?? '',
+          videoUrl: params.video ?? '',
+          commonMistake: '',
+          substitutes: [],
+          isCompound: false,
+        }
+      : null;
 
   const [playing, setPlaying] = useState(true);
   const [half, setHalf] = useState(false);
@@ -38,8 +76,8 @@ export default function ExerciseVideo() {
      — a full video UI in front of nothing. The screen is still worth opening for
      the target sets/reps, the most common mistake and the substitutes, so those
      stay; only the pretend player goes. */
-  const hasVideo = !!ex.videoUrl;
-  const player = useVideoPlayer(hasVideo ? ex.videoUrl : null, (p) => {
+  const hasVideo = !!ex?.videoUrl;
+  const player = useVideoPlayer(hasVideo && ex ? ex.videoUrl : null, (p) => {
     p.loop = true;
     p.muted = true;
     p.timeUpdateEventInterval = 0.25;
@@ -82,6 +120,27 @@ export default function ExerciseVideo() {
     .onStart((e) => runOnJS(setDragRatio)(Math.min(1, Math.max(0, e.x / width))))
     .onUpdate((e) => runOnJS(setDragRatio)(Math.min(1, Math.max(0, e.x / width))))
     .onEnd((e) => runOnJS(commitSeek)(Math.min(1, Math.max(0, e.x / width))));
+
+  /* After the hooks, so their order never changes between renders. An id that
+     resolves to nothing used to render the library's first exercise; now it
+     says what actually happened. */
+  if (!ex) {
+    return (
+      <View style={[styles.root, { alignItems: 'center', justifyContent: 'center', padding: 32 }]}>
+        <StatusBar style="light" />
+        <AppText style={{ color: palette.white, fontSize: 17, fontWeight: '600', textAlign: 'center' }}>
+          Hərəkət tapılmadı
+        </AppText>
+        <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13.5, lineHeight: 20, textAlign: 'center', marginTop: 8 }}>
+          Bu hərəkət SPOT kitabxanasında yoxdur. Proqramın müəllifi onu özü yazıbsa, təfərrüatı proqram
+          səhifəsində görünür.
+        </AppText>
+        <PressableScale activeScale={0.95} onPress={() => router.back()} style={{ marginTop: 20 }}>
+          <AppText style={{ color: palette.volt, fontSize: 15, fontWeight: '600' }}>Geri</AppText>
+        </PressableScale>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>

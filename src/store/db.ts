@@ -1003,20 +1003,26 @@ export function programDayExercises(program: Program | undefined, dayIndex: numb
   if (day?.exercises?.length) {
     return day.exercises.map((e) => {
       const known = exerciseLibrary.find((x) => x.name === e.name || x.id === e.id);
-      return (
-        known ?? {
-          id: e.id,
-          name: e.name,
-          muscle: e.muscle,
-          equipment: '—',
-          defaultSets: e.sets,
-          reps: e.reps,
-          videoUrl: NO_VIDEO,
-          commonMistake: e.commonMistake,
-          substitutes: e.substitutes ?? [],
-          isCompound: false,
-        }
-      );
+      /* The author wins on the numbers.
+         This used to be `known ?? {…}` — the library entry whenever one
+         matched, so a coach who wrote «5 set × 5» had it silently replaced by
+         the library's «3 set × 8-10», printed under their own name and logged
+         that way in the session. The library is still consulted, but only for
+         what the author was never asked: which muscle the move trains, what
+         equipment it needs, the common mistake, the substitutes — and a form
+         clip, when the author did not film their own. */
+      return {
+        id: e.id,
+        name: e.name,
+        muscle: e.muscle || known?.muscle || '',
+        equipment: known?.equipment ?? '—',
+        defaultSets: e.sets,
+        reps: e.reps,
+        videoUrl: e.videoUrl || known?.videoUrl || NO_VIDEO,
+        commonMistake: e.commonMistake || known?.commonMistake || '',
+        substitutes: e.substitutes?.length ? e.substitutes : known?.substitutes ?? [],
+        isCompound: known?.isCompound ?? false,
+      };
     });
   }
   // A named program with an empty day: honestly empty. Only the free session

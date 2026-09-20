@@ -114,7 +114,16 @@ export interface Exercise {
   name: string;
   muscle: string;
   sets: number;
+  /** What the AUTHOR wrote, and nothing re-derived from the library.
+   *
+   *  One text field carries both answers the builder offers: «8-10» for
+   *  repetitions, «45 san» for a hold. The session logger already reads a value
+   *  containing «san» as timed (workout/session.tsx isTimed), so a plank and a
+   *  set of squats travel the same wire and the logger needed no second case. */
   reps: string;
+  /** The author's own clip for this exercise, hosted in SPOT's videos bucket.
+   *  Absent means they did not add one — never a stand-in from somewhere else. */
+  videoUrl?: string | null;
   lastTime?: string; // "60kg × 8"
   commonMistake: string;
   substitutes: string[];

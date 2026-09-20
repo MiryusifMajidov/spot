@@ -455,8 +455,13 @@ export default function Session() {
     openSet.kg !== String(current.suggestion.weight);
 
   const libraryEntry = exerciseById(current.ex.id);
-  const hasDetail = !!libraryEntry;
-  const hasVideo = !!libraryEntry?.videoUrl;
+  /* `current.ex` already carries the author's clip when they filmed one
+     (store/db.ts programDayExercises). Reading the library entry instead meant a
+     coach's own technique video existed in the program and was unreachable from
+     the one screen where somebody is actually doing the exercise. */
+  const clip = current.ex.videoUrl || libraryEntry?.videoUrl || '';
+  const hasVideo = !!clip;
+  const hasDetail = !!libraryEntry || hasVideo;
 
   return (
     <View style={styles.root}>
@@ -496,7 +501,22 @@ export default function Session() {
             <PressableScale
               activeScale={hasDetail ? 0.92 : 1}
               haptic={hasDetail}
-              onPress={hasDetail ? () => router.push({ pathname: '/(tabs)/workout/exercise', params: { id: current.ex.id } }) : undefined}
+              onPress={
+                hasDetail
+                  ? () =>
+                      router.push({
+                        pathname: '/(tabs)/workout/exercise',
+                        params: {
+                          id: current.ex.id,
+                          name: current.ex.name,
+                          muscle: current.ex.muscle,
+                          sets: String(current.ex.defaultSets),
+                          reps: current.ex.reps,
+                          video: clip,
+                        },
+                      })
+                  : undefined
+              }
               style={styles.thumb}>
               <Icon name={hasVideo ? 'play' : 'target'} size={22} color={hasDetail ? palette.volt : dark.textTertiary} />
             </PressableScale>

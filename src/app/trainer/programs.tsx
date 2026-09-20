@@ -1,174 +1,44 @@
-import { useState } from 'react';
-import { Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useRouter } from 'expo-router';
+
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { LargeHeader } from '@/components/ui/LargeHeader';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
-import { Segmented } from '@/components/ui/Segmented';
-import { Level, Program } from '@/data/types';
+import { Program } from '@/data/types';
 import { removeProgram } from '@/lib/removeProgram';
-import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useDb } from '@/store/db';
 import { actionSheet, confirm, toast } from '@/store/ui';
-import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
 
-const LEVELS: Level[] = ['Başlanğıc', 'Orta', 'İrəli'];
-
-/** Day skeleton for a new program — real, runnable days, not empty placeholders. */
-function buildDays(daysPerWeek: number): Program['days'] {
-  const rotation =
-    daysPerWeek >= 3
-      ? [
-          { name: 'Push', focus: 'Sinə · Çiyin · Triseps' },
-          { name: 'Pull', focus: 'Kürək · Biseps' },
-          { name: 'Ayaq', focus: 'Ayaq · Sağrı' },
-        ]
-      : [{ name: 'Tam bədən', focus: 'Bütün əzələ qrupları' }];
-  return Array.from({ length: daysPerWeek }, (_, i) => {
-    const d = rotation[i % rotation.length];
-    return { title: `Gün ${i + 1} · ${d.name}`, focus: d.focus, exercises: [] };
-  });
-}
-
-interface Draft {
-  id: string | null;
-  title: string;
-  goal: string;
-  weeks: string;
-  daysPerWeek: string;
-  minutes: string;
-  level: number;
-}
-
-const emptyDraft: Draft = { id: null, title: '', goal: '', weeks: '8', daysPerWeek: '3', minutes: '60', level: 1 };
-
+/**
+ * A trainer's programs.
+ *
+ * THIS SCREEN USED TO BE A SECOND PROGRAM BUILDER, and it was the worse one.
+ *
+ * It asked for weeks, level, goal and minutes — the four questions the real
+ * builder deliberately stopped asking — and offered no description field and no
+ * way to add a single exercise. «Yarat» called `buildDays()`, which invented
+ * days named Push / Pull / Ayaq with `exercises: []`, so a trainer's brand-new
+ * program was three empty days they had not written. Everything went to
+ * `useDb.createProgram`, which is AsyncStorage on that one phone, so a program
+ * assigned to a student opened on the student's phone as «bu proqram hələ
+ * SPOT-a yüklənməyib». The footer admitted all of it in small grey text.
+ *
+ * A trainer is not a different kind of author. They write a program in the same
+ * builder as everybody else — where exercises, sets, repetitions, holds and
+ * their own technique clips exist — and it reaches the server the same way, so
+ * the student can actually open it. This screen is now what its name says: the
+ * list, with a way in.
+ */
 export default function TrainerPrograms() {
-  const myName = useAppStore((s) => s.profile.name);
+  const router = useRouter();
   const programs = useDb((s) => s.myPrograms);
-  const createProgram = useDb((s) => s.createProgram);
-  const updateProgram = useDb((s) => s.updateProgram);
 
-  const [draft, setDraft] = useState<Draft | null>(null);
-
-  /* The composer lives in a Modal — its own window, which Android does not resize
-     under edge-to-edge, so KeyboardAvoidingView had nothing to work with and the
-     Məqsəd / Həftə / Gün / Dəqiqə fields were typed blind under the IME. Pad the
-     bottom-anchored sheet by the measured overlap instead; once the padded sheet
-     passes maxHeight 88% the inner ScrollView gains real scroll range too. */
-  const kb = useKeyboardOverlap();
-
-  const openNew = () => setDraft(emptyDraft);
-  const openEdit = (p: Program) =>
-    setDraft({
-      id: p.id,
-      title: p.title,
-      goal: p.goal ?? '',
-      weeks: String(p.weeks),
-      daysPerWeek: String(p.daysPerWeek),
-      minutes: String(p.minutes),
-      level: Math.max(0, LEVELS.indexOf(p.level)),
-    });
-
-  const clamp = (v: string, min: number, max: number, fallback: number) => {
-    const n = Number(v);
-    if (!Number.isFinite(n) || n <= 0) return fallback;
-    return Math.min(max, Math.max(min, Math.round(n)));
-  };
-
-  /**
-   * Resize a program's week without throwing away what the trainer already
-   * wrote.
-   *
-   * This used to be `existing.daysPerWeek === daysPerWeek ? existing.days :
-   * buildDays(daysPerWeek)` — so changing 3 gün/həftə to 4 replaced EVERY day
-   * with an empty generated skeleton, and every exercise the trainer had typed
-   * into days 1-3 was gone. No warning, no undo, and the toast still said
-   * «Proqram yeniləndi».
-   *
-   * Growing keeps every existing day and appends new empty ones. Shrinking keeps
-   * the first N — and the caller asks first if any of the days being cut has
-   * exercises in it.
-   */
-  const resizeDays = (existingDays: Program['days'], daysPerWeek: number): Program['days'] => {
-    const kept = existingDays.slice(0, daysPerWeek);
-    if (kept.length === daysPerWeek) return kept;
-    const added = buildDays(daysPerWeek).slice(kept.length);
-    return [...kept, ...added];
-  };
-
-  const submit = () => {
-    if (!draft || !draft.title.trim()) return;
-    const weeks = clamp(draft.weeks, 1, 52, 8);
-    const daysPerWeek = clamp(draft.daysPerWeek, 1, 7, 3);
-    const minutes = clamp(draft.minutes, 10, 180, 60);
-    const level = LEVELS[draft.level] ?? 'Orta';
-    const goal = draft.goal.trim() || 'Ümumi hazırlıq';
-
-    if (draft.id) {
-      const existing = programs.find((p) => p.id === draft.id);
-      const existingDays = existing?.days ?? [];
-      const days = resizeDays(existingDays, daysPerWeek);
-
-      // Days being cut that actually hold work. Deleting them is the trainer's
-      // call to make, not ours to make quietly.
-      const losing = existingDays.slice(daysPerWeek).filter((d) => (d.exercises?.length ?? 0) > 0);
-
-      /* WHERE THESE PROGRAMS ACTUALLY LIVE.
-         Nothing in this editor talks to Supabase — `useDb` is AsyncStorage on this
-         phone — yet the toasts said «yaradıldı / yeniləndi / silindi» as if the
-         work had been filed somewhere. A trainer wrote a 4-week program, assigned
-         it to a student, and the student's screen answered «Müəllimin təyin etdiyi
-         bu proqram hələ SPOT-a yüklənməyib»; a reinstall or a new phone destroyed
-         every program with no warning at all. Until the server copy exists (it
-         needs an owner DELETE policy on `public.programs`, which does not exist
-         yet — a mirrored program could never be taken back down), every message
-         here says where the program is. */
-      const apply = () => {
-        updateProgram(draft.id!, { title: draft.title.trim(), goal, weeks, daysPerWeek, minutes, level, days });
-        toast('Proqram yeniləndi — dəyişiklik yalnız bu cihazdadır');
-        setDraft(null);
-      };
-
-      if (losing.length) {
-        confirm(
-          'Günlər silinsin?',
-          `${losing.length} günün hərəkətləri silinəcək: ${losing.map((d) => d.title).join(', ')}. Bu geri qaytarıla bilməz.`,
-          [
-            { label: 'Ləğv et', style: 'cancel' },
-            { label: 'Sil və yadda saxla', style: 'destructive', onPress: apply },
-          ]
-        );
-        return;
-      }
-      apply();
-      return;
-    }
-    {
-      createProgram({
-        title: draft.title.trim(),
-        creatorName: myName || 'Müəllim',
-        creatorType: 'trainer',
-        creatorVerified: false,
-        weeks,
-        daysPerWeek,
-        level,
-        goal,
-        paid: false,
-        rating: 0,
-        minutes,
-        videoCount: 0,
-        doneBy: 0,
-        tags: [],
-        saves: 0,
-        days: buildDays(daysPerWeek),
-      });
-      toast('Proqram yaradıldı — yalnız bu cihazda saxlanılır');
-    }
-    setDraft(null);
-  };
+  const openNew = () => router.push('/(tabs)/workout/create');
+  const openEdit = (p: Program) => router.push({ pathname: '/(tabs)/workout/create', params: { id: p.id } });
 
   const rowMenu = (p: Program) =>
     actionSheet({
@@ -179,36 +49,58 @@ export default function TrainerPrograms() {
           label: 'Sil',
           style: 'destructive',
           onPress: () =>
-            confirm('Proqramı silmək?', `«${p.title}» siyahından silinəcək. Şagirdə artıq təyin etmisənsə, ona yenidən proqram təyin etməlisən.`, [
-              { label: 'Ləğv et', style: 'cancel' },
-              {
-                label: 'Sil',
-                style: 'destructive',
-                onPress: () => {
-                  void (async () => {
-                    const r = await removeProgram(p.id);
-                    // «bu cihazdan silindi» was the honest wording while the row
-                    // stayed published. Now it really goes, so the sentence can be
-                    // the plain one — and the failure has its own.
-                    if (!r.ok) {
-                      toast('Proqram silinmədi — serverə çatmadı. Bağlantını yoxla.', 'error');
-                      return;
-                    }
-                    toast('Proqram silindi');
-                  })();
+            confirm(
+              'Proqramı silmək?',
+              `«${p.title}» siyahından silinəcək. Şagirdə artıq təyin etmisənsə, ona yenidən proqram təyin etməlisən.`,
+              [
+                { label: 'Ləğv et', style: 'cancel' },
+                {
+                  label: 'Sil',
+                  style: 'destructive',
+                  onPress: () => {
+                    void (async () => {
+                      const r = await removeProgram(p.id);
+                      if (!r.ok) {
+                        // Still published, under this trainer's name.
+                        toast('Proqram silinmədi — serverə çatmadı. Bağlantını yoxla.', 'error');
+                        return;
+                      }
+                      toast('Proqram silindi');
+                    })();
+                  },
                 },
-              },
-            ]),
+              ]
+            ),
         },
         { label: 'Bağla', style: 'cancel' },
       ],
     });
 
+  /** What a row can honestly say about a program, and nothing more.
+   *  `weeks` and `level` are no longer asked for, so the old
+   *  «8 həftə · 3 gün/həftə · 60 dəq · Orta» line printed three defaults
+   *  nobody chose. Days and exercises are counted from the program itself. */
+  const summary = (p: Program): string => {
+    const days = p.days?.length ?? 0;
+    const moves = (p.days ?? []).reduce((a, d) => a + (d.exercises?.length ?? 0), 0);
+    const clips = (p.days ?? []).reduce(
+      (a, d) => a + (d.exercises ?? []).filter((e) => !!e.videoUrl).length,
+      0
+    );
+    const parts = [
+      days ? `${days} gün` : 'gün yazılmayıb',
+      moves ? `${moves} hərəkət` : null,
+      clips ? `${clips} video` : null,
+      p.minutes ? `~${p.minutes} dəq` : null,
+    ].filter(Boolean);
+    return parts.join(' · ');
+  };
+
   return (
     <Screen edges={['top']}>
       <LargeHeader
         title="Proqramlar"
-        subtitle="Yaratdığın proqramlar. Hamısı pulsuzdur və yalnız bu cihazda saxlanılır."
+        subtitle="Yaratdığın proqramlar. Hamısı pulsuzdur."
         right={
           <PressableScale
             activeScale={0.9}
@@ -226,7 +118,8 @@ export default function TrainerPrograms() {
           <View style={styles.empty}>
             <AppText style={{ fontSize: 15, fontWeight: '600', marginBottom: 6 }}>Hələ proqram yaratmamısan</AppText>
             <AppText style={{ fontSize: 13.5, lineHeight: 19, color: palette.textSecondary }}>
-              İlk proqramını yarat — sonra onu şagirdlərinə təyin edə və özün də Məşq bölməsində işlədə bilərsən.
+              İlk proqramını yarat — hər hərəkətin set sayını, təkrarını və ya müddətini özün yazırsan, istəsən
+              texnika videosu da əlavə edirsən. Sonra onu şagirdlərinə təyin edə bilərsən.
             </AppText>
             <PressableScale
               activeScale={0.97}
@@ -252,9 +145,7 @@ export default function TrainerPrograms() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <AppText style={{ fontSize: 15, fontWeight: '600' }}>{p.title}</AppText>
-                    <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
-                      {p.weeks} həftə · {p.daysPerWeek} gün/həftə · {p.minutes} dəq · {p.level}
-                    </AppText>
+                    <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>{summary(p)}</AppText>
                   </View>
                   <PressableScale
                     activeScale={0.9}
@@ -266,116 +157,25 @@ export default function TrainerPrograms() {
                     <Icon name="more" size={18} color={palette.textSecondary} />
                   </PressableScale>
                 </PressableScale>
-                <View style={styles.metaRow}>
-                  <View style={styles.tag}>
-                    <AppText style={{ fontSize: 11.5, fontWeight: '600', color: palette.text3 }}>{p.goal}</AppText>
-                  </View>
-                  <View style={styles.tag}>
-                    <AppText style={{ fontSize: 11.5, fontWeight: '600', color: palette.text3 }}>PULSUZ</AppText>
-                  </View>
-                </View>
               </View>
             ))}
           </View>
         )}
 
         <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.caption, marginTop: 18 }}>
-          Proqramlar yalnız bu cihazda saxlanılır — serverə yüklənmir, ona görə tətbiqi silsən və ya telefonu
-          dəyişsən qayıtmır. Şagirdə təyin edəndə ona yalnız proqramın adı və qeydin gedir; günləri və hərəkətləri
-          onun telefonunda açılmır, onları özün çatdırmalısan. SPOT-da ödəniş yoxdur, bütün proqramlar pulsuzdur.
+          Şagirdə proqram təyin edəndə ona proqramın özü açılır — günləri, hərəkətləri, yazdığın set və təkrar
+          sayı ilə birlikdə. SPOT-da ödəniş yoxdur, bütün proqramlar pulsuzdur.
         </AppText>
       </ScrollView>
-
-      <Modal visible={!!draft} animationType="slide" transparent onRequestClose={() => setDraft(null)}>
-        <View style={styles.sheetWrap}>
-          <View style={{ justifyContent: 'flex-end', flex: 1 }}>
-            <View style={[styles.sheet, { paddingBottom: kb }]}>
-              <View style={styles.sheetHead}>
-                <PressableScale activeScale={0.94} accessibilityRole="button" accessibilityLabel="Bağla" onPress={() => setDraft(null)}>
-                  <AppText style={{ fontSize: 15, color: palette.blue }}>Ləğv et</AppText>
-                </PressableScale>
-                <AppText variant="headline">{draft?.id ? 'Proqramı redaktə et' : 'Yeni proqram'}</AppText>
-                <PressableScale
-                  activeScale={0.94}
-                  disabled={!draft?.title.trim()}
-                  accessibilityRole="button"
-                  accessibilityLabel="Proqramı yadda saxla"
-                  onPress={submit}>
-                  <AppText style={{ fontSize: 15, fontWeight: '600', color: draft?.title.trim() ? palette.blue : palette.tertiary }}>Saxla</AppText>
-                </PressableScale>
-              </View>
-
-              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.screen, paddingBottom: 28 }}>
-                <Field label="Ad *" value={draft?.title ?? ''} onChangeText={(t) => setDraft((d) => (d ? { ...d, title: t } : d))} placeholder="Məs: Güc bazası 5x5" />
-                <Field label="Məqsəd" value={draft?.goal ?? ''} onChangeText={(t) => setDraft((d) => (d ? { ...d, goal: t } : d))} placeholder="Məs: Güc, arıqlama, hipertrofiya" />
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <View style={{ flex: 1 }}>
-                    <Field label="Həftə" value={draft?.weeks ?? ''} onChangeText={(t) => setDraft((d) => (d ? { ...d, weeks: t } : d))} placeholder="8" numeric />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Field label="Gün/həftə" value={draft?.daysPerWeek ?? ''} onChangeText={(t) => setDraft((d) => (d ? { ...d, daysPerWeek: t } : d))} placeholder="3" numeric />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Field label="Dəqiqə" value={draft?.minutes ?? ''} onChangeText={(t) => setDraft((d) => (d ? { ...d, minutes: t } : d))} placeholder="60" numeric />
-                  </View>
-                </View>
-                <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 8, fontWeight: '600' }}>
-                  Səviyyə
-                </AppText>
-                <Segmented options={LEVELS} value={draft?.level ?? 1} onChange={(i) => setDraft((d) => (d ? { ...d, level: i } : d))} />
-                <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.caption, marginTop: 14 }}>
-                  Gün sayına uyğun məşq günləri (Push / Pull / Ayaq) avtomatik qurulur — proqramı açıb hərəkətləri ora əlavə edə bilərsən.
-                </AppText>
-              </ScrollView>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </Screen>
   );
 }
 
-function Field({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  numeric,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  placeholder: string;
-  numeric?: boolean;
-}) {
-  return (
-    <View style={{ marginBottom: 16 }}>
-      <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 8, fontWeight: '600' }}>
-        {label}
-      </AppText>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={palette.caption}
-        keyboardType={numeric ? 'numeric' : 'default'}
-        style={styles.input}
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  fab: { width: 40, height: 40, borderRadius: 20, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
-  card: { backgroundColor: palette.white, borderRadius: 16, padding: 14 },
-  thumb: { width: 46, height: 46, borderRadius: 13, backgroundColor: 'rgba(198,255,61,0.3)', alignItems: 'center', justifyContent: 'center' },
-  moreBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  metaRow: { flexDirection: 'row', gap: 7, marginTop: 12 },
-  tag: { backgroundColor: palette.grouped, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  empty: { backgroundColor: palette.white, borderRadius: 16, padding: 16 },
-  primaryBtn: { height: 38, borderRadius: 11, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
-  sheetWrap: { flex: 1, backgroundColor: palette.overlay },
-  sheet: { backgroundColor: palette.grouped, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '88%' },
-  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.screen, paddingTop: 16, paddingBottom: 10 },
-  input: { backgroundColor: palette.white, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, color: palette.inkText, borderWidth: 1, borderColor: palette.separator },
+  fab: { width: 36, height: 36, borderRadius: 12, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
+  empty: { backgroundColor: palette.white, borderRadius: 16, padding: 18 },
+  primaryBtn: { backgroundColor: palette.ink, borderRadius: 12, height: 40, alignItems: 'center', justifyContent: 'center' },
+  card: { backgroundColor: palette.white, borderRadius: 16, padding: 13 },
+  thumb: { width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(198,255,61,0.22)', alignItems: 'center', justifyContent: 'center' },
+  moreBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
 });

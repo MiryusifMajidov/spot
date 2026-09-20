@@ -133,7 +133,15 @@ export default function ProgramDetail() {
     actionSheet({
       title: p.title,
       actions: [
-        { label: 'Hərəkət əlavə et', onPress: () => router.push('/(tabs)/workout/exercises') },
+        /* Was «Hərəkət əlavə et», which opened the exercise LIBRARY — a
+           browsing screen that adds nothing to any program. Tapping it from
+           your own program looked like an edit and changed nothing. Real
+           editing goes to the builder that wrote the program, with the
+           program loaded into it. */
+        {
+          label: 'Redaktə et',
+          onPress: () => router.push({ pathname: '/(tabs)/workout/create', params: { id: p.id } }),
+        },
         {
           label: 'Proqramı sil',
           style: 'destructive' as const,

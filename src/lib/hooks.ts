@@ -48,11 +48,46 @@ const NO_GYMS: Gym[] = [];
 const NO_TRAINERS: Trainer[] = [];
 
 // ---------------- mappers ----------------
-/** A stored day is `{title, focus, exercise_ids[]}` (see workout/create.tsx). Resolve
- *  the ids against the exercise library so a program really carries the moves its
- *  author picked — an unresolved day stays empty rather than being invented from
- *  its title. */
+/**
+ * The exercises of one stored day.
+ *
+ * A day written by the current builder carries `items` — the author's own name,
+ * sets, reps (or «45 san») and clip for every row (schema76). Those numbers are
+ * used exactly as written; the library is consulted only for the things the
+ * author was never asked, like which muscle a move trains and its common
+ * mistake.
+ *
+ * Days saved before that shape existed carry only `exercise_ids`, and for those
+ * the library's defaults ARE the author's intent — they had no way to say
+ * anything else. That branch is the fallback, not the rule: it used to be the
+ * only code here, which is why a coach's «5 set × 5» came back as the library's
+ * «3 set × 8-10» under their own name.
+ *
+ * An id that resolves to nothing is dropped rather than invented.
+ */
 function mapDayExercises(d: any): Exercise[] {
+  const items: any[] = Array.isArray(d?.items) ? d.items : [];
+  if (items.length) {
+    return items
+      .map((it): Exercise | null => {
+        const name = String(it?.name ?? '').trim();
+        if (!name) return null;
+        const lib = it?.exercise_id ? exerciseLibrary.find((x) => x.id === it.exercise_id) : undefined;
+        const sets = Number(it?.sets);
+        return {
+          id: String(it?.exercise_id ?? '') || `own-${name.toLowerCase().replace(/\s+/g, '-')}`,
+          name,
+          muscle: lib?.muscle ?? String(it?.muscle ?? '').trim(),
+          sets: Number.isFinite(sets) && sets > 0 ? Math.round(sets) : 1,
+          reps: String(it?.reps ?? '').trim(),
+          videoUrl: typeof it?.video_url === 'string' && it.video_url ? it.video_url : null,
+          commonMistake: lib?.commonMistake ?? '',
+          substitutes: lib?.substitutes ?? [],
+        };
+      })
+      .filter((x): x is Exercise => !!x);
+  }
+
   const ids: string[] = Array.isArray(d?.exercise_ids) ? d.exercise_ids : [];
   return ids
     .map((id) => exerciseLibrary.find((x) => x.id === id))
@@ -63,6 +98,7 @@ function mapDayExercises(d: any): Exercise[] {
       muscle: x.muscle,
       sets: x.defaultSets,
       reps: x.reps,
+      videoUrl: null,
       commonMistake: x.commonMistake,
       substitutes: x.substitutes,
     }));

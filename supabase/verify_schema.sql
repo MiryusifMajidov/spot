@@ -861,6 +861,14 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema74. The check-in code must never sit on public.gyms: that table carries a TABLE-level SELECT grant, and a table grant defeats any column-level revoke, so a code there would be readable by every signed-in person — who could then check in from home forever. Its own table, owner-only policy, and check_in_with_code() resolves a scan with row security off.'
   union all
+  select 'trigger', 'programs_validate_days bounds a day and pins its video',
+         case when exists (select 1 from pg_trigger t join pg_class c on c.oid = t.tgrelid
+                            join pg_namespace n on n.oid = c.relnamespace
+                           where n.nspname='public' and c.relname='programs'
+                             and t.tgname='programs_validate_days' and not t.tgisinternal)
+              then 'OK' else 'MISSING' end,
+         'schema76. A day now carries items[] — the author''s own sets, reps (or «45 san») and technique clip — because the old {title, focus, exercise_ids[]} had nowhere to put them and BOTH readers rebuilt the numbers from the library, so a coach''s «5 set × 5» came back as the library''s «3 set × 8-10» under their own name. The trigger caps the blob and pins every video_url to SPOT''s own videos bucket: whatever sits in that field is played to a member, inside SPOT, credited to the author.'
+  union all
   select 'table', 'featured_trainers is admin-written, publicly read',
          case when exists (select 1 from pg_tables where schemaname='public' and tablename='featured_trainers')
                and not has_table_privilege('authenticated','public.featured_trainers','insert')

@@ -233,7 +233,7 @@ export default function StudentDetail() {
               activeScale={0.97}
               accessibilityRole="button"
               accessibilityLabel="Proqram yarat"
-              onPress={() => router.push('/trainer/programs')}
+              onPress={() => router.push('/(tabs)/workout/create')}
               style={[styles.primaryBtn, { marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 }]}>
               <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>Proqram yarat</AppText>
             </PressableScale>

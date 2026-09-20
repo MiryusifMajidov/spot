@@ -131,7 +131,26 @@ export default function DayDetail() {
                 key={`${ex.id}-${i}`}
                 ex={ex}
                 last={lastLoggedSet(workouts, ex.name)}
-                onPress={exerciseById(ex.id) ? () => router.push({ pathname: '/(tabs)/workout/exercise', params: { id: ex.id } }) : undefined}
+                /* Openable when SPOT knows the move OR when the program's
+                   author filmed it themselves. The second case is the whole
+                   point of a coach attaching a clip: the person doing the
+                   workout has to be able to watch it. */
+                onPress={
+                  exerciseById(ex.id) || ex.videoUrl
+                    ? () =>
+                        router.push({
+                          pathname: '/(tabs)/workout/exercise',
+                          params: {
+                            id: ex.id,
+                            name: ex.name,
+                            muscle: ex.muscle,
+                            sets: String(ex.defaultSets),
+                            reps: ex.reps,
+                            video: ex.videoUrl || '',
+                          },
+                        })
+                    : undefined
+                }
               />
             ))}
           </View>
