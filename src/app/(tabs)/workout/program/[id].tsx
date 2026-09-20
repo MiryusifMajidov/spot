@@ -300,8 +300,16 @@ export default function ProgramDetail() {
                   <View style={{ flex: 1 }}>
                     <AppText variant="callout">{day.title}</AppText>
                     <AppText variant="footnote" color={palette.caption} style={{ marginTop: 2 }}>
-                      {day.focus}
-                      {exs.length ? ` · ${exs.length} hərəkət · ~${estimateDurationMin(exs)} dəq` : ' · hərəkət əlavə olunmayıb'}
+                      {/* Joined rather than glued with a fixed «·». A day whose
+                          exercises the author typed themselves has no focus to
+                          derive — the muscle names come from the library — and
+                          the fixed version opened with a leading separator. */}
+                      {[
+                        day.focus,
+                        exs.length ? `${exs.length} hərəkət · ~${estimateDurationMin(exs)} dəq` : 'hərəkət əlavə olunmayıb',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </AppText>
                   </View>
                   <Icon name="chevR" size={18} color={palette.tertiary} />
@@ -316,9 +324,19 @@ export default function ProgramDetail() {
               </AppText>
               <AppText variant="footnote" color={palette.caption} style={{ marginTop: 6, textAlign: 'center', lineHeight: 18 }}>
                 {mine
-                  ? 'Öz proqramındır — hərəkət kitabxanasından hərəkət əlavə edə bilərsən.'
+                  ? 'Öz proqramındır — redaktə edib gün və hərəkət əlavə edə bilərsən.'
                   : 'Müəllif günləri yükləyəndə burada görünəcək. O vaxta qədər başqa proqram seç.'}
               </AppText>
+              {/* It pointed at the exercise library before, which is a browsing
+                  screen that adds nothing to any program. */}
+              {mine ? (
+                <Button
+                  title="Redaktə et"
+                  variant="secondary"
+                  onPress={() => router.push({ pathname: '/(tabs)/workout/create', params: { id: p.id } })}
+                  style={{ marginTop: 14 }}
+                />
+              ) : null}
             </View>
           )}
         </View>

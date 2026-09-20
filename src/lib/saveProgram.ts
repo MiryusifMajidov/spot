@@ -22,8 +22,11 @@ import { Program } from '@/data/types';
 import { getMyProfile } from '@/lib/api';
 import { estimateDuration } from '@/lib/duration';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
-import { useDb } from '@/store/db';
+import { exerciseLibrary, useDb } from '@/store/db';
 import { DraftDay, draftDaysForSave, itemReps } from '@/store/programDraft';
+
+/** Library ids, looked up once. */
+const LIBRARY_IDS = new Set(exerciseLibrary.map((e) => e.id));
 
 export type SaveResult = 'saved' | 'local' | 'failed' | 'refused';
 
@@ -177,6 +180,72 @@ export async function saveProgramDraft(input: {
     const problem = dayProblemMessage((e as { message?: string })?.message ?? '');
     if (problem) return { result: 'refused', id, problem };
     return { result: 'local', id };
+  }
+}
+
+/** A local `Program['days']` in the shape schema76 stores. The inverse of
+ *  `hooks.ts mapDayExercises`, so a day written by one path reads back the same
+ *  through the other. */
+export function programDaysToWire(days: Program['days']) {
+  return (days ?? []).map((d, i) => ({
+    title: d.title?.trim() || `Gün ${i + 1}`,
+    focus: d.focus ?? '',
+    items: (d.exercises ?? []).map((e) => ({
+      name: e.name?.trim() ?? '',
+      // Only a real library id travels as one. The mapper invents `own-…` for a
+      // move the author typed, and sending that back would claim the library
+      // has an entry it does not.
+      exercise_id: LIBRARY_IDS.has(e.id) ? e.id : null,
+      sets: e.sets,
+      reps: e.reps ?? '',
+      video_url: e.videoUrl ?? null,
+    })),
+    exercise_ids: (d.exercises ?? []).map((e) => e.id).filter((id) => LIBRARY_IDS.has(id)),
+  }));
+}
+
+/**
+ * Write a program's days — from anywhere that is not the builder.
+ *
+ * The exercise library's «proqrama əlavə et» called `useDb.updateProgram` and
+ * stopped there, so an exercise added to a program that other people follow was
+ * added on one phone only, under a toast that said it had worked. Same outcome
+ * vocabulary as a full save, for the same reason.
+ */
+export async function saveProgramDays(programId: string, days: Program['days']): Promise<SaveOutcome> {
+  try {
+    useDb.getState().updateProgram(programId, {
+      days,
+      daysPerWeek: days.filter((d) => (d.exercises?.length ?? 0) > 0).length,
+    });
+  } catch {
+    return { result: 'failed', id: programId };
+  }
+
+  if (!hasSupabaseConfig) return { result: 'local', id: programId };
+
+  const first = days.find((d) => (d.exercises?.length ?? 0) > 0);
+  try {
+    const { data, error } = await supabase
+      .from('programs')
+      .update({
+        days: programDaysToWire(days),
+        days_per_week: days.filter((d) => (d.exercises?.length ?? 0) > 0).length,
+        minutes: first
+          ? estimateDuration(first.exercises.map((e) => ({ sets: e.sets, reps: e.reps })))
+          : 0,
+        video_count: days.reduce((a, d) => a + (d.exercises ?? []).filter((e) => !!e.videoUrl).length, 0),
+      })
+      .eq('id', programId)
+      .select('id');
+    if (error) throw error;
+    // Zero rows: the owner policy refused it, and PostgREST does not throw.
+    if (!data?.length) return { result: 'local', id: programId };
+    return { result: 'saved', id: programId };
+  } catch (e) {
+    const problem = dayProblemMessage((e as { message?: string })?.message ?? '');
+    if (problem) return { result: 'refused', id: programId, problem };
+    return { result: 'local', id: programId };
   }
 }
 

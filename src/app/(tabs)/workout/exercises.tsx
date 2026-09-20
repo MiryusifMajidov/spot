@@ -10,6 +10,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Exercise } from '@/data/types';
 import { useAppStore } from '@/store/appStore';
 import { exerciseLibrary, gymById, LibExercise, useDb } from '@/store/db';
+import { saveProgramDays } from '@/lib/saveProgram';
 import { actionSheet, confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 import { searchKey } from '@/lib/az';
@@ -53,7 +54,6 @@ export default function ExerciseLibrary() {
   const homeGymId = useAppStore((s) => s.profile.homeGymId);
   const gym = homeGymId ? gymById(homeGymId) : undefined;
   const myPrograms = useDb((s) => s.myPrograms);
-  const updateProgram = useDb((s) => s.updateProgram);
 
   const list = useMemo(() => {
     const base = exerciseLibrary.filter((e) =>
@@ -84,13 +84,13 @@ export default function ExerciseLibrary() {
             setTimeout(() => {
               const days = p.days ?? [];
               if (days.length <= 1) {
-                appendTo(p.id, 0, e);
+                void appendTo(p.id, 0, e);
                 return;
               }
               actionSheet({
                 title: 'Hansı günə?',
                 actions: [
-                  ...days.map((d, i) => ({ label: d.title || `Gün ${i + 1}`, onPress: () => appendTo(p.id, i, e) })),
+                  ...days.map((d, i) => ({ label: d.title || `Gün ${i + 1}`, onPress: () => void appendTo(p.id, i, e) })),
                   { label: 'Bağla', style: 'cancel' as const },
                 ],
               });
@@ -101,7 +101,16 @@ export default function ExerciseLibrary() {
     });
   };
 
-  const appendTo = (programId: string, dayIndex: number, e: LibExercise) => {
+  /**
+   * Put one exercise into a day of one of my programs.
+   *
+   * It used to call `useDb.updateProgram` and stop — AsyncStorage on this
+   * phone. So an exercise added to a program other people follow was added for
+   * nobody but the person who added it, under a toast that said it had worked.
+   * It goes through `saveProgramDays` now, the same write the builder uses, and
+   * reports the same three answers.
+   */
+  const appendTo = async (programId: string, dayIndex: number, e: LibExercise) => {
     const p = useDb.getState().myPrograms.find((x) => x.id === programId);
     if (!p) return;
     const days = p.days?.length ? [...p.days] : [{ title: 'Gün 1', focus: '', exercises: [] }];
@@ -111,8 +120,22 @@ export default function ExerciseLibrary() {
       return;
     }
     days[dayIndex] = { ...day, exercises: [...day.exercises, toExercise(e)] };
-    updateProgram(programId, { days });
-    toast(`${e.name} → ${p.title} · ${day.title || `Gün ${dayIndex + 1}`}`);
+    const where = `${p.title} · ${day.title || `Gün ${dayIndex + 1}`}`;
+
+    const { result, problem } = await saveProgramDays(programId, days);
+    if (result === 'failed') {
+      toast('Əlavə olunmadı. Yenidən cəhd et.', 'error');
+      return;
+    }
+    if (result === 'refused') {
+      toast(problem ?? 'Server qəbul etmədi.', 'error');
+      return;
+    }
+    if (result === 'local') {
+      toast(`${e.name} → ${where} — hələlik yalnız bu cihazda`, 'info');
+      return;
+    }
+    toast(`${e.name} → ${where}`);
   };
 
   return (
