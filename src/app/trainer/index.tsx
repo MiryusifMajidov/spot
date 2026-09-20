@@ -256,14 +256,16 @@ export default function TrainerPanel() {
           </View>
         </View>
 
-        {/* What a trainer can actually do here */}
+        {/* Only what is NOT already a tab on this same screen.
+            «Proqramlar» and «Söhbət» used to sit here too — offering, in a list
+            in the middle of the panel, the exact two destinations the bar at the
+            bottom of the very same screen already goes to. Doğrulanma has no tab
+            (it is `href: null` in the layout), so this is the only way to it. */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 13 }}>
             ALƏTLƏRİN
           </AppText>
           <View style={{ gap: 13 }}>
-            <ToolRow icon="dumbbell" title="Proqramlar" sub="Şagirdə təyin edə biləcəyin proqramlar" onPress={() => router.push('/trainer/programs')} />
-            <ToolRow icon="msg" title="Söhbət" sub="Şagirdlərinlə yazış" onPress={() => router.push('/trainer/chat')} />
             <ToolRow icon="verified" title="Doğrulanma" sub="Mavi nişan üçün sənədlər" onPress={() => router.push('/trainer/verify')} />
           </View>
         </View>
