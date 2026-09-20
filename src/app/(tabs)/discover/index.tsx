@@ -19,6 +19,7 @@ import { useFetchPhase } from '@/lib/focusFetch';
 import { useGyms, useGymsPhase, usePartnersForGym, useTrainers } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useDb } from '@/store/db';
+import { useIsGuest } from '@/lib/authGate';
 import { useAppStore } from '@/store/appStore';
 import { applyGymFilter, applyPartnerFilter, gymFilterCount, partnerFilterCount, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
@@ -31,7 +32,12 @@ const norm = searchKey;
 
 export default function Discover() {
   const router = useRouter();
-  const [segment, setSegment] = useState(0);
+  const guest = useIsGuest();
+  const [rawSegment, setSegment] = useState(0);
+  /* A guest has only two segments. Clamping here rather than resetting the state
+     means somebody who was on «Yoldaşlar» and then signed OUT lands on a real
+     segment instead of a blank third one. */
+  const segment = guest && rawSegment > 1 ? 0 : rawSegment;
   const [query, setQuery] = useState('');
   const profile = useAppStore((s) => s.profile);
   // No substitute gym. If the person has not chosen one, we say so instead of
@@ -168,11 +174,22 @@ export default function Discover() {
       <LargeHeader
         title="Kəşf"
         right={
-          <>
-            <HeaderIcon name="bell" badge={notifUnread ?? undefined} onPress={() => router.push('/notifications')} />
-            <HeaderIcon name="msg" badge={unread > 0 ? unread : undefined} onPress={() => router.push('/chat')} />
-            <HeaderIcon name="pin" onPress={() => router.push('/(tabs)/discover/map')} />
-          </>
+          guest ? (
+            /* The only way in. A guest has no Profil tab, so without this button
+               there is no visible door back to an account anywhere in the app —
+               only the prompts that appear after tapping something. */
+            <PressableScale activeScale={0.96} onPress={() => router.push('/onboarding/welcome')} style={styles.signIn}>
+              <AppText variant="subhead" style={{ color: palette.inkText, fontWeight: '700' }}>
+                Daxil ol
+              </AppText>
+            </PressableScale>
+          ) : (
+            <>
+              <HeaderIcon name="bell" badge={notifUnread ?? undefined} onPress={() => router.push('/notifications')} />
+              <HeaderIcon name="msg" badge={unread > 0 ? unread : undefined} onPress={() => router.push('/chat')} />
+              <HeaderIcon name="pin" onPress={() => router.push('/(tabs)/discover/map')} />
+            </>
+          )
         }
       />
 
@@ -196,7 +213,15 @@ export default function Discover() {
           ) : null}
         </View>
         <View style={{ marginTop: 12 }}>
-          <Segmented options={['Zallar', 'Müəllimlər', 'Yoldaşlar']} value={segment} onChange={setSegment} />
+          {/* «Yoldaşlar» is a list of PEOPLE matched against your own gym, goals
+              and schedule — a guest has none of those, so the segment could only
+              ever be empty or a prompt. Browsing without an account is the
+              catalogue: gyms, and the coaches in them. */}
+          <Segmented
+            options={guest ? ['Zallar', 'Müəllimlər'] : ['Zallar', 'Müəllimlər', 'Yoldaşlar']}
+            value={segment}
+            onChange={setSegment}
+          />
         </View>
 
         {segment === 0 ? (
@@ -477,6 +502,14 @@ function EmptyBlock({
 }
 
 const styles = StyleSheet.create({
+  signIn: {
+    height: 34,
+    paddingHorizontal: 14,
+    borderRadius: 17,
+    backgroundColor: palette.volt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   controls: { paddingHorizontal: spacing.screen, paddingBottom: 10 },
   search: { backgroundColor: palette.fill, borderRadius: 11, height: 38, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 10 },
   searchInput: { flex: 1, fontSize: 16, color: palette.inkText, paddingVertical: 0 },

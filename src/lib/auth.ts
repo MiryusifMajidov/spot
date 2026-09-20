@@ -382,72 +382,16 @@ export async function confirmEmailCode(email: string, code: string, linking: boo
   throw last ?? new Error('verify-failed');
 }
 
-// ---------------------------------------------------------------------- Phone
-/** Digits only, with the leading +. «055 123 45 67» → «+994551234567». */
-export function normalizePhone(raw: string): string | null {
-  const digits = (raw ?? '').replace(/[^\d+]/g, '');
-  if (!digits) return null;
-  if (digits.startsWith('+')) return digits.length >= 8 ? digits : null;
-  // A local Azerbaijani number: 055…, 070…, 0512… → +994…
-  const local = digits.replace(/^0+/, '');
-  if (local.length < 9) return null;
-  return `+994${local}`;
-}
+/* Sign-in by phone number used to live here — `normalizePhone`, `sendPhoneCode`,
+   `confirmPhoneCode`. It is gone. It was the only channel that cost money per
+   attempt (an SMS provider bills every code, including the ones people mistype),
+   the only one that needed a provider SPOT does not control, and the slowest to
+   get through for the person in front of the screen. Apple on iOS, Google on
+   Android, and e-poçt as the way back in cover every case it covered.
 
-/**
- * Send the code.
- *
- * An anonymous session gets the number attached to the SAME user
- * (`updateUser`), which is what keeps their history. A guest signs in with
- * `signInWithOtp`, which creates the account on first verification.
- */
-export async function sendPhoneCode(phone: string): Promise<{ linking: boolean }> {
-  const e164 = normalizePhone(phone);
-  if (!e164) throw new Error('bad-phone');
-  await requireProvider('phone');
-
-  const anon = await isAnonymous();
-  const { error } = anon
-    ? await supabase.auth.updateUser({ phone: e164 })
-    : await supabase.auth.signInWithOtp({ phone: e164 });
-
-  if (error) {
-    const m = String(error.message ?? '').toLowerCase();
-    // No SMS provider configured on the project — the person cannot fix that.
-    if (m.includes('not enabled') || m.includes('disabled') || m.includes('provider')) {
-      throw new AuthSetupError('phone');
-    }
-    throw error;
-  }
-  return { linking: anon };
-}
-
-/**
- * Verify it.
- *
- * The `type` differs between the two paths — `phone_change` when the number was
- * added to an existing user, `sms` when it is a sign-in — and the reference docs
- * are not explicit about it, so both are tried rather than guessed at. A wrong
- * type returns a token error, not a partial state, so this is safe.
- */
-export async function confirmPhoneCode(phone: string, code: string, linking: boolean): Promise<void> {
-  const e164 = normalizePhone(phone);
-  if (!e164) throw new Error('bad-phone');
-  const token = (code ?? '').replace(/\D/g, '');
-  if (token.length < 4) throw new Error('bad-code');
-
-  const order: ('phone_change' | 'sms')[] = linking ? ['phone_change', 'sms'] : ['sms', 'phone_change'];
-  let last: unknown = null;
-  for (const type of order) {
-    const { error } = await supabase.auth.verifyOtp({ phone: e164, token, type });
-    if (!error) return;
-    last = error;
-    const m = String((error as { message?: string }).message ?? '').toLowerCase();
-    // A genuinely wrong or expired code — trying the other type will not help.
-    if (m.includes('expired') || m.includes('invalid') || m.includes('token')) break;
-  }
-  throw last ?? new Error('verify-failed');
-}
+   `IdentityKind` still knows about 'phone': an account opened before today may
+   already carry a linked number, and the settings screen has to name that
+   identity truthfully rather than call it something it is not. */
 
 // -------------------------------------------------------------------- sign out
 /**

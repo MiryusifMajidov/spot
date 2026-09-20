@@ -1,5 +1,6 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
+import { useIsGuest } from '@/lib/authGate';
 import { palette } from '@/theme';
 
 /**
@@ -17,8 +18,19 @@ import { palette } from '@/theme';
  * the video and its scrubber hidden underneath it, the comments composer covered —
  * and would have kept producing them on every screen added later. The native bar
  * reserves its own space, so that entire class of bug cannot occur.
+ *
+ * A guest sees ONE tab. Browsing without an account is a catalogue: which gyms
+ * are in the city and which coaches work in them. Məşq, Feed and Profil all need
+ * an identity to mean anything — a workout history belongs to somebody, a video
+ * is posted by somebody — so showing them to a guest offered three rooms with
+ * nothing in them and a sign-up prompt behind every button.
+ *
+ * `hidden` rather than not rendering the trigger: the number of children stays
+ * the same, so the native bar is never rebuilt underneath the person when they
+ * sign in — the three tabs simply appear.
  */
 export default function TabsLayout() {
+  const guest = useIsGuest();
   return (
     <NativeTabs backgroundColor={palette.white} tintColor={palette.ink} labelStyle={{ selected: { color: palette.ink } }}>
       <NativeTabs.Trigger name="discover">
@@ -26,17 +38,17 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Icon sf={{ default: 'magnifyingglass', selected: 'magnifyingglass' }} md="search" />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="workout">
+      <NativeTabs.Trigger name="workout" hidden={guest}>
         <NativeTabs.Trigger.Label>Məşq</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'dumbbell', selected: 'dumbbell.fill' }} md="fitness_center" />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="feed">
+      <NativeTabs.Trigger name="feed" hidden={guest}>
         <NativeTabs.Trigger.Label>Feed</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'play.rectangle', selected: 'play.rectangle.fill' }} md="play_circle" />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="profile">
+      <NativeTabs.Trigger name="profile" hidden={guest}>
         <NativeTabs.Trigger.Label>Profil</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'person', selected: 'person.fill' }} md="person" />
       </NativeTabs.Trigger>

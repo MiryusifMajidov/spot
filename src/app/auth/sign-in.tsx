@@ -11,10 +11,7 @@ import { Screen } from '@/components/ui/Screen';
 import {
   AuthSetupError,
   confirmEmailCode,
-  confirmPhoneCode,
-  normalizePhone,
   sendEmailCode,
-  sendPhoneCode,
   SOCIAL_PROVIDER,
   signInWithSocial,
 } from '@/lib/auth';
@@ -34,26 +31,31 @@ import { palette, radius, spacing } from '@/theme';
  * existing anonymous user, so the profile id, the @username, the streak and the
  * videos are untouched.
  *
- * Three channels, in the order they actually work today:
- *   e-poçt  · the `email` provider is enabled on the project — works now
- *   Google  · needs an OAuth client and «Manual linking» switched on
- *   nömrə   · needs an SMS provider, and every code costs money
- * The two that are not configured say exactly that, and say it is the server's
- * setting rather than something the person did wrong.
+ * Two ways in, in the order they are meant to be used:
+ *   Apple / Google · the primary path, and the only one most people will touch.
+ *                    Which one appears is decided by the platform, never offered
+ *                    as a choice: an Android phone has no Apple sign-in and an
+ *                    iPhone must be offered Apple (App Store rule).
+ *   e-poçt         · the fallback. It is what gets somebody back into their
+ *                    account when the social provider fails, or when the account
+ *                    was opened on a phone of the other kind.
+ *
+ * Sign-in by phone number is gone. It needed a paid SMS provider, every code
+ * cost money, and it was the slowest of the three for the person using it.
+ *
+ * A provider that is not switched on server-side says exactly that, and says it
+ * is the server's setting rather than something the person did wrong.
  */
-type Channel = 'email' | 'phone';
 
 export default function SignIn() {
   const router = useRouter();
   const profileName = useAppStore((s) => s.profile.name);
 
-  const [busy, setBusy] = useState<null | 'social' | Channel>(null);
-  const [sent, setSent] = useState<{ channel: Channel; to: string; linking: boolean } | null>(null);
+  const [busy, setBusy] = useState<null | 'social' | 'email'>(null);
+  const [sent, setSent] = useState<{ to: string; linking: boolean } | null>(null);
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
 
-  const e164 = normalizePhone(phone);
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
 
   /* Android shows Google, iOS shows Apple — see SOCIAL_PROVIDER. The label is
@@ -67,9 +69,7 @@ export default function SignIn() {
         ? 'Google girişi'
         : e.what === 'apple'
           ? 'Apple girişi'
-          : e.what === 'phone'
-            ? 'SMS ilə giriş'
-            : 'E-poçt ilə giriş';
+          : 'E-poçt ilə giriş';
     return `${what} hələ açılmayıb. Bu, tətbiqin deyil, serverin ayarıdır.`;
   };
 
@@ -90,19 +90,15 @@ export default function SignIn() {
     }
   };
 
-  const send = async (channel: Channel) => {
+  const send = async () => {
     if (!hasSupabaseConfig) return toast('Server bağlantısı yoxdur', 'error');
-    setBusy(channel);
+    setBusy('email');
     try {
-      const to = channel === 'email' ? email.trim().toLowerCase() : (e164 ?? '');
-      const r = channel === 'email' ? await sendEmailCode(to) : await sendPhoneCode(phone);
-      setSent({ channel, to, linking: r.linking });
+      const to = email.trim().toLowerCase();
+      const r = await sendEmailCode(to);
+      setSent({ to, linking: r.linking });
       setCode('');
-      toast(
-        channel === 'email'
-          ? `${to} ünvanına link göndərildi — poçtunu aç və linkə toxun`
-          : `${to} nömrəsinə kod göndərildi`
-      );
+      toast(`${to} ünvanına link göndərildi — poçtunu aç və linkə toxun`);
     } catch (e) {
       errorFeedback();
       const m = String((e as Error)?.message ?? '');
@@ -112,9 +108,7 @@ export default function SignIn() {
             ? 'Çox tez-tez cəhd edildi — bir neçə dəqiqə gözlə'
             : m === 'bad-email'
               ? 'E-poçt ünvanı düzgün deyil'
-              : m === 'bad-phone'
-                ? 'Nömrə düzgün deyil'
-                : 'Kod göndərilmədi — yenidən cəhd et'),
+              : 'Link göndərilmədi — yenidən cəhd et'),
         'error'
       );
     } finally {
@@ -124,10 +118,9 @@ export default function SignIn() {
 
   const confirm = async () => {
     if (!sent) return;
-    setBusy(sent.channel);
+    setBusy('email');
     try {
-      if (sent.channel === 'email') await confirmEmailCode(sent.to, code, sent.linking);
-      else await confirmPhoneCode(sent.to, code, sent.linking);
+      await confirmEmailCode(sent.to, code, sent.linking);
       successFeedback();
       toast('Hesabın qorundu');
       router.back();
@@ -164,22 +157,20 @@ export default function SignIn() {
 
         {sent ? (
           <>
-            {sent.channel === 'email' ? (
-              /* Supabase's hosted mailer sends a LINK, not a code — adding
-                 `{{ .Token }}` to the template needs a paid SMTP provider. So the
-                 link is the main path and the code box is the fallback for when
-                 SMTP is configured later. Saying «kod gözlə» while a link arrives
-                 would be the app describing something that is not happening. */
-              <View style={styles.hero}>
-                <Icon name="msg" size={20} color={palette.voltDeep} />
-                <AppText variant="body" color={palette.text3} style={{ lineHeight: 22, flex: 1 }}>
-                  <AppText style={{ fontWeight: '700' }}>{sent.to}</AppText> ünvanına link göndərdik. Poçtunu aç və
-                  linkə toxun — tətbiq özü açılacaq və hesabın qorunacaq.
-                </AppText>
-              </View>
-            ) : null}
+            {/* Supabase's hosted mailer sends a LINK, not a code — adding
+                `{{ .Token }}` to the template needs a paid SMTP provider. So the
+                link is the main path and the code box is the fallback for when
+                SMTP is configured later. Saying «kod gözlə» while a link arrives
+                would be the app describing something that is not happening. */}
+            <View style={styles.hero}>
+              <Icon name="msg" size={20} color={palette.voltDeep} />
+              <AppText variant="body" color={palette.text3} style={{ lineHeight: 22, flex: 1 }}>
+                <AppText style={{ fontWeight: '700' }}>{sent.to}</AppText> ünvanına link göndərdik. Poçtunu aç və
+                linkə toxun — tətbiq özü açılacaq və hesabın qorunacaq.
+              </AppText>
+            </View>
             <AppText variant="overline" color={palette.caption} style={styles.label}>
-              {sent.channel === 'email' ? 'VƏ YA MƏKTUBDAKI KODU YAZ' : `${sent.to} NÖMRƏSİNƏ GƏLƏN KOD`}
+              VƏ YA MƏKTUBDAKI KODU YAZ
             </AppText>
             <TextInput
               value={code}
@@ -198,11 +189,9 @@ export default function SignIn() {
               onPress={confirm}
               style={{ marginTop: 14 }}
             />
-            {sent.channel === 'email' ? (
-              <AppText variant="caption" color={palette.caption} style={{ marginTop: 10, lineHeight: 18 }}>
-                Məktubda yalnız link varsa, kod xanasını boş burax — linkə toxunmaq kifayətdir.
-              </AppText>
-            ) : null}
+            <AppText variant="caption" color={palette.caption} style={{ marginTop: 10, lineHeight: 18 }}>
+              Məktubda yalnız link varsa, kod xanasını boş burax — linkə toxunmaq kifayətdir.
+            </AppText>
             <PressableScale haptic={false} onPress={() => setSent(null)} style={styles.backLink}>
               <AppText variant="subhead" color={palette.blue}>
                 Başqa üsulla
@@ -211,6 +200,28 @@ export default function SignIn() {
           </>
         ) : (
           <>
+            {/* The platform's own provider first and on its own: it is one tap,
+                it needs nothing typed, and on iOS the App Store requires Apple to
+                be offered. E-poçt sits underneath as the way back in when that
+                fails — not as an equal choice. */}
+            <PressableScale activeScale={0.98} onPress={social} disabled={!!busy} style={styles.googleBtn}>
+              {busy === 'social' ? (
+                <ActivityIndicator color={palette.inkText} />
+              ) : (
+                <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
+                  {socialLabel} ilə davam et
+                </AppText>
+              )}
+            </PressableScale>
+
+            <View style={styles.orRow}>
+              <View style={styles.orLine} />
+              <AppText variant="caption" color={palette.caption}>
+                və ya
+              </AppText>
+              <View style={styles.orLine} />
+            </View>
+
             <AppText variant="overline" color={palette.caption} style={styles.label}>
               E-POÇT İLƏ
             </AppText>
@@ -225,53 +236,17 @@ export default function SignIn() {
               style={styles.input}
             />
             <Button
-              title={busy === 'email' ? 'Göndərilir…' : 'Kod göndər'}
+              title={busy === 'email' ? 'Göndərilir…' : 'Link göndər'}
               full
               disabled={!emailOk || !!busy}
-              onPress={() => send('email')}
-              style={{ marginTop: 12 }}
-            />
-
-            <AppText variant="overline" color={palette.caption} style={styles.label}>
-              {socialLabel.toLocaleUpperCase('az')} İLƏ
-            </AppText>
-            <PressableScale activeScale={0.98} onPress={social} disabled={!!busy} style={styles.googleBtn}>
-              {busy === 'social' ? (
-                <ActivityIndicator color={palette.inkText} />
-              ) : (
-                <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
-                  {socialLabel} hesabı ilə davam et
-                </AppText>
-              )}
-            </PressableScale>
-
-            <AppText variant="overline" color={palette.caption} style={styles.label}>
-              NÖMRƏ İLƏ
-            </AppText>
-            <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="055 123 45 67"
-              placeholderTextColor={palette.caption}
-              keyboardType="phone-pad"
-              maxLength={20}
-              style={styles.input}
-            />
-            <AppText variant="caption" color={palette.caption} style={{ marginTop: 6 }}>
-              {e164 ? `Kod ${e164} nömrəsinə gedəcək` : 'Nömrəni 055… formasında yaz'}
-            </AppText>
-            <Button
-              title={busy === 'phone' ? 'Göndərilir…' : 'Kod göndər'}
-              full
-              disabled={!e164 || !!busy}
-              onPress={() => send('phone')}
+              onPress={send}
               style={{ marginTop: 12 }}
             />
           </>
         )}
 
         <AppText variant="caption" color={palette.caption} style={styles.footer}>
-          E-poçtun və nömrən yalnız sənə görünür — başqa istifadəçilər onları heç vaxt görmür.
+          E-poçtun yalnız sənə görünür — başqa istifadəçilər onu heç vaxt görmür.
         </AppText>
       </ScrollView>
     </Screen>
@@ -280,6 +255,8 @@ export default function SignIn() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 40 },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 22 },
+  orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: palette.separator },
   hero: {
     flexDirection: 'row',
     gap: 12,
