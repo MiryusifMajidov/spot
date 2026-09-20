@@ -24,7 +24,7 @@ export default function Achievements() {
   const volumeT = stats.volumeKg / 1000;
 
   const badges: Badge[] = [
-    // A GPS check-in, not a scan: there is no QR scanner in the app (workout/checkin.tsx).
+    // A check-in is a scan of the gym's QR (src/app/(tabs)/checkin.tsx).
     { icon: 'pin', label: 'İlk check-in', earned: checkInCount > 0 },
     // Earned by having a partner — an accepted match — which is what the label says.
     { icon: 'users', label: 'İlk yoldaş', earned: partners > 0 },
@@ -117,7 +117,7 @@ export default function Achievements() {
         <View style={styles.note}>
           <Icon name="shield" size={15} color={palette.tertiary} />
           {/* «QR check-in» sent people looking for a scanner that does not exist — the
-              check-in they can already do (GPS, workout/checkin.tsx) is what earns it. */}
+              check-in they can already do (the QR scan) is what earns it. */}
           <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.textSecondary, flex: 1 }}>
             Nişanlar yalnız check-in və qeyd edilmiş məşqlərlə qazanılır. Satın alınmır, hədiyyə edilmir.
           </AppText>

@@ -854,6 +854,20 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'web/admin/src/screens/Challenges.tsx:114 toggles challenges.active. Same gap: RLS on, SELECT-only policy set.'
   union all
+  select 'table', 'gym_checkin_codes exists and is owner-only',
+         case when exists (select 1 from pg_tables where schemaname='public' and tablename='gym_checkin_codes')
+               and exists (select 1 from pg_policies where schemaname='public' and tablename='gym_checkin_codes'
+                             and cmd in ('SELECT','ALL') and coalesce(qual,'') like '%owner_id%')
+              then 'OK' else 'MISSING' end,
+         'schema74. The check-in code must never sit on public.gyms: that table carries a TABLE-level SELECT grant, and a table grant defeats any column-level revoke, so a code there would be readable by every signed-in person — who could then check in from home forever. Its own table, owner-only policy, and check_in_with_code() resolves a scan with row security off.'
+  union all
+  select 'function', 'check_in_with_code replaces the GPS rule',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                           where n.nspname='public' and p.proname='check_in_with_code')
+               and not has_function_privilege('authenticated','public.check_in(text,double precision,double precision)','execute')
+              then 'OK' else 'MISSING' end,
+         'schema74. The distance test believed a coordinate the phone chose — the check-in screen said so itself — and failed the honest case indoors where GPS is weak. QR replaces it, and the old check_in() is revoked from authenticated so nothing can fall back to it.'
+  union all
   select 'function', 'open_thread lets anyone write to a listed trainer',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                            where n.nspname = 'public' and p.proname = 'open_thread'

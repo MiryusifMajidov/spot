@@ -59,6 +59,14 @@
           "color": "#C6FF3D",
           "defaultChannel": "default"
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Zalın resepsiyasındakı QR kodu oxumaq üçün kameraya icazə lazımdır.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
       ]
     ],
     "experiments": {

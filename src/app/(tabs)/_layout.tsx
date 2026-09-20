@@ -43,6 +43,15 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Icon sf={{ default: 'dumbbell', selected: 'dumbbell.fill' }} md="fitness_center" />
       </NativeTabs.Trigger>
 
+      {/* The QR scanner sits in the middle of five, which is where a thumb
+          lands. Check-in used to be a tile inside the Məşq tab — three taps and
+          a guess about where it lived; it is the one action a person performs
+          standing in the doorway of a gym, so it is one tap from anywhere. */}
+      <NativeTabs.Trigger name="checkin" hidden={guest}>
+        <NativeTabs.Trigger.Label>Check-in</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'qrcode.viewfinder', selected: 'qrcode.viewfinder' }} md="qr_code_scanner" />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="feed" hidden={guest}>
         <NativeTabs.Trigger.Label>Feed</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'play.rectangle', selected: 'play.rectangle.fill' }} md="play_circle" />

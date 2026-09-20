@@ -505,21 +505,13 @@ export default function GymDetail() {
             </View>
 
             <View style={styles.ctaRow}>
-              {/* «QR ilə check-in» named a mechanism the app does not have: the
-                  screen this opens is a GPS check-in whose own footnote ends «QR
-                  oxuyucu hələ yoxdur», so somebody standing in front of the gym's
-                  printed code tapped it expecting a camera and got a location
-                  permission prompt instead. The button now says what it does.
-
-                  It opens the ROOT `/checkin`, not `/(tabs)/workout/checkin`:
-                  the tab route switched the focused tab to Məşq, so the check-in
-                  screen's own `router.back()` popped inside the Məşq stack and
-                  dropped somebody who started on this gym page in Kəşf onto
-                  Məşq home instead of back here. */}
-              <Button
+                            <Button
                 title="Check-in et"
                 icon="pin"
-                onPress={() => router.push({ pathname: '/checkin', params: { gymId: gym.id } })}
+                /* Straight to the scanner. It takes no gym id any more: the QR on the
+                   wall names the gym, so the app cannot check somebody into a gym
+                   they merely had open on screen. */
+                onPress={() => router.push('/(tabs)/checkin')}
                 style={{ flex: 1, height: 46 }}
               />
               <Button

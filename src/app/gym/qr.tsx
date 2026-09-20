@@ -1,95 +1,207 @@
-import { Modal, Share, StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ScrollView, Share, StyleSheet, View } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 
+import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
-import { GymGate, gymShortCode, useMyGym } from '@/lib/gymOwner';
-import { toast } from '@/store/ui';
+import { errorFeedback, successFeedback } from '@/lib/feedback';
+import { GymGate, useMyGym } from '@/lib/gymOwner';
+import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
-import { useState } from 'react';
 
-export default function GymQR() {
+/**
+ * The gym's check-in QR.
+ *
+ * Members check in by scanning this, and nothing else — the distance rule is
+ * gone (schema74). So this code is the gym's door: print it, put it where people
+ * walk past the desk, and every scan is somebody who was actually standing there.
+ *
+ * The code is readable by the owner and nobody else. It is not a column on
+ * `gyms` for exactly that reason: that table has a table-level SELECT grant, and
+ * a table grant defeats any column-level revoke, so a code stored there would be
+ * readable by every signed-in person in the country — who could then check in
+ * from home forever. It lives in `gym_checkin_codes`, behind an owner-only
+ * policy, and the scan is resolved by a SECURITY DEFINER function.
+ *
+ * Rotating is the answer to a leak: a photo of the old sign stops working the
+ * moment a new code is generated.
+ */
+
+type State =
+  | { k: 'loading' }
+  | { k: 'none' }
+  | { k: 'ready'; code: string }
+  | { k: 'failed' };
+
+export default function GymQr() {
   const state = useMyGym();
   const gym = state.gym;
-  const [full, setFull] = useState(false);
+  /* Hoisted so the memo's written dependency and the one the compiler infers are
+     the same expression — `gym?.id` inside the body with `[gym?.id]` in the list
+     reads as two different things to it, and the whole memo is then dropped. */
+  const gymId = gym?.id;
+  const [code, setCode] = useState<State>({ k: 'loading' });
+  const [busy, setBusy] = useState(false);
 
-  if (!gym) {
-    return (
-      <Screen edges={['top', 'bottom']}>
-        <NavBar title="Zal kodu" />
-        <GymGate state={state} />
-      </Screen>
-    );
-  }
-
-  const code = gymShortCode(gym.id);
-
-  const share = async () => {
-    try {
-      await Share.share({ message: `${gym.name} — SPOT zal kodu: ${code}` });
-    } catch {
-      toast('Paylaşmaq alınmadı', 'error');
+  const load = useCallback(() => {
+    if (!hasSupabaseConfig || !gymId) {
+      setCode({ k: 'failed' });
+      return;
     }
+    let alive = true;
+    void (async () => {
+      const { data, error } = await supabase
+        .from('gym_checkin_codes')
+        .select('code')
+        .eq('gym_id', gymId)
+        .maybeSingle();
+      if (!alive) return;
+      // A read that failed is not «this gym has no code» — saying the second
+      // would push the owner into generating a new one and invalidating the
+      // sign already on their wall.
+      if (error) setCode({ k: 'failed' });
+      else if (data?.code) setCode({ k: 'ready', code: String(data.code) });
+      else setCode({ k: 'none' });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [gymId]);
+
+  useFocusEffect(load);
+
+  const rotate = async () => {
+    if (!gym?.id || busy) return;
+    setBusy(true);
+    const { data, error } = await supabase.rpc('gym_rotate_checkin_code', { p_gym_id: gym.id });
+    setBusy(false);
+    if (error || !data) {
+      errorFeedback();
+      toast('Kod yaradılmadı — bağlantını yoxla və yenidən cəhd et', 'error');
+      return;
+    }
+    successFeedback();
+    setCode({ k: 'ready', code: String(data) });
+    toast('Yeni kod hazırdır — köhnə çap artıq işləmir');
   };
 
+  const askRotate = () =>
+    confirm(
+      'Yeni kod yaradılsın?',
+      'Divardakı köhnə QR həmin an işləməyi dayandırır. Yenisini çap edib asmalısan.',
+      [
+        { label: 'Ləğv et', style: 'cancel' },
+        { label: 'Yenilə', style: 'destructive', onPress: () => void rotate() },
+      ]
+    );
+
+  if (!gym) return <GymGate state={state} />;
+
   return (
-    <Screen edges={['top', 'bottom']}>
+    <Screen edges={['top']}>
       <NavBar title="Zal kodu" />
-      <View style={styles.body}>
-        {/* HONEST SCOPE: this code is a stable identifier for the gym. The member's
-            check-in screen has no code field in this version, so we must NOT say the
-            member types or scans it — nothing verifies it. */}
-        <AppText variant="body" color={palette.textSecondary} center style={{ lineHeight: 21, marginBottom: 22 }}>
-          Bu, {gym.name} zalının SPOT-dakı daimi kodudur və dəyişmir. Onunla zalını tanıtdırırsan: dəstəklə
-          yazışanda, çap materialında və ya üzvə «SPOT-da bizi bu kodla tap» deyəndə istifadə et.
-        </AppText>
-
-        <PressableScale activeScale={0.98} onPress={() => setFull(true)} style={styles.codeBox}>
-          <AppText style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: palette.tertiary }}>
-            SPOT ZAL KODU
-          </AppText>
-          <AppText style={styles.code}>{code}</AppText>
-          <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.textSecondary, marginTop: 6 }}>
-            {gym.name}
-          </AppText>
-        </PressableScale>
-
-        <View style={styles.honestBox}>
-          <AppText style={{ fontSize: 13.5, fontWeight: '600' }}>Check-in bu koddan asılı deyil</AppText>
-          <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 6, lineHeight: 18 }}>
-            Bu versiyada üzv check-in-i öz telefonundan, SPOT-un «Check-in» ekranından edir — orada kod yazmaq üçün
-            sahə yoxdur və tətbiq bu kodu heç yerdə yoxlamır. Yəni kodu asmaq check-in-i işə salmır və onsuz da
-            check-in işləyir. Kodla yoxlama sonrakı versiyada gələcək.
-          </AppText>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.card}>
+          {code.k === 'ready' ? (
+            <>
+              <View style={styles.qrBox}>
+                <QRCode value={code.code} size={210} backgroundColor="#FFFFFF" color={palette.ink} />
+              </View>
+              <AppText variant="title3" style={{ marginTop: 18, letterSpacing: 2 }}>
+                {code.code}
+              </AppText>
+              <AppText variant="caption" color={palette.caption} center style={{ marginTop: 6, lineHeight: 17 }}>
+                QR oxunmasa, üzv bu kodu əl ilə də yaza bilər.
+              </AppText>
+            </>
+          ) : code.k === 'loading' ? (
+            <AppText variant="body" color={palette.textSecondary}>
+              Yüklənir…
+            </AppText>
+          ) : code.k === 'failed' ? (
+            <>
+              <Icon name="x" size={28} color={palette.red} />
+              <AppText variant="headline" center style={{ marginTop: 12 }}>
+                Kod yüklənmədi
+              </AppText>
+              <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, lineHeight: 21 }}>
+                Bu, kodun olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç — indi yeni kod yaratsan, divardakı köhnəsi işləməyi dayandırar.
+              </AppText>
+            </>
+          ) : (
+            <>
+              <Icon name="qr" size={30} color={palette.tertiary} />
+              <AppText variant="headline" center style={{ marginTop: 12 }}>
+                Hələ kod yoxdur
+              </AppText>
+              <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, lineHeight: 21 }}>
+                Kod yarat, çap et və resepsiyaya as. Üzvlər onu oxuyub check-in edəcək.
+              </AppText>
+            </>
+          )}
         </View>
 
-        <View style={{ gap: 10, marginTop: 22, alignSelf: 'stretch' }}>
-          <Button title="Ekranda böyük göstər" variant="primary" full onPress={() => setFull(true)} />
-          <Button title="Kodu paylaş" variant="secondary" full onPress={share} />
-        </View>
-      </View>
+        {code.k === 'none' ? (
+          <Button title={busy ? 'Yaradılır…' : 'Kod yarat'} full disabled={busy} onPress={() => void rotate()} style={{ marginTop: 18 }} />
+        ) : code.k === 'ready' ? (
+          <>
+            <Button
+              title="Kodu paylaş"
+              variant="secondary"
+              full
+              onPress={() =>
+                Share.share({
+                  message: `${gym.name} — SPOT check-in kodu: ${code.code}`,
+                }).catch(() => {})
+              }
+              style={{ marginTop: 18 }}
+            />
+            <PressableScale haptic={false} onPress={askRotate} disabled={busy} style={styles.rotate}>
+              <AppText variant="subhead" color={palette.red}>
+                {busy ? 'Yenilənir…' : 'Yeni kod yarat'}
+              </AppText>
+            </PressableScale>
+          </>
+        ) : null}
 
-      <Modal visible={full} animationType="fade" onRequestClose={() => setFull(false)}>
-        <View style={styles.fullBg}>
-          <AppText style={{ fontSize: 15, fontWeight: '600', color: 'rgba(255,255,255,0.6)' }}>SPOT ZAL KODU</AppText>
-          <AppText style={styles.fullCode}>{code}</AppText>
-          <AppText style={{ fontSize: 20, fontWeight: '600', color: palette.white, marginTop: 10 }}>{gym.name}</AppText>
-          <View style={{ position: 'absolute', bottom: 48, left: 24, right: 24 }}>
-            <Button title="Bağla" variant="secondary" full onPress={() => setFull(false)} />
-          </View>
+        <View style={styles.note}>
+          <Icon name="shield" size={17} color={palette.voltDeep} />
+          <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 19 }}>
+            Bu kodu yalnız sən görürsən. Onu kim oxuyursa, zalda olduğunu sübut edir — ona görə şəkildə paylaşma, divara as.
+          </AppText>
         </View>
-      </Modal>
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  body: { flex: 1, paddingHorizontal: spacing.screen, paddingTop: 12, alignItems: 'center' },
-  codeBox: { alignSelf: 'stretch', borderRadius: 22, backgroundColor: palette.white, paddingVertical: 32, alignItems: 'center' },
-  code: { fontSize: 42, fontWeight: '800', letterSpacing: 3, marginTop: 12 },
-  honestBox: { alignSelf: 'stretch', backgroundColor: palette.grouped, borderRadius: 16, padding: 14, marginTop: 16 },
-  fullBg: { flex: 1, backgroundColor: palette.inkText, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
-  fullCode: { fontSize: 64, fontWeight: '800', letterSpacing: 4, color: palette.volt, marginTop: 18, textAlign: 'center' },
+  content: { paddingHorizontal: spacing.screen, paddingBottom: 40 },
+  card: {
+    backgroundColor: palette.white,
+    borderRadius: 20,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginTop: 8,
+    minHeight: 260,
+    justifyContent: 'center',
+  },
+  qrBox: { padding: 14, backgroundColor: '#FFFFFF', borderRadius: 14 },
+  rotate: { alignSelf: 'center', paddingVertical: 16 },
+  note: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'flex-start',
+    backgroundColor: palette.grouped,
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 22,
+  },
 });
