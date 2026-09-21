@@ -189,7 +189,9 @@ const styles = StyleSheet.create({
   logoBox: { width: 86, height: 86, borderRadius: 24, backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.hairline, alignItems: 'center', justifyContent: 'center' },
   ring: { width: 38, height: 38, borderRadius: 19, borderWidth: 6, borderColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
   ringDot: { position: 'absolute', top: 9, left: 9, right: 9, bottom: 9, borderRadius: 10, backgroundColor: palette.volt },
-  title: { fontSize: 34, fontWeight: '700', color: palette.white, letterSpacing: -1 },
+  // Centred explicitly: short in Azerbaijani, the Russian title wraps to two
+  // lines, and a wrapped line fills the width and falls back to left-aligned.
+  title: { fontSize: 34, fontWeight: '700', color: palette.white, letterSpacing: -1, textAlign: 'center' },
   langRow: { flexDirection: 'row', justifyContent: 'center', paddingTop: 6 },
   subtitle: { fontSize: 16, lineHeight: 24, color: dark.textSecondary, textAlign: 'center', maxWidth: 290, marginTop: 12 },
   actions: { gap: 10, paddingBottom: 8 },

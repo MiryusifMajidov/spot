@@ -315,9 +315,22 @@ export default function Discover() {
                     ? t('Zallar yüklənir…')
                     : q || filterN > 0
                       ? t('Bu axtarışa uyğun zal tapılmadı. Filtri sıfırla və ya başqa söz yaz.')
-                      : t('Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, Profil → «Zal əlavə et» ilə özün əlavə edə bilərsən.')
+                      : guest
+                        ? /* A guest has no Profil tab — the other sentence
+                             sent them to a screen they cannot reach. */
+                          t('Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, daxil ol və zalını əlavə et.')
+                        : t('Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, Profil → «Zal əlavə et» ilə özün əlavə edə bilərsən.')
               }
-              action={{ label: t('Xəritədə bax'), onPress: () => router.push('/(tabs)/discover/map') }}
+              /* «Xəritədə bax» over an empty catalogue opened a map with nothing
+                 on it. Only offered when the list is empty because of a filter
+                 or a failed read, where the map can still say something. */
+              action={
+                q || filterN > 0 || gymsPhase === 'failed'
+                  ? { label: t('Xəritədə bax'), onPress: () => router.push('/(tabs)/discover/map') }
+                  : guest
+                    ? { label: t('Daxil ol'), onPress: () => router.push('/onboarding/welcome') }
+                    : undefined
+              }
             />
           ) : (
             <>

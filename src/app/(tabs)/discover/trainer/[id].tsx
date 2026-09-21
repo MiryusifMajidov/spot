@@ -111,7 +111,10 @@ export default function TrainerDetail() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.head}>
           <View style={{ opacity: trainer.verified ? 1 : 0.7 }}>
-            <Avatar name={trainer.name} size={84} />
+            {/* The photo the list row already shows. This page drew the initial
+                only, so a trainer who uploaded a picture — told it would appear on
+                their profile — saw it everywhere except on the profile. */}
+            <Avatar name={trainer.name} size={84} uri={trainer.photoUrl} />
           </View>
           <View style={styles.nameRow}>
             <AppText variant="title">{trainer.name}</AppText>

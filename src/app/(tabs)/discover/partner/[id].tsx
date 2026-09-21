@@ -39,10 +39,11 @@ function PartnerDetail() {
   const isBlocked = blocked.includes(id);
   const [p, setP] = useState<Partner | null>(null);
   const [phase, setPhase] = useState<Phase>('loading');
-  const [attempt, setAttempt] = useState(0);
-
-  useFocusEffect(
-    useCallback(() => {
+  /* One loader for focus AND for «Yenidən cəhd et». A retry counter listed in
+     the deps but never read in the body can be dropped by the compiler, which
+     leaves the button doing nothing (the same bug the gym panel and the trainer
+     inbox had). */
+  const load = useCallback(() => {
       if (!id) {
         setPhase('gone');
         return;
@@ -65,8 +66,8 @@ function PartnerDetail() {
       return () => {
         alive = false;
       };
-    }, [id, attempt])
-  );
+  }, [id]);
+  useFocusEffect(load);
 
   if (!p) {
     return (
@@ -100,7 +101,7 @@ function PartnerDetail() {
               {hasSupabaseConfig ? (
                 <Button
                   title={t('Yenidən cəhd et')}
-                  onPress={() => setAttempt((n) => n + 1)}
+                  onPress={() => void load()}
                   style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }}
                 />
               ) : null}

@@ -12,7 +12,7 @@ import { getPartner } from '@/lib/api';
 import { timeAgo } from '@/lib/format';
 import { useTrainers } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { useLang, useT } from '@/lib/useT';
+import { useT } from '@/lib/useT';
 import { seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { useDiscoverPrefs } from '@/store/discoverPrefs';
@@ -39,7 +39,6 @@ export default function Chats() {
   const t = useT();
   // The rows below are built inside a useMemo, so the memo has to know the
   // language too — otherwise its cached Azerbaijani survives the switch.
-  const lang = useLang();
   const router = useRouter();
   const matches = useDb((s) => s.matches);
   const threads = useDb((s) => s.threads);
@@ -159,7 +158,7 @@ export default function Chats() {
     const fromServer = new Set(serverRows.map((r) => r.id));
     return [...serverRows, ...partnerRows.filter((r) => !fromServer.has(r.id)), ...otherRows.filter((r) => !fromServer.has(r.id))]
       .sort((a, b) => b.at.localeCompare(a.at));
-  }, [matches, threads, lastRead, trainers, blocked, names, serverThreads, lang, t]);
+  }, [matches, threads, lastRead, trainers, blocked, names, serverThreads, t]);
 
   return (
     <Screen>

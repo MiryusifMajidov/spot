@@ -17,7 +17,7 @@ import { getGymsNear } from '@/lib/api';
 import { tapFeedback } from '@/lib/feedback';
 import { useGyms } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { useLang, useT } from '@/lib/useT';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { applyGymFilter, useDiscoverPrefs } from '@/store/discoverPrefs';
 import { palette, radius, shadow, spacing } from '@/theme';
@@ -44,7 +44,6 @@ export default function GymMap() {
   const t = useT();
   /* The marker list is memoized, and its text is translated: without the active
      language in the deps the pins would keep the language they were built in. */
-  const lang = useLang();
   const gymFilter = useDiscoverPrefs((s) => s.gymFilter);
   const homeGymId = useAppStore((s) => s.profile.homeGymId);
   const fallback = useGyms();
@@ -106,7 +105,7 @@ export default function GymMap() {
         subtitle: [g.district, t('{price} ₼/ay', { price: g.priceMonth })].filter(Boolean).join(' · '),
         active: g.id === homeGymId,
       })),
-    [plottable, homeGymId, t, lang]
+    [plottable, homeGymId, t]
   );
 
   const selected = selectedId ? plottable.find((g) => g.id === selectedId) ?? null : null;
