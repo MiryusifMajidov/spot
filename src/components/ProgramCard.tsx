@@ -31,13 +31,14 @@ function PriceOrFree({ program }: { program: Program }) {
  *  "video" block these cards used to open with was a placeholder for content
  *  that could never arrive — it just told every reader a video was missing. */
 export function ProgramCard({ program, variant = 'row', onPress }: { program: Program; variant?: 'featured' | 'row'; onPress?: () => void }) {
+  const t = useT();
   if (variant === 'featured') {
     return (
       <PressableScale onPress={onPress} activeScale={0.98} style={[styles.card, shadow.card as object]}>
         <View style={{ padding: 16 }}>
           <View style={styles.featuredTop}>
             <AppText variant="title3" style={{ flex: 1 }}>
-              {program.title}
+              {t(program.title)}
             </AppText>
             <PriceOrFree program={program} />
           </View>
@@ -55,7 +56,7 @@ export function ProgramCard({ program, variant = 'row', onPress }: { program: Pr
       <View style={{ flex: 1 }}>
         <View style={styles.rowTop}>
           <AppText variant="headline" style={{ flex: 1 }}>
-            {program.title}
+            {t(program.title)}
           </AppText>
           {program.paid && program.price ? (
             <View style={[styles.cornerBadge, { backgroundColor: palette.ink, position: 'relative', top: 0, left: 0 }]}>

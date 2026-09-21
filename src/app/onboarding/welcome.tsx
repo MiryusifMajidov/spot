@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { LanguagePicker } from '@/components/LanguagePicker';
+import { Trans } from '@/components/Trans';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { AuthSetupError, signInWithApple, signInWithGoogle, SOCIAL_FIRST, useSocialProviders } from '@/lib/auth';
@@ -151,21 +152,29 @@ export default function Welcome() {
           {/* Both were plain words over documents that did not exist, so the
               consent was consent to nothing — and both app stores require a
               reachable privacy policy. They are links now. */}
-          <AppText style={styles.terms}>
-            Davam etməklə{' '}
-            <AppText
-              style={styles.termsLink}
-              onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'terms' } })}>
-              İstifadə şərtləri
-            </AppText>{' '}
-            və{' '}
-            <AppText
-              style={styles.termsLink}
-              onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'privacy' } })}>
-              Məxfilik siyasəti
-            </AppText>{' '}
-            ilə razılaşırsan. SPOT 16 yaşdan yuxarı istifadəçilər üçündür.
-          </AppText>
+          {/* One sentence, translated whole — see components/Trans.tsx. It was
+              five fragments around two links, which cannot be translated: the
+              order of verb and objects differs in Russian and English. */}
+          <Trans
+            style={styles.terms}
+            text={t('Davam etməklə {terms} və {privacy} ilə razılaşırsan. SPOT 16 yaşdan yuxarı istifadəçilər üçündür.')}
+            parts={{
+              terms: (
+                <AppText
+                  style={styles.termsLink}
+                  onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'terms' } })}>
+                  {t('İstifadə şərtləri')}
+                </AppText>
+              ),
+              privacy: (
+                <AppText
+                  style={styles.termsLink}
+                  onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'privacy' } })}>
+                  {t('Məxfilik siyasəti')}
+                </AppText>
+              ),
+            }}
+          />
         </View>
       </SafeAreaView>
     </View>

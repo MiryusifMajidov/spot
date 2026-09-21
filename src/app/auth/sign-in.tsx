@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
+import { Trans } from '@/components/Trans';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
@@ -200,10 +201,15 @@ export default function SignIn() {
                 would be the app describing something that is not happening. */}
             <View style={styles.hero}>
               <Icon name="msg" size={20} color={palette.voltDeep} />
-              <AppText variant="body" color={palette.text3} style={{ lineHeight: 22, flex: 1 }}>
-                <AppText style={{ fontWeight: '700' }}>{sent.to}</AppText> ünvanına link göndərdik. Poçtunu aç və
-                linkə toxun — tətbiq özü açılacaq və hesabın qorunacaq.
-              </AppText>
+              {/* Translated whole, with the address as a bold placeholder — in
+                  Russian and English it does not come first in the sentence.
+                  «hesabın qorunacaq» is also gone: this screen is where a NEW
+                  account starts too, and there is nothing to «protect» yet. */}
+              <Trans
+                style={{ lineHeight: 22, flex: 1, color: palette.text3 }}
+                text={t('{email} ünvanına link göndərdik. Poçtunu aç və linkə toxun — tətbiq özü açılacaq.')}
+                parts={{ email: <AppText style={{ fontWeight: '700' }}>{sent.to}</AppText> }}
+              />
             </View>
             <AppText variant="overline" color={palette.caption} style={styles.label}>
               {t('VƏ YA MƏKTUBDAKI KODU YAZ')}
