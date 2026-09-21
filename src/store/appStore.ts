@@ -8,7 +8,7 @@ import { isPlaceholderName } from '@/lib/authorName';
 import { applyLang, deviceLang, Lang } from '@/lib/i18n';
 import { getMyGymId } from '@/lib/roles';
 import { invalidateFocusCache } from '@/lib/focusFetch';
-import { syncLocalPrograms } from '@/lib/saveProgram';
+import { pullMyPrograms, syncLocalPrograms } from '@/lib/saveProgram';
 import { useDb } from '@/store/db';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { loadExerciseVideos, syncSocial, syncTrainingHistory } from '@/lib/trainingSync';
@@ -345,9 +345,14 @@ export const useAppStore = create<AppState>()(
                only; this publishes it once the account is known to be a real,
                registered one. Not awaited — nothing on screen waits for it. */
             if (registered) {
-              void syncLocalPrograms().then(({ sent }) => {
-                if (sent) invalidateFocusCache('programs');
-              });
+              // Down first, then up: a program that exists on the server must be
+              // on this phone before the push decides what is «device-only».
+              void pullMyPrograms()
+                .then(() => syncLocalPrograms())
+                .then(({ sent }) => {
+                  if (sent) invalidateFocusCache('programs');
+                })
+                .catch(() => {});
             }
             /* Demote only when NEITHER side has an @ad. A device that holds one the
                server lacks is somebody who registered offline and is still waiting

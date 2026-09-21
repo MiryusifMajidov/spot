@@ -21,6 +21,7 @@
 import { Program } from '@/data/types';
 import { getMyProfile } from '@/lib/api';
 import { estimateDuration } from '@/lib/duration';
+import { mapProgram } from '@/lib/programMap';
 import { t } from '@/lib/i18n';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { exerciseLibrary, useDb } from '@/store/db';
@@ -269,6 +270,35 @@ export async function syncLocalPrograms(): Promise<{ sent: number; failed: numbe
     }
   }
   return { sent, failed };
+}
+
+/**
+ * Bring down the programs this account wrote, onto a phone that does not have
+ * them — a new device, a reinstall, «Məlumatlarımı sil».
+ *
+ * `myPrograms` is device storage, and it is what «Proqramlarım», the trainer's
+ * program list, the student-assignment picker and the «…» edit menu all read.
+ * So on a second phone a trainer saw «Hələ proqram yaratmamısan» while every
+ * program they had written sat on the server under their name, visible to
+ * everyone else in the library — and with no edit menu, they could neither fix
+ * nor delete their own work from anywhere. Only ids this phone lacks are added:
+ * a local copy may hold an edit that has not gone up yet, and the server must
+ * not overwrite it.
+ */
+export async function pullMyPrograms(): Promise<number> {
+  if (!hasSupabaseConfig) return 0;
+  const me = await getMyProfile();
+  if (!me?.id) return 0;
+  const { data, error } = await supabase
+    .from('programs')
+    .select('*')
+    .eq('owner_id', me.id)
+    .is('hidden_at', null);
+  if (error || !data?.length) return 0;
+  const have = new Set(useDb.getState().myPrograms.map((p) => p.id));
+  const fresh = (data as unknown[]).map(mapProgram).filter((p) => !have.has(p.id));
+  for (const p of fresh) useDb.getState().createProgram(p);
+  return fresh.length;
 }
 
 /** A local `Program['days']` in the shape schema76 stores. The inverse of

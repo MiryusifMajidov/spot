@@ -51,10 +51,20 @@ export default function StudentDetail() {
   // the one field the lookup uses. Written as `student?.programTitle` inline it
   // read as a dependency on the whole student row, which is a different — and
   // more often changing — thing than the title itself.
+  /* By id first. Matching by title alone lost the assignment whenever the
+     program had been renamed, or this phone had not written it (a new device,
+     a reinstall): nothing matched, `chosen` was null, and «Proqramı təyin et»
+     — pressed only to update the note — sent program_id null. The server
+     kept the title and dropped the link, the green toast said it had worked,
+     and the student's program card stopped opening. */
   const programTitle = student?.programTitle;
+  const assignedId = student?.programId ?? null;
   const matched = useMemo(
-    () => (programTitle ? myPrograms.find((p) => p.title === programTitle) ?? null : null),
-    [myPrograms, programTitle]
+    () =>
+      (assignedId ? myPrograms.find((p) => p.id === assignedId) : undefined) ??
+      (programTitle ? myPrograms.find((p) => p.title === programTitle) : undefined) ??
+      null,
+    [myPrograms, programTitle, assignedId]
   );
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -82,7 +92,14 @@ export default function StudentDetail() {
     if (!student || !title || saving) return;
     setSaving(true);
     try {
-      await assignStudentProgram({ studentId: student.profileId, programId: chosen?.id ?? null, title, note: noteValue.trim() });
+      // Keep the link the server already has when nothing on this phone was
+      // chosen — updating a note must never unassign the program.
+      await assignStudentProgram({
+        studentId: student.profileId,
+        programId: chosen?.id ?? assignedId,
+        title,
+        note: noteValue.trim(),
+      });
       // The student really does receive this: their Məşq səhifəsi reads
       // student_programs on every focus. Say what happened, not less.
       toast(t('{name} üçün proqram təyin edildi — «Məşq» səhifəsində ona görünür', { name }));

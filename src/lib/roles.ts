@@ -36,6 +36,9 @@ export interface StudentRow {
   status: TrainerRequestRow['status'];
   since: string;
   programTitle: string | null;
+  /** The assigned program's id on the server. Matching by TITLE broke on a
+   *  rename and on any phone that had not written the program itself. */
+  programId: string | null;
   programNote: string | null;
 }
 
@@ -168,7 +171,7 @@ export async function getMyStudents(): Promise<{ pending: StudentRow[]; active: 
   const ids = rows.map((r) => r.from_profile);
   const [{ data: profs, error: pErr }, { data: progs, error: progErr }] = await Promise.all([
     supabase.from('profiles').select('id,name,age,level,goals,home_gym_id').in('id', ids),
-    supabase.from('student_programs').select('student_id,title,note').eq('trainer_id', trainerId).in('student_id', ids),
+    supabase.from('student_programs').select('student_id,title,note,program_id').eq('trainer_id', trainerId).in('student_id', ids),
   ]);
   // Without these we would draw every student as «İstifadəçi» with no program —
   // a made-up roster. Fail loudly instead.
@@ -176,7 +179,7 @@ export async function getMyStudents(): Promise<{ pending: StudentRow[]; active: 
   if (progErr) throw progErr;
 
   type P = { id: string; name: string | null; age: number | null; level: string | null; goals: string[] | null; home_gym_id: string | null };
-  type SP = { student_id: string; title: string | null; note: string | null };
+  type SP = { student_id: string; title: string | null; note: string | null; program_id: string | null };
   const pMap = new Map(((profs ?? []) as P[]).map((p) => [p.id, p]));
   const progMap = new Map(((progs ?? []) as SP[]).map((p) => [p.student_id, p]));
 
@@ -196,6 +199,7 @@ export async function getMyStudents(): Promise<{ pending: StudentRow[]; active: 
       status: r.status,
       since: r.created_at,
       programTitle: prog?.title ?? null,
+      programId: prog?.program_id ?? null,
       programNote: prog?.note ?? null,
     };
   };
