@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { repsText } from '@/lib/duration';
 import { useT } from '@/lib/useT';
 import { exerciseById, LibExercise } from '@/store/db';
 import { dark, palette } from '@/theme';
@@ -198,7 +199,7 @@ export default function ExerciseVideo() {
         <AppText style={styles.title}>{t(ex.name)}</AppText>
         <View style={styles.authorRow}>
           <AppText style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12.5 }}>
-            {t(ex.muscle)} · {t(ex.equipment)} · {t('{sets} set × {reps}', { sets: ex.defaultSets, reps: t(ex.reps), count: ex.defaultSets })}
+            {t(ex.muscle)} · {t(ex.equipment)} · {t('{sets} set × {reps}', { sets: ex.defaultSets, reps: repsText(ex.reps, t), count: ex.defaultSets })}
           </AppText>
           {ex.isCompound ? (
             <View style={styles.compoundTag}>

@@ -18,7 +18,7 @@ import {
   sessionExercises,
   useDb,
 } from '@/store/db';
-import { estimateDuration } from '@/lib/duration';
+import { estimateDuration, repsText } from '@/lib/duration';
 import { useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
 
@@ -184,7 +184,7 @@ function ExerciseRow({ ex, last, onPress }: { ex: LibExercise; last: { weight: n
               exercise the author typed themselves has no muscle — the library
               is where that comes from — and the fixed version rendered
               «3 set × 45 san · » with a dangling separator. */}
-          {[t('{sets} set × {reps}', { sets: ex.defaultSets, reps: t(ex.reps), count: ex.defaultSets }).trim(), t(ex.muscle)].filter(Boolean).join(' · ')}
+          {[t('{sets} set × {reps}', { sets: ex.defaultSets, reps: repsText(ex.reps, t), count: ex.defaultSets }).trim(), t(ex.muscle)].filter(Boolean).join(' · ')}
         </AppText>
         {last ? (
           <View style={styles.lastRow}>

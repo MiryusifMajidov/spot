@@ -15,7 +15,7 @@ import { AppText } from '@/components/ui/AppText';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { logPR, logWorkout as logWorkoutApi } from '@/lib/api';
-import { repRange } from '@/lib/duration';
+import { repRange, repsText } from '@/lib/duration';
 import { useAuthGate } from '@/lib/authGate';
 import { getMyAssignedProgram } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
@@ -127,7 +127,7 @@ export default function Session() {
         hint = t('{note}. Məşqçin var — SPOT çəkini özü dəyişmir, təklifi sən qəbul edirsən.', { note: suggestion.note });
       }
       if (!kg && bw && bodyweight) kg = String(bodyweight);
-      if (!hint) hint = timed ? t('Hədəf {reps}', { reps: t(ex.reps) }) : bw ? t('Öz çəkinlə işlə — əlavə ağırlıq varsa kq-a yaz') : t('Hədəf {reps} təkrar', { reps: t(ex.reps) });
+      if (!hint) hint = timed ? t('Hədəf {reps}', { reps: repsText(ex.reps, t) }) : bw ? t('Öz çəkinlə işlə — əlavə ağırlıq varsa kq-a yaz') : t('Hədəf {reps} təkrar', { reps: repsText(ex.reps, t) });
       return {
         ex,
         prev: last ? `${last.weight}×${last.reps}` : '—',
@@ -522,7 +522,7 @@ export default function Session() {
             <View style={{ flex: 1 }}>
               <AppText style={{ color: palette.white, fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>{t(current.ex.name)}</AppText>
               <AppText style={{ color: dark.textSecondary, fontSize: 13.5, marginTop: 4 }}>
-                {[t('{n} set', { n: current.sets.length, count: current.sets.length }), t(current.ex.reps), t(current.ex.muscle)].filter(Boolean).join(' · ')}
+                {[t('{n} set', { n: current.sets.length, count: current.sets.length }), repsText(current.ex.reps, t), t(current.ex.muscle)].filter(Boolean).join(' · ')}
               </AppText>
             </View>
           </View>

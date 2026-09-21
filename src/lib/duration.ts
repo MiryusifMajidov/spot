@@ -58,3 +58,23 @@ export function repRange(reps: string | null | undefined, fallback = 8): { low: 
   if (!nums.length) return { low: fallback, high: fallback };
   return { low: nums[0], high: nums[nums.length - 1] };
 }
+
+/**
+ * A rep target as the reader should see it.
+ *
+ * The STORED form of a hold is «45 san» — Azerbaijani, on purpose: the session
+ * logger recognises a hold by that suffix, and it is program data, not UI. But
+ * passing it through t() finds nothing (every number is a different key), so a
+ * Russian reader saw «45 san» where «45 сек» belonged. A hold is re-rendered
+ * from its number; a rep range («8-10», «5–6») has no words and is shown as is.
+ * `tr` is the component's translator, so the label follows a language switch.
+ */
+export function repsText(reps: string | null | undefined, tr: (s: string, v?: Record<string, string | number>) => string): string {
+  const r = (reps ?? '').trim();
+  if (!r) return '';
+  if (isTimedTarget(r)) {
+    const n = r.match(/\d+/)?.[0];
+    return n ? tr('{n} san', { n }) : r;
+  }
+  return r;
+}
