@@ -1624,6 +1624,15 @@
   "placeholders": []
  },
  {
+  "key": "Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, daxil ol və zalını əlavə et.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Hələ müəllim yoxdur. Zalını seç — müəllimlər orada görünəcək.",
   "counted": false,
   "files": [

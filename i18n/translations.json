@@ -2631,6 +2631,11 @@
   "en": "No gym has registered on SPOT yet. If you own a gym, you can add it yourself via Profile → \"Add gym\"."
  },
  {
+  "key": "Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, daxil ol və zalını əlavə et.",
+  "ru": "В SPOT пока не зарегистрирован ни один зал. Если ты владелец зала — войди и добавь его.",
+  "en": "No gyms are registered on SPOT yet. If you own a gym, sign in and add it."
+ },
+ {
   "key": "Hələ kod yoxdur",
   "ru": "Кода пока нет",
   "en": "No code yet"

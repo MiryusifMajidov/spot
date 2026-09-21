@@ -83,6 +83,7 @@ export const discover: Dict = {
   'Həftədə ən çox 3 təklif — az, ona görə dəyərli. Alqoritm zal, saat, səviyyə və məqsədə görə seçir; siyahı bazar ertəsi yenilənir.': 'Не больше 3 предложений в неделю — их мало, поэтому они ценны. Алгоритм подбирает по залу, времени, уровню и цели; список обновляется по понедельникам.',
   'Həftəlik təkliflər': 'Предложения недели',
   'Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, Profil → «Zal əlavə et» ilə özün əlavə edə bilərsən.': 'В SPOT пока не зарегистрирован ни один зал. Если ты владелец зала, можешь добавить его через Профиль → «Добавить зал».',
+  'Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, daxil ol və zalını əlavə et.': 'В SPOT пока не зарегистрирован ни один зал. Если ты владелец зала — войди и добавь его.',
   'Hələ müəllim yoxdur. Zalını seç — müəllimlər orada görünəcək.': 'Тренеров пока нет. Выбери свой зал — тренеры появятся там.',
   'Hələ rəy yoxdur — ilk rəyi sən yaz.': 'Отзывов пока нет — напиши первый.',
   'Hələ rəy yoxdur': 'Отзывов пока нет',
