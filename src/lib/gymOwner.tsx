@@ -51,6 +51,9 @@ export interface OwnedGym {
   reviewCount: number;
   verified: boolean;
   claimStatus: ClaimStatus;
+  /** Published in Kəşf. A gym created in the app starts unlisted (schema41)
+   *  until an admin publishes it or its VÖEN claim is approved. */
+  listed: boolean;
   schedule: ScheduleItem[];
   allowDayPass: boolean;
   showMembers: boolean;
@@ -71,6 +74,8 @@ function mapOwnedGym(r: Record<string, unknown>): OwnedGym {
     reviewCount: Number(r.review_count ?? 0),
     verified: Boolean(r.verified),
     claimStatus: ((r.claim_status as ClaimStatus) ?? 'unclaimed') as ClaimStatus,
+    // Missing on a row read before schema41 means it was never gated: listed.
+    listed: r.listed == null ? true : Boolean(r.listed),
     schedule: sched.filter((s) => s && typeof s.name === 'string'),
     allowDayPass: r.allow_day_pass == null ? true : Boolean(r.allow_day_pass),
     showMembers: r.show_members == null ? true : Boolean(r.show_members),

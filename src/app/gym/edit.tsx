@@ -499,7 +499,9 @@ export default function GymEdit() {
             {t('ZALIN YERİ')}
           </AppText>
           <AppText style={[styles.hint, { marginBottom: 12 }]}>
-            {t('Pini zalın üstünə qoymaq üçün xəritəyə toxun — pini basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal müştəri xəritəsində məhz bu nöqtədə görünür.')}
+            {gym.listed
+              ? t('Pini zalın üstünə qoymaq üçün xəritəyə toxun — pini basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal müştəri xəritəsində məhz bu nöqtədə görünür.')
+              : t('Pini zalın üstünə qoymaq üçün xəritəyə toxun — pini basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal Kəşfdə dərc olunanda müştəri xəritəsində bu nöqtədə görünəcək.')}
           </AppText>
           {mediaReady ? (
             <SpotMap

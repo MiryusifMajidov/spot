@@ -222,6 +222,23 @@ export default function GymPanel() {
           </PressableScale>
         </View>
 
+        {/* The first thing an unpublished gym's owner needs to know. A gym made
+            in the app starts unlisted (schema41) and nothing in this panel said
+            so: the owner filled the profile, dropped the pin, read «Zal profili
+            yeniləndi», and waited for members who could not find the gym at all. */}
+        {!gym.listed ? (
+          <PressableScale activeScale={0.98} onPress={() => router.push('/gym/claim')} style={styles.unlisted}>
+            <Icon name="lock" size={18} color="#B25E00" />
+            <View style={{ flex: 1 }}>
+              <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Zal hələ Kəşfdə görünmür')}</AppText>
+              <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 3 }}>
+                {t('Müştərilər zalı axtarışda və xəritədə tapa bilmir. Moderator yoxlayandan və ya sahiblik (VÖEN) təsdiqlənəndən sonra dərc olunur.')}
+              </AppText>
+            </View>
+            <Icon name="chevR" size={16} color={palette.tertiary} />
+          </PressableScale>
+        ) : null}
+
         <View style={styles.statRow}>
           <View style={[styles.statCard, { backgroundColor: palette.ink }]}>
             <AppText style={styles.statCapVolt}>{t('İNDİ ZALDA')}</AppText>
@@ -487,6 +504,15 @@ function QuickCard({ icon, title, sub, onPress }: { icon: IconName; title: strin
 }
 
 const styles = StyleSheet.create({
+  unlisted: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(255,149,0,0.12)',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+  },
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 },
   coverWrap: { borderRadius: 18, overflow: 'hidden', backgroundColor: palette.grouped, marginBottom: 14 },
   cover: { width: '100%', height: 148 },
