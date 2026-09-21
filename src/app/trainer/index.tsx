@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -39,20 +39,27 @@ export default function TrainerPanel() {
      visible coach they are hidden. */
   const [listed, setListed] = useState<boolean | null>(null);
   const [listedBusy, setListedBusy] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    void (async () => {
-      try {
-        const r = await getMyListing();
-        if (alive) setListed(r ? r.listed : null);
-      } catch {
-        if (alive) setListed(null);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
+  /* Re-read on every focus, not once. Read once, a failed first read left the
+     switch greyed out as «Vəziyyət oxunmadı» until the app was killed — the
+     trainer could not make themselves findable — and a trainer who hid, then
+     saved their trainer profile (which republishes it), kept seeing «gizlidir»
+     while students could already find and request them. */
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      void (async () => {
+        try {
+          const r = await getMyListing();
+          if (alive) setListed(r ? r.listed : null);
+        } catch {
+          if (alive) setListed(null);
+        }
+      })();
+      return () => {
+        alive = false;
+      };
+    }, [])
+  );
   /* The latch is queued, not written straight from the effect body: it records
      something that has already happened rather than anything this pass renders
      from, and writing it here would put a second render pass on top of the one

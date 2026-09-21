@@ -38,6 +38,11 @@ export default function TrainerChat() {
   const [threads, setThreads] = useState<ThreadSummary[] | null>(null);
   const [threadsFailed, setThreadsFailed] = useState(false);
 
+  /* Bumped by the retry below. The thread fetch used to depend on nothing, so
+     it ran only on focus — and «Yenidən cəhd et» under «Mesajlar yüklənmədi»
+     called the STUDENT list's reload, which never touched the threads: the
+     button did nothing, however many times it was pressed. */
+  const [threadsTick, setThreadsTick] = useState(0);
   useFocusEffect(
     useCallback(() => {
       if (!hasSupabaseConfig) return;
@@ -50,7 +55,7 @@ export default function TrainerChat() {
       return () => {
         alive = false;
       };
-    }, [])
+    }, [threadsTick])
   );
 
   const rows = useMemo(() => {
@@ -85,7 +90,7 @@ export default function TrainerChat() {
           <Notice
             title={t('Mesajlar yüklənmədi')}
             body={t('Şagirdlərin siyahısı gəldi, amma yazışmalar gəlmədi — bu, mesaj olmadığı demək deyil.')}
-            action={{ label: t('Yenidən cəhd et'), onPress: reload }}
+            action={{ label: t('Yenidən cəhd et'), onPress: () => setThreadsTick((n) => n + 1) }}
           />
         ) : rows.length === 0 ? (
           <Notice

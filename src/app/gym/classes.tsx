@@ -111,7 +111,7 @@ export default function GymClasses() {
             exists, the screen states what is actually true today. */}
         <AppText variant="body" color={palette.textSecondary} style={{ marginBottom: 16, lineHeight: 21 }}>
           {t(
-            'Zalının dərs cədvəlini özün yazırsan və saxlanılır, amma hazırda yalnız bu paneldə görünür — müştərinin gördüyü zal səhifəsində cədvəl bölməsi hələ yoxdur. Üzvlər tətbiq daxilində dərsə də yazıla bilmir: yer sayı və növbə göstərmirik, çünki belə bir sistem yoxdur.'
+            'Zalının dərs cədvəlini özün yazırsan — yazdığın sətirlər zal səhifəsində, «Haqqında» bölməsində müştərilərə görünür. Üzvlər tətbiq daxilində dərsə yazıla bilmir: yer sayı və növbə göstərmirik, çünki belə bir sistem yoxdur.'
           )}
         </AppText>
 
