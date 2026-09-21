@@ -26,6 +26,7 @@ import { applyPartnerFilter, partnerFilterCount, useDiscoverPrefs, womenOnlyAllo
 import { toast } from '@/store/ui';
 import { palette } from '@/theme';
 import { nameWithAge } from '@/lib/authorName';
+import { memberOnly } from '@/lib/memberOnly';
 
 const { width } = Dimensions.get('window');
 const THRESHOLD = width * 0.28;
@@ -95,7 +96,7 @@ const usePassedCards = create<PassedCards>()(
   )
 );
 
-export default function Cards() {
+function Cards() {
   const router = useRouter();
   const t = useT();
   // Null until the user picks a gym — no catalogue gym is substituted, so the deck
@@ -483,3 +484,6 @@ const styles = StyleSheet.create({
   ctrlSm: { width: 58, height: 58 },
   ctrlLg: { width: 72, height: 72, backgroundColor: palette.ink },
 });
+
+// Real people on this screen: not reachable as a guest by any route.
+export default memberOnly(Cards);

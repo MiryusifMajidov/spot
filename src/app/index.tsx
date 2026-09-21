@@ -42,6 +42,12 @@ export default function Index() {
     return <Redirect href="/onboarding/welcome" />;
   }
 
+  /* A guest goes to the catalogue, whatever mode the device last remembered.
+     «Qeydiyyatı yenidən keç» does not sign out, so a gym owner who then chose
+     «Qonaq kimi bax» kept `activeMode: 'gym_admin'` and cold-started into the
+     owner panel with its member list — while every other screen treated them
+     as a guest. Guest mode is one tab; the panels are for accounts. */
+  if (guest) return <Redirect href="/(tabs)/discover" />;
   if (activeMode === 'trainer') return <Redirect href="/trainer" />;
   if (activeMode === 'gym_admin') return <Redirect href="/gym" />;
   return <Redirect href="/(tabs)/discover" />;

@@ -18,8 +18,9 @@ import { useAppStore } from '@/store/appStore';
 import { applyPartnerFilter, isoWeekKey, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
 import { nameWithAge } from '@/lib/authorName';
+import { memberOnly } from '@/lib/memberOnly';
 
-export default function Weekly() {
+function Weekly() {
   const router = useRouter();
   const t = useT();
   // Null until the user picks a gym — the weekly three are drawn from their own
@@ -205,3 +206,6 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
   emptyBtn: { marginTop: 16, height: 44, paddingHorizontal: 22, borderRadius: 13, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
 });
+
+// Real people on this screen: not reachable as a guest by any route.
+export default memberOnly(Weekly);

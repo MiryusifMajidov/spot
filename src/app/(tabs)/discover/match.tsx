@@ -23,6 +23,7 @@ import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 import { nameWithAge } from '@/lib/authorName';
+import { memberOnly } from '@/lib/memberOnly';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -86,7 +87,7 @@ function buildSlots(myDays: number[], partnerDays: number[], hour: number, n = 3
   return { slots: out, basis };
 }
 
-export default function Match() {
+function Match() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const router = useRouter();
   const t = useT();
@@ -435,3 +436,6 @@ const styles = StyleSheet.create({
   timeOn: { backgroundColor: palette.ink, borderColor: palette.ink },
   footer: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
 });
+
+// Real people on this screen: not reachable as a guest by any route.
+export default memberOnly(Match);

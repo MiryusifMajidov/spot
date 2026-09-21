@@ -20,13 +20,14 @@ import { seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
 import { nameWithAge } from '@/lib/authorName';
+import { memberOnly } from '@/lib/memberOnly';
 
 /** Four different things used to render as the same endless spinner: still loading,
  *  no such profile, a profile whose owner turned «Zalda göründüyümü göstər» off, and
  *  a failed request. They are three different answers and now read differently. */
 type Phase = 'loading' | 'ok' | 'gone' | 'fail';
 
-export default function PartnerDetail() {
+function PartnerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const t = useT();
@@ -276,3 +277,6 @@ const styles = StyleSheet.create({
   softTag: { backgroundColor: palette.grouped, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
   footer: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
 });
+
+// Real people on this screen: not reachable as a guest by any route.
+export default memberOnly(PartnerDetail);

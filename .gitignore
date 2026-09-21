@@ -63,3 +63,4 @@ google-services.json
 # a release APK is ~70 MB and a new one is produced on every build.
 /apk/*.apk
 .i18n-test/
+__pycache__/
