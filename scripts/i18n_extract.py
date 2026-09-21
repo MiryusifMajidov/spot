@@ -72,9 +72,12 @@ def main():
             if re.search(r"\bcount\b", vars_):
                 e["counted"] = True
 
-    for f in DATA_FILES:
-        if not os.path.exists(f):
-            continue
+    # Every Azerbaijani literal in EVERY source file, not only the data files.
+    # Screens render module constants through t(CONST) — status maps, amenity
+    # chips, compatibility reasons, badge labels — and a scan of t('…') calls
+    # cannot see those keys. Over-including is harmless (an entry nothing looks
+    # up); under-including is an untranslated screen.
+    for f in [x.replace(os.sep, "/") for x in walk()]:
         body = strip_comments(io.open(f, encoding="utf-8").read())
         for m in LIT.finditer(body):
             raw = m.group(1) if m.group(1) is not None else m.group(2)
@@ -83,7 +86,8 @@ def main():
             k = unescape(raw).strip()
             if not k:
                 continue
-            e = keys.setdefault(k, {"key": k, "counted": False, "files": set(), "kind": "data"})
+            kind = "data" if f in DATA_FILES else "ui"
+            e = keys.setdefault(k, {"key": k, "counted": False, "files": set(), "kind": kind})
             e["files"].add(f)
 
     out = []

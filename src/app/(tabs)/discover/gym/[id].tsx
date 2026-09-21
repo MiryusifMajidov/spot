@@ -516,11 +516,24 @@ export default function GymDetail() {
                   </AppText>
                 </View>
               </View>
+              {/* A price the owner never entered is not a price. `priceMonth` is 0
+                  when the field was left empty, and the page printed «0 ₼ / aylıq»
+                  in title type — advertising a free membership nobody offered —
+                  while the list card for the same gym correctly said «Qiymət
+                  göstərilməyib». Same rule here. */}
               <View style={{ alignItems: 'flex-end' }}>
-                <AppText variant="title2">{gym.priceMonth} ₼</AppText>
-                <AppText variant="caption" color={palette.caption}>
-                  {t('aylıq · məlumat')}
-                </AppText>
+                {gym.priceMonth > 0 ? (
+                  <>
+                    <AppText variant="title2">{gym.priceMonth} ₼</AppText>
+                    <AppText variant="caption" color={palette.caption}>
+                      {t('aylıq · məlumat')}
+                    </AppText>
+                  </>
+                ) : (
+                  <AppText variant="caption" color={palette.caption}>
+                    {t('Qiymət göstərilməyib')}
+                  </AppText>
+                )}
               </View>
             </View>
 
@@ -537,9 +550,13 @@ export default function GymDetail() {
                 onPress={() => gate(() => router.push('/(tabs)/checkin'), t('Check-in etmək üçün'))}
                 style={{ flex: 1, height: 46 }}
               />
-              <Button
-                title={
-                  buyingPass
+              {/* No day-pass price means the gym does not offer day passes — not
+                  that one is free. The button read «1 günlük · 0 ₼» and, tapped,
+                  issued a pass saying «0 ₼ zalın özünə ödənilir». */}
+              {gym.dayPass > 0 || dayPass ? (
+                <Button
+                  title={
+                    buyingPass
                     ? /* «Alınır…» put a purchase verb straight onto a price tag on the
                          one screen where SPOT takes no money. The RPC only issues a
                          code — the same words the success toast uses. */
@@ -551,10 +568,11 @@ export default function GymDetail() {
                         : t('1 günlük · {price} ₼', { price: gym.dayPass })
                 }
                 variant="secondary"
-                disabled={buyingPass || !!dayPass || passReadFailed}
-                onPress={getDayPass}
-                style={{ flex: 1, height: 46 }}
-              />
+                  disabled={buyingPass || !!dayPass || passReadFailed}
+                  onPress={getDayPass}
+                  style={{ flex: 1, height: 46 }}
+                />
+              ) : null}
             </View>
             <AppText variant="caption" color={palette.caption} style={{ marginTop: 8, lineHeight: 17 }}>
               {t('Üzvlük zalın özündə rəsmiləşir — SPOT ödəniş qəbul etmir, qiymətlər yalnız məlumat üçündür.')}
