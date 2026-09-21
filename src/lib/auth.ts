@@ -29,6 +29,7 @@
  * rather than failing with a raw provider error.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useState } from 'react';
 import { isAuthSessionMissingError } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
@@ -77,6 +78,33 @@ export async function enabledProviders(): Promise<Record<string, boolean> | null
   } catch {
     return null;
   }
+}
+
+/**
+ * Which sign-in providers to DRAW. The server is asked once per session.
+ *
+ * «Apple ilə davam et» used to be drawn unconditionally. With Apple off on the
+ * project, it was one of three advertised ways in and every tap on it ended in
+ * «Apple girişi hələ açılmayıb» — the app knew the button was dead before
+ * drawing it (this endpoint), and drew it anyway; on an iPhone it was the TOP
+ * button. A provider the server says is off is not offered. `null` from the
+ * endpoint means «could not ask»; then everything stays, because a bad
+ * connection must not quietly remove the only way in.
+ */
+export function useSocialProviders(order: ('google' | 'apple')[]): ('google' | 'apple')[] {
+  const [on, setOn] = useState<Record<string, boolean> | null>(providerCache);
+  useEffect(() => {
+    if (on) return;
+    let alive = true;
+    void enabledProviders().then((p) => {
+      if (alive && p) setOn(p);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [on]);
+  if (!on) return order;
+  return order.filter((name) => on[name] !== false);
 }
 
 /** Throws `AuthSetupError` when we KNOW the provider is off. Silent when we
@@ -452,16 +480,29 @@ export async function signOut(): Promise<void> {
  * Returns true when a session really came out of it, so the caller can say
  * «hesabın qorundu» only when it happened.
  */
-export async function handleAuthDeepLink(url: string): Promise<boolean> {
-  if (!url || !url.includes('auth-callback')) return false;
-  // Nothing to exchange: not every deep link on this path carries credentials.
+/**
+ * What happened to a sign-in link.
+ *
+ * Three answers, not two. It used to return a boolean, and `false` meant both
+ * «this was not a sign-in link» and «the sign-in link failed» — so an expired
+ * link, or one Gmail's scanner had already opened, did nothing at all: no
+ * toast, no error, the screen still saying «linkə toxun», and the person
+ * tapping the same dead link over and over.
+ */
+export type AuthLinkResult = 'none' | 'ok' | 'failed';
+
+export async function handleAuthDeepLink(url: string): Promise<AuthLinkResult> {
+  if (!url || !url.includes('auth-callback')) return 'none';
+  // The provider reports its own failures in the link itself (an expired or
+  // already-used token comes back as `error=…`), so that is a failure too.
+  if (url.includes('error=') || url.includes('error_code=')) return 'failed';
   const hasCode = url.includes('code=');
   const hasToken = url.includes('access_token=');
-  if (!hasCode && !hasToken) return false;
+  if (!hasCode && !hasToken) return 'none';
   try {
     await completeFromUrl(url);
-    return true;
+    return 'ok';
   } catch {
-    return false;
+    return 'failed';
   }
 }

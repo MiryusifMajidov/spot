@@ -6,7 +6,6 @@ import {
   Inter_800ExtraBold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -18,10 +17,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppErrorBoundary } from '@/components/ui/AppErrorBoundary';
 import { UiHost } from '@/components/ui/UiHost';
 import { loadDictionaries } from '@/i18n';
-import { handleAuthDeepLink } from '@/lib/auth';
-import { successFeedback } from '@/lib/feedback';
 import { openPush, registerPush } from '@/lib/push';
-import { toast } from '@/store/ui';
 import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
 
@@ -48,33 +44,13 @@ export default function RootLayout() {
     bootstrap();
   }, [bootstrap]);
 
-  /* E-poçt girişi burada bitir.
-     Supabase's hosted mailer sends a LINK (a code needs a paid SMTP provider to
-     edit the template), so the person taps it, the browser verifies and bounces
-     to `spot://auth-callback`, and the app is opened with the credentials on the
-     URL. This turns that into a session — for both a cold start and an app that
-     was already running.
-     A URL that carries nothing to exchange is ignored silently: not every
-     deep link into this app is a login. */
-  useEffect(() => {
-    let alive = true;
-    const finish = (url: string | null) => {
-      if (!alive || !url) return;
-      handleAuthDeepLink(url).then((ok) => {
-        if (ok && alive) {
-          successFeedback();
-          toast('Hesabın qorundu — indi başqa telefondan da girə bilərsən');
-          void bootstrap();
-        }
-      });
-    };
-    void Linking.getInitialURL().then(finish);
-    const sub = Linking.addEventListener('url', (e) => finish(e.url));
-    return () => {
-      alive = false;
-      sub.remove();
-    };
-  }, [bootstrap]);
+  /* E-poçt girişi src/app/auth-callback.tsx-də bitir.
+     The link lands on that route now. This effect used to exchange the token
+     here as well, and it could not route anywhere (it runs before the
+     navigator is guaranteed to be mounted) — so the person saw +not-found under
+     a success toast. A PKCE code is single-use, so exactly one place may spend
+     it; that place is the screen the link actually opens. */
+
 
   /* Push notifications.
      `notify()` has written notification rows since schema35 and none of them

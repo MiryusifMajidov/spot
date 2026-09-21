@@ -81,7 +81,7 @@ export default function GymReviews() {
       setReplyText('');
       toast(t('Rəsmi cavabın yazıldı'));
     } catch {
-      toast(t('Cavab yazılmadı — schema7_gym_owner.sql işlədilməyib və ya bağlantı yoxdur'), 'error');
+      toast(t('Cavab yazılmadı — serverdə saxlanıla bilmədi. Bağlantını yoxla və yenidən cəhd et.'), 'error');
     }
     setSaving(false);
   };

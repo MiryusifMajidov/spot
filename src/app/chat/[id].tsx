@@ -257,7 +257,7 @@ export default function Conversation() {
         <View style={[styles.inputArea, composerLift > 0 ? { paddingBottom: composerLift } : null]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quick}>
             {QUICK.map((q) => (
-              <PressableScale key={q} activeScale={0.95} onPress={() => send(q)} style={styles.quickChip}>
+              <PressableScale key={q} activeScale={0.95} onPress={() => send(t(q))} style={styles.quickChip}>
                 <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.text3 }}>{t(q)}</AppText>
               </PressableScale>
             ))}

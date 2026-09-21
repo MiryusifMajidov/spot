@@ -1,4 +1,5 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
@@ -186,21 +187,30 @@ export default function CreateProgram() {
         successFeedback();
         toast(draft.editingId ? 'Dəyişikliklər saxlanıldı' : 'Proqram yaradıldı — kitabxanadadır', 'success');
       }
+      leavingRef.current = true;
       router.back();
     }, draft.editingId ? 'Proqramı dəyişmək üçün' : 'Proqram yaratmaq üçün');
 
-  /* Leaving with work in it. The old screen dropped everything on a back
-     swipe with no prompt — an eight-move day, gone to a gesture. */
-  const leave = () => {
-    if (!draft.touched || saving) {
-      router.back();
+  /* Leaving with work in it — by ANY route off the screen.
+     The prompt used to hang on the NavBar chevron alone. The iOS edge swipe and
+     the Android back button went straight past it, and those are what people
+     actually use: a title, a description, eight moves and a filmed clip for
+     each, gone to a reflex, with the clips left orphaned in storage.
+     `usePreventRemove` sits on the navigator itself, so the chevron, the swipe
+     and the hardware button all land here. A save sets `leavingRef` first so
+     its own `router.back()` is let through without asking. */
+  const navigation = useNavigation();
+  const leavingRef = useRef(false);
+  usePreventRemove(draft.touched && !saving, ({ data }) => {
+    if (leavingRef.current) {
+      navigation.dispatch(data.action);
       return;
     }
     confirm('Yazdıqların silinsin?', 'Bu proqram hələ saxlanılmayıb.', [
       { label: 'Yazmağa davam et', style: 'cancel' },
-      { label: 'Sil və çıx', style: 'destructive', onPress: () => router.back() },
+      { label: 'Sil və çıx', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
     ]);
-  };
+  });
 
   if (editId && !existing) {
     return (
@@ -218,7 +228,6 @@ export default function CreateProgram() {
   return (
     <Screen>
       <NavBar
-        onBack={leave}
         right={
           <PressableScale onPress={ready ? save : sayWhatIsMissing} haptic={false} activeScale={0.94} disabled={saving}>
             <AppText variant="headline" color={ready && !saving ? palette.blue : palette.tertiary}>
@@ -349,6 +358,7 @@ function ItemEditor({
   onVideo: () => void;
 }) {
   const timed = item.mode === 'time';
+  const [setsText, setSetsText] = useState(String(item.sets));
   return (
     <View style={styles.item}>
       <View style={styles.itemHead}>
@@ -371,14 +381,31 @@ function ItemEditor({
           <AppText variant="caption" color={palette.caption}>
             Set
           </AppText>
+          {/* The text the person is typing lives here, not in the number.
+              Coercing every keystroke made most counts unreachable: backspace
+              on «4» produced «» which snapped to «1», and typing 5 then gave
+              «15». Any count from 3 to 9 could not be entered at all. The
+              number is committed when it is valid and restored on blur when
+              the field is left empty. */}
           <TextInput
-            value={String(item.sets)}
+            value={setsText}
             onChangeText={(v) => {
-              const n = Number(v.replace(/\D/g, '').slice(0, 2));
-              onPatch({ sets: Number.isFinite(n) && n > 0 ? Math.min(20, n) : 1 });
+              const digits = v.replace(/\D/g, '').slice(0, 2);
+              setSetsText(digits);
+              const n = Number(digits);
+              if (digits && Number.isFinite(n) && n >= 1 && n <= 20) onPatch({ sets: n });
+            }}
+            onBlur={() => {
+              const n = Number(setsText);
+              if (!setsText || !Number.isFinite(n) || n < 1) setSetsText(String(item.sets));
+              else if (n > 20) {
+                setSetsText('20');
+                onPatch({ sets: 20 });
+              }
             }}
             keyboardType="number-pad"
             maxLength={2}
+            selectTextOnFocus
             style={styles.numInput}
           />
         </View>

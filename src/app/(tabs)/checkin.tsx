@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -12,7 +12,6 @@ import { useAuthGate } from '@/lib/authGate';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useDb } from '@/store/db';
-import { toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
 /**
@@ -56,6 +55,8 @@ export default function CheckIn() {
   const gate = useAuthGate();
   const [permission, requestPermission] = useCameraPermissions();
   const [phase, setPhase] = useState<Phase>({ k: 'scanning' });
+  const [typing, setTyping] = useState(false);
+  const [manual, setManual] = useState('');
   const checkInLocal = useDb((s) => s.checkIn);
 
   /* A QR in front of a camera fires `onBarcodeScanned` many times a second. The
@@ -94,6 +95,7 @@ export default function CheckIn() {
 
   const again = () => {
     busy.current = false;
+    setManual('');
     setPhase({ k: 'scanning' });
   };
 
@@ -176,11 +178,38 @@ export default function CheckIn() {
           </AppText>
         </View>
       </View>
-      <PressableScale haptic={false} onPress={() => toast('Zalda QR yoxdursa, resepsiyadan SPOT kodunu istə', 'info')} style={styles.noQr}>
-        <AppText variant="subhead" color={palette.blue}>
-          Zalda QR yoxdur?
-        </AppText>
-      </PressableScale>
+      {/* Typing the code. The gym's own QR screen tells the owner «QR oxunmasa,
+          üzv bu kodu əl ilə də yaza bilər», and this link used to answer that
+          with a toast telling the member to ask reception for the code — which
+          they had, and had nowhere to type. A cracked lens, a denied camera,
+          bad light at the desk: the code under the QR is the fallback, and now
+          it goes somewhere. Same server call as a scan. */}
+      {typing ? (
+        <View style={styles.manual}>
+          <TextInput
+            value={manual}
+            onChangeText={(v) => setManual(v.replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 10))}
+            placeholder="A1B2C3D4E5"
+            placeholderTextColor={palette.caption}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            autoFocus
+            maxLength={10}
+            style={styles.manualInput}
+          />
+          <Button
+            title="Göndər"
+            disabled={manual.length < 10 || phase.k === 'sending'}
+            onPress={() => onScan(manual)}
+          />
+        </View>
+      ) : (
+        <PressableScale haptic={false} onPress={() => setTyping(true)} style={styles.noQr}>
+          <AppText variant="subhead" color={palette.blue}>
+            QR oxunmur? Kodu əl ilə yaz
+          </AppText>
+        </PressableScale>
+      )}
     </Screen>
   );
 }
@@ -200,5 +229,16 @@ const styles = StyleSheet.create({
   },
   hint: { position: 'absolute', left: 24, right: 24, bottom: 28 },
   noQr: { alignSelf: 'center', paddingVertical: 14 },
+  manual: { flexDirection: 'row', gap: 10, alignItems: 'center', paddingHorizontal: spacing.screen, paddingVertical: 12 },
+  manualInput: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: palette.grouped,
+    paddingHorizontal: 14,
+    fontSize: 17,
+    letterSpacing: 2,
+    color: palette.inkText,
+  },
   badge: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
 });

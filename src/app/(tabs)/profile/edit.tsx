@@ -268,7 +268,7 @@ export default function EditProfile() {
         </AppText>
 
         <Label text="Cins" />
-        <Segmented options={['Kişi', 'Qadın']} value={profile.gender === 'qadın' ? 1 : 0} onChange={(i) => setProfile({ gender: i === 0 ? 'kişi' : 'qadın' })} />
+        <Segmented options={['Kişi', 'Qadın']} value={profile.gender === 'qadın' ? 1 : profile.gender === 'kişi' ? 0 : -1} onChange={(i) => setProfile({ gender: i === 0 ? 'kişi' : 'qadın' })} />
 
         <Label text="Səviyyə" />
         {/* `Math.max(0, indexOf)` painted «Başlanğıc» as chosen for somebody who

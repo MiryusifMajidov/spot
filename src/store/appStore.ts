@@ -4,8 +4,11 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 
 import { SessionRestoreError, ensureSession, getMatchRequestsSafe, getMyProfile, getUserId, isUsernameConflict, touchLastActive, updateMyProfile, sanctionOf } from '@/lib/api';
+import { isPlaceholderName } from '@/lib/authorName';
 import { applyLang, deviceLang, Lang } from '@/lib/i18n';
 import { getMyGymId } from '@/lib/roles';
+import { invalidateFocusCache } from '@/lib/focusFetch';
+import { syncLocalPrograms } from '@/lib/saveProgram';
 import { useDb } from '@/store/db';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { loadExerciseVideos, syncSocial, syncTrainingHistory } from '@/lib/trainingSync';
@@ -324,15 +327,35 @@ export const useAppStore = create<AppState>()(
         try {
           const db = await getMyProfile();
           if (db) {
+            /* WHO HAS REGISTERED — decided by the @ad, not by the row.
+               A profiles row is not evidence of anything: the `on_auth_user_created`
+               trigger (schema.sql handle_new_user) writes one named «Sən» for EVERY
+               new auth user, and ensureSession() mints an anonymous auth user on
+               the very first launch, before the person has seen a screen. Treating
+               «a row exists» as «registered» therefore marked every fresh install
+               as onboarded and sent it straight past the sign-in gate into Kəşf —
+               the exact complaint the gate was built to answer.
+               The @ad is the one field registration requires (onboarding/profile.tsx)
+               and the trigger never writes, so it is the honest test. A returning
+               user on a new phone has one and still goes straight in, which is the
+               case the previous comment here was protecting. */
+            const registered = !!(db.username ?? '').trim();
+            /* Programs that never left the phone. Until `level` went out as NULL
+               every builder save was refused, so the author's library is device-
+               only; this publishes it once the account is known to be a real,
+               registered one. Not awaited — nothing on screen waits for it. */
+            if (registered) {
+              void syncLocalPrograms().then(({ sent }) => {
+                if (sent) invalidateFocusCache('programs');
+              });
+            }
+            /* Demote only when NEITHER side has an @ad. A device that holds one the
+               server lacks is somebody who registered offline and is still waiting
+               for the push below — throwing them back to the gate would lose that. */
+            const neverRegistered = !registered && !(get().profile.username ?? '').trim();
             set((s) => ({
-              /* Having a profile on the server IS being onboarded. Without this
-                 a person who signs in on a new phone — whose account, name and
-                 @ad all exist — was still sent through registration, told their
-                 own @ad was «tutulub», and made to write a SECOND profile row.
-                 `guest` goes for the same reason: somebody who signed in through
-                 a magic link kept seeing one tab and «Qonaq rejimi». */
-              onboarded: true,
-              guest: false,
+              onboarded: registered ? true : neverRegistered ? false : s.onboarded,
+              guest: registered ? false : s.guest,
               profileId: db.id,
               sanction: sanctionOf(db),
               // The server is the authority on the privacy flags: a reinstall must not
@@ -341,7 +364,11 @@ export const useAppStore = create<AppState>()(
               showInGymList: db.show_in_gym_list ?? s.showInGymList,
               profile: {
                 ...s.profile,
-                name: db.name ?? s.profile.name,
+                /* Not the trigger's «Sən». An unregistered account carries that
+                   placeholder, and pulling it in pre-fills the registration form
+                   with a name the person never gave. A real name from Google's
+                   metadata is kept — that one they did give. */
+                name: db.name && !isPlaceholderName(db.name) ? db.name : s.profile.name,
                 username: db.username ?? s.profile.username,
                 gender: (db.gender as Profile['gender']) ?? s.profile.gender,
                 age: db.age ?? s.profile.age,

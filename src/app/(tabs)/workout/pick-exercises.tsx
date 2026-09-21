@@ -1,5 +1,6 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
+import { useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -11,7 +12,7 @@ import { Screen } from '@/components/ui/Screen';
 import { searchKey } from '@/lib/az';
 import { exerciseLibrary } from '@/store/db';
 import { itemFromLibrary, itemFromName, useProgramDraft } from '@/store/programDraft';
-import { toast } from '@/store/ui';
+import { confirm, toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 
 /**
@@ -51,6 +52,10 @@ export default function PickExercises() {
   const [group, setGroup] = useState(0);
   const [picked, setPicked] = useState<string[]>([]);
   const [own, setOwn] = useState('');
+  const navigation = useNavigation();
+  /* Set by done() just before its own router.back(), so the guard below lets
+     the one intended exit through without asking. */
+  const leavingRef = useRef(false);
 
   const list = useMemo(() => {
     const key = searchKey(q.trim());
@@ -77,10 +82,26 @@ export default function PickExercises() {
       return;
     }
     addItems(dayKey, items);
+    leavingRef.current = true;
     router.back();
   };
 
   const count = picked.length + (own.trim() ? 1 : 0);
+
+  /* A back swipe here used to drop every tap in silence — six moves picked and
+     a custom one typed, gone, and the builder showing nothing added. Same guard
+     as the builder: any route off the screen asks first when there is
+     something to lose. `done()` sets `leavingRef` so its own back is let through. */
+  usePreventRemove(count > 0, ({ data }) => {
+    if (leavingRef.current) {
+      navigation.dispatch(data.action);
+      return;
+    }
+    confirm('Seçdiklərin əlavə olunsun?', 'Seçdiyin hərəkətlər hələ günə əlavə olunmayıb.', [
+      { label: 'Atmaq', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+      { label: 'Əlavə et', style: 'primary', onPress: () => done() },
+    ]);
+  });
 
   return (
     <Screen edges={['top']}>

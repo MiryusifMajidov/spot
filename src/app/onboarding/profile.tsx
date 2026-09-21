@@ -201,7 +201,7 @@ export default function ProfileStep() {
       </AppText>
       <Segmented
         options={[t('Kişi'), t('Qadın')]}
-        value={profile.gender === 'qadın' ? 1 : 0}
+        value={profile.gender === 'qadın' ? 1 : profile.gender === 'kişi' ? 0 : -1}
         onChange={(i) => setProfile({ gender: i === 0 ? 'kişi' : 'qadın' })}
       />
 

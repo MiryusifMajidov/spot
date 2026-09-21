@@ -8,14 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
-import {
-  AuthSetupError,
-  confirmEmailCode,
-  sendEmailCode,
-  signInWithApple,
-  signInWithGoogle,
-  SOCIAL_FIRST,
-} from '@/lib/auth';
+import { AuthSetupError, confirmEmailCode, sendEmailCode, signInWithApple, signInWithGoogle, SOCIAL_FIRST, useSocialProviders } from '@/lib/auth';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
@@ -73,7 +66,8 @@ export default function SignIn() {
 
   /* Both providers, both platforms. `SOCIAL_FIRST` only decides which one is on
      top — Apple first on iOS (App Store rule), Google first elsewhere. */
-  const providers: ('google' | 'apple')[] = SOCIAL_FIRST === 'apple' ? ['apple', 'google'] : ['google', 'apple'];
+  // Only what the server has switched on — see useSocialProviders.
+  const providers = useSocialProviders(SOCIAL_FIRST === 'apple' ? ['apple', 'google'] : ['google', 'apple']);
 
   /* From the gate there is nothing to go «back» to — the gate IS the root of the
      stack — so a signed-in person is sent into the app instead. */
@@ -193,7 +187,7 @@ export default function SignIn() {
         </View>
         <AppText variant="caption" color={palette.caption} style={{ marginTop: 10, lineHeight: 18 }}>
           {login
-            ? t('Hesabın yoxdursa, geri qayıt və «Başla» ilə yeni hesab aç.')
+            ? t('Hesabın yoxdursa, eyni yolla yeni hesab açılır — e-poçtunu yaz, sonra ad və istifadəçi adı soruşacağıq.')
             : t('Bu, yeni hesab açmır — indiki hesabına giriş yolu əlavə edir. Heç nə itmir.')}
         </AppText>
 

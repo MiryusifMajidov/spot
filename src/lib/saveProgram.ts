@@ -136,8 +136,16 @@ export async function saveProgramDraft(input: {
     title: program.title,
     weeks: program.weeks,
     days_per_week: program.daysPerWeek,
-    level: program.level,
-    goal: program.goal,
+    /* NULL, never ''. schema16 pins `programs_level_check` to NULL or one of
+       'Başlanğıc' | 'Orta' | 'İrəli', and the builder no longer asks for a level
+       — so the empty string it used to send was refused by the database on EVERY
+       save, create and edit alike. Each one fell into the catch below and came
+       back as 'local': not one program written with this builder ever reached
+       the server, and the toast said «yalnız bu cihazda» about a write that could
+       never succeed. The round-trip «proof» in schema76 inserted rows without a
+       level column at all, which is why it passed while the app failed. */
+    level: program.level || null,
+    goal: program.goal || null,
     paid: false,
     minutes: program.minutes,
     video_count: program.videoCount,
@@ -158,30 +166,109 @@ export async function saveProgramDraft(input: {
         .eq('id', input.editingId)
         .select('id');
       if (error) throw error;
-      if (!data?.length) return { result: 'local', id };
-      return { result: 'saved', id };
+      if (data?.length) return { result: 'saved', id };
+      /* Zero rows has two meanings, and until now both were answered 'local':
+         (a) the owner policy refused it — somebody else's program; or
+         (b) there is no row yet — a program that has only ever lived on this
+             phone because its first save could not reach the server.
+         (b) is not rare: before `level` was sent as NULL, EVERY program saved
+         with this builder was refused, so every one of them is in state (b).
+         Re-saving was the only fix the app suggested and it could never work,
+         because an UPDATE cannot create a row. Try the insert; a unique
+         violation means the row exists after all and is not ours. */
+      return await insertProgram(id, base, program);
     }
 
-    // owner_id is a FK to profiles(id) — NOT the auth uid — and schema34's
-    // insert policy REQUIRES it. An ownerless program can never be edited by
-    // anybody, including its author, so no profile means no server copy.
-    const me = await getMyProfile();
-    if (!me?.id) return { result: 'local', id };
-
-    const { error } = await supabase.from('programs').insert({
-      ...base,
-      id,
-      creator_name: program.creatorName,
-      creator_type: program.creatorType,
-      owner_id: me.id,
-    });
-    if (error) throw error;
-    return { result: 'saved', id };
+    return await insertProgram(id, base, program);
   } catch (e) {
     const problem = dayProblemMessage((e as { message?: string })?.message ?? '');
     if (problem) return { result: 'refused', id, problem };
     return { result: 'local', id };
   }
+}
+
+/**
+ * The INSERT half, shared by a first save and by an edit whose row turned out
+ * not to exist yet. Throws on a real error so the caller's catch can tell a
+ * schema76 refusal from a connection problem.
+ */
+async function insertProgram(
+  id: string,
+  base: Record<string, unknown>,
+  program: { creatorName: string; creatorType: 'trainer' | 'user' | 'spot' }
+): Promise<SaveOutcome> {
+  // owner_id is a FK to profiles(id) — NOT the auth uid — and schema34's insert
+  // policy REQUIRES it. An ownerless program can never be edited by anybody,
+  // including its author, so no profile means no server copy.
+  const me = await getMyProfile();
+  if (!me?.id) return { result: 'local', id };
+
+  const { error } = await supabase.from('programs').insert({
+    ...base,
+    id,
+    creator_name: program.creatorName,
+    creator_type: program.creatorType,
+    owner_id: me.id,
+  });
+  if (error) {
+    // 23505: the id is taken — the row exists and the owner policy is what
+    // hid it from the UPDATE. It is not ours to write, so it stays local.
+    if ((error as { code?: string }).code === '23505') return { result: 'local', id };
+    throw error;
+  }
+  return { result: 'saved', id };
+}
+
+/**
+ * Send up every program that exists only on this phone.
+ *
+ * Before `level` went out as NULL, every save from the builder was refused, so
+ * the owner's whole library is device-only right now — no student can open an
+ * assigned program and a reinstall would delete them. This runs on launch
+ * (bootstrap) and quietly publishes what the author already chose to publish.
+ * It asks the server which ids it has first, so a program that did make it up
+ * is never written twice.
+ */
+export async function syncLocalPrograms(): Promise<{ sent: number; failed: number }> {
+  if (!hasSupabaseConfig) return { sent: 0, failed: 0 };
+  const mine = useDb.getState().myPrograms.filter((p) => (p.days ?? []).some((d) => (d.exercises?.length ?? 0) > 0));
+  if (!mine.length) return { sent: 0, failed: 0 };
+
+  const { data, error } = await supabase.from('programs').select('id').in('id', mine.map((p) => p.id));
+  if (error) return { sent: 0, failed: 0 }; // not knowing is not a reason to write
+  const onServer = new Set(((data ?? []) as { id: string }[]).map((r) => r.id));
+
+  let sent = 0;
+  let failed = 0;
+  for (const p of mine) {
+    if (onServer.has(p.id)) continue;
+    const days = p.days ?? [];
+    const first = days.find((d) => (d.exercises?.length ?? 0) > 0);
+    const base = {
+      title: p.title,
+      weeks: p.weeks || 0,
+      days_per_week: days.filter((d) => (d.exercises?.length ?? 0) > 0).length,
+      level: p.level || null,
+      goal: p.goal || null,
+      paid: false,
+      minutes: first ? estimateDuration(first.exercises.map((e) => ({ sets: e.sets, reps: e.reps }))) : 0,
+      video_count: days.reduce((a, d) => a + (d.exercises ?? []).filter((e) => !!e.videoUrl).length, 0),
+      tags: p.tags ?? [],
+      days: programDaysToWire(days),
+      description: p.desc || null,
+    };
+    try {
+      const r = await insertProgram(p.id, base, {
+        creatorName: p.creatorName,
+        creatorType: p.creatorType === 'trainer' ? 'trainer' : 'user',
+      });
+      if (r.result === 'saved') sent += 1;
+      else failed += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+  return { sent, failed };
 }
 
 /** A local `Program['days']` in the shape schema76 stores. The inverse of

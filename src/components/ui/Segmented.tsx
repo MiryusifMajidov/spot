@@ -8,6 +8,9 @@ import { AppText } from './AppText';
 
 type Props = {
   options: string[];
+  /** The selected index — or -1 for «not answered yet». Nothing is drawn as
+   *  chosen then: a thumb sitting on the first option reads as an answer the
+   *  person gave, which is how an untouched gender control became «Kişi». */
   value: number;
   onChange: (index: number) => void;
 };
@@ -26,7 +29,7 @@ export function Segmented({ options, value, onChange }: Props) {
 
   return (
     <View style={styles.track} onLayout={onLayout}>
-      {seg > 0 && <Animated.View style={[styles.thumb, thumb]} />}
+      {seg > 0 && value >= 0 && <Animated.View style={[styles.thumb, thumb]} />}
       {options.map((opt, i) => (
         <Pressable
           key={opt}

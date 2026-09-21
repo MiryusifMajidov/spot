@@ -23,7 +23,7 @@ export function useAuthGate() {
         // It no longer asks for «zalın, məqsədin, cədvəlin» — registration is a
         // name and an @ad. Promising a questionnaire that was deleted is the
         // kind of small lie that makes people close the dialog.
-        `${reason} Google, Apple və ya e-poçtla daxil ol. Onsuz sadəcə baxış rejimindəsən.`,
+        `${reason} hesabınla daxil ol və ya yenisini aç — bir dəqiqə çəkir. Onsuz sadəcə baxış rejimindəsən.`,
         [
           { label: 'İndi yox', style: 'cancel' },
           { label: 'Daxil ol', style: 'primary', onPress: () => router.push('/onboarding/welcome') },

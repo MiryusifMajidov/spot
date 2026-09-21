@@ -25,6 +25,7 @@ export default function ProgramDetail() {
   const matches = useDb((s) => s.matches);
   const toggleSaved = useDb((s) => s.toggleSavedProgram);
   const mine = useDb((s) => s.myPrograms.some((p) => p.id === id));
+  const workouts = useDb((s) => s.workouts);
 
   const p = all.find((x) => x.id === id) ?? remote;
 
@@ -101,12 +102,23 @@ export default function ProgramDetail() {
   const isSaved = saved.includes(p.id);
   const desc = p.desc?.trim();
 
+  /* The NEXT day, not day 1. It always sent dayIndex 0, so somebody on Day 3 of
+     a coach's plan who opened the program and tapped «Başla» redid Day 1 —
+     and logged it against the program, which pushed the Məşq tab's «next day»
+     count out of step as well. Same rule the Məşq tab uses: sessions logged
+     against this program, modulo its days. */
+  const nextDay = days.length ? workouts.filter((w) => w.programId === p.id).length % days.length : 0;
   const start = (partnerId?: string) => {
     if (!hasDays) return;
     if (!isSaved) toggleSaved(p.id); // following this program from now on
     router.push({
       pathname: '/(tabs)/workout/session',
-      params: { programId: p.id, dayIndex: '0', title: days[0]?.title ?? p.title, ...(partnerId ? { partnerId } : {}) },
+      params: {
+        programId: p.id,
+        dayIndex: String(nextDay),
+        title: days[nextDay]?.title ?? p.title,
+        ...(partnerId ? { partnerId } : {}),
+      },
     });
   };
 

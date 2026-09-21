@@ -7,6 +7,7 @@ import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { afterTransition } from '@/lib/afterTransition';
+import { useProgram } from '@/lib/hooks';
 import { getMyAssignedProgram, type AssignedProgram } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { exerciseLibrary, useAllPrograms, useDb, useWeekStats } from '@/store/db';
@@ -48,11 +49,23 @@ export default function WorkoutToday() {
   const week = useWeekStats();
 
   /* «The program I'm following» = the one I last trained with, else the one I
-     saved. Never an arbitrary catalogue row — with none, the card says so. */
-  const active = useMemo(() => {
+     saved. Never an arbitrary catalogue row — with none, the card says so.
+
+     Resolved through `useProgram`, which reads this phone's own copy first and
+     then the server. The list above holds only the person's OWN programs and
+     SPOT's four starters, so a trainer's program — the whole reason a student
+     is here — was never in it: after Day 1 of a coach's plan the card said
+     «Sərbəst məşq», and «Məşqə başla» opened a generic library workout instead
+     of the coach's Day 2. */
+  const followingId = useMemo(() => {
     const lastId = workouts.find((w) => w.programId)?.programId;
-    return programs.find((p) => p.id === lastId) ?? programs.find((p) => saved.includes(p.id)) ?? null;
-  }, [programs, workouts, saved]);
+    return lastId ?? saved.find((id) => !!id) ?? '';
+  }, [workouts, saved]);
+  const followed = useProgram(followingId);
+  const active = useMemo(
+    () => followed ?? programs.find((p) => saved.includes(p.id)) ?? null,
+    [followed, programs, saved]
+  );
 
   // Which day comes next = how many sessions I have logged against this program.
   const dayCount = active?.days?.length ?? 0;

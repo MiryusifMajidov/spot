@@ -39,3 +39,22 @@ export function estimateDuration(exercises: Timeable[]): number {
   const min = exercises.reduce((a, e) => a + Math.max(1, e.sets) * perSet(e), 0);
   return Math.max(10, Math.round(min + 5));
 }
+
+/**
+ * The first and last number in a rep target: «8-10» → 8 and 10, «45 san» → 45.
+ *
+ * This replaced two parsers in the session logger that split ONLY on the en
+ * dash «–» the library happens to use, then stripped every non-digit from what
+ * was left. The builder's own placeholder shows «8-10» with an ordinary hyphen,
+ * so an author who typed exactly what the app suggested got «810»: every set
+ * ticked without a typed count was logged as 810 repetitions, the session volume
+ * came out about a hundred times too large, «Keçən dəfə: 60kg × 810» appeared
+ * on the day screen, and the weight suggestion could never be earned. Reading
+ * the digit runs instead makes every separator a person might type — «-», «–»,
+ * «—», « - », «/», «to» — mean the same thing.
+ */
+export function repRange(reps: string | null | undefined, fallback = 8): { low: number; high: number } {
+  const nums = (reps ?? '').match(/\d+/g)?.map(Number).filter((n) => Number.isFinite(n) && n > 0) ?? [];
+  if (!nums.length) return { low: fallback, high: fallback };
+  return { low: nums[0], high: nums[nums.length - 1] };
+}

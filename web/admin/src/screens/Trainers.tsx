@@ -37,6 +37,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
      — it means the read did not come back, and an unlit «Tövsiyə et» button
      over an unknown state invites an admin to turn on something already on. */
   const [featured, setFeatured] = useState<Set<string> | null>(null);
+  const [featuredMaxOrd, setFeaturedMaxOrd] = useState(0);
   const [featuring, setFeaturing] = useState<string | null>(null);
   const [gymMap, setGymMap] = useState<Record<string, string>>({});
 
@@ -75,7 +76,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
       supabase.from('trainer_verifications').select('id,trainer_id,user_id,status,doc_id_url,doc_cert_url,gym_confirm,intro_video_url,reject_reason,sla_due_at,created_at').eq('status', 'pending').order('sla_due_at'),
       supabase.from('trainer_verifications').select('id,trainer_id,user_id,status,doc_id_url,doc_cert_url,gym_confirm,intro_video_url,reject_reason,sla_due_at,created_at').eq('status', 'rejected').order('created_at', { ascending: false }),
       supabase.from('trainers').select('*').eq('verified', true).order('name'),
-      supabase.from('featured_trainers').select('trainer_id'),
+      supabase.from('featured_trainers').select('trainer_id,ord'),
     ]);
     /* PostgREST resolves on failure, so reading `data` alone made a refused or
        dropped read look like an empty verification queue — the screen then said
@@ -87,7 +88,9 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
     setPending(pendingRows);
     setRejected(rejectedRows);
     setActive(activeRows);
-    setFeatured(ft.error ? null : new Set(((ft.data as { trainer_id: string }[]) ?? []).map((r) => r.trainer_id)));
+    const ftRows = (ft.data as { trainer_id: string; ord: number | null }[]) ?? [];
+    setFeatured(ft.error ? null : new Set(ftRows.map((r) => r.trainer_id)));
+    setFeaturedMaxOrd(ftRows.reduce((m, r) => Math.max(m, r.ord ?? 0), 0));
 
     // trainer + gym lookups for the queue rows
     const ids = Array.from(
@@ -214,7 +217,11 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
     const { error } = await supabase.rpc('admin_set_featured_trainer', {
       p_trainer_id: t.id,
       p_on: on,
-      p_ord: on ? featured.size : 0,
+      /* After the highest `ord` the server holds, not `featured.size`:
+         un-featuring somebody and then featuring somebody else used to reuse a
+         number already taken, and two trainers with the same order came back
+         in a different order on every registration. */
+      p_ord: on ? featuredMaxOrd + 1 : 0,
     });
     setFeaturing(null);
     if (error) {
@@ -226,6 +233,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
       if (on) next.add(t.id); else next.delete(t.id);
       return next;
     });
+    if (on) setFeaturedMaxOrd((m) => m + 1);
     toast(on ? `${t.name} qeydiyyatda tövsiyə olunacaq` : `${t.name} tövsiyədən çıxarıldı`);
   }
 
@@ -384,8 +392,9 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
             list looks broken instead of like the fallback doing its job. */}
         <div className="card" style={{ padding: '12px 14px', marginBottom: 12, color: 'var(--muted2)', fontSize: 13, lineHeight: 1.5 }}>
           Qeydiyyatı bitirən hər yeni istifadəçiyə burada seçilmiş müəllimlər göstərilir (ən çoxu 5). Heç kim seçilməyibsə,
-          tətbiq özü doğrulanmış müəllimlərdən təsadüfi 5-ni göstərir — yəni bu siyahı boş olsa da ekran işləyir.
-          Seçilmiş müəllim öz elanını gizlədərsə, onsuz da göstərilmir.
+          tətbiq doğrulanmış müəllimlərdən təsadüfi seçir — ən çoxu 5, amma nə qədər varsa o qədər (indi az ola bilər).
+          Doğrulanmamış müəllim yalnız sən onu burada seçsən görünür. Öz elanını gizlədən müəllim heç vaxt göstərilmir,
+          və 5-dən artıq seçsən, yalnız ilk 5-i görünəcək.
         </div>
         <table className="tbl">
           {/* No «Reytinq» column. `reviews` has a `gym_id` and no `trainer_id` at

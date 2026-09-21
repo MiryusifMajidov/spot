@@ -14,6 +14,7 @@ import { followProfile } from '@/lib/social';
 import { SuggestedTrainer, suggestedTrainers } from '@/lib/suggested';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
+import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 
@@ -92,6 +93,18 @@ export default function SuggestTrainers() {
     const results = await Promise.allSettled(chosen.map((tr) => followProfile(tr.ownerId)));
     setBusy(false);
     const ok = results.filter((r) => r.status === 'fulfilled').length;
+    /* Record the follows that REALLY landed in the list the feed reads its
+       «İzlə / İzlənir» labels from. Only the server wrote them before, so the
+       toast said «3 müəllim izlənilir» while the same trainers' videos, one tab
+       over, still offered «İzlə» until the app was killed and relaunched. The
+       failed ones are left out: a label must not claim a follow nobody made. */
+    const landed = chosen.filter((_, i) => results[i].status === 'fulfilled').map((tr) => tr.ownerId);
+    if (landed.length) {
+      const cur = useAppStore.getState().following;
+      useAppStore.getState().setSocialFromServer({
+        following: [...cur, ...landed.filter((id) => !cur.includes(id))],
+      });
+    }
 
     if (ok === 0) {
       // Every one of them failed. «İzlənilir» here would leave the person

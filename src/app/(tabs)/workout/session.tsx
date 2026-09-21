@@ -15,6 +15,7 @@ import { AppText } from '@/components/ui/AppText';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { logPR, logWorkout as logWorkoutApi } from '@/lib/api';
+import { repRange } from '@/lib/duration';
 import { useAuthGate } from '@/lib/authGate';
 import { getMyAssignedProgram } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
@@ -50,15 +51,11 @@ function fmt(s: number) {
   return `${m}:${r.toString().padStart(2, '0')}`;
 }
 
-function topRepOf(reps: string): number {
-  const n = Number(reps.split('–').pop()?.replace(/\D/g, ''));
-  return Number.isFinite(n) && n > 0 ? n : 8;
-}
+/* Both read the digit runs (src/lib/duration.ts repRange). They used to split
+   on the en dash only, so a hand-typed «8-10» became 810 — see repRange. */
+const topRepOf = (reps: string): number => repRange(reps).high;
 /** The rep/second target a ticked set defaults to when the field is left empty. */
-function baseRepOf(reps: string): number {
-  const n = Number(reps.split('–')[0]?.replace(/\D/g, ''));
-  return Number.isFinite(n) && n > 0 ? n : 8;
-}
+const baseRepOf = (reps: string): number => repRange(reps).low;
 const isTimed = (reps: string) => /san/i.test(reps);
 const isBodyweight = (eq: string) => eq === 'Bədən' || eq === 'Turnik' || eq === 'Bar';
 

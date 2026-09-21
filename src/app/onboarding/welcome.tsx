@@ -9,7 +9,7 @@ import { Icon } from '@/components/Icon';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
-import { AuthSetupError, signInWithApple, signInWithGoogle, SOCIAL_FIRST } from '@/lib/auth';
+import { AuthSetupError, signInWithApple, signInWithGoogle, SOCIAL_FIRST, useSocialProviders } from '@/lib/auth';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
@@ -48,7 +48,8 @@ export default function Welcome() {
 
   /* Both providers on both platforms. `SOCIAL_FIRST` only decides the order —
      Apple on top on iOS because the App Store requires it to be offered. */
-  const providers: ('google' | 'apple')[] = SOCIAL_FIRST === 'apple' ? ['apple', 'google'] : ['google', 'apple'];
+  // Only what the server has switched on — see useSocialProviders.
+  const providers = useSocialProviders(SOCIAL_FIRST === 'apple' ? ['apple', 'google'] : ['google', 'apple']);
 
   const social = async (provider: 'google' | 'apple') => {
     if (!hasSupabaseConfig) return toast(t('Server bağlantısı yoxdur'), 'error');

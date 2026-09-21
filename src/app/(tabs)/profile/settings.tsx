@@ -93,7 +93,7 @@ export default function Settings() {
   const signOutRow = () =>
     confirm(
       'Hesabdan çıx',
-      'Bu telefonda saxlanan məlumatlar silinir. Hesabın serverdə qalır — eyni Google hesabı və ya nömrə ilə yenidən girə bilərsən.',
+      'Bu telefonda saxlanan məlumatlar silinir. Hesabın serverdə qalır — hansı yolla girmisənsə, eyni yolla yenidən girə bilərsən.',
       [
         { label: 'Ləğv et', style: 'cancel' },
         {
@@ -190,7 +190,7 @@ export default function Settings() {
               iconBg={palette.red}
               iconColor={palette.white}
               title="Hesabını qoru"
-              subtitle="Google və ya nömrə ilə — heç nə itmir"
+              subtitle="Hesaba bağla — telefon dəyişəndə heç nə itmir"
               onPress={() => router.push('/auth/sign-in')}
             />
           ) : (
