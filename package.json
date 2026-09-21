@@ -60,7 +60,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "i18n:test": "bash scripts/i18n-test/run.sh",
+    "i18n:check": "python scripts/check_i18n.py"
   },
   "private": true
 }
