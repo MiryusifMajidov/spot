@@ -17,6 +17,7 @@ import { errorFeedback, successFeedback, tapFeedback } from '@/lib/feedback';
 import { GymGate, updateMyGym, useMyGym } from '@/lib/gymOwner';
 import { addGymPhoto, imageTooLargeMessage, isNotSavedError, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { actionSheet, confirm, toast, useUi, type UiAction } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
@@ -25,6 +26,7 @@ type Coords = { lat: number; lng: number };
 const AMENITIES = ['Sərbəst ağırlıq', 'Kardio', 'Duş', 'Parkinq', 'Hovuz', 'Sauna', 'Qadın zonası', 'Kafe'];
 
 export default function GymEdit() {
+  const t = useT();
   const router = useRouter();
   const navigation = useNavigation();
   const keyboardLift = useKeyboardLift();
@@ -147,8 +149,8 @@ export default function GymEdit() {
       toast(
         imageTooLargeMessage(e) ??
           (isNotSavedError(e)
-            ? 'Şəkil zalın məlumatına yazılmadı — bu zalı dəyişməyə icazən yoxdur'
-            : 'Şəkil yüklənmədi — yenidən cəhd et'),
+            ? t('Şəkil zalın məlumatına yazılmadı — bu zalı dəyişməyə icazən yoxdur')
+            : t('Şəkil yüklənmədi — yenidən cəhd et')),
         'error'
       );
     }
@@ -159,22 +161,22 @@ export default function GymEdit() {
     tapFeedback();
     const actions: UiAction[] = [
       {
-        label: 'Kamera',
+        label: t('Kamera'),
         onPress: async () => {
           const uri = await shootImage();
           if (uri) applyCover(uri);
         },
       },
       {
-        label: 'Qalereyadan seç',
+        label: t('Qalereyadan seç'),
         onPress: async () => {
           const uri = await pickImage();
           if (uri) applyCover(uri);
         },
       },
-      { label: 'Ləğv et', style: 'cancel' },
+      { label: t('Ləğv et'), style: 'cancel' },
     ];
-    actionSheet({ title: 'Zalın əsas şəkli', actions });
+    actionSheet({ title: t('Zalın əsas şəkli'), actions });
   };
 
   const addPhoto = (from: 'cam' | 'lib') => async () => {
@@ -190,8 +192,8 @@ export default function GymEdit() {
       toast(
         imageTooLargeMessage(e) ??
           (isNotSavedError(e)
-            ? 'Şəkil zalın məlumatına yazılmadı — bu zalı dəyişməyə icazən yoxdur'
-            : 'Şəkil yüklənmədi — yenidən cəhd et'),
+            ? t('Şəkil zalın məlumatına yazılmadı — bu zalı dəyişməyə icazən yoxdur')
+            : t('Şəkil yüklənmədi — yenidən cəhd et')),
         'error'
       );
     }
@@ -201,21 +203,21 @@ export default function GymEdit() {
   const addPhotoSheet = () => {
     tapFeedback();
     actionSheet({
-      title: 'Şəkil əlavə et',
+      title: t('Şəkil əlavə et'),
       actions: [
-        { label: 'Kamera', onPress: addPhoto('cam') },
-        { label: 'Qalereyadan seç', onPress: addPhoto('lib') },
-        { label: 'Ləğv et', style: 'cancel' },
+        { label: t('Kamera'), onPress: addPhoto('cam') },
+        { label: t('Qalereyadan seç'), onPress: addPhoto('lib') },
+        { label: t('Ləğv et'), style: 'cancel' },
       ],
     });
   };
 
   const dropPhoto = (url: string) => {
     if (!gymId) return;
-    confirm('Şəkli sil?', undefined, [
-      { label: 'Ləğv et', style: 'cancel' },
+    confirm(t('Şəkli sil?'), undefined, [
+      { label: t('Ləğv et'), style: 'cancel' },
       {
-        label: 'Sil',
+        label: t('Sil'),
         style: 'destructive',
         onPress: async () => {
           setPhotoBusy(true);
@@ -223,7 +225,7 @@ export default function GymEdit() {
             setPhotos(await removeGymPhoto(gymId, url));
           } catch {
             errorFeedback();
-            toast('Şəkil silinmədi — yenidən cəhd et', 'error');
+            toast(t('Şəkil silinmədi — yenidən cəhd et'), 'error');
           }
           setPhotoBusy(false);
         },
@@ -243,7 +245,7 @@ export default function GymEdit() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        toast('Məkan icazəsi verilmədi — pini xəritədə özün qoy', 'error');
+        toast(t('Məkan icazəsi verilmədi — pini xəritədə özün qoy'), 'error');
       } else {
         const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         setPicked({ lat: pos.coords.latitude, lng: pos.coords.longitude });
@@ -252,7 +254,7 @@ export default function GymEdit() {
         successFeedback();
       }
     } catch {
-      toast('Məkan alınmadı — xəritədə özün seç', 'error');
+      toast(t('Məkan alınmadı — xəritədə özün seç'), 'error');
     }
     setLocating(false);
   };
@@ -267,9 +269,9 @@ export default function GymEdit() {
 
   const back = () => {
     if (!dirty) return router.back();
-    confirm('Dəyişikliklər saxlanılmayıb', 'Saxlamadan çıxmaq istəyirsən?', [
-      { label: 'Qal', style: 'cancel' },
-      { label: 'Çıx', style: 'destructive', onPress: discardAndLeave },
+    confirm(t('Dəyişikliklər saxlanılmayıb'), t('Saxlamadan çıxmaq istəyirsən?'), [
+      { label: t('Qal'), style: 'cancel' },
+      { label: t('Çıx'), style: 'destructive', onPress: discardAndLeave },
     ]);
   };
 
@@ -291,9 +293,9 @@ export default function GymEdit() {
         if (!dirtyRef.current) return false; // nothing to lose — let the system leave
         // While a dialog is open UiHost owns the back button; never stack a second one.
         if (useUi.getState().dialog) return true;
-        confirm('Dəyişikliklər saxlanılmayıb', 'Saxlamadan çıxmaq istəyirsən?', [
-          { label: 'Qal', style: 'cancel' },
-          { label: 'Çıx', style: 'destructive', onPress: discardAndLeave },
+        confirm(t('Dəyişikliklər saxlanılmayıb'), t('Saxlamadan çıxmaq istəyirsən?'), [
+          { label: t('Qal'), style: 'cancel' },
+          { label: t('Çıx'), style: 'destructive', onPress: discardAndLeave },
         ]);
         return true;
       });
@@ -305,13 +307,13 @@ export default function GymEdit() {
   const save = async () => {
     if (!gym || saving) return;
     if (!name.trim()) {
-      toast('Zalın adı boş ola bilməz', 'error');
+      toast(t('Zalın adı boş ola bilməz'), 'error');
       return;
     }
     if (!hours) {
       // An unreadable window drops the gym out of the «24 saat» filter and makes
       // check-in fall back to «saatı oxuya bilmədik» — so it is not saved half-written.
-      toast('İş saatlarını tam yaz — məsələn 06:00 və 24:00', 'error');
+      toast(t('İş saatlarını tam yaz — məsələn 06:00 və 24:00'), 'error');
       return;
     }
     setSaving(true);
@@ -342,15 +344,15 @@ export default function GymEdit() {
       state.reload();
       if (locOk) {
         successFeedback();
-        toast('Zal profili yeniləndi');
+        toast(t('Zal profili yeniləndi'));
       } else {
         errorFeedback();
-        toast('Profil yeniləndi, amma zalın yeri saxlanılmadı', 'error');
+        toast(t('Profil yeniləndi, amma zalın yeri saxlanılmadı'), 'error');
       }
       router.back();
     } catch {
       errorFeedback();
-      toast('Saxlanılmadı — bağlantını yoxla', 'error');
+      toast(t('Saxlanılmadı — bağlantını yoxla'), 'error');
     }
     setSaving(false);
   };
@@ -362,7 +364,7 @@ export default function GymEdit() {
           <PressableScale activeScale={0.9} onPress={() => router.back()}>
             <Icon name="chevL" size={26} color={palette.blue} />
           </PressableScale>
-          <AppText variant="headline">Zal profili</AppText>
+          <AppText variant="headline">{t('Zal profili')}</AppText>
           <View style={{ width: 40 }} />
         </View>
         <GymGate state={state} />
@@ -377,10 +379,10 @@ export default function GymEdit() {
         <PressableScale activeScale={0.9} onPress={back}>
           <Icon name="chevL" size={26} color={palette.blue} />
         </PressableScale>
-        <AppText variant="headline">Zal profilini redaktə et</AppText>
+        <AppText variant="headline">{t('Zal profilini redaktə et')}</AppText>
         <PressableScale activeScale={0.94} disabled={saving} onPress={save}>
           <AppText style={{ fontSize: 15, fontWeight: '600', color: saving ? palette.tertiary : palette.blue }}>
-            {saving ? 'Saxlanılır…' : 'Saxla'}
+            {saving ? t('Saxlanılır…') : t('Saxla')}
           </AppText>
         </PressableScale>
       </View>
@@ -394,7 +396,7 @@ export default function GymEdit() {
         {/* Photos — uploaded immediately, no «Saxla» needed */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-            ZALIN ŞƏKİLLƏRİ
+            {t('ZALIN ŞƏKİLLƏRİ')}
           </AppText>
           <PressableScale activeScale={0.98} disabled={coverBusy} onPress={chooseCover} style={styles.coverWrap}>
             {cover ? (
@@ -405,7 +407,7 @@ export default function GymEdit() {
             <View style={styles.coverBadge}>
               <Icon name={cover ? 'edit' : 'plus'} size={13} color={palette.white} />
               <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>
-                {cover ? 'Əsas şəkli dəyiş' : 'Əsas şəkil əlavə et'}
+                {cover ? t('Əsas şəkli dəyiş') : t('Əsas şəkil əlavə et')}
               </AppText>
             </View>
             {coverBusy ? (
@@ -415,7 +417,7 @@ export default function GymEdit() {
             ) : null}
           </PressableScale>
 
-          <AppText style={[styles.hint, { marginTop: 14, marginBottom: 8 }]}>Qalereya</AppText>
+          <AppText style={[styles.hint, { marginTop: 14, marginBottom: 8 }]}>{t('Qalereya')}</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 2 }}>
             {photos.map((url) => (
               <View key={url} style={styles.thumbWrap}>
@@ -433,9 +435,9 @@ export default function GymEdit() {
 
         {/* Identity */}
         <View style={styles.listCard}>
-          <TextRow label="Ad" value={name} onChange={mark(setName)} placeholder="Zalın adı" />
+          <TextRow label={t('Ad')} value={name} onChange={mark(setName)} placeholder={t('Zalın adı')} />
           <View style={styles.rowDiv} />
-          <TextRow label="Rayon" value={district} onChange={mark(setDistrict)} placeholder="Məs: Nərimanov" />
+          <TextRow label={t('Rayon')} value={district} onChange={mark(setDistrict)} placeholder={t('Məs: Nərimanov')} />
           <View style={styles.rowDiv} />
           <HoursField
             always={hrs.always}
@@ -447,24 +449,24 @@ export default function GymEdit() {
 
         {/* Prices */}
         <View style={styles.listCard}>
-          <PriceRow label="Aylıq" value={monthly} onChange={mark(setMonthly)} />
+          <PriceRow label={t('Aylıq')} value={monthly} onChange={mark(setMonthly)} />
           <View style={styles.rowDiv} />
-          <PriceRow label="1 günlük" value={daypass} onChange={mark(setDaypass)} />
+          <PriceRow label={t('1 günlük')} value={daypass} onChange={mark(setDaypass)} />
         </View>
         <AppText style={styles.note}>
-          Qiymətlər yalnız məlumat üçündür — SPOT ödəniş qəbul etmir, komissiya tutmur, pul zalda ödənilir.
+          {t('Qiymətlər yalnız məlumat üçündür — SPOT ödəniş qəbul etmir, komissiya tutmur, pul zalda ödənilir.')}
         </AppText>
 
         {/* About */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-            ZAL HAQQINDA
+            {t('ZAL HAQQINDA')}
           </AppText>
           <TextInput
             value={about}
             onChangeText={mark(setAbout)}
             multiline
-            placeholder="Bir neçə cümlə ilə zalını təsvir et."
+            placeholder={t('Bir neçə cümlə ilə zalını təsvir et.')}
             placeholderTextColor={palette.caption}
             style={styles.about}
           />
@@ -473,7 +475,7 @@ export default function GymEdit() {
         {/* Amenities */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-            AVADANLIQ VƏ İMKANLAR
+            {t('AVADANLIQ VƏ İMKANLAR')}
           </AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {[...new Set([...AMENITIES, ...amenities])].map((a) => {
@@ -484,7 +486,7 @@ export default function GymEdit() {
                   activeScale={0.95}
                   onPress={() => toggleAmenity(a)}
                   style={[styles.chip, on && { backgroundColor: palette.ink }]}>
-                  <AppText style={{ fontSize: 12.5, fontWeight: '600', color: on ? palette.white : '#3A3A42' }}>{a}</AppText>
+                  <AppText style={{ fontSize: 12.5, fontWeight: '600', color: on ? palette.white : '#3A3A42' }}>{t(a)}</AppText>
                 </PressableScale>
               );
             })}
@@ -494,11 +496,10 @@ export default function GymEdit() {
         {/* Location on a live map */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 6 }}>
-            ZALIN YERİ
+            {t('ZALIN YERİ')}
           </AppText>
           <AppText style={[styles.hint, { marginBottom: 12 }]}>
-            Pini zalın üstünə qoymaq üçün xəritəyə toxun — pini basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal müştəri
-            xəritəsində məhz bu nöqtədə görünür.
+            {t('Pini zalın üstünə qoymaq üçün xəritəyə toxun — pini basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal müştəri xəritəsində məhz bu nöqtədə görünür.')}
           </AppText>
           {mediaReady ? (
             <SpotMap
@@ -517,7 +518,7 @@ export default function GymEdit() {
           )}
           <View style={{ marginTop: 10 }}>
             <Button
-              title={locating ? 'Axtarılır…' : 'Mövcud yerimi istifadə et'}
+              title={locating ? t('Axtarılır…') : t('Mövcud yerimi istifadə et')}
               variant="secondary"
               full
               disabled={locating}
@@ -528,23 +529,26 @@ export default function GymEdit() {
             <View style={styles.pinRow}>
               <Icon name="pin" size={14} color={palette.voltDeep} />
               <AppText style={{ fontSize: 12.5, color: palette.textSecondary }}>
-                {picked.lat.toFixed(5)}, {picked.lng.toFixed(5)} · «Saxla» ilə yadda saxlanılır
+                {t('{lat}, {lng} · «Saxla» ilə yadda saxlanılır', {
+                  lat: picked.lat.toFixed(5),
+                  lng: picked.lng.toFixed(5),
+                })}
               </AppText>
             </View>
           ) : (
             <AppText style={[styles.hint, { marginTop: 10 }]}>
-              Hələ pin qoyulmayıb — koordinatı olmayan zal müştəri xəritəsində görünmür.
+              {t('Hələ pin qoyulmayıb — koordinatı olmayan zal müştəri xəritəsində görünmür.')}
             </AppText>
           )}
           {!extrasOk ? (
             <AppText style={styles.warn}>
-              Qalereya və xəritə koordinatları hazırda bazadan oxuna bilmir — dəyişiklik saxlanılmaya bilər.
+              {t('Qalereya və xəritə koordinatları hazırda bazadan oxuna bilmir — dəyişiklik saxlanılmaya bilər.')}
             </AppText>
           ) : null}
         </View>
 
         <AppText style={[styles.note, styles.noteLast]}>
-          Üzv siyahısında kimin göründüyünü hər üzv özü Məxfilik ayarlarından idarə edir — zal bunu dəyişə bilmir.
+          {t('Üzv siyahısında kimin göründüyünü hər üzv özü Məxfilik ayarlarından idarə edir — zal bunu dəyişə bilmir.')}
         </AppText>
       </ScrollView>
     </Screen>

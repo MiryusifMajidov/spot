@@ -23,6 +23,7 @@ import {
 import { getGymDayPasses, getGymOccupancy } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
+import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
@@ -71,6 +72,7 @@ async function settle<T>(p: Promise<T>): Promise<{ ok: true; value: T } | { ok: 
 }
 
 export default function GymPanel() {
+  const t = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   // Android edge-to-edge does not resize the window, so the announcement sheet
@@ -147,9 +149,9 @@ export default function GymPanel() {
       await postGymAnnouncement(gym.name, body);
       setAnnounce(false);
       setAnnounceText('');
-      toast('Elan icmaya göndərildi');
+      toast(t('Elan icmaya göndərildi'));
     } catch {
-      toast('Elan göndərilmədi — bağlantını yoxla', 'error');
+      toast(t('Elan göndərilmədi — bağlantını yoxla'), 'error');
     }
     setSending(false);
   };
@@ -172,12 +174,12 @@ export default function GymPanel() {
   // carries one is an application; anything else still needs to be submitted,
   // and if we could not read the claim we promise nothing about it.
   const claimRow = !claimKnown
-    ? { title: 'Sahiblik təsdiqi', sub: 'Müraciətinin statusuna bax' }
+    ? { title: t('Sahiblik təsdiqi'), sub: t('Müraciətinin statusuna bax') }
     : claim?.status === 'pending' && claim.voen
-      ? { title: 'Sahiblik təsdiqi gözlənilir', sub: 'Müraciətinə bax' }
+      ? { title: t('Sahiblik təsdiqi gözlənilir'), sub: t('Müraciətinə bax') }
       : claim?.status === 'rejected'
-        ? { title: 'Müraciət qəbul olunmadı', sub: 'Səbəbə bax və yenidən göndər' }
-        : { title: 'Sahibliyi təsdiqlə', sub: 'VÖEN göndər · idarəni öz əlinə al' };
+        ? { title: t('Müraciət qəbul olunmadı'), sub: t('Səbəbə bax və yenidən göndər') }
+        : { title: t('Sahibliyi təsdiqlə'), sub: t('VÖEN göndər · idarəni öz əlinə al') };
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.grouped }}>
@@ -194,7 +196,7 @@ export default function GymPanel() {
               <PlaceholderImage height={148} icon="cam" style={styles.cover} />
               <View style={styles.coverBadge}>
                 <Icon name="plus" size={13} color={palette.white} />
-                <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>Zalın şəklini əlavə et</AppText>
+                <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>{t('Zalın şəklini əlavə et')}</AppText>
               </View>
             </>
           )}
@@ -203,7 +205,7 @@ export default function GymPanel() {
         <View style={styles.header}>
           <View style={{ flex: 1, paddingRight: 12 }}>
             <AppText variant="caption" color={palette.tertiary}>
-              Zal paneli · admin
+              {t('Zal paneli · admin')}
             </AppText>
             <AppText variant="largeTitle" numberOfLines={2} style={{ marginTop: 4 }}>
               {gym.name}
@@ -216,29 +218,29 @@ export default function GymPanel() {
           </View>
           <PressableScale activeScale={0.94} onPress={() => showAccountSwitcher(router)} style={styles.modePill}>
             <Icon name="user" size={13} color={palette.volt} />
-            <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>Hesabı dəyiş</AppText>
+            <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>{t('Hesabı dəyiş')}</AppText>
           </PressableScale>
         </View>
 
         <View style={styles.statRow}>
           <View style={[styles.statCard, { backgroundColor: palette.ink }]}>
-            <AppText style={styles.statCapVolt}>İNDİ ZALDA</AppText>
+            <AppText style={styles.statCapVolt}>{t('İNDİ ZALDA')}</AppText>
             <AppText style={styles.statBigDark}>{errors.occupancy || !loaded ? '—' : data.now}</AppText>
             <AppText style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 6 }}>
               {errors.occupancy
-                ? 'check-in məlumatı yüklənmədi'
+                ? t('check-in məlumatı yüklənmədi')
                 : !loaded
-                  ? 'yüklənir…'
+                  ? t('yüklənir…')
                   : hasToday
-                    ? `bugün ${data.today} check-in`
-                    : 'bugün check-in yoxdur'}
+                    ? t('bugün {n} check-in', { n: data.today, count: data.today })
+                    : t('bugün check-in yoxdur')}
             </AppText>
           </View>
           <View style={[styles.statCard, { backgroundColor: palette.white }]}>
-            <AppText style={styles.statCap}>ÜZVLƏR</AppText>
+            <AppText style={styles.statCap}>{t('ÜZVLƏR')}</AppText>
             <AppText style={styles.statBig}>{errors.roster || !loaded ? '—' : data.members}</AppText>
             <AppText style={{ color: palette.tertiary, fontSize: 11, marginTop: 6 }}>
-              {errors.roster ? 'üzv siyahısı yüklənmədi' : !loaded ? 'yüklənir…' : 'SPOT-da bu zalı seçib'}
+              {errors.roster ? t('üzv siyahısı yüklənmədi') : !loaded ? t('yüklənir…') : t('SPOT-da bu zalı seçib')}
             </AppText>
           </View>
         </View>
@@ -246,16 +248,16 @@ export default function GymPanel() {
         {/* Occupancy — drawn only from today's real check-ins */}
         <View style={styles.card}>
           <View style={styles.cardHead}>
-            <AppText variant="headline">Saat üzrə doluluq</AppText>
+            <AppText variant="headline">{t('Saat üzrə doluluq')}</AppText>
             <AppText variant="caption" color={palette.tertiary}>
-              bugün
+              {t('bugün')}
             </AppText>
           </View>
           {errors.occupancy ? (
             <EmptyNote
               inset
-              title="Doluluq yüklənmədi"
-              body="Bu, «check-in yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və səhifəni aşağı çəkib yenilə."
+              title={t('Doluluq yüklənmədi')}
+              body={t('Bu, «check-in yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.')}
             />
           ) : hasToday ? (
             <>
@@ -283,8 +285,11 @@ export default function GymPanel() {
               {peakHour != null ? (
                 <View style={styles.tip}>
                   <AppText style={{ fontSize: 12.5, lineHeight: 18, color: '#3F5500', fontWeight: '500' }}>
-                    Ən sıx saat: {String(peakHour).padStart(2, '0')}:00 · {peak} check-in. Rəqəmlər yalnız bugünkü real
-                    check-in-lərdən hesablanır.
+                    {t('Ən sıx saat: {hour}:00 · {n} check-in. Rəqəmlər yalnız bugünkü real check-in-lərdən hesablanır.', {
+                      hour: String(peakHour).padStart(2, '0'),
+                      n: peak,
+                      count: peak,
+                    })}
                   </AppText>
                 </View>
               ) : null}
@@ -292,11 +297,11 @@ export default function GymPanel() {
           ) : (
             <EmptyNote
               inset
-              title={loaded ? 'Bugün hələ check-in yoxdur' : 'Yüklənir…'}
+              title={loaded ? t('Bugün hələ check-in yoxdur') : t('Yüklənir…')}
               body={
                 loaded
-                  ? 'Doluluq üzv öz telefonundan SPOT-un «Check-in» ekranından check-in edəndə dolur. Zal kodu check-in-i işə salmır — SPOT-da zalını seçən üzvlərə check-in etməyi xatırlat.'
-                  : 'Bugünkü check-in-lər oxunur.'
+                  ? t('Doluluq üzv öz telefonundan SPOT-un «Check-in» ekranından check-in edəndə dolur. Zal kodu check-in-i işə salmır — SPOT-da zalını seçən üzvlərə check-in etməyi xatırlat.')
+                  : t('Bugünkü check-in-lər oxunur.')
               }
             />
           )}
@@ -307,40 +312,39 @@ export default function GymPanel() {
             an all-time count only ever grew and said nothing about the door. */}
         <View style={styles.card}>
           <View style={styles.cardHead}>
-            <AppText variant="headline">Day-pass</AppText>
+            <AppText variant="headline">{t('Day-pass')}</AppText>
             <AppText variant="caption" color={palette.tertiary}>
-              bu gün
+              {t('bu gün')}
             </AppText>
           </View>
           {errors.passes ? (
             <EmptyNote
               inset
-              title="Day-pass məlumatı yüklənmədi"
-              body="Bu, «day-pass yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və səhifəni aşağı çəkib yenilə."
+              title={t('Day-pass məlumatı yüklənmədi')}
+              body={t('Bu, «day-pass yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.')}
             />
           ) : data.passes.live > 0 || data.passes.usedToday > 0 ? (
             <View style={{ gap: 10 }}>
-              <Row label="İndi keçərli" value={`${data.passes.live}`} />
-              <Row label="Resepsiyada təsdiqlənən" value={`${data.passes.usedToday}`} />
+              <Row label={t('İndi keçərli')} value={`${data.passes.live}`} />
+              <Row label={t('Resepsiyada təsdiqlənən')} value={`${data.passes.usedToday}`} />
               <View style={styles.divider} />
               <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.tertiary }}>
-                SPOT ödəniş qəbul etmir və komissiya tutmur — pul zalda ödənilir. Ona görə burada yalnız say
-                göstərilir.
+                {t('SPOT ödəniş qəbul etmir və komissiya tutmur — pul zalda ödənilir. Ona görə burada yalnız say göstərilir.')}
               </AppText>
             </View>
           ) : (
             <EmptyNote
               inset
-              title={loaded ? 'Bu gün day-pass qeydə alınmayıb' : 'Yüklənir…'}
+              title={loaded ? t('Bu gün day-pass qeydə alınmayıb') : t('Yüklənir…')}
               body={
                 loaded
-                  ? 'Üzv olmayan biri zalını day-pass ilə seçəndə burada görünəcək. SPOT ödəniş qəbul etmir — pul zalda ödənilir.'
-                  : 'Day-pass qeydiyyatı oxunur.'
+                  ? t('Üzv olmayan biri zalını day-pass ilə seçəndə burada görünəcək. SPOT ödəniş qəbul etmir — pul zalda ödənilir.')
+                  : t('Day-pass qeydiyyatı oxunur.')
               }
             />
           )}
           <Button
-            title="Kodu yoxla"
+            title={t('Kodu yoxla')}
             variant="secondary"
             full
             onPress={() => router.push('/gym/pass')}
@@ -351,16 +355,16 @@ export default function GymPanel() {
         {/* Where customers find this gym on the map */}
         <View style={styles.card}>
           <View style={styles.cardHead}>
-            <AppText variant="headline">Zalın yeri</AppText>
+            <AppText variant="headline">{t('Zalın yeri')}</AppText>
             <PressableScale activeScale={0.94} onPress={() => router.push('/gym/edit')}>
-              <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.blue }}>Yeri dəyiş</AppText>
+              <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.blue }}>{t('Yeri dəyiş')}</AppText>
             </PressableScale>
           </View>
           {errors.location ? (
             <EmptyNote
               inset
-              title="Zalın yeri oxuna bilmədi"
-              body="Koordinatlar bazadan gəlmədi — pin qoyulub-qoyulmadığını deyə bilmirik. Bağlantını yoxla və səhifəni aşağı çəkib yenilə."
+              title={t('Zalın yeri oxuna bilmədi')}
+              body={t('Koordinatlar bazadan gəlmədi — pin qoyulub-qoyulmadığını deyə bilmirik. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.')}
             />
           ) : media.lat != null && media.lng != null ? (
             <>
@@ -371,35 +375,35 @@ export default function GymPanel() {
                 style={styles.map}
               />
               <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.tertiary, marginTop: 10 }}>
-                Müştərilər zalı xəritədə məhz bu nöqtədə görür.
+                {t('Müştərilər zalı xəritədə məhz bu nöqtədə görür.')}
               </AppText>
             </>
           ) : (
             <EmptyNote
               inset
-              title={loaded ? 'Zalın yeri xəritədə qeyd olunmayıb' : 'Yüklənir…'}
+              title={loaded ? t('Zalın yeri xəritədə qeyd olunmayıb') : t('Yüklənir…')}
               body={
                 loaded
-                  ? 'Koordinat olmadan zal müştəri xəritəsində görünmür. «Yeri dəyiş» ilə pini zalın üstünə qoy.'
-                  : 'Zalın koordinatları oxunur.'
+                  ? t('Koordinat olmadan zal müştəri xəritəsində görünmür. «Yeri dəyiş» ilə pini zalın üstünə qoy.')
+                  : t('Zalın koordinatları oxunur.')
               }
             />
           )}
         </View>
 
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <QuickCard icon="qr" title="Zal kodu" sub="Kodu göstər" onPress={() => router.push('/gym/qr')} />
-          <QuickCard icon="bell" title="Elan" sub="İcmaya yaz" onPress={() => setAnnounce(true)} />
-          <QuickCard icon="edit" title="Profil" sub="Redaktə et" onPress={() => router.push('/gym/edit')} />
+          <QuickCard icon="qr" title={t('Zal kodu')} sub={t('Kodu göstər')} onPress={() => router.push('/gym/qr')} />
+          <QuickCard icon="bell" title={t('Elan')} sub={t('İcmaya yaz')} onPress={() => setAnnounce(true)} />
+          <QuickCard icon="edit" title={t('Profil')} sub={t('Redaktə et')} onPress={() => router.push('/gym/edit')} />
         </View>
 
         {gym.claimStatus === 'claimed' ? (
           <View style={[styles.card, styles.claimRow, { marginTop: 14 }]}>
             <Icon name="verified" size={20} color={palette.voltDeep} />
             <View style={{ flex: 1 }}>
-              <AppText style={{ fontSize: 14, fontWeight: '600' }}>Sahiblik təsdiqlənib</AppText>
+              <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Sahiblik təsdiqlənib')}</AppText>
               <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 3 }}>
-                Zalın idarəsi tam səndədir
+                {t('Zalın idarəsi tam səndədir')}
               </AppText>
             </View>
           </View>
@@ -420,8 +424,8 @@ export default function GymPanel() {
         {loaded && !errors.roster && !errors.occupancy && data.members === 0 && !hasToday ? (
           <View style={{ marginTop: 14 }}>
             <EmptyNote
-              title="Panel hələ boşdur — bu normaldır"
-              body="Bütün rəqəmlər real check-in və real üzvlərdən gəlir. Zal profilini tamamla — üzvlər SPOT-da zalını seçib öz telefonlarından check-in etdikcə panel özü dolacaq."
+              title={t('Panel hələ boşdur — bu normaldır')}
+              body={t('Bütün rəqəmlər real check-in və real üzvlərdən gəlir. Zal profilini tamamla — üzvlər SPOT-da zalını seçib öz telefonlarından check-in etdikcə panel özü dolacaq.')}
             />
           </View>
         ) : null}
@@ -430,25 +434,25 @@ export default function GymPanel() {
       <Modal visible={announce} animationType="slide" transparent onRequestClose={() => setAnnounce(false)}>
         <View style={styles.modalBg}>
           <View style={[styles.sheet, { paddingBottom: (kb > 0 ? kb : insets.bottom) + 16 }]}>
-            <AppText variant="headline">Elan yaz</AppText>
+            <AppText variant="headline">{t('Elan yaz')}</AppText>
             <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 6 }}>
-              Elan SPOT icma lentinə {gym.name} adından yerləşdirilir. Push bildiriş göndərilmir.
+              {t('Elan SPOT icma lentinə {gym} adından yerləşdirilir. Push bildiriş göndərilmir.', { gym: gym.name })}
             </AppText>
             <TextInput
               value={announceText}
               onChangeText={setAnnounceText}
               multiline
-              placeholder="Məs: Bazar günü zal 09:00–18:00 işləyir."
+              placeholder={t('Məs: Bazar günü zal 09:00–18:00 işləyir.')}
               placeholderTextColor={palette.caption}
               style={styles.input}
             />
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
               <View style={{ flex: 1 }}>
-                <Button title="Ləğv et" variant="secondary" full onPress={() => setAnnounce(false)} />
+                <Button title={t('Ləğv et')} variant="secondary" full onPress={() => setAnnounce(false)} />
               </View>
               <View style={{ flex: 1 }}>
                 <Button
-                  title={sending ? 'Göndərilir…' : 'Göndər'}
+                  title={sending ? t('Göndərilir…') : t('Göndər')}
                   variant="primary"
                   full
                   disabled={!announceText.trim() || sending}

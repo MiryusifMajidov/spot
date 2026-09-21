@@ -21,8 +21,10 @@ import { CommunityPost, FeedVideo } from '@/data/feed';
 import { useAuthGate } from '@/lib/authGate';
 import { useFetchPhase } from '@/lib/focusFetch';
 import { useCommunityPosts, useFeedVideos, useGyms } from '@/lib/hooks';
+import { t } from '@/lib/i18n';
 import { showReportReasons } from '@/lib/moderation';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { findProgram, gymById } from '@/store/db';
 import { actionSheet, openComments, toast, useUi } from '@/store/ui';
@@ -110,7 +112,7 @@ function useCommentCounts(keys: string[]): CommentCounts {
 /** What the comment button says: the real number once we have one, otherwise the
  *  plain invitation. Zero also reads as «Şərh» — "be the first" is the useful
  *  thing to say there, and a lone 0 is noise. */
-const commentLabel = (n: number | undefined) => (n && n > 0 ? String(n) : 'Şərh');
+const commentLabel = (n: number | undefined) => (n && n > 0 ? String(n) : t('Şərh'));
 
 /** The name of the gym the user actually picked, or null if they picked none.
  *  Community posts carry the gym NAME (see api.createCommunityPost), so the name
@@ -183,17 +185,18 @@ function Toggle({
   homeGymName: string | null;
   dark?: boolean;
 }) {
+  const t = useT();
   const on = isDark ? palette.white : palette.inkText;
   const off = isDark ? 'rgba(255,255,255,0.5)' : palette.caption;
   // "Zalım" only when there really is a gym behind the tab; otherwise the tab shows
   // every gym's posts, so it must not call itself "my gym".
-  const communityLabel = homeGymName ? 'Zalım' : 'İcma';
+  const communityLabel = homeGymName ? t('Zalım') : t('İcma');
   return (
     <View style={styles.toggle}>
       {(['community', 'video'] as const).map((m) => (
         <PressableScale key={m} haptic activeScale={0.94} onPress={() => setMode(m)} style={{ alignItems: 'center', gap: 6 }}>
           <AppText style={{ fontSize: 16, fontWeight: mode === m ? '700' : '600', color: mode === m ? on : off }}>
-            {m === 'video' ? 'Videolar' : communityLabel}
+            {m === 'video' ? t('Videolar') : communityLabel}
           </AppText>
           {mode === m ? <View style={styles.toggleBar} /> : <View style={{ height: 3 }} />}
         </PressableScale>
@@ -203,6 +206,7 @@ function Toggle({
 }
 
 function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mode) => void; homeGymName: string | null }) {
+  const t = useT();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const gate = useAuthGate();
@@ -282,7 +286,7 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
     if (i < 0) {
       // The clip is not in the list we have — deleted, hidden, or not loaded.
       // Saying so beats silently leaving the reader on somebody else's video.
-      toast('Bu video feed-də tapılmadı', 'error');
+      toast(t('Bu video feed-də tapılmadı'), 'error');
       return;
     }
     /* One frame later: the list has to have laid out its first page before it can
@@ -329,7 +333,7 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
       .onEnd(() => runOnJS(openCreator)())
   );
 
-  const openShare = () => gate(() => router.push('/(tabs)/feed/share'), 'Video paylaşmaq üçün');
+  const openShare = () => gate(() => router.push('/(tabs)/feed/share'), t('Video paylaşmaq üçün'));
 
   return (
     <GestureDetector gesture={swipe}>
@@ -370,15 +374,15 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
               <View style={[styles.videoEmpty, { height: h, paddingTop: insets.top + 80 }]}>
                 <Icon name={videoPhase === 'failed' ? 'x' : 'video'} size={30} color="rgba(255,255,255,0.6)" />
                 <AppText style={{ color: palette.white, fontSize: 17, fontWeight: '700', marginTop: 14 }}>
-                  {videoPhase === 'failed' ? 'Videolar yüklənmədi' : 'Hələ video yoxdur'}
+                  {videoPhase === 'failed' ? t('Videolar yüklənmədi') : t('Hələ video yoxdur')}
                 </AppText>
                 <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 8, maxWidth: 260 }}>
                   {videoPhase === 'failed'
-                    ? 'Serverlə əlaqə alınmadı — bu, feed-in boş olduğu demək deyil. İnterneti yoxlayıb yenidən aç.'
-                    : 'Bu feed-də hələ heç nə paylaşılmayıb. Birinci sən ol — texnika videonu yüklə.'}
+                    ? t('Serverlə əlaqə alınmadı — bu, feed-in boş olduğu demək deyil. İnterneti yoxlayıb yenidən aç.')
+                    : t('Bu feed-də hələ heç nə paylaşılmayıb. Birinci sən ol — texnika videonu yüklə.')}
                 </AppText>
                 {videoPhase === 'failed' ? null : (
-                  <Button title="Video paylaş" variant="volt" icon="cam" onPress={openShare} style={{ marginTop: 20 }} />
+                  <Button title={t('Video paylaş')} variant="volt" icon="cam" onPress={openShare} style={{ marginTop: 20 }} />
                 )}
               </View>
             }
@@ -400,6 +404,7 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
 }
 
 function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMute, commentCount, onOpenComments }: { v: FeedVideo; height: number; topInset: number; bottomInset: number; active: boolean; muted: boolean; onToggleMute: () => void; commentCount: number | undefined; onOpenComments: () => void }) {
+  const t = useT();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [paused, setPaused] = useState(false);
@@ -523,9 +528,9 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
       ) : (
         <View style={[stage, { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }]}>
           <Icon name="video" size={30} color="rgba(255,255,255,0.6)" />
-          <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600', marginTop: 12 }}>Video açılmadı</AppText>
+          <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600', marginTop: 12 }}>{t('Video açılmadı')}</AppText>
           <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 }}>
-            Bu paylaşımın video faylı yüklənməyib.
+            {t('Bu paylaşımın video faylı yüklənməyib.')}
           </AppText>
         </View>
       )}
@@ -578,7 +583,7 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
                        empty set to work with, and the next launch's `syncSocial`
                        wiped the flag. */
                     if (!v.authorId) {
-                      toast('Bu videonun müəllifi qeyd olunmayıb — izləmək mümkün deyil', 'error');
+                      toast(t('Bu videonun müəllifi qeyd olunmayıb — izləmək mümkün deyil'), 'error');
                       return;
                     }
                     const next = !following;
@@ -586,12 +591,12 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
                     if (!hasSupabaseConfig) return;
                     (next ? followProfile(v.authorId) : unfollowProfile(v.authorId)).catch(() => {
                       toggleFollow(v.authorId!);
-                      toast('İzləmə göndərilmədi — yenidən cəhd et', 'error');
+                      toast(t('İzləmə göndərilmədi — yenidən cəhd et'), 'error');
                     });
-                  }, 'İzləmək üçün')
+                  }, t('İzləmək üçün'))
                 }
                 style={[styles.follow, following && { backgroundColor: palette.volt, borderColor: palette.volt }]}>
-                <AppText style={{ fontSize: 12, fontWeight: '600', color: following ? palette.inkText : palette.white }}>{following ? 'İzlənir' : 'İzlə'}</AppText>
+                <AppText style={{ fontSize: 12, fontWeight: '600', color: following ? palette.inkText : palette.white }}>{following ? t('İzlənir') : t('İzlə')}</AppText>
               </PressableScale>
             )}
           </View>
@@ -613,7 +618,7 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
               <Icon name="dumbbell" size={18} color={palette.volt} />
               <View style={{ flex: 1 }}>
                 <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{v.linkedProgramTitle || linkedProgram.title}</AppText>
-                <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11.5, marginTop: 3 }}>Proqrama bax →</AppText>
+                <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11.5, marginTop: 3 }}>{t('Proqrama bax →')}</AppText>
               </View>
               <Icon name="chevR" size={17} color="rgba(255,255,255,0.7)" />
             </PressableScale>
@@ -638,9 +643,9 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
                 if (!hasSupabaseConfig) return;
                 (next ? likeVideo(v.id) : unlikeVideo(v.id)).catch(() => {
                   toggleLike(videoKey(v.id));
-                  toast('Bəyənmə göndərilmədi — yenidən cəhd et', 'error');
+                  toast(t('Bəyənmə göndərilmədi — yenidən cəhd et'), 'error');
                 });
-              }, 'Bəyənmək üçün')
+              }, t('Bəyənmək üçün'))
             }
           />
           {/* The only text left is a real count — never a word for the state. */}
@@ -667,9 +672,9 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
                   })
                   .catch(() => {
                     toggleSaved(v.id);
-                    toast('Saxlanılmadı — yenidən cəhd et', 'error');
+                    toast(t('Saxlanılmadı — yenidən cəhd et'), 'error');
                   });
-              }, 'Saxlamaq üçün')
+              }, t('Saxlamaq üçün'))
             }
           />
           <RailBtn icon="share" onPress={share} />
@@ -724,6 +729,7 @@ function RailBtn({
 }
 
 function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mode) => void; homeGymName: string | null }) {
+  const t = useT();
   // The floating tab bar takes no layout space, so the list clears it itself.
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -762,7 +768,7 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
   const swipeBack = Gesture.Fling()
     .direction(Directions.LEFT)
     .onEnd(() => runOnJS(setMode)('video'));
-  const openCompose = () => gate(() => router.push('/(tabs)/feed/compose'), 'Post paylaşmaq üçün');
+  const openCompose = () => gate(() => router.push('/(tabs)/feed/compose'), t('Post paylaşmaq üçün'));
   return (
     <Screen>
       <View style={styles.communityTop}>
@@ -780,7 +786,7 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
           style={styles.noGymBanner}>
           <Icon name="dumbbell" size={17} color={palette.textSecondary} />
           <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 18 }}>
-            Əsas zalın seçilməyib — burada bütün zalların postları görünür. Zalını seç, yalnız onun postlarını göstərək.
+            {t('Əsas zalın seçilməyib — burada bütün zalların postları görünür. Zalını seç, yalnız onun postlarını göstərək.')}
           </AppText>
           <Icon name="chevR" size={16} color={palette.tertiary} />
         </PressableScale>
@@ -804,20 +810,20 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
               <Icon name={postPhase === 'failed' ? 'x' : 'msg'} size={28} color={palette.tertiary} />
               <AppText variant="headline" center style={{ marginTop: 14 }}>
                 {postPhase === 'failed'
-                  ? 'Postlar yüklənmədi'
+                  ? t('Postlar yüklənmədi')
                   : homeGymName
-                    ? `${homeGymName} zalında hələ post yoxdur`
-                    : 'Hələ post yoxdur'}
+                    ? t('{gym} zalında hələ post yoxdur', { gym: homeGymName })
+                    : t('Hələ post yoxdur')}
               </AppText>
               <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, lineHeight: 21, maxWidth: 270 }}>
                 {postPhase === 'failed'
-                  ? 'Serverlə əlaqə alınmadı — burada post olmadığı demək deyil. İnterneti yoxlayıb yenidən aç.'
+                  ? t('Serverlə əlaqə alınmadı — burada post olmadığı demək deyil. İnterneti yoxlayıb yenidən aç.')
                   : homeGymName
-                    ? 'Nailiyyətini, sualını və ya motivasiyanı yaz — zalındakılar görəcək. Digər zalların postları burada göstərilmir.'
-                    : 'İcmada hələ heç nə paylaşılmayıb. Birinci sən ol.'}
+                    ? t('Nailiyyətini, sualını və ya motivasiyanı yaz — zalındakılar görəcək. Digər zalların postları burada göstərilmir.')
+                    : t('İcmada hələ heç nə paylaşılmayıb. Birinci sən ol.')}
               </AppText>
               {postPhase === 'failed' ? null : (
-                <Button title="İlk postu yaz" icon="plus" onPress={openCompose} style={{ marginTop: 20 }} />
+                <Button title={t('İlk postu yaz')} icon="plus" onPress={openCompose} style={{ marginTop: 20 }} />
               )}
             </View>
           }
@@ -828,6 +834,7 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
 }
 
 function PostCard({ post, commentCount, onOpenComments, onHide }: { post: CommunityPost; commentCount: number | undefined; onOpenComments: () => void; onHide: () => void }) {
+  const t = useT();
   const gate = useAuthGate();
   const liked = useAppStore((s) => s.likedPosts.includes(postKey(post.id)));
   const toggleLike = useAppStore((s) => s.toggleLikedPost);
@@ -845,30 +852,30 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
       if (!hasSupabaseConfig) return;
       (next ? likePost(post.id) : unlikePost(post.id)).catch(() => {
         toggleLike(postKey(post.id));
-        toast('Bəyənmə göndərilmədi — yenidən cəhd et', 'error');
+        toast(t('Bəyənmə göndərilmədi — yenidən cəhd et'), 'error');
       });
-    }, 'Bəyənmək üçün');
+    }, t('Bəyənmək üçün'));
 
   const onMore = () =>
     actionSheet({
       title: post.author,
       actions: [
         {
-          label: 'Şikayət et',
+          label: t('Şikayət et'),
           style: 'destructive',
           // Concrete reason, always: the category is what decides the moderator's SLA
           // (təhlükəsizlik = 2 saat) — a bare «digər» made that lane unreachable.
           onPress: () =>
             showReportReasons({
-              title: 'Postu şikayət et',
+              title: t('Postu şikayət et'),
               target: { type: 'content', id: post.id },
               note: [`İcma postu · ${post.author}`, post.gym, post.text?.slice(0, 180)]
                 .filter(Boolean)
                 .join(' · '),
             }),
         },
-        { label: 'Bu postu gizlət', onPress: () => { onHide(); toast('Post gizlədildi', 'info'); } },
-        { label: 'Ləğv et', style: 'cancel' },
+        { label: t('Bu postu gizlət'), onPress: () => { onHide(); toast(t('Post gizlədildi'), 'info'); } },
+        { label: t('Ləğv et'), style: 'cancel' },
       ],
     });
   return (
@@ -926,7 +933,7 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
             piece of copy in the app. It opens the comments sheet, so it says what
             the «Şərh» action beside it says. */}
         <PressableScale activeScale={0.95} onPress={onOpenComments} style={styles.feedbackBtn}>
-          <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.inkText }}>Rəy yaz</AppText>
+          <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.inkText }}>{t('Rəy yaz')}</AppText>
         </PressableScale>
       </View>
     </View>

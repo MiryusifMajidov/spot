@@ -15,6 +15,7 @@ import { useTrainer, useTrainerPhase } from '@/lib/hooks';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { getMyRequestTo, requestTrainer, type TrainerRequestRow } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
@@ -32,6 +33,7 @@ const STATE_TITLE: Record<TrainerRequestRow['status'], string> = {
 
 export default function Reserve() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const t = useT();
   const router = useRouter();
   const gate = useAuthGate();
   const trainer = useTrainer(id);
@@ -96,18 +98,18 @@ export default function Reserve() {
          already carries the floating bar's footprint — and that footprint includes
          the bottom safe-area inset. Adding it again would push the CTA up twice. */
       <Screen edges={['top']}>
-        <NavBar title="Rezervasiya" />
+        <NavBar title={t('Rezervasiya')} />
         <View style={styles.missing}>
           <Icon name={phase === 'failed' ? 'x' : 'user'} size={28} color={phase === 'failed' ? palette.red : palette.tertiary} />
           <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, lineHeight: 21 }}>
             {phase === 'loading'
-              ? 'Yüklənir…'
+              ? t('Yüklənir…')
               : phase === 'failed'
-                ? 'Müəllim məlumatı yüklənmədi — bağlantını yoxla və yenidən aç. Rezervasiya göndərmək üçün bu məlumat lazımdır.'
-                : 'Müəllim tapılmadı.'}
+                ? t('Müəllim məlumatı yüklənmədi — bağlantını yoxla və yenidən aç. Rezervasiya göndərmək üçün bu məlumat lazımdır.')
+                : t('Müəllim tapılmadı.')}
           </AppText>
           {phase !== 'loading' ? (
-            <Button title="Geri" variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, height: 44, paddingHorizontal: 24 }} />
+            <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, height: 44, paddingHorizontal: 24 }} />
           ) : null}
         </View>
       </Screen>
@@ -121,7 +123,7 @@ export default function Reserve() {
     if (!slot || !chosen) return;
     gate(async () => {
       if (!hasSupabaseConfig) {
-        toast('Sorğu göndərilmədi — internet bağlantısı lazımdır', 'error');
+        toast(t('Sorğu göndərilmədi — internet bağlantısı lazımdır'), 'error');
         return;
       }
       setSending(true);
@@ -130,26 +132,26 @@ export default function Reserve() {
         await requestTrainer(trainer.id, note.trim(), preferred);
         const fresh = await getMyRequestTo(trainer.id).catch(() => null);
         setRequest(fresh ?? { id: '', trainer_id: trainer.id, from_profile: '', note: note.trim(), preferred_time: preferred, status: 'pending', created_at: new Date().toISOString() });
-        toast('Sorğu müəllimə göndərildi');
+        toast(t('Sorğu müəllimə göndərildi'));
       } catch (e) {
         // An ownerless trainer row can never read or answer the request, so no row
         // is written — saying «göndərildi» would leave the user waiting forever.
         if (e instanceof Error && e.message === 'trainer-inactive') {
-          toast('Bu müəllim hesabı hələ aktiv deyil — sorğu göndərmək mümkün deyil', 'error');
+          toast(t('Bu müəllim hesabı hələ aktiv deyil — sorğu göndərmək mümkün deyil'), 'error');
         } else {
-          toast('Sorğu göndərilmədi — yenidən cəhd et', 'error');
+          toast(t('Sorğu göndərilmədi — yenidən cəhd et'), 'error');
         }
       } finally {
         setSending(false);
       }
-    }, 'Müəllimə sorğu göndərmək üçün');
+    }, t('Müəllimə sorğu göndərmək üçün'));
   };
 
   return (
     /* 'top' only — the tab scene's padding already clears the floating bar and the
        home indicator (the native tab bar folds the bottom inset in). */
     <Screen edges={['top']}>
-      <NavBar title="Müəllimlə məşq" />
+      <NavBar title={t('Müəllimlə məşq')} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={8}>
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -166,7 +168,7 @@ export default function Reserve() {
             <View style={{ alignItems: 'flex-end' }}>
               <AppText variant="title3">{trainer.priceFrom} ₼</AppText>
               <AppText variant="caption" color={palette.caption}>
-                1 məşq · məlumat
+                {t('1 məşq · məlumat')}
               </AppText>
             </View>
           </View>
@@ -176,46 +178,48 @@ export default function Reserve() {
               <View style={styles.stateCard}>
                 <Icon name={request.status === 'accepted' ? 'check' : request.status === 'declined' ? 'x' : 'clock'} size={20} color={request.status === 'accepted' ? palette.voltDeep : palette.textSecondary} />
                 <View style={{ flex: 1 }}>
-                  <AppText variant="headline">{STATE_TITLE[request.status]}</AppText>
+                  <AppText variant="headline">{t(STATE_TITLE[request.status])}</AppText>
                   <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 4, lineHeight: 18 }}>
                     {request.status === 'pending'
-                      ? `${trainer.name} sorğunu görür və cavab verəndə burada yenilənəcək.`
+                      ? t('{name} sorğunu görür və cavab verəndə burada yenilənəcək.', { name: trainer.name })
                       : request.status === 'accepted'
-                        ? 'Vaxtı və zalı müəllimlə söhbətdə dəqiqləşdir.'
+                        ? t('Vaxtı və zalı müəllimlə söhbətdə dəqiqləşdir.')
                         : request.status === 'declined'
-                          ? 'Başqa müəllimə baxa bilərsən.'
-                          : 'Yenidən sorğu göndərə bilərsən.'}
+                          ? t('Başqa müəllimə baxa bilərsən.')
+                          : t('Yenidən sorğu göndərə bilərsən.')}
                   </AppText>
                   {request.preferred_time ? (
                     <AppText variant="footnote" color={palette.caption} style={{ marginTop: 6 }}>
-                      İstədiyin vaxt: {request.preferred_time}
+                      {t('İstədiyin vaxt: {time}', { time: request.preferred_time })}
                     </AppText>
                   ) : null}
                   {request.note ? (
                     <AppText variant="footnote" color={palette.caption} style={{ marginTop: 3 }}>
-                      Qeyd: {request.note}
+                      {t('Qeyd: {note}', { note: request.note })}
                     </AppText>
                   ) : null}
                 </View>
               </View>
               <AppText variant="caption" color={palette.caption} style={{ marginTop: 14, lineHeight: 17 }}>
-                SPOT ödəniş qəbul etmir. Qiymət və ödəniş şərtləri birbaşa müəllimlə razılaşdırılır.
+                {t('SPOT ödəniş qəbul etmir. Qiymət və ödəniş şərtləri birbaşa müəllimlə razılaşdırılır.')}
               </AppText>
             </>
           ) : requestFailed ? (
             <View style={styles.stateCard}>
               <Icon name="x" size={20} color={palette.red} />
               <View style={{ flex: 1 }}>
-                <AppText variant="headline">Sorğunun vəziyyəti oxunmadı</AppText>
+                <AppText variant="headline">{t('Sorğunun vəziyyəti oxunmadı')}</AppText>
                 <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 4, lineHeight: 18 }}>
-                  Bu müəllimə əvvəllər sorğu göndərib-göndərmədiyin yoxlanıla bilmədi. İndi yeni sorğu göndərsən, köhnəsinin — hətta müəllimin artıq qəbul etdiyi sorğunun — üstünə yazıla bilər. Bağlantını yoxla və yenidən yoxla.
+                  {t(
+                    'Bu müəllimə əvvəllər sorğu göndərib-göndərmədiyin yoxlanıla bilmədi. İndi yeni sorğu göndərsən, köhnəsinin — hətta müəllimin artıq qəbul etdiyi sorğunun — üstünə yazıla bilər. Bağlantını yoxla və yenidən yoxla.'
+                  )}
                 </AppText>
               </View>
             </View>
           ) : (
             <>
               <AppText variant="overline" color={palette.caption} style={{ marginTop: 22, marginBottom: 12 }}>
-                Tarix
+                {t('Tarix')}
               </AppText>
               <ScrollView
                 horizontal
@@ -224,14 +228,14 @@ export default function Reserve() {
                 style={{ marginHorizontal: -spacing.screen, paddingHorizontal: spacing.screen }}>
                 {days.map((dd, i) => (
                   <PressableScale key={dd.date.toISOString()} activeScale={0.94} onPress={() => setDay(i)} style={[styles.day, day === i && styles.dayOn]}>
-                    <AppText style={{ fontSize: 12, fontWeight: '600', color: day === i ? palette.white : palette.caption }}>{dd.label}</AppText>
+                    <AppText style={{ fontSize: 12, fontWeight: '600', color: day === i ? palette.white : palette.caption }}>{t(dd.label)}</AppText>
                     <AppText style={{ fontSize: 18, fontWeight: '700', color: day === i ? palette.white : palette.inkText, marginTop: 4 }}>{dd.num}</AppText>
                   </PressableScale>
                 ))}
               </ScrollView>
 
               <AppText variant="overline" color={palette.caption} style={{ marginTop: 22, marginBottom: 12 }}>
-                İstədiyin saat
+                {t('İstədiyin saat')}
               </AppText>
               <View style={styles.slots}>
                 {SLOTS.map((s) => (
@@ -241,23 +245,23 @@ export default function Reserve() {
                 ))}
               </View>
               <AppText variant="caption" color={palette.caption} style={{ marginTop: 10, lineHeight: 17 }}>
-                Bu, istəyindir — müəllimin boş saatlarını görmürük. Son vaxt müəllim təsdiqləyəndən sonra dəqiqləşəcək.
+                {t('Bu, istəyindir — müəllimin boş saatlarını görmürük. Son vaxt müəllim təsdiqləyəndən sonra dəqiqləşəcək.')}
               </AppText>
 
               <AppText variant="overline" color={palette.caption} style={{ marginTop: 22, marginBottom: 10 }}>
-                Qeyd (məcburi deyil)
+                {t('Qeyd (məcburi deyil)')}
               </AppText>
               <TextInput
                 value={note}
                 onChangeText={setNote}
-                placeholder="Məqsədin, təcrübən, travma varsa yaz…"
+                placeholder={t('Məqsədin, təcrübən, travma varsa yaz…')}
                 placeholderTextColor={palette.caption}
                 multiline
                 style={styles.noteInput}
               />
 
               <AppText variant="caption" color={palette.caption} style={{ marginTop: 14, lineHeight: 17 }}>
-                Bu rezervasiya deyil — müəllimə sorğudur. SPOT ödəniş qəbul etmir; qiymət yalnız məlumat üçündür.
+                {t('Bu rezervasiya deyil — müəllimə sorğudur. SPOT ödəniş qəbul etmir; qiymət yalnız məlumat üçündür.')}
               </AppText>
             </>
           )}
@@ -265,21 +269,21 @@ export default function Reserve() {
 
         <View style={[styles.footer, { marginBottom: lift }]}>
           {request && request.status !== 'declined' && request.status !== 'ended' ? (
-            <Button title="Müəllimə mesaj yaz" icon="msg" full onPress={() => router.push({ pathname: '/chat/[id]', params: { id: trainer.id } })} />
+            <Button title={t('Müəllimə mesaj yaz')} icon="msg" full onPress={() => router.push({ pathname: '/chat/[id]', params: { id: trainer.id } })} />
           ) : requestFailed ? (
             /* Retry, not «Sorğu göndər». The button that sends is the one that can
                overwrite an accepted request, and it stays out of reach until the
                app knows what it would be overwriting. */
-            <Button title="Yenidən yoxla" icon="clock" full onPress={() => loadRequest()} />
+            <Button title={t('Yenidən yoxla')} icon="clock" full onPress={() => loadRequest()} />
           ) : (
             <>
               <View style={styles.footerInfo}>
                 <AppText variant="footnote" color={palette.caption}>
-                  {preferred || 'Vaxt seç'}
+                  {preferred || t('Vaxt seç')}
                 </AppText>
               </View>
               <Button
-                title={sending ? 'Göndərilir…' : 'Sorğu göndər'}
+                title={sending ? t('Göndərilir…') : t('Sorğu göndər')}
                 onPress={submit}
                 disabled={!slot || sending}
                 style={{ flex: 1 }}

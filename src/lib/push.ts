@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { getMyProfile } from '@/lib/api';
+import { t } from '@/lib/i18n';
 import { notifTarget, openNotifTarget, type NotifType } from '@/lib/notifications';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 
@@ -76,7 +77,7 @@ export async function registerPush(): Promise<{ token: string | null; reason?: s
       // Android 8+ refuses to show anything that is not on a channel. The name is
       // what the person sees in the system settings, so it is in Azerbaijani.
       await Notifications.setNotificationChannelAsync('default', {
-        name: 'SPOT bildirişləri',
+        name: t('SPOT bildirişləri'),
         importance: Notifications.AndroidImportance.DEFAULT,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#C6FF3D',

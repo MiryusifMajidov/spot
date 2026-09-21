@@ -10,10 +10,12 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { createReport } from '@/lib/api';
 import { EmptyNote, GymGate, getGymReviews, replyToReview, useMyGym, type GymReviewRow } from '@/lib/gymOwner';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
+import { useT } from '@/lib/useT';
 import { actionSheet, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
 export default function GymReviews() {
+  const t = useT();
   const insets = useSafeAreaInsets();
   // The reply sheet is a Modal — its own window, which Android never resizes for
   // the keyboard. Pad it by the measured overlap so the field and «Yaz» stay above.
@@ -77,22 +79,22 @@ export default function GymReviews() {
       setReviews((rs) => rs.map((r) => (r.id === replyTo.id ? { ...r, reply: body } : r)));
       setReplyTo(null);
       setReplyText('');
-      toast('Rəsmi cavabın yazıldı');
+      toast(t('Rəsmi cavabın yazıldı'));
     } catch {
-      toast('Cavab yazılmadı — schema7_gym_owner.sql işlədilməyib və ya bağlantı yoxdur', 'error');
+      toast(t('Cavab yazılmadı — schema7_gym_owner.sql işlədilməyib və ya bağlantı yoxdur'), 'error');
     }
     setSaving(false);
   };
 
   const report = (r: GymReviewRow) => {
     actionSheet({
-      title: 'Rəyi şikayət et',
-      message: 'Şikayət rəyi SİLMİR. SPOT moderatoru yoxlayır və qərar verir.',
+      title: t('Rəyi şikayət et'),
+      message: t('Şikayət rəyi SİLMİR. SPOT moderatoru yoxlayır və qərar verir.'),
       actions: [
-        { label: 'Saxta rəy', onPress: () => submitReport(r, 'fake') },
-        { label: 'Təhqir / söyüş', onPress: () => submitReport(r, 'harassment') },
-        { label: 'Spam / reklam', onPress: () => submitReport(r, 'spam') },
-        { label: 'Ləğv et', style: 'cancel' },
+        { label: t('Saxta rəy'), onPress: () => submitReport(r, 'fake') },
+        { label: t('Təhqir / söyüş'), onPress: () => submitReport(r, 'harassment') },
+        { label: t('Spam / reklam'), onPress: () => submitReport(r, 'spam') },
+        { label: t('Ləğv et'), style: 'cancel' },
       ],
     });
   };
@@ -105,9 +107,9 @@ export default function GymReviews() {
         category,
         note: `Zal sahibi şikayəti · ${gym.name} · rəy: ${r.text.slice(0, 180)}`,
       });
-      toast('Şikayət moderatora göndərildi');
+      toast(t('Şikayət moderatora göndərildi'));
     } catch {
-      toast('Şikayət göndərilmədi — bağlantını yoxla', 'error');
+      toast(t('Şikayət göndərilmədi — bağlantını yoxla'), 'error');
     }
   };
 
@@ -118,7 +120,7 @@ export default function GymReviews() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.tertiary} />}
         contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: spacing.screen, paddingBottom: 24 }}>
         <AppText variant="largeTitle" style={{ marginBottom: 4 }}>
-          Rəylər
+          {t('Rəylər')}
         </AppText>
 
         {failed ? (
@@ -126,16 +128,16 @@ export default function GymReviews() {
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
               <Icon name="x" size={17} color="#D14A15" />
               <View style={{ flex: 1 }}>
-                <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>Rəylər yüklənmədi</AppText>
+                <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{t('Rəylər yüklənmədi')}</AppText>
                 <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 5 }}>
                   {reviews.length
-                    ? 'Aşağıdakılar əvvəlki yükləmədən qalıb — yeni rəylər olmaya bilər. Bağlantını yoxla.'
-                    : 'Bu, «rəy yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və yenidən cəhd et.'}
+                    ? t('Aşağıdakılar əvvəlki yükləmədən qalıb — yeni rəylər olmaya bilər. Bağlantını yoxla.')
+                    : t('Bu, «rəy yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və yenidən cəhd et.')}
                 </AppText>
               </View>
             </View>
             <View style={{ marginTop: 12 }}>
-              <Button title="Yenidən cəhd et" variant="secondary" full onPress={refresh} />
+              <Button title={t('Yenidən cəhd et')} variant="secondary" full onPress={refresh} />
             </View>
           </View>
         ) : null}
@@ -152,7 +154,10 @@ export default function GymReviews() {
                 ))}
               </View>
               <AppText variant="caption" color={palette.tertiary} style={{ marginTop: 4 }}>
-                {summary.count} rəy · rəyləri silə bilməzsən, yalnız cavab yaza bilərsən
+                {t('{n} rəy · rəyləri silə bilməzsən, yalnız cavab yaza bilərsən', {
+                  n: summary.count,
+                  count: summary.count,
+                })}
               </AppText>
             </View>
           </View>
@@ -161,8 +166,10 @@ export default function GymReviews() {
         {!reviews.length ? (
           failed ? null : (
             <EmptyNote
-              title={loaded ? 'Hələ rəy yoxdur' : 'Yüklənir…'}
-              body="Üzvlər zalında check-in etdikdən sonra rəy yaza bilir. Rəy gələndə burada real olaraq görünəcək — biz nümunə rəy göstərmirik."
+              title={loaded ? t('Hələ rəy yoxdur') : t('Yüklənir…')}
+              body={t(
+                'Üzvlər zalında check-in etdikdən sonra rəy yaza bilir. Rəy gələndə burada real olaraq görünəcək — biz nümunə rəy göstərmirik.'
+              )}
             />
           )
         ) : (
@@ -193,7 +200,7 @@ export default function GymReviews() {
                 {r.reply ? (
                   <View style={styles.reply}>
                     <AppText style={{ fontSize: 12, fontWeight: '700', color: palette.blue }}>
-                      {gym.name} · rəsmi cavab
+                      {t('{gym} · rəsmi cavab', { gym: gym.name })}
                     </AppText>
                     <AppText variant="footnote" color={palette.text3} style={{ marginTop: 4, lineHeight: 18 }}>
                       {r.reply}

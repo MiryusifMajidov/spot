@@ -8,9 +8,11 @@ import { AppText } from '@/components/ui/AppText';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
+import { timeAgo } from '@/lib/format';
 import { usePartner, useTrainers } from '@/lib/hooks';
 import { showModerationSheet } from '@/lib/moderation';
-import { timeAgoAz, useDb } from '@/store/db';
+import { useT } from '@/lib/useT';
+import { useDb } from '@/store/db';
 import {
   ChatError, chatRefusalText, findThread, getMessages, markThreadRead,
   openThread, sendMessage, subscribeToThread, type ChatMessageRow,
@@ -18,6 +20,11 @@ import {
 
 /** Only a real profile row has a server thread; seed ids never will. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** «indi» / «5 dəq» / «Dünən», in the language the person chose. `timeAgo` takes
+ *  the clock as an argument so the formatter itself stays pure; reading it stays
+ *  here, exactly where the old `timeAgoAz` read it. */
+const ago = (iso: string) => timeAgo(iso, Date.now());
 import { useDiscoverPrefs } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
@@ -30,6 +37,7 @@ export default function Conversation() {
   // `name` is passed by the screens that already know the counterpart (a trainer
   // opening a student thread); it is only a fallback for the real record below.
   const { id, name: nameParam } = useLocalSearchParams<{ id: string; name?: string }>();
+  const t = useT();
   const trainers = useTrainers();
   const trainer = trainers.find((t) => t.id === id);
   // Not a trainer id → the counterpart is a person with a profiles row: a partner
@@ -55,7 +63,7 @@ export default function Conversation() {
   // Never invent a name: when nobody could be resolved we say so instead of
   // labelling the thread (and the block dialog) with a placeholder.
   const resolvedName = partner?.name ?? trainer?.name ?? (nameParam?.trim() || null);
-  const name = resolvedName ?? 'Söhbət';
+  const name = resolvedName ?? t('Söhbət');
   const isPartner = !!partner || !!match;
 
   // Opening the thread is what marks it read — never "who wrote last".
@@ -132,7 +140,7 @@ export default function Conversation() {
     if (!text || !id || sending) return;
     tapFeedback();
     if (!hasSupabaseConfig || !UUID.test(id)) {
-      toast('Mesaj göndərilə bilmir — bu söhbətin serverdə qarşı tərəfi yoxdur', 'error');
+      toast(t('Mesaj göndərilə bilmir — bu söhbətin serverdə qarşı tərəfi yoxdur'), 'error');
       return;
     }
     setSending(true);
@@ -177,7 +185,7 @@ export default function Conversation() {
         right={
           <PressableScale
             activeScale={0.9}
-            onPress={() => showModerationSheet(resolvedName ?? 'Bu istifadəçi', { type: trainer ? 'trainer' : 'user', id })}>
+            onPress={() => showModerationSheet(resolvedName ?? t('Bu istifadəçi'), { type: trainer ? 'trainer' : 'user', id })}>
             <Icon name="more" size={22} color={palette.inkText} />
           </PressableScale>
         }
@@ -192,33 +200,33 @@ export default function Conversation() {
             <Icon name="lock" size={13} color={palette.caption} />
             <AppText variant="caption" color={palette.caption} style={{ flex: 1, lineHeight: 17 }}>
               {chatState === 'unavailable'
-                ? 'Bu söhbətin serverdə qarşı tərəfi yoxdur — yazdıqların göndərilmir.'
-                : 'Mesajlar qarşı tərəfə çatır. Cavab gələnə qədər bir mesaj göndərmək olur — vaxtı zalda dəqiqləşdirin.'}
+                ? t('Bu söhbətin serverdə qarşı tərəfi yoxdur — yazdıqların göndərilmir.')
+                : t('Mesajlar qarşı tərəfə çatır. Cavab gələnə qədər bir mesaj göndərmək olur — vaxtı zalda dəqiqləşdirin.')}
             </AppText>
           </View>
 
           {chatState === 'loading' ? (
             <View style={styles.startNote}>
-              <AppText variant="footnote" color={palette.caption} center>Yüklənir…</AppText>
+              <AppText variant="footnote" color={palette.caption} center>{t('Yüklənir…')}</AppText>
             </View>
           ) : chatState === 'failed' ? (
             <View style={styles.startNote}>
               <AppText variant="footnote" color={palette.caption} center style={{ lineHeight: 19 }}>
-                Söhbət yüklənmədi — neçə mesaj olduğunu bilmirik. İnternet qayıdanda yenidən aç.
+                {t('Söhbət yüklənmədi — neçə mesaj olduğunu bilmirik. İnternet qayıdanda yenidən aç.')}
               </AppText>
             </View>
           ) : messages.length === 0 ? (
             <View style={styles.startNote}>
               <AppText variant="footnote" color={palette.caption} center style={{ lineHeight: 19 }}>
                 {!resolvedName
-                  ? 'Bu söhbətin qarşı tərəfini tapa bilmədik. Yazdıqların yalnız bu cihazda qalır.'
+                  ? t('Bu söhbətin qarşı tərəfini tapa bilmədik. Yazdıqların yalnız bu cihazda qalır.')
                   : isPartner
                     ? match?.state === 'accepted'
-                      ? `${name} ilə match oldunuz. İlk mesajı yaz — yoldaşlıq zalda başlayır.`
+                      ? t('{name} ilə match oldunuz. İlk mesajı yaz — yoldaşlıq zalda başlayır.', { name })
                       : match
-                        ? `${name} hələ təklifə cavab verməyib. Cavab gələndə söhbət burada davam edəcək.`
-                        : `${name} ilə söhbət. İlk mesajı yaz.`
-                    : `${name} ilə söhbət. Qeydlərini burada saxlaya bilərsən.`}
+                        ? t('{name} hələ təklifə cavab verməyib. Cavab gələndə söhbət burada davam edəcək.', { name })
+                        : t('{name} ilə söhbət. İlk mesajı yaz.', { name })
+                    : t('{name} ilə söhbət. Qeydlərini burada saxlaya bilərsən.', { name })}
               </AppText>
             </View>
           ) : (
@@ -231,8 +239,8 @@ export default function Conversation() {
                     </AppText>
                   </View>
                   <AppText variant="caption" color={palette.tertiary} style={{ marginTop: 3, marginHorizontal: 4 }}>
-                    {timeAgoAz(m.createdAt)}
-                    {m.mine && m.read ? ' · oxundu' : ''}
+                    {ago(m.createdAt)}
+                    {m.mine && m.read ? t(' · oxundu') : ''}
                   </AppText>
                 </View>
               ))}
@@ -250,7 +258,7 @@ export default function Conversation() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quick}>
             {QUICK.map((q) => (
               <PressableScale key={q} activeScale={0.95} onPress={() => send(q)} style={styles.quickChip}>
-                <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.text3 }}>{q}</AppText>
+                <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.text3 }}>{t(q)}</AppText>
               </PressableScale>
             ))}
           </ScrollView>
@@ -258,7 +266,7 @@ export default function Conversation() {
             <TextInput
               value={text}
               onChangeText={setText}
-              placeholder="Mesaj yaz…"
+              placeholder={t('Mesaj yaz…')}
               placeholderTextColor={palette.caption}
               style={styles.input}
               onSubmitEditing={() => send(text)}

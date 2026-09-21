@@ -12,6 +12,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { AuthSetupError, signInWithApple, signInWithGoogle, SOCIAL_FIRST } from '@/lib/auth';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { dark, palette } from '@/theme';
@@ -34,6 +35,7 @@ import { dark, palette } from '@/theme';
  */
 
 export default function Welcome() {
+  const t = useT();
   const router = useRouter();
   const enterGuest = useAppStore((s) => s.enterGuest);
   const bootstrap = useAppStore((s) => s.bootstrap);
@@ -49,7 +51,7 @@ export default function Welcome() {
   const providers: ('google' | 'apple')[] = SOCIAL_FIRST === 'apple' ? ['apple', 'google'] : ['google', 'apple'];
 
   const social = async (provider: 'google' | 'apple') => {
-    if (!hasSupabaseConfig) return toast('Server bağlantısı yoxdur', 'error');
+    if (!hasSupabaseConfig) return toast(t('Server bağlantısı yoxdur'), 'error');
     const label = provider === 'apple' ? 'Apple' : 'Google';
     setBusy(provider);
     try {
@@ -63,7 +65,7 @@ export default function Welcome() {
       successFeedback();
       const { onboarded, profile } = useAppStore.getState();
       if (onboarded && profile.name.trim()) {
-        toast(`${label} ilə daxil oldun`);
+        toast(t('{provider} ilə daxil oldun', { provider: label }));
         router.replace('/(tabs)/discover');
       } else {
         router.replace('/onboarding/profile');
@@ -73,8 +75,8 @@ export default function Welcome() {
       errorFeedback();
       toast(
         e instanceof AuthSetupError
-          ? `${label} girişi hələ açılmayıb. Bu, tətbiqin deyil, serverin ayarıdır.`
-          : `${label} girişi alınmadı — yenidən cəhd et`,
+          ? t('{provider} girişi hələ açılmayıb. Bu, tətbiqin deyil, serverin ayarıdır.', { provider: label })
+          : t('{provider} girişi alınmadı — yenidən cəhd et', { provider: label }),
         'error'
       );
     } finally {
@@ -106,11 +108,11 @@ export default function Welcome() {
             </View>
           </View>
           <View style={{ alignItems: 'center', marginTop: 26 }}>
-            <AppText style={styles.title}>Tək məşq etmə</AppText>
+            <AppText style={styles.title}>{t('Tək məşq etmə')}</AppText>
             {/* No exercise videos exist in the app yet, so the old line
                 («hər hərəkəti video ilə öyrən») promised something SPOT cannot
                 deliver on the very first screen a new user sees. */}
-            <AppText style={styles.subtitle}>Zalını seç, məşq yoldaşını tap, hər məşqini qeyd et. Hesabın varsa, eyni düymə ilə geri qayıdırsan.</AppText>
+            <AppText style={styles.subtitle}>{t('Zalını seç, məşq yoldaşını tap, hər məşqini qeyd et. Hesabın varsa, eyni düymə ilə geri qayıdırsan.')}</AppText>
           </View>
         </View>
 
@@ -125,7 +127,7 @@ export default function Welcome() {
                 <ActivityIndicator color={palette.inkText} />
               ) : (
                 <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
-                  {prov === 'apple' ? 'Apple' : 'Google'} ilə davam et
+                  {t('{provider} ilə davam et', { provider: prov === 'apple' ? 'Apple' : 'Google' })}
                 </AppText>
               )}
             </PressableScale>
@@ -138,11 +140,11 @@ export default function Welcome() {
             disabled={!!busy}
             onPress={() => router.push({ pathname: '/auth/sign-in', params: { mode: 'login' } })}
             style={[styles.btn, styles.btnGhost]}>
-            <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.white }}>E-poçt ilə davam et</AppText>
+            <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.white }}>{t('E-poçt ilə davam et')}</AppText>
           </PressableScale>
 
           <PressableScale haptic={false} onPress={browseAsGuest} disabled={!!busy} style={styles.guestBtn}>
-            <AppText style={{ fontSize: 15, fontWeight: '600', color: palette.volt }}>Qonaq kimi bax</AppText>
+            <AppText style={{ fontSize: 15, fontWeight: '600', color: palette.volt }}>{t('Qonaq kimi bax')}</AppText>
             <Icon name="chevR" size={16} color={palette.volt} />
           </PressableScale>
           {/* Both were plain words over documents that did not exist, so the

@@ -14,6 +14,7 @@ import { getPartner } from '@/lib/api';
 import { useAuthGate } from '@/lib/authGate';
 import { showModerationSheet } from '@/lib/moderation';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { Partner } from '@/data/types';
 import { seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
@@ -28,6 +29,7 @@ type Phase = 'loading' | 'ok' | 'gone' | 'fail';
 export default function PartnerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const gate = useAuthGate();
   const match = useDb((s) => s.matches[id]);
   // The block dialog promises this person disappears from the user's lists — the
@@ -76,27 +78,27 @@ export default function PartnerDetail() {
             <>
               <Icon name="user" size={28} color={palette.tertiary} />
               <AppText variant="headline" style={{ marginTop: 12 }}>
-                Bu profil artıq görünmür
+                {t('Bu profil artıq görünmür')}
               </AppText>
               <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, maxWidth: 270, lineHeight: 21 }}>
-                Bu adam profilini gizlədib və ya hesabı yoxdur.
+                {t('Bu adam profilini gizlədib və ya hesabı yoxdur.')}
               </AppText>
-              <Button title="Geri" variant="secondary" onPress={() => router.back()} style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }} />
+              <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }} />
             </>
           ) : (
             <>
               <Icon name="bell" size={28} color={palette.tertiary} />
               <AppText variant="headline" style={{ marginTop: 12 }}>
-                Yüklənmədi
+                {t('Yüklənmədi')}
               </AppText>
               <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, maxWidth: 270, lineHeight: 21 }}>
                 {hasSupabaseConfig
-                  ? 'Bu profili oxuya bilmədik. İnternet bağlantısını yoxla və yenidən cəhd et.'
-                  : 'Bu quraşdırmada server bağlantısı yoxdur — profili oxuya bilmirik.'}
+                  ? t('Bu profili oxuya bilmədik. İnternet bağlantısını yoxla və yenidən cəhd et.')
+                  : t('Bu quraşdırmada server bağlantısı yoxdur — profili oxuya bilmirik.')}
               </AppText>
               {hasSupabaseConfig ? (
                 <Button
-                  title="Yenidən cəhd et"
+                  title={t('Yenidən cəhd et')}
                   onPress={() => setAttempt((n) => n + 1)}
                   style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }}
                 />
@@ -135,12 +137,12 @@ export default function PartnerDetail() {
               {p.hereNow && !seedById(p.id) && (
                 <View style={styles.hereBadge}>
                   <View style={styles.dot} />
-                  <AppText style={styles.hereText}>indi zalda</AppText>
+                  <AppText style={styles.hereText}>{t('indi zalda')}</AppText>
                 </View>
               )}
             </View>
             <AppText variant="callout" color={palette.textSecondary} style={{ marginTop: 2 }}>
-              {[p.level ?? 'Səviyyə göstərilməyib', p.usualTime].filter(Boolean).join(' · ')}
+              {[t(p.level ?? 'Səviyyə göstərilməyib'), t(p.usualTime)].filter(Boolean).join(' · ')}
             </AppText>
             {score === null ? (
               <PressableScale
@@ -148,11 +150,11 @@ export default function PartnerDetail() {
                 onPress={() => router.push('/(tabs)/profile/edit')}
                 style={styles.unknownPill}>
                 <Icon name="sliders" size={14} color={palette.textSecondary} />
-                <AppText style={styles.unknownText}>{COMPAT_UNKNOWN}</AppText>
+                <AppText style={styles.unknownText}>{t(COMPAT_UNKNOWN)}</AppText>
               </PressableScale>
             ) : (
               <View style={styles.compatPill}>
-                <AppText style={styles.compatText}>{score}% uyğun</AppText>
+                <AppText style={styles.compatText}>{t('{n}% uyğun', { n: score })}</AppText>
               </View>
             )}
           </View>
@@ -163,12 +165,12 @@ export default function PartnerDetail() {
         {score !== null && (pros.length > 0 || cons.length > 0) ? (
           <>
             <AppText variant="overline" color={palette.caption} style={styles.label}>
-              {cons.length > 0 ? 'Uyğunluq təhlili' : 'Niyə uyğundur'}
+              {cons.length > 0 ? t('Uyğunluq təhlili') : t('Niyə uyğundur')}
             </AppText>
             {pros.map((r) => (
               <View key={r} style={styles.reasonRow}>
                 <Icon name="check" size={16} color={palette.voltDeep} />
-                <AppText variant="body">{r}</AppText>
+                <AppText variant="body">{t(r)}</AppText>
               </View>
             ))}
             {/* A mismatch never gets the green check — that is what made the score
@@ -177,7 +179,7 @@ export default function PartnerDetail() {
               <View key={r} style={styles.reasonRow}>
                 <Icon name="x" size={16} color={MISMATCH_COLOR} />
                 <AppText variant="body" color={palette.textSecondary}>
-                  {r}
+                  {t(r)}
                 </AppText>
               </View>
             ))}
@@ -187,14 +189,14 @@ export default function PartnerDetail() {
         {p.prs.length > 0 ? (
           <>
             <AppText variant="overline" color={palette.caption} style={styles.label}>
-              Rekordlar (PR)
+              {t('Rekordlar (PR)')}
             </AppText>
             <View style={styles.prRow}>
               {p.prs.map((pr) => (
                 <View key={pr.lift} style={styles.prCard}>
                   <AppText variant="title2">{pr.value}</AppText>
                   <AppText variant="caption" color={palette.caption}>
-                    {pr.lift} · kq
+                    {t('{lift} · kq', { lift: t(pr.lift) })}
                   </AppText>
                 </View>
               ))}
@@ -203,12 +205,12 @@ export default function PartnerDetail() {
         ) : null}
 
         <AppText variant="overline" color={palette.caption} style={styles.label}>
-          Məqsəd və məşq tipi
+          {t('Məqsəd və məşq tipi')}
         </AppText>
         <View style={styles.tagWrap}>
-          {[...p.goals, ...p.types].map((t) => (
-            <View key={t} style={styles.softTag}>
-              <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.text3 }}>{t}</AppText>
+          {[...p.goals, ...p.types].map((tag) => (
+            <View key={tag} style={styles.softTag}>
+              <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.text3 }}>{t(tag)}</AppText>
             </View>
           ))}
         </View>
@@ -217,12 +219,13 @@ export default function PartnerDetail() {
       <View style={styles.footer}>
         {isBlocked ? (
           <AppText variant="footnote" color={palette.textSecondary} center style={{ paddingVertical: 6, lineHeight: 18 }}>
-            Bu istifadəçini bloklamısan — o sənin siyahılarında görünmür. Blokun götürülməsi üçün yuxarıdakı «···»
-            menyusundan istifadə et.
+            {t(
+              'Bu istifadəçini bloklamısan — o sənin siyahılarında görünmür. Blokun götürülməsi üçün yuxarıdakı «···» menyusundan istifadə et.'
+            )}
           </AppText>
         ) : match?.state === 'accepted' ? (
           <Button
-            title="Söhbətə keç"
+            title={t('Söhbətə keç')}
             icon="msg"
             full
             onPress={() => router.push({ pathname: '/chat/[id]', params: { id: p.id } })}
@@ -230,10 +233,10 @@ export default function PartnerDetail() {
         ) : match?.state === 'requested' ? (
           <>
             <AppText variant="footnote" color={palette.textSecondary} center style={{ marginBottom: 10, lineHeight: 18 }}>
-              Təklif göndərilib — {p.name} cavab verənə qədər söhbət açılmır.
+              {t('Təklif göndərilib — {name} cavab verənə qədər söhbət açılmır.', { name: p.name })}
             </AppText>
             <Button
-              title="Təklifə bax"
+              title={t('Təklifə bax')}
               variant="secondary"
               full
               onPress={() => router.push({ pathname: '/(tabs)/discover/match', params: { id: p.id } })}
@@ -241,11 +244,11 @@ export default function PartnerDetail() {
           </>
         ) : (
           <Button
-            title="Məşq təklif et"
+            title={t('Məşq təklif et')}
             icon="dumbbell"
             full
             notify
-            onPress={() => gate(() => router.push({ pathname: '/(tabs)/discover/match', params: { id: p.id } }), 'Yoldaş tapmaq üçün')}
+            onPress={() => gate(() => router.push({ pathname: '/(tabs)/discover/match', params: { id: p.id } }), t('Yoldaş tapmaq üçün'))}
           />
         )}
       </View>

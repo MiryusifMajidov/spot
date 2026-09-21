@@ -9,11 +9,13 @@ import { Screen } from '@/components/ui/Screen';
 import { createCommunityPost } from '@/lib/api';
 import { useGyms } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
 export default function Compose() {
+  const t = useT();
   const router = useRouter();
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
@@ -24,11 +26,11 @@ export default function Compose() {
   const post = async () => {
     if (!text.trim() || posting) return;
     if (!profile.name.trim()) {
-      toast('Əvvəlcə profilində adını yaz — post adınla paylaşılır', 'error');
+      toast(t('Əvvəlcə profilində adını yaz — post adınla paylaşılır'), 'error');
       return;
     }
     if (!hasSupabaseConfig) {
-      toast('Post göndərilə bilmədi — server bağlantısı yoxdur', 'error');
+      toast(t('Post göndərilə bilmədi — server bağlantısı yoxdur'), 'error');
       return;
     }
     setPosting(true);
@@ -36,31 +38,31 @@ export default function Compose() {
       await createCommunityPost({ author: profile.name.trim(), gym: gymName, body: text.trim() });
     } catch {
       setPosting(false);
-      toast('Post göndərilə bilmədi. Yenidən cəhd et.', 'error');
+      toast(t('Post göndərilə bilmədi. Yenidən cəhd et.'), 'error');
       return;
     }
-    toast('Postun paylaşıldı');
+    toast(t('Postun paylaşıldı'));
     router.back();
   };
 
   return (
     <Screen edges={['top', 'bottom']}>
       <NavBar
-        title="Yeni post"
-        right={<Button title="Paylaş" variant="volt" disabled={!text.trim() || posting} onPress={post} />}
+        title={t('Yeni post')}
+        right={<Button title={t('Paylaş')} variant="volt" disabled={!text.trim() || posting} onPress={post} />}
       />
       <View style={styles.body}>
         <TextInput
           value={text}
           onChangeText={setText}
-          placeholder="Nə paylaşmaq istəyirsən? Nailiyyət, sual və ya motivasiya…"
+          placeholder={t('Nə paylaşmaq istəyirsən? Nailiyyət, sual və ya motivasiya…')}
           placeholderTextColor={palette.caption}
           multiline
           autoFocus
           style={styles.input}
         />
         <AppText variant="caption" color={palette.caption} style={{ marginTop: 8 }}>
-          {gymName ? `${gymName} · community feed-də görünəcək` : 'Community feed-də görünəcək'}
+          {gymName ? t('{gym} · community feed-də görünəcək', { gym: gymName }) : t('Community feed-də görünəcək')}
         </AppText>
       </View>
     </Screen>

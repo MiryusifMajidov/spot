@@ -10,13 +10,20 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { getMyProfile, getPartner } from '@/lib/api';
+import { timeAgo } from '@/lib/format';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
-import { seedById, timeAgoAz, useDb } from '@/store/db';
+import { useT } from '@/lib/useT';
+import { seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** «indi» / «5 dəq» / «Dünən», in the language the person chose. `timeAgo` takes
+ *  the clock as an argument so the formatter itself stays pure; reading it stays
+ *  here, exactly where the old `timeAgoAz` read it. */
+const ago = (iso: string) => timeAgo(iso, Date.now());
 
 /** A real pending `match_requests` row addressed to me. `name` stays null when the
  *  sender's profile could not be read — we say so instead of inventing one. */
@@ -49,6 +56,7 @@ const forgetOutgoing = (partnerId: string) =>
   });
 
 export default function Requests() {
+  const t = useT();
   const router = useRouter();
   const matches = useDb((s) => s.matches);
   const acceptMatch = useDb((s) => s.acceptMatch);
@@ -230,10 +238,10 @@ export default function Requests() {
     setHidden((rows) => rows.filter((r) => r.id !== row.id));
     if (delivered) {
       successFeedback();
-      toast('Təklif qəbul edildi');
+      toast(t('Təklif qəbul edildi'));
     } else {
       tapFeedback();
-      toast('Qəbul bu cihazda qeyd olundu — qarşı tərəfə hələ çatmayıb', 'info');
+      toast(t('Qəbul bu cihazda qeyd olundu — qarşı tərəfə hələ çatmayıb'), 'info');
     }
     router.push({ pathname: '/chat/[id]', params: { id: row.fromProfile, name: row.name ?? '' } });
   };
@@ -269,7 +277,7 @@ export default function Requests() {
       landed = false;
     }
     if (!landed) {
-      toast('Sorğu rədd edilmədi — serverə çatmadı. Yenidən cəhd et.', 'error');
+      toast(t('Sorğu rədd edilmədi — serverə çatmadı. Yenidən cəhd et.'), 'error');
       return;
     }
     declineMatch(row.fromProfile);
@@ -280,19 +288,19 @@ export default function Requests() {
   const cancel = (partnerId: string, name: string) => {
     const deliverable = hasSupabaseConfig && UUID.test(partnerId);
     confirm(
-      'Təklifi geri götür?',
+      t('Təklifi geri götür?'),
       deliverable
-        ? `${name} göndərdiyin təklifi artıq görməyəcək.`
-        : 'Bu təklif serverə çatmayıb — yalnız bu cihazdan silinəcək.',
+        ? t('{name} göndərdiyin təklifi artıq görməyəcək.', { name })
+        : t('Bu təklif serverə çatmayıb — yalnız bu cihazdan silinəcək.'),
       [
-        { label: 'İmtina', style: 'cancel' },
+        { label: t('İmtina'), style: 'cancel' },
         {
-          label: 'Geri götür',
+          label: t('Geri götür'),
           style: 'destructive',
           onPress: async () => {
             if (!deliverable) {
               forgetOutgoing(partnerId);
-              toast('Təklif cihazdan silindi', 'info');
+              toast(t('Təklif cihazdan silindi'), 'info');
               return;
             }
             try {
@@ -309,10 +317,10 @@ export default function Requests() {
               if (error || !data?.length) throw error ?? new Error('not withdrawn');
               forgetOutgoing(partnerId);
               successFeedback();
-              toast('Təklif geri götürüldü');
+              toast(t('Təklif geri götürüldü'));
             } catch {
               errorFeedback();
-              toast('Təklif geri götürülmədi — yenidən cəhd et', 'error');
+              toast(t('Təklif geri götürülmədi — yenidən cəhd et'), 'error');
             }
           },
         },
@@ -335,14 +343,14 @@ export default function Requests() {
       <View style={styles.head}>
         <Avatar name={m.name ?? '?'} size={44} />
         <View style={{ flex: 1 }}>
-          <AppText variant="headline">{m.name ?? 'Adı göstərilmir'}</AppText>
+          <AppText variant="headline">{m.name ?? t('Adı göstərilmir')}</AppText>
           <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>
-            {timeAgoAz(m.at)}
+            {ago(m.at)}
           </AppText>
         </View>
       </View>
       <AppText variant="body" color={palette.text3} style={{ marginTop: 10, lineHeight: 21 }}>
-        Birlikdə məşq etmək istəyir.
+        {t('Birlikdə məşq etmək istəyir.')}
       </AppText>
       {/* The time and gym the sender actually chose. Until schema54 this never
           left their phone, so this card said «wants to train together» and
@@ -357,10 +365,10 @@ export default function Requests() {
       ) : null}
       <View style={styles.btns}>
         <PressableScale activeScale={0.97} onPress={() => decline(m)} style={styles.decline}>
-          <AppText style={{ color: palette.textSecondary, fontWeight: '600', fontSize: 14 }}>Sil</AppText>
+          <AppText style={{ color: palette.textSecondary, fontWeight: '600', fontSize: 14 }}>{t('Sil')}</AppText>
         </PressableScale>
         <PressableScale activeScale={0.97} onPress={() => accept(m)} style={styles.accept}>
-          <AppText style={{ color: palette.white, fontWeight: '600', fontSize: 14 }}>Qəbul et</AppText>
+          <AppText style={{ color: palette.white, fontWeight: '600', fontSize: 14 }}>{t('Qəbul et')}</AppText>
         </PressableScale>
       </View>
     </View>
@@ -368,12 +376,12 @@ export default function Requests() {
 
   return (
     <Screen>
-      <NavBar title="Sorğular" />
+      <NavBar title={t('Sorğular')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.note}>
           <Icon name="shield" size={15} color={palette.caption} />
           <AppText variant="caption" color={palette.caption} style={{ flex: 1, lineHeight: 17 }}>
-            Bir sorğu = bir mesaj. Cavab vermədikcə söhbətə düşmür və göndərən «oxundu» görmür.
+            {t('Bir sorğu = bir mesaj. Cavab vermədikcə söhbətə düşmür və göndərən «oxundu» görmür.')}
           </AppText>
         </View>
 
@@ -381,7 +389,7 @@ export default function Requests() {
           <View style={styles.empty}>
             <Icon name="clock" size={26} color={palette.tertiary} />
             <AppText variant="headline" style={{ marginTop: 12 }}>
-              Sorğular yüklənir…
+              {t('Sorğular yüklənir…')}
             </AppText>
           </View>
         ) : null}
@@ -390,14 +398,13 @@ export default function Requests() {
           <View style={styles.empty}>
             <Icon name="bell" size={26} color={palette.tertiary} />
             <AppText variant="headline" style={{ marginTop: 12 }}>
-              Sənə gələn sorğular yüklənmədi
+              {t('Sənə gələn sorğular yüklənmədi')}
             </AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, maxWidth: 280, lineHeight: 21 }}>
-              Serverlə əlaqə alınmadı, ona görə sənə kimin təklif göndərdiyini göstərə bilmirik. İnterneti yoxlayıb bu
-              səhifəni yenidən aç.
+              {t('Serverlə əlaqə alınmadı, ona görə sənə kimin təklif göndərdiyini göstərə bilmirik. İnterneti yoxlayıb bu səhifəni yenidən aç.')}
             </AppText>
             <PressableScale activeScale={0.96} onPress={load} style={styles.emptyBtn}>
-              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>Yenidən cəhd et</AppText>
+              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Yenidən cəhd et')}</AppText>
             </PressableScale>
           </View>
         ) : null}
@@ -406,11 +413,11 @@ export default function Requests() {
           <View style={styles.empty}>
             <Icon name="bell" size={26} color={palette.tertiary} />
             <AppText variant="headline" style={{ marginTop: 12 }}>
-              Sorğular hazırda əlçatan deyil
+              {t('Sorğular hazırda əlçatan deyil')}
             </AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, maxWidth: 280, lineHeight: 21 }}>
-              Bu quraşdırmada server bağlantısı yoxdur — sənə kimin təklif göndərdiyini oxuya bilmirik.
-              {outgoing.length ? ' Aşağıda yalnız sənin göndərdiyin təkliflər var.' : ''}
+              {t('Bu quraşdırmada server bağlantısı yoxdur — sənə kimin təklif göndərdiyini oxuya bilmirik.')}
+              {outgoing.length ? t(' Aşağıda yalnız sənin göndərdiyin təkliflər var.') : ''}
             </AppText>
           </View>
         ) : null}
@@ -419,14 +426,13 @@ export default function Requests() {
           <View style={styles.empty}>
             <Icon name="users" size={26} color={palette.tertiary} />
             <AppText variant="headline" style={{ marginTop: 12 }}>
-              Sorğu yoxdur
+              {t('Sorğu yoxdur')}
             </AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, maxWidth: 280, lineHeight: 21 }}>
-              Kimsə sənə məşq təklif edəndə sorğu burada görünəcək. Sənin göndərdiyin təkliflər də cavab gözlədiyi müddətdə
-              burada olur.
+              {t('Kimsə sənə məşq təklif edəndə sorğu burada görünəcək. Sənin göndərdiyin təkliflər də cavab gözlədiyi müddətdə burada olur.')}
             </AppText>
             <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/discover/cards')} style={styles.emptyBtn}>
-              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>Yoldaş axtar</AppText>
+              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Yoldaş axtar')}</AppText>
             </PressableScale>
           </View>
         ) : null}
@@ -434,7 +440,7 @@ export default function Requests() {
         {incoming.length > 0 ? (
           <>
             <AppText variant="overline" color={palette.caption} style={{ marginBottom: 10 }}>
-              Sənə gələn · {incoming.length}
+              {t('Sənə gələn · {n}', { n: incoming.length, count: incoming.length })}
             </AppText>
             {incoming.map(renderIncoming)}
           </>
@@ -443,22 +449,22 @@ export default function Requests() {
         {outgoing.length > 0 ? (
           <>
             <AppText variant="overline" color={palette.caption} style={{ marginTop: incoming.length ? 18 : 0, marginBottom: 10 }}>
-              Göndərdiklərin · {outgoing.length}
+              {t('Göndərdiklərin · {n}', { n: outgoing.length, count: outgoing.length })}
             </AppText>
             {outgoing.map((m) => {
               const resolved = seedById(m.partnerId)?.name ?? names[m.partnerId] ?? null;
-              const name = resolved ?? 'Adı göstərilmir';
+              const name = resolved ?? t('Adı göstərilmir');
               const st = statusOf(m.partnerId);
               const pill =
                 st === 'pending'
-                  ? { icon: 'clock' as const, label: 'Gözləyir' }
+                  ? { icon: 'clock' as const, label: t('Gözləyir') }
                   : st === 'declined'
-                    ? { icon: 'x' as const, label: 'Qəbul edilmədi' }
+                    ? { icon: 'x' as const, label: t('Qəbul edilmədi') }
                     : st === 'loading'
-                      ? { icon: 'clock' as const, label: 'Yoxlanılır…' }
+                      ? { icon: 'clock' as const, label: t('Yoxlanılır…') }
                       : st === 'local'
-                        ? { icon: 'clock' as const, label: 'Göndərilməyib' }
-                        : { icon: 'bell' as const, label: 'Vəziyyət naməlum' };
+                        ? { icon: 'clock' as const, label: t('Göndərilməyib') }
+                        : { icon: 'bell' as const, label: t('Vəziyyət naməlum') };
               return (
                 <View key={m.partnerId} style={styles.card}>
                   <View style={styles.head}>
@@ -466,7 +472,7 @@ export default function Requests() {
                     <View style={{ flex: 1 }}>
                       <AppText variant="headline">{name}</AppText>
                       <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>
-                        Göndərildi · {timeAgoAz(m.at)}
+                        {t('Göndərildi · {time}', { time: ago(m.at) })}
                       </AppText>
                     </View>
                     <View style={styles.pending}>
@@ -476,11 +482,11 @@ export default function Requests() {
                   </View>
                   {st === 'declined' ? (
                     <AppText variant="body" color={palette.text3} style={{ marginTop: 10, lineHeight: 21 }}>
-                      {name} bu təklifi qəbul etmədi.
+                      {t('{name} bu təklifi qəbul etmədi.', { name })}
                     </AppText>
                   ) : st === 'unknown' ? (
                     <AppText variant="footnote" color={palette.caption} style={{ marginTop: 10, lineHeight: 18 }}>
-                      Cavabı oxuya bilmədik — bu təklifin qəbul edilib-edilmədiyini bilmirik. Səhifəni yenidən aç.
+                      {t('Cavabı oxuya bilmədik — bu təklifin qəbul edilib-edilmədiyini bilmirik. Səhifəni yenidən aç.')}
                     </AppText>
                   ) : null}
                   {/* The picked hour now travels with the request (schema54), so it
@@ -497,21 +503,21 @@ export default function Requests() {
                         onPress={() => {
                           tapFeedback();
                           forgetOutgoing(m.partnerId);
-                          toast('Təklif siyahıdan silindi', 'info');
+                          toast(t('Təklif siyahıdan silindi'), 'info');
                         }}
                         style={styles.decline}>
-                        <AppText style={{ color: palette.textSecondary, fontWeight: '600', fontSize: 14 }}>Siyahıdan sil</AppText>
+                        <AppText style={{ color: palette.textSecondary, fontWeight: '600', fontSize: 14 }}>{t('Siyahıdan sil')}</AppText>
                       </PressableScale>
                     ) : (
                       <PressableScale activeScale={0.97} onPress={() => cancel(m.partnerId, name)} style={styles.decline}>
-                        <AppText style={{ color: palette.textSecondary, fontWeight: '600', fontSize: 14 }}>Geri götür</AppText>
+                        <AppText style={{ color: palette.textSecondary, fontWeight: '600', fontSize: 14 }}>{t('Geri götür')}</AppText>
                       </PressableScale>
                     )}
                     <PressableScale
                       activeScale={0.97}
                       onPress={() => router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: m.partnerId } })}
                       style={styles.secondary}>
-                      <AppText style={{ color: palette.inkText, fontWeight: '600', fontSize: 14 }}>Profilə bax</AppText>
+                      <AppText style={{ color: palette.inkText, fontWeight: '600', fontSize: 14 }}>{t('Profilə bax')}</AppText>
                     </PressableScale>
                   </View>
                 </View>
@@ -529,12 +535,11 @@ export default function Requests() {
               style={[styles.hiddenHead, { marginTop: incoming.length || outgoing.length ? 18 : 0 }]}>
               <Icon name={showHidden ? 'chevD' : 'chevR'} size={16} color={palette.caption} />
               <AppText variant="overline" color={palette.caption} style={{ flex: 1 }}>
-                Gizlədilmiş sorğular · {hidden.length}
+                {t('Gizlədilmiş sorğular · {n}', { n: hidden.length, count: hidden.length })}
               </AppText>
             </PressableScale>
             <AppText variant="caption" color={palette.caption} style={{ marginBottom: 10, lineHeight: 17, paddingHorizontal: 4 }}>
-              Kartlarda «Keç» dediyin və ya buradan sildiyin adamlardan gələn real sorğular. Silinmir — istəsən burada qəbul
-              edə bilərsən.
+              {t('Kartlarda «Keç» dediyin və ya buradan sildiyin adamlardan gələn real sorğular. Silinmir — istəsən burada qəbul edə bilərsən.')}
             </AppText>
             {showHidden ? hidden.map(renderIncoming) : null}
           </>

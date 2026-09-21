@@ -18,6 +18,7 @@ import {
 } from '@/lib/auth';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
@@ -56,6 +57,7 @@ import { palette, radius, spacing } from '@/theme';
  */
 
 export default function SignIn() {
+  const t = useT();
   const router = useRouter();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const login = mode === 'login';
@@ -81,15 +83,15 @@ export default function SignIn() {
     if (!(e instanceof AuthSetupError)) return null;
     const what =
       e.what === 'google'
-        ? 'Google girişi'
+        ? t('Google girişi')
         : e.what === 'apple'
-          ? 'Apple girişi'
-          : 'E-poçt ilə giriş';
-    return `${what} hələ açılmayıb. Bu, tətbiqin deyil, serverin ayarıdır.`;
+          ? t('Apple girişi')
+          : t('E-poçt ilə giriş');
+    return t('{what} hələ açılmayıb. Bu, tətbiqin deyil, serverin ayarıdır.', { what });
   };
 
   const social = async (provider: 'google' | 'apple') => {
-    if (!hasSupabaseConfig) return toast('Server bağlantısı yoxdur', 'error');
+    if (!hasSupabaseConfig) return toast(t('Server bağlantısı yoxdur'), 'error');
     const label = provider === 'apple' ? 'Apple' : 'Google';
     setBusy(provider);
     try {
@@ -101,36 +103,40 @@ export default function SignIn() {
          The e-mail path already does this from the deep-link handler. */
       await bootstrap();
       successFeedback();
-      toast(login ? `${label} ilə daxil oldun` : `Hesabın ${label} ilə qorundu`);
+      toast(
+        login
+          ? t('{provider} ilə daxil oldun', { provider: label })
+          : t('Hesabın {provider} ilə qorundu', { provider: label })
+      );
       done();
     } catch (e) {
       if (String((e as Error)?.message ?? '') === 'cancelled') return; // browser closed
       errorFeedback();
-      toast(setupMessage(e) ?? `${label} girişi alınmadı — yenidən cəhd et`, 'error');
+      toast(setupMessage(e) ?? t('{provider} girişi alınmadı — yenidən cəhd et', { provider: label }), 'error');
     } finally {
       setBusy(null);
     }
   };
 
   const send = async () => {
-    if (!hasSupabaseConfig) return toast('Server bağlantısı yoxdur', 'error');
+    if (!hasSupabaseConfig) return toast(t('Server bağlantısı yoxdur'), 'error');
     setBusy('email');
     try {
       const to = email.trim().toLowerCase();
       const r = await sendEmailCode(to);
       setSent({ to, linking: r.linking });
       setCode('');
-      toast(`${to} ünvanına link göndərildi — poçtunu aç və linkə toxun`);
+      toast(t('{email} ünvanına link göndərildi — poçtunu aç və linkə toxun', { email: to }));
     } catch (e) {
       errorFeedback();
       const m = String((e as Error)?.message ?? '');
       toast(
         setupMessage(e) ??
           (m === 'rate-limited'
-            ? 'Çox tez-tez cəhd edildi — bir neçə dəqiqə gözlə'
+            ? t('Çox tez-tez cəhd edildi — bir neçə dəqiqə gözlə')
             : m === 'bad-email'
-              ? 'E-poçt ünvanı düzgün deyil'
-              : 'Link göndərilmədi — yenidən cəhd et'),
+              ? t('E-poçt ünvanı düzgün deyil')
+              : t('Link göndərilmədi — yenidən cəhd et')),
         'error'
       );
     } finally {
@@ -144,17 +150,17 @@ export default function SignIn() {
     try {
       await confirmEmailCode(sent.to, code, sent.linking);
       successFeedback();
-      toast(login ? 'Daxil oldun' : 'Hesabın qorundu');
+      toast(login ? t('Daxil oldun') : t('Hesabın qorundu'));
       done();
     } catch (e) {
       errorFeedback();
       const m = String((e as Error)?.message ?? '').toLowerCase();
       toast(
         m.includes('expired')
-          ? 'Kodun vaxtı bitib — yenisini istə'
+          ? t('Kodun vaxtı bitib — yenisini istə')
           : m.includes('bad-code')
-            ? 'Kodu tam yaz'
-            : 'Kod düz gəlmədi — yenidən yoxla',
+            ? t('Kodu tam yaz')
+            : t('Kod düz gəlmədi — yenidən yoxla'),
         'error'
       );
     } finally {
@@ -164,7 +170,7 @@ export default function SignIn() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <NavBar title={login ? 'Daxil ol' : 'Hesabını qoru'} />
+      <NavBar title={login ? t('Daxil ol') : t('Hesabını qoru')} />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
         {/* Two different people, two different true sentences. Telling somebody
             who is signing in on a new phone that «hesabın yalnız bu telefonda
@@ -174,14 +180,21 @@ export default function SignIn() {
           <Icon name="shield" size={22} color={palette.voltDeep} />
           <AppText variant="body" color={palette.text3} style={{ lineHeight: 22, flex: 1 }}>
             {login
-              ? 'Hesabını hansı üsulla açmısansa, onu seç — məşq tarixçən, @adın və videoların geri qayıdacaq.'
-              : `${profileName.trim() ? `${profileName.trim()}, hesabın` : 'Hesabın'} hazırda yalnız bu telefonda yaşayır. Tətbiqi silsən və ya telefonu dəyişsən, məşq tarixçən, @adın və videoların qayıtmır.`}
+              ? t('Hesabını hansı üsulla açmısansa, onu seç — məşq tarixçən, @adın və videoların geri qayıdacaq.')
+              : t(
+                  '{who} hazırda yalnız bu telefonda yaşayır. Tətbiqi silsən və ya telefonu dəyişsən, məşq tarixçən, @adın və videoların qayıtmır.',
+                  {
+                    who: profileName.trim()
+                      ? t('{name}, hesabın', { name: profileName.trim() })
+                      : t('Hesabın'),
+                  }
+                )}
           </AppText>
         </View>
         <AppText variant="caption" color={palette.caption} style={{ marginTop: 10, lineHeight: 18 }}>
           {login
-            ? 'Hesabın yoxdursa, geri qayıt və «Başla» ilə yeni hesab aç.'
-            : 'Bu, yeni hesab açmır — indiki hesabına giriş yolu əlavə edir. Heç nə itmir.'}
+            ? t('Hesabın yoxdursa, geri qayıt və «Başla» ilə yeni hesab aç.')
+            : t('Bu, yeni hesab açmır — indiki hesabına giriş yolu əlavə edir. Heç nə itmir.')}
         </AppText>
 
         {sent ? (
@@ -199,11 +212,11 @@ export default function SignIn() {
               </AppText>
             </View>
             <AppText variant="overline" color={palette.caption} style={styles.label}>
-              VƏ YA MƏKTUBDAKI KODU YAZ
+              {t('VƏ YA MƏKTUBDAKI KODU YAZ')}
             </AppText>
             <TextInput
               value={code}
-              onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 8))}
+              onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 8))}
               placeholder="123456"
               placeholderTextColor={palette.caption}
               keyboardType="number-pad"
@@ -212,18 +225,18 @@ export default function SignIn() {
               style={[styles.input, styles.codeInput]}
             />
             <Button
-              title={busy ? 'Yoxlanılır…' : 'Təsdiqlə'}
+              title={busy ? t('Yoxlanılır…') : t('Təsdiqlə')}
               full
               disabled={code.length < 4 || !!busy}
               onPress={confirm}
               style={{ marginTop: 14 }}
             />
             <AppText variant="caption" color={palette.caption} style={{ marginTop: 10, lineHeight: 18 }}>
-              Məktubda yalnız link varsa, kod xanasını boş burax — linkə toxunmaq kifayətdir.
+              {t('Məktubda yalnız link varsa, kod xanasını boş burax — linkə toxunmaq kifayətdir.')}
             </AppText>
             <PressableScale haptic={false} onPress={() => setSent(null)} style={styles.backLink}>
               <AppText variant="subhead" color={palette.blue}>
-                Başqa üsulla
+                {t('Başqa üsulla')}
               </AppText>
             </PressableScale>
           </>
@@ -244,7 +257,7 @@ export default function SignIn() {
                   <ActivityIndicator color={palette.inkText} />
                 ) : (
                   <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
-                    {prov === 'apple' ? 'Apple' : 'Google'} ilə davam et
+                    {t('{provider} ilə davam et', { provider: prov === 'apple' ? 'Apple' : 'Google' })}
                   </AppText>
                 )}
               </PressableScale>
@@ -253,18 +266,18 @@ export default function SignIn() {
             <View style={styles.orRow}>
               <View style={styles.orLine} />
               <AppText variant="caption" color={palette.caption}>
-                və ya
+                {t('və ya')}
               </AppText>
               <View style={styles.orLine} />
             </View>
 
             <AppText variant="overline" color={palette.caption} style={styles.label}>
-              E-POÇT İLƏ
+              {t('E-POÇT İLƏ')}
             </AppText>
             <TextInput
               value={email}
               onChangeText={setEmail}
-              placeholder="ad@gmail.com"
+              placeholder={t('ad@gmail.com')}
               placeholderTextColor={palette.caption}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -272,7 +285,7 @@ export default function SignIn() {
               style={styles.input}
             />
             <Button
-              title={busy === 'email' ? 'Göndərilir…' : 'Link göndər'}
+              title={busy === 'email' ? t('Göndərilir…') : t('Link göndər')}
               full
               disabled={!emailOk || !!busy}
               onPress={send}
@@ -282,7 +295,7 @@ export default function SignIn() {
         )}
 
         <AppText variant="caption" color={palette.caption} style={styles.footer}>
-          E-poçtun yalnız sənə görünür — başqa istifadəçilər onu heç vaxt görmür.
+          {t('E-poçtun yalnız sənə görünür — başqa istifadəçilər onu heç vaxt görmür.')}
         </AppText>
       </ScrollView>
     </Screen>

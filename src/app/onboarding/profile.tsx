@@ -7,11 +7,13 @@ import { AppText } from '@/components/ui/AppText';
 import { Segmented } from '@/components/ui/Segmented';
 import { USERNAME_TAKEN_MSG, displayNameError, isUsernameTaken, suggestUsername, usernameError } from '@/lib/api';
 import { errorFeedback } from '@/lib/feedback';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { palette, radius } from '@/theme';
 
 export default function ProfileStep() {
+  const t = useT();
   const router = useRouter();
   const profile = useAppStore((s) => s.profile);
   const setProfile = useAppStore((s) => s.setProfile);
@@ -46,13 +48,13 @@ export default function ProfileStep() {
   const ageNum = Number(ageText);
   const ageErr =
     ageText.trim() === ''
-      ? 'Yaşını yaz'
+      ? t('Yaşını yaz')
       : !Number.isFinite(ageNum) || !Number.isInteger(ageNum)
-        ? 'Yalnız rəqəm yaz'
+        ? t('Yalnız rəqəm yaz')
         : ageNum < 16
-          ? 'SPOT 16 yaşdan yuxarı istifadəçilər üçündür'
+          ? t('SPOT 16 yaşdan yuxarı istifadəçilər üçündür')
           : ageNum > 100
-            ? 'Yaşı yoxla'
+            ? t('Yaşı yoxla')
             : null;
 
   useEffect(() => {
@@ -70,13 +72,13 @@ export default function ProfileStep() {
       if (await isUsernameTaken(handle)) {
         setTaken(handle.trim().toLowerCase());
         errorFeedback();
-        toast(USERNAME_TAKEN_MSG, 'error');
+        toast(t(USERNAME_TAKEN_MSG), 'error');
         return;
       }
     } catch {
       // We could not reach the server to check — say so instead of implying the
       // handle is free. The database's unique index still decides when we save.
-      toast('İstifadəçi adını indi yoxlaya bilmədik — yadda saxlayanda yoxlanacaq', 'info');
+      toast(t('İstifadəçi adını indi yoxlaya bilmədik — yadda saxlayanda yoxlanacaq'), 'info');
     } finally {
       setChecking(false);
     }
@@ -97,17 +99,17 @@ export default function ProfileStep() {
       if (useAppStore.getState().lastSaveError === 'username-taken') {
         setTaken(handle.trim().toLowerCase());
         errorFeedback();
-        toast(`${USERNAME_TAKEN_MSG} — başqa istifadəçi adı seç`, 'error');
+        toast(t('{msg} — başqa istifadəçi adı seç', { msg: t(USERNAME_TAKEN_MSG) }), 'error');
         return;
       }
       errorFeedback();
-      toast('Server profili qəbul etmədi. Bir az sonra yenidən cəhd et.', 'error');
+      toast(t('Server profili qəbul etmədi. Bir az sonra yenidən cəhd et.'), 'error');
       return;
     }
     if (result === 'local') {
       // Also the offline first launch. bootstrap() sends it up on the next
       // launch that has a session, so say that instead of blocking them here.
-      toast('Profil hələlik yalnız bu cihazda saxlanıldı — internet olanda göndəriləcək.', 'info');
+      toast(t('Profil hələlik yalnız bu cihazda saxlanıldı — internet olanda göndəriləcək.'), 'info');
     }
     complete();
     /* The account exists from this line on — `complete()` has already flipped
@@ -122,13 +124,13 @@ export default function ProfileStep() {
     <OnboardingScaffold
       step={1}
       totalSteps={1}
-      title="Səni necə çağıraq?"
-      subtitle="Qalan hər şeyi sonra Profil → Redaktə-dən dəyişə bilərsən."
+      title={t('Səni necə çağıraq?')}
+      subtitle={t('Qalan hər şeyi sonra Profil → Redaktə-dən dəyişə bilərsən.')}
       onNext={next}
-      nextLabel={saving ? 'Yadda saxlanılır…' : checking ? 'Yoxlanılır…' : 'SPOT-a başla'}
+      nextLabel={saving ? t('Yadda saxlanılır…') : checking ? t('Yoxlanılır…') : t('SPOT-a başla')}
       nextDisabled={!!nameErr || !!handleErr || !!ageErr || checking || saving}>
       <AppText variant="overline" color={palette.caption} style={styles.label}>
-        Ad
+        {t('Ad')}
       </AppText>
       <TextInput
         value={profile.name}
@@ -136,16 +138,16 @@ export default function ProfileStep() {
           setNameTouched(true);
           setProfile({ name });
         }}
-        placeholder="Adın"
+        placeholder={t('Adın')}
         placeholderTextColor={palette.caption}
         style={styles.input}
       />
       {/* The name is public. Without this gate a person walked out of onboarding
           nameless and the app printed its «Sən» placeholder on their public card. */}
-      {nameTouched && nameErr ? <Hint text={nameErr} bad /> : null}
+      {nameTouched && nameErr ? <Hint text={t(nameErr)} bad /> : null}
 
       <AppText variant="overline" color={palette.caption} style={styles.label}>
-        İstifadəçi adı
+        {t('İstifadəçi adı')}
       </AppText>
       <View style={[styles.handleRow, shownHandleErr ? styles.handleRowBad : null]}>
         <AppText variant="body" color={palette.caption}>
@@ -158,7 +160,7 @@ export default function ProfileStep() {
             setTaken(null);
             setProfile({ username: v.trim() });
           }}
-          placeholder="istifadeci_adi"
+          placeholder={t('istifadeci_adi')}
           placeholderTextColor={palette.caption}
           autoCapitalize="none"
           autoCorrect={false}
@@ -169,10 +171,13 @@ export default function ProfileStep() {
           style={styles.handleInput}
         />
       </View>
-      <Hint text={shownHandleErr ?? 'Səni bu adla tapacaqlar. Sonra dəyişə bilərsən.'} bad={!!shownHandleErr} />
+      <Hint
+        text={shownHandleErr ? t(shownHandleErr) : t('Səni bu adla tapacaqlar. Sonra dəyişə bilərsən.')}
+        bad={!!shownHandleErr}
+      />
 
       <AppText variant="overline" color={palette.caption} style={styles.label}>
-        Yaş
+        {t('Yaş')}
       </AppText>
       <TextInput
         value={ageText}
@@ -180,33 +185,33 @@ export default function ProfileStep() {
           setAgeTouched(true);
           setAgeText(v.replace(/\D/g, '').slice(0, 3));
         }}
-        placeholder="Məsələn 24"
+        placeholder={t('Məsələn 24')}
         placeholderTextColor={palette.caption}
         keyboardType="number-pad"
         maxLength={3}
         style={styles.input}
       />
       <Hint
-        text={ageTouched && ageErr ? ageErr : 'Yaşın yoldaş kartında görünür. SPOT 16 yaşdan yuxarı istifadəçilər üçündür.'}
+        text={ageTouched && ageErr ? ageErr : t('Yaşın yoldaş kartında görünür. SPOT 16 yaşdan yuxarı istifadəçilər üçündür.')}
         bad={ageTouched && !!ageErr}
       />
 
       <AppText variant="overline" color={palette.caption} style={styles.label}>
-        Cins
+        {t('Cins')}
       </AppText>
       <Segmented
-        options={['Kişi', 'Qadın']}
+        options={[t('Kişi'), t('Qadın')]}
         value={profile.gender === 'qadın' ? 1 : 0}
         onChange={(i) => setProfile({ gender: i === 0 ? 'kişi' : 'qadın' })}
       />
 
       <AppText variant="overline" color={palette.caption} style={styles.label}>
-        Bio
+        {t('Bio')}
       </AppText>
       <TextInput
         value={profile.bio}
         onChangeText={(bio) => setProfile({ bio })}
-        placeholder="Məsələn: Səhər məşqlərini sevirəm, powerlifting üzərində işləyirəm."
+        placeholder={t('Məsələn: Səhər məşqlərini sevirəm, powerlifting üzərində işləyirəm.')}
         placeholderTextColor={palette.caption}
         multiline
         style={[styles.input, { height: 92, paddingTop: 12, textAlignVertical: 'top' }]}

@@ -14,6 +14,7 @@ import { useTrainer, useTrainerPhase } from '@/lib/hooks';
 import { showModerationSheet } from '@/lib/moderation';
 import { getMyRequestTo, type TrainerRequestRow } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
 
 function Stat({ value, label }: { value: string; label: string }) {
@@ -37,6 +38,7 @@ const STATE_AZ: Record<TrainerRequestRow['status'], string> = {
 export default function TrainerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const gate = useAuthGate();
   const trainer = useTrainer(id);
   const phase = useTrainerPhase(id);
@@ -79,13 +81,13 @@ export default function TrainerDetail() {
           <Icon name={failed ? 'x' : 'user'} size={28} color={failed ? palette.red : palette.tertiary} />
           <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 250, lineHeight: 21 }}>
             {loading
-              ? 'Yüklənir…'
+              ? t('Yüklənir…')
               : failed
-                ? 'Müəllim məlumatı yüklənmədi — bu, müəllimin olmadığı demək deyil. Bağlantını yoxla və yenidən aç.'
-                : 'Müəllim tapılmadı.'}
+                ? t('Müəllim məlumatı yüklənmədi — bu, müəllimin olmadığı demək deyil. Bağlantını yoxla və yenidən aç.')
+                : t('Müəllim tapılmadı.')}
           </AppText>
           {!loading ? (
-            <Button title="Geri" variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, height: 44, paddingHorizontal: 24 }} />
+            <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, height: 44, paddingHorizontal: 24 }} />
           ) : null}
         </View>
       </Screen>
@@ -117,7 +119,7 @@ export default function TrainerDetail() {
               <Icon name="verified" size={20} color={palette.blue} />
             ) : (
               <View style={styles.unverified}>
-                <AppText style={styles.unverifiedText}>Doğrulanmayıb</AppText>
+                <AppText style={styles.unverifiedText}>{t('Doğrulanmayıb')}</AppText>
               </View>
             )}
           </View>
@@ -130,16 +132,16 @@ export default function TrainerDetail() {
           <View style={styles.newCard}>
             <Icon name="star" size={17} color={palette.voltDeep} />
             <AppText variant="footnote" color={palette.text3} style={{ flex: 1, lineHeight: 18 }}>
-              Yeni müəllim — hələ reytinqi yoxdur. Sorğu göndərib özün tanış ola bilərsən.
+              {t('Yeni müəllim — hələ reytinqi yoxdur. Sorğu göndərib özün tanış ola bilərsən.')}
             </AppText>
           </View>
         ) : (
           <View style={styles.stats}>
-            <Stat value={`${trainer.rating}`} label="reytinq" />
+            <Stat value={`${trainer.rating}`} label={t('reytinq')} />
             {trainer.responseTime ? (
               <>
                 <View style={styles.divider} />
-                <Stat value={trainer.responseTime} label="cavab vaxtı" />
+                <Stat value={trainer.responseTime} label={t('cavab vaxtı')} />
               </>
             ) : null}
           </View>
@@ -149,7 +151,7 @@ export default function TrainerDetail() {
           <View style={styles.stateCard}>
             <Icon name={request.status === 'accepted' ? 'check' : 'clock'} size={17} color={request.status === 'accepted' ? palette.voltDeep : palette.textSecondary} />
             <AppText variant="footnote" color={palette.text3} style={{ flex: 1, lineHeight: 18 }}>
-              {STATE_AZ[request.status]}
+              {t(STATE_AZ[request.status])}
               {request.preferred_time ? ` · ${request.preferred_time}` : ''}
             </AppText>
           </View>
@@ -157,7 +159,7 @@ export default function TrainerDetail() {
           <View style={styles.stateCard}>
             <Icon name="x" size={17} color={palette.red} />
             <AppText variant="footnote" color={palette.text3} style={{ flex: 1, lineHeight: 18 }}>
-              Bu müəllimlə sorğunun vəziyyəti yüklənmədi — bağlantını yoxla.
+              {t('Bu müəllimlə sorğunun vəziyyəti yüklənmədi — bağlantını yoxla.')}
             </AppText>
           </View>
         ) : null}
@@ -165,7 +167,7 @@ export default function TrainerDetail() {
         {trainer.bio ? (
           <>
             <AppText variant="overline" color={palette.caption} style={styles.sectionLabel}>
-              Haqqında
+              {t('Haqqında')}
             </AppText>
             <AppText variant="body" color={palette.text3} style={{ lineHeight: 22 }}>
               {trainer.bio}
@@ -176,7 +178,7 @@ export default function TrainerDetail() {
         {trainer.certifications.length > 0 ? (
           <>
             <AppText variant="overline" color={palette.caption} style={styles.sectionLabel}>
-              Sertifikatlar
+              {t('Sertifikatlar')}
             </AppText>
             {trainer.certifications.map((c) => (
               <View key={c} style={styles.certRow}>
@@ -188,7 +190,7 @@ export default function TrainerDetail() {
         ) : null}
 
         <AppText variant="caption" color={palette.caption} style={{ marginTop: 24, lineHeight: 17 }}>
-          Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir, razılaşma müəllimlə birbaşa olur.
+          {t('Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir, razılaşma müəllimlə birbaşa olur.')}
         </AppText>
       </ScrollView>
 
@@ -196,21 +198,23 @@ export default function TrainerDetail() {
         {/* A trainer who left the price empty has 0 in the column — that is an
             absent value, not a free session. */}
         <AppText variant="caption" color={palette.caption} style={{ marginBottom: 8 }}>
-          {trainer.priceFrom > 0 ? `Başlanğıc ${trainer.priceFrom} ₼ · məlumat üçün` : 'Qiymət göstərilməyib — müəllimlə özün danış'}
+          {trainer.priceFrom > 0
+            ? t('Başlanğıc {price} ₼ · məlumat üçün', { price: trainer.priceFrom })
+            : t('Qiymət göstərilməyib — müəllimlə özün danış')}
         </AppText>
         <View style={styles.footerRow}>
         <Button
-          title="Mesaj yaz"
+          title={t('Mesaj yaz')}
           variant="secondary"
           icon="msg"
-          onPress={() => gate(() => router.push({ pathname: '/chat/[id]', params: { id: trainer.id } }), 'Müəllimə yazmaq üçün')}
+          onPress={() => gate(() => router.push({ pathname: '/chat/[id]', params: { id: trainer.id } }), t('Müəllimə yazmaq üçün'))}
           style={{ flex: 1 }}
         />
         <Button
           // The destination has no time-proposal UI for an existing request — it
           // only shows the request's state, so the label must say exactly that.
-          title={request?.status === 'pending' ? 'Sorğu göndərilib' : request?.status === 'accepted' ? 'Sorğuna bax' : 'Rezerv et'}
-          onPress={() => gate(() => router.push({ pathname: '/(tabs)/discover/reserve/[id]', params: { id: trainer.id } }), 'Müəllim rezerv etmək üçün')}
+          title={request?.status === 'pending' ? t('Sorğu göndərilib') : request?.status === 'accepted' ? t('Sorğuna bax') : t('Rezerv et')}
+          onPress={() => gate(() => router.push({ pathname: '/(tabs)/discover/reserve/[id]', params: { id: trainer.id } }), t('Müəllim rezerv etmək üçün'))}
           style={{ flex: 1 }}
         />
         </View>

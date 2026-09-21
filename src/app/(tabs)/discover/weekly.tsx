@@ -12,6 +12,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Partner } from '@/data/types';
 import { usePartnersForGym, usePartnersPhase } from '@/lib/hooks';
+import { useT } from '@/lib/useT';
 import { useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { applyPartnerFilter, isoWeekKey, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
@@ -20,6 +21,7 @@ import { nameWithAge } from '@/lib/authorName';
 
 export default function Weekly() {
   const router = useRouter();
+  const t = useT();
   // Null until the user picks a gym — the weekly three are drawn from their own
   // gym or from nobody at all; never from a substituted catalogue gym.
   const homeGymId = useAppStore((s) => s.profile.homeGymId);
@@ -63,18 +65,19 @@ export default function Weekly() {
 
   const stateLabel = (id: string) => {
     const s = matches[id]?.state;
-    if (s === 'accepted') return 'Qəbul edildi';
-    if (s === 'requested') return 'Təklif göndərilib';
+    if (s === 'accepted') return t('Qəbul edildi');
+    if (s === 'requested') return t('Təklif göndərilib');
     return null;
   };
 
   return (
     <Screen>
-      <NavBar title="Həftəlik təkliflər" />
+      <NavBar title={t('Həftəlik təkliflər')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 14, lineHeight: 18 }}>
-          Həftədə ən çox 3 təklif — az, ona görə dəyərli. Alqoritm zal, saat, səviyyə və məqsədə görə seçir; siyahı bazar
-          ertəsi yenilənir.
+          {t(
+            'Həftədə ən çox 3 təklif — az, ona görə dəyərli. Alqoritm zal, saat, səviyyə və məqsədə görə seçir; siyahı bazar ertəsi yenilənir.'
+          )}
         </AppText>
 
         {!top ? (
@@ -89,16 +92,16 @@ export default function Weekly() {
             />
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 260, lineHeight: 21 }}>
               {!homeGymId
-                ? 'Zalını seç — yoldaşlar zala görə tapılır.'
+                ? t('Zalını seç — yoldaşlar zala görə tapılır.')
                 : phase === 'failed'
-                  ? 'Təkliflər yüklənmədi — bu, uyğun adam olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç.'
+                  ? t('Təkliflər yüklənmədi — bu, uyğun adam olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç.')
                   : phase === 'loading'
-                    ? 'Təkliflər yüklənir…'
-                    : 'Bu həftə üçün hələ uyğun təklif yoxdur. Profilini tamamla — uyğun adam çıxan kimi burada görünəcək.'}
+                    ? t('Təkliflər yüklənir…')
+                    : t('Bu həftə üçün hələ uyğun təklif yoxdur. Profilini tamamla — uyğun adam çıxan kimi burada görünəcək.')}
             </AppText>
             {!homeGymId ? (
               <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.emptyBtn}>
-                <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>Zalını seç</AppText>
+                <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Zalını seç')}</AppText>
               </PressableScale>
             ) : null}
           </View>
@@ -113,7 +116,7 @@ export default function Weekly() {
                     {nameWithAge(top.name, top.age)}
                   </AppText>
                   <AppText variant="footnote" color="rgba(255,255,255,0.55)" style={{ marginTop: 2 }}>
-                    {[top.level ?? 'Səviyyə göstərilməyib', top.usualTime].filter(Boolean).join(' · ')}
+                    {[t(top.level ?? 'Səviyyə göstərilməyib'), t(top.usualTime)].filter(Boolean).join(' · ')}
                   </AppText>
                 </View>
                 {/* null = the score was never computed. «0 %» would be a verdict; this
@@ -130,19 +133,19 @@ export default function Weekly() {
               </View>
               {topScore === null ? (
                 <AppText variant="body" color="rgba(255,255,255,0.82)" style={{ marginTop: 14, lineHeight: 21 }}>
-                  {COMPAT_UNKNOWN} — onda bu adamın sənə nə qədər uyğun gəldiyini göstərə bilərik.
+                  {t('{unknown} — onda bu adamın sənə nə qədər uyğun gəldiyini göstərə bilərik.', { unknown: t(COMPAT_UNKNOWN) })}
                 </AppText>
               ) : (
                 <>
                   <AppText variant="body" color="rgba(255,255,255,0.82)" style={{ marginTop: 14, lineHeight: 21 }}>
                     {topReasons.pros.length > 0
-                      ? `${topReasons.pros.join(' · ')} — bu həftənin ən uyğun yoldaşı.`
-                      : 'Bu həftənin ən uyğun yoldaşı.'}
+                      ? t('{reasons} — bu həftənin ən uyğun yoldaşı.', { reasons: topReasons.pros.map((r) => t(r)).join(' · ') })
+                      : t('Bu həftənin ən uyğun yoldaşı.')}
                   </AppText>
                   {/* The differences are shown too — the pick is not a black box. */}
                   {topReasons.cons.length > 0 ? (
                     <AppText variant="footnote" color={MISMATCH_COLOR} style={{ marginTop: 6, lineHeight: 18 }}>
-                      Fərq: {topReasons.cons.slice(0, 2).join(' · ')}
+                      {t('Fərq: {list}', { list: topReasons.cons.slice(0, 2).map((r) => t(r)).join(' · ') })}
                     </AppText>
                   ) : null}
                 </>
@@ -153,7 +156,7 @@ export default function Weekly() {
                   <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.volt }}>{stateLabel(top.id)}</AppText>
                 </View>
               ) : (
-                <Button title="Məşq təklif et" variant="volt" icon="dumbbell" full onPress={() => open(top)} style={{ marginTop: 16 }} />
+                <Button title={t('Məşq təklif et')} variant="volt" icon="dumbbell" full onPress={() => open(top)} style={{ marginTop: 16 }} />
               )}
             </View>
 
@@ -168,11 +171,12 @@ export default function Weekly() {
                     {nameWithAge(p.name, p.age)}
                   </AppText>
                   <AppText variant="footnote" color={palette.caption} style={{ marginTop: 2 }}>
-                    {stateLabel(p.id) ?? (s === null ? COMPAT_UNKNOWN_SHORT : r.pros.join(' · ') || `${s}% uyğun`)}
+                    {stateLabel(p.id) ??
+                      (s === null ? t(COMPAT_UNKNOWN_SHORT) : r.pros.map((x) => t(x)).join(' · ') || t('{n}% uyğun', { n: s }))}
                   </AppText>
                   {!stateLabel(p.id) && s !== null && r.cons.length > 0 ? (
                     <AppText variant="caption" color={MISMATCH_COLOR} style={{ marginTop: 3 }}>
-                      Fərq: {r.cons.slice(0, 2).join(' · ')}
+                      {t('Fərq: {list}', { list: r.cons.slice(0, 2).map((x) => t(x)).join(' · ') })}
                     </AppText>
                   ) : null}
                 </View>

@@ -19,6 +19,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Partner } from '@/data/types';
 import { useAuthGate } from '@/lib/authGate';
 import { usePartnerDeck, usePartnersPhase } from '@/lib/hooks';
+import { useT } from '@/lib/useT';
 import { gymById, seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { applyPartnerFilter, partnerFilterCount, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
@@ -96,6 +97,7 @@ const usePassedCards = create<PassedCards>()(
 
 export default function Cards() {
   const router = useRouter();
+  const t = useT();
   // Null until the user picks a gym — no catalogue gym is substituted, so the deck
   // is honestly empty instead of showing strangers from a gym they never chose.
   const homeGymId = useAppStore((s) => s.profile.homeGymId);
@@ -176,7 +178,7 @@ export default function Cards() {
     tapFeedback();
     if (!savedPartners.includes(p.id)) {
       toggleSavedPartner(p.id);
-      toast('Saxlanıldı — «Yoldaşlar» bölməsində tapa bilərsən');
+      toast(t('Saxlanıldı — «Yoldaşlar» bölməsində tapa bilərsən'));
     }
     setSetAside((l) => [...l, p.id]);
     spend();
@@ -194,7 +196,7 @@ export default function Cards() {
       setSetAside((l) => (l.includes(p.id) ? l : [...l, p.id]));
       spend();
       router.push({ pathname: '/(tabs)/discover/match', params: { id: p.id } });
-    }, 'Yoldaş tapmaq üçün');
+    }, t('Yoldaş tapmaq üçün'));
   };
 
   const flingSkip = () => {
@@ -235,7 +237,7 @@ export default function Cards() {
        the sibling modals (filter, partner-filter, match) all take both edges. */
     <Screen edges={['top', 'bottom']} style={{ backgroundColor: palette.element2 }}>
       <NavBar
-        title="Kartlar"
+        title={t('Kartlar')}
         right={
           <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/discover/partner-filter')}>
             <Icon name="sliders" size={22} color={palette.inkText} />
@@ -248,13 +250,13 @@ export default function Cards() {
           <View style={styles.empty}>
             <Icon name="pin" size={30} color={palette.tertiary} />
             <AppText variant="headline" style={{ marginTop: 12 }}>
-              Əsas zalın seçilməyib
+              {t('Əsas zalın seçilməyib')}
             </AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, maxWidth: 250, lineHeight: 21 }}>
-              Zalını seç — yoldaşlar zala görə tapılır.
+              {t('Zalını seç — yoldaşlar zala görə tapılır.')}
             </AppText>
             <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.emptyBtn}>
-              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>Zalını seç</AppText>
+              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Zalını seç')}</AppText>
             </PressableScale>
           </View>
         ) : !current ? (
@@ -273,42 +275,42 @@ export default function Cards() {
             />
             <AppText variant="headline" style={{ marginTop: 12 }} center>
               {phase === 'failed'
-                ? 'Kartlar yüklənmədi'
+                ? t('Kartlar yüklənmədi')
                 : phase === 'loading'
-                  ? 'Yüklənir…'
+                  ? t('Yüklənir…')
                   : emptyKind === 'cap'
-                    ? 'Bu günün kartları bitdi'
+                    ? t('Bu günün kartları bitdi')
                     : emptyKind === 'filter'
-                      ? 'Filtrə uyğun kart yoxdur'
+                      ? t('Filtrə uyğun kart yoxdur')
                       : emptyKind === 'gate'
-                        ? 'Yüksək uyğunluqlu kart yoxdur'
-                        : 'Hamısını gördün'}
+                        ? t('Yüksək uyğunluqlu kart yoxdur')
+                        : t('Hamısını gördün')}
             </AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, maxWidth: 265, lineHeight: 21 }}>
               {phase === 'failed'
-                ? 'Zalındakı adamların siyahısı serverdən gəlmədi — bu, kart olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç.'
+                ? t('Zalındakı adamların siyahısı serverdən gəlmədi — bu, kart olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç.')
                 : phase === 'loading'
-                  ? 'Zalındakı adamlar yüklənir.'
+                  ? t('Zalındakı adamlar yüklənir.')
                   : emptyKind === 'cap'
-                    ? `Gündə ən çox ${DAILY_CAP} kart — az, ona görə hər birinə diqqətlə baxılır. Sabah səhər yenidən açılır.`
+                    ? t('Gündə ən çox {n} kart — az, ona görə hər birinə diqqətlə baxılır. Sabah səhər yenidən açılır.', { n: DAILY_CAP, count: DAILY_CAP })
                     : emptyKind === 'filter'
-                      ? 'Seçdiyin filtrə uyğun yeni yoldaş qalmadı. Filtri yumşalt.'
+                      ? t('Seçdiyin filtrə uyğun yeni yoldaş qalmadı. Filtri yumşalt.')
                       : emptyKind === 'gate'
-                        ? `Kartlarda yalnız uyğunluğu ${MIN_SCORE}%-dən yuxarı olanlar göstərilir. Bu zalda ${belowGate} nəfər var, amma uyğunluq bu həddən aşağıdır. Profilində saat, səviyyə və məqsədi doldur — uyğunluq dəqiqləşəcək.`
-                        : 'Bu zalda cavab vermədiyin yoldaş qalmadı. Yeni adam qoşulanda burada görünəcək.'}
+                        ? t('Kartlarda yalnız uyğunluğu {min}%-dən yuxarı olanlar göstərilir. Bu zalda {n} nəfər var, amma uyğunluq bu həddən aşağıdır. Profilində saat, səviyyə və məqsədi doldur — uyğunluq dəqiqləşəcək.', { min: MIN_SCORE, n: belowGate, count: belowGate })
+                        : t('Bu zalda cavab vermədiyin yoldaş qalmadı. Yeni adam qoşulanda burada görünəcək.')}
             </AppText>
             {phase === 'failed' || phase === 'loading' ? null : emptyKind === 'filter' ? (
               <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/discover/partner-filter')} style={styles.emptyBtn}>
-                <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>Filtri dəyiş</AppText>
+                <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Filtri dəyiş')}</AppText>
               </PressableScale>
             ) : emptyKind === 'gate' ? (
               <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.emptyBtn}>
-                <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>Profilini tamamla</AppText>
+                <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Profilini tamamla')}</AppText>
               </PressableScale>
             ) : null}
             {emptyKind !== 'cap' && usedToday > 0 ? (
               <AppText variant="caption" color={palette.caption} center style={{ marginTop: 14 }}>
-                Bu gün {usedToday} / {DAILY_CAP} kart baxılıb.
+                {t('Bu gün {a} / {b} kart baxılıb.', { a: usedToday, b: DAILY_CAP })}
               </AppText>
             ) : null}
           </View>
@@ -323,10 +325,10 @@ export default function Cards() {
               <Animated.View style={[styles.cardWrap, topStyle]}>
                 <CardFace partner={current} />
                 <Animated.View style={[styles.stamp, styles.likeStamp, likeStyle]}>
-                  <AppText style={[styles.stampText, { color: palette.voltDeep }]}>TƏKLİF</AppText>
+                  <AppText style={[styles.stampText, { color: palette.voltDeep }]}>{t('TƏKLİF')}</AppText>
                 </Animated.View>
                 <Animated.View style={[styles.stamp, styles.nopeStamp, nopeStyle]}>
-                  <AppText style={[styles.stampText, { color: palette.textSecondary }]}>KEÇ</AppText>
+                  <AppText style={[styles.stampText, { color: palette.textSecondary }]}>{t('KEÇ')}</AppText>
                 </Animated.View>
               </Animated.View>
             </GestureDetector>
@@ -348,11 +350,11 @@ export default function Cards() {
             </PressableScale>
           </View>
           <AppText variant="caption" color={palette.caption} center style={{ paddingHorizontal: 40 }}>
-            Sağa çək = məşq təklif et · sola = keç (kart bir daha gəlmir) · əlfəcin = sonraya saxla
+            {t('Sağa çək = məşq təklif et · sola = keç (kart bir daha gəlmir) · əlfəcin = sonraya saxla')}
           </AppText>
           {/* The cap is visible before it bites, not only when the deck goes dark. */}
           <AppText variant="caption" color={palette.caption} center style={{ paddingHorizontal: 40, paddingTop: 4, paddingBottom: 10 }}>
-            Bu gün qalan kart: {remaining} / {DAILY_CAP}
+            {t('Bu gün qalan kart: {a} / {b}', { a: remaining, b: DAILY_CAP })}
           </AppText>
         </>
       ) : null}
@@ -361,6 +363,7 @@ export default function Cards() {
 }
 
 function CardFace({ partner }: { partner: Partner }) {
+  const t = useT();
   const score = compatOf(partner);
   const { pros, cons } = splitReasons(partner);
   const cardGym = gymById(partner.gymId);
@@ -373,14 +376,14 @@ function CardFace({ partner }: { partner: Partner }) {
         </View>
         <View style={styles.matchBadge}>
           <AppText style={{ color: score === null ? 'rgba(255,255,255,0.75)' : palette.volt, fontSize: 13, fontWeight: '700' }}>
-            {score === null ? COMPAT_UNKNOWN_SHORT : `${score}% uyğun`}
+            {score === null ? t(COMPAT_UNKNOWN_SHORT) : t('{n}% uyğun', { n: score })}
           </AppText>
         </View>
         {/* Only a real, checked-in profile may claim presence — never a catalogue entry. */}
         {partner.hereNow && !seedById(partner.id) ? (
           <View style={styles.hereBadge}>
             <View style={styles.hereDot} />
-            <AppText style={{ fontSize: 11.5, fontWeight: '600', color: palette.inkText }}>İndi zalda</AppText>
+            <AppText style={{ fontSize: 11.5, fontWeight: '600', color: palette.inkText }}>{t('İndi zalda')}</AppText>
           </View>
         ) : null}
         <LinearGradient colors={['transparent', 'rgba(11,11,14,0.72)']} style={styles.photoScrim} />
@@ -394,33 +397,33 @@ function CardFace({ partner }: { partner: Partner }) {
                 screen never calls — produces a real figure, so «Zal · 0 km» was
                 a measurement nobody took, under a gym nobody could name. Every
                 other consumer already guards with `distanceKm > 0`. */}
-            {cardGym?.name ?? 'Zal'}
-            {cardGym && cardGym.distanceKm > 0 ? ` · ${cardGym.distanceKm} km` : ''}
+            {cardGym?.name ?? t('Zal')}
+            {cardGym && cardGym.distanceKm > 0 ? ` · ${t('{km} km', { km: cardGym.distanceKm })}` : ''}
           </AppText>
         </View>
       </View>
       <View style={styles.body}>
         <View style={styles.grid}>
-          <DataCell label="Səviyyə" value={partner.level ?? 'göstərilməyib'} />
-          <DataCell label="Məqsəd" value={partner.goals[0] ?? '—'} />
-          <DataCell label="Qrafik" value={partner.usualTime.replace(/\s?\d.*/, '') || partner.usualTime} volt />
-          <DataCell label="Tip" value={partner.types[0] ?? '—'} />
+          <DataCell label={t('Səviyyə')} value={t(partner.level ?? 'göstərilməyib')} />
+          <DataCell label={t('Məqsəd')} value={partner.goals[0] ? t(partner.goals[0]) : '—'} />
+          <DataCell label={t('Qrafik')} value={t(partner.usualTime).replace(/\s?\d.*/, '') || t(partner.usualTime)} volt />
+          <DataCell label={t('Tip')} value={partner.types[0] ? t(partner.types[0]) : '—'} />
         </View>
         {/* No score = no comparison, so there is nothing to explain: the card says
             what is missing instead of listing an app instruction as a reason. */}
         {score === null ? (
           <AppText variant="caption" color={palette.caption} style={{ marginTop: 13, lineHeight: 18 }}>
-            Uyğunluq hesablanmayıb — profilində zal, saat, səviyyə və məqsədi doldur.
+            {t('Uyğunluq hesablanmayıb — profilində zal, saat, səviyyə və məqsədi doldur.')}
           </AppText>
         ) : (
           <>
             {pros.length > 0 ? (
               <>
                 <AppText variant="caption" color={palette.caption} style={{ marginTop: 13 }}>
-                  NİYƏ UYĞUNDUR
+                  {t('NİYƏ UYĞUNDUR')}
                 </AppText>
                 <AppText variant="body" color={palette.text3} style={{ marginTop: 5, lineHeight: 20 }}>
-                  {pros.join(' · ')}
+                  {pros.map((r) => t(r)).join(' · ')}
                 </AppText>
               </>
             ) : null}
@@ -428,10 +431,10 @@ function CardFace({ partner }: { partner: Partner }) {
             {cons.length > 0 ? (
               <>
                 <AppText variant="caption" color={MISMATCH_COLOR} style={{ marginTop: 11 }}>
-                  FƏRQLƏR
+                  {t('FƏRQLƏR')}
                 </AppText>
                 <AppText variant="body" color={palette.textSecondary} style={{ marginTop: 5, lineHeight: 20 }}>
-                  {cons.slice(0, 3).join(' · ')}
+                  {cons.slice(0, 3).map((r) => t(r)).join(' · ')}
                 </AppText>
               </>
             ) : null}

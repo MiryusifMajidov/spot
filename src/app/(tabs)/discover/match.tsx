@@ -14,6 +14,8 @@ import { Screen } from '@/components/ui/Screen';
 import { DAYS, TIME_SLOTS } from '@/data/mock';
 import { getMyProfile, sendMatchRequest as apiSendMatchRequest } from '@/lib/api';
 import { useAuthGate } from '@/lib/authGate';
+import { t } from '@/lib/i18n';
+import { useT } from '@/lib/useT';
 import { usePartner, usePartnerPhase } from '@/lib/hooks';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { gymById, seedById, useDb } from '@/store/db';
@@ -71,7 +73,14 @@ function buildSlots(myDays: number[], partnerDays: number[], hour: number, n = 3
     d.setDate(now.getDate() + add);
     d.setHours(hour, 0, 0, 0);
     if (!pool.includes(dayIndex(d))) continue;
-    const label = add === 1 ? `Sabah ${String(hour).padStart(2, '0')}:00` : `${DAYS[dayIndex(d)]} ${d.getDate()} · ${String(hour).padStart(2, '0')}:00`;
+    const label =
+      add === 1
+        ? t('Sabah {time}', { time: `${String(hour).padStart(2, '0')}:00` })
+        : t('{day} {date} · {time}', {
+            day: t(DAYS[dayIndex(d)]),
+            date: d.getDate(),
+            time: `${String(hour).padStart(2, '0')}:00`,
+          });
     out.push({ label, iso: d.toISOString() });
   }
   return { slots: out, basis };
@@ -80,6 +89,7 @@ function buildSlots(myDays: number[], partnerDays: number[], hour: number, n = 3
 export default function Match() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const router = useRouter();
+  const t = useT();
   const gate = useAuthGate();
   const profile = useAppStore((s) => s.profile);
   const partner = usePartner(id ?? '');
@@ -161,10 +171,10 @@ export default function Match() {
           <Icon name={failed ? 'x' : 'users'} size={28} color={failed ? palette.red : palette.tertiary} />
           <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 260, lineHeight: 21 }}>
             {phase === 'loading'
-              ? 'Yüklənir…'
+              ? t('Yüklənir…')
               : failed
-                ? 'Yoldaşın məlumatı yüklənmədi — bu, hesabın silindiyi demək deyil. Bağlantını yoxla və yenidən aç.'
-                : 'Bu yoldaş tapılmadı. Siyahıya qayıt.'}
+                ? t('Yoldaşın məlumatı yüklənmədi — bu, hesabın silindiyi demək deyil. Bağlantını yoxla və yenidən aç.')
+                : t('Bu yoldaş tapılmadı. Siyahıya qayıt.')}
           </AppText>
         </View>
       </Screen>
@@ -179,8 +189,8 @@ export default function Match() {
   /** True only when this request can actually travel: a real SPOT profile + a backend. */
   const deliverable = hasSupabaseConfig && UUID.test(partner.id);
   const localOnlyReason = !hasSupabaseConfig
-    ? 'Server bağlantısı olmadan təklif göndərilmir — yalnız sənin cihazında saxlanılıb.'
-    : `${partner.name} hələ SPOT istifadəçisi deyil — təklif yalnız sənin cihazında saxlanılıb.`;
+    ? t('Server bağlantısı olmadan təklif göndərilmir — yalnız sənin cihazında saxlanılıb.')
+    : t('{name} hələ SPOT istifadəçisi deyil — təklif yalnız sənin cihazında saxlanılıb.', { name: partner.name });
 
   const propose = () => {
     const slot = slots[timeIdx];
@@ -198,20 +208,23 @@ export default function Match() {
         } catch {
           setSending(false);
           errorFeedback();
-          toast('Təklif göndərilmədi — yenidən cəhd et', 'error');
+          toast(t('Təklif göndərilmədi — yenidən cəhd et'), 'error');
           return;
         }
       }
-      sendRequest(partner.id, `Məşq təklifi: ${proposal}`);
+      sendRequest(partner.id, t('Məşq təklifi: {proposal}', { proposal }));
       setSending(false);
       successFeedback();
-      toast(deliverable ? 'Təklif göndərildi' : 'Təklif cihazında qeyd olundu — hələ göndərilməyib', deliverable ? 'success' : 'info');
-    }, 'Yoldaşa təklif göndərmək üçün');
+      toast(
+        deliverable ? t('Təklif göndərildi') : t('Təklif cihazında qeyd olundu — hələ göndərilməyib'),
+        deliverable ? 'success' : 'info'
+      );
+    }, t('Yoldaşa təklif göndərmək üçün'));
   };
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <NavBar title="Məşq təklif et" />
+      <NavBar title={t('Məşq təklif et')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.head}>
           <Avatar name={partner.name} size={72} />
@@ -220,15 +233,15 @@ export default function Match() {
               {nameWithAge(partner.name, partner.age)}
             </AppText>
             <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3 }}>
-              {partner.level} · {partner.usualTime}
+              {partner.level ? t(partner.level) : partner.level} · {t(partner.usualTime)}
             </AppText>
             {score === null ? (
               <View style={styles.unknownPill}>
-                <AppText style={{ color: palette.textSecondary, fontSize: 11.5, fontWeight: '600' }}>{COMPAT_UNKNOWN}</AppText>
+                <AppText style={{ color: palette.textSecondary, fontSize: 11.5, fontWeight: '600' }}>{t(COMPAT_UNKNOWN)}</AppText>
               </View>
             ) : (
               <View style={styles.compatPill}>
-                <AppText style={{ color: palette.volt, fontSize: 12.5, fontWeight: '700' }}>{score}% uyğun</AppText>
+                <AppText style={{ color: palette.volt, fontSize: 12.5, fontWeight: '700' }}>{t('{n}% uyğun', { n: score })}</AppText>
               </View>
             )}
           </View>
@@ -240,12 +253,12 @@ export default function Match() {
           <View style={styles.reasons}>
             {pros.map((r) => (
               <View key={r} style={styles.reason}>
-                <AppText style={{ fontSize: 11.5, fontWeight: '600', color: palette.voltText }}>{r}</AppText>
+                <AppText style={{ fontSize: 11.5, fontWeight: '600', color: palette.voltText }}>{t(r)}</AppText>
               </View>
             ))}
             {cons.slice(0, 3).map((r) => (
               <View key={r} style={[styles.reason, styles.reasonBad]}>
-                <AppText style={{ fontSize: 11.5, fontWeight: '600', color: MISMATCH_COLOR }}>≠ {r}</AppText>
+                <AppText style={{ fontSize: 11.5, fontWeight: '600', color: MISMATCH_COLOR }}>≠ {t(r)}</AppText>
               </View>
             ))}
           </View>
@@ -255,9 +268,9 @@ export default function Match() {
           <View style={styles.stateCard}>
             <Icon name="check" size={18} color={palette.voltDeep} />
             <View style={{ flex: 1 }}>
-              <AppText variant="headline">{partner.name} təklifi qəbul etdi</AppText>
+              <AppText variant="headline">{t('{name} təklifi qəbul etdi', { name: partner.name })}</AppText>
               <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3, lineHeight: 18 }}>
-                Söhbət açıqdır — vaxtı və zalı orada dəqiqləşdirin.
+                {t('Söhbət açıqdır — vaxtı və zalı orada dəqiqləşdirin.')}
               </AppText>
             </View>
           </View>
@@ -271,25 +284,25 @@ export default function Match() {
             <View style={{ flex: 1 }}>
               <AppText variant="headline">
                 {!deliverable
-                  ? 'Təklif qeyd olundu'
+                  ? t('Təklif qeyd olundu')
                   : answer === 'declined'
-                    ? `${partner.name} qəbul etmədi`
+                    ? t('{name} qəbul etmədi', { name: partner.name })
                     : answer === 'unknown'
-                      ? 'Cavabı oxuya bilmədik'
-                      : 'Təklif göndərildi'}
+                      ? t('Cavabı oxuya bilmədik')
+                      : t('Təklif göndərildi')}
               </AppText>
               <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3, lineHeight: 18 }}>
                 {!deliverable
                   ? localOnlyReason
                   : answer === 'declined'
-                    ? 'Bu təklif bağlandı. İstəsən sonra yenidən yaza bilərsən.'
+                    ? t('Bu təklif bağlandı. İstəsən sonra yenidən yaza bilərsən.')
                     : answer === 'unknown'
-                      ? 'Serverlə əlaqə alınmadı — bu təklifin qəbul edilib-edilmədiyini bilmirik. Sonra yenidən yoxla.'
+                      ? t('Serverlə əlaqə alınmadı — bu təklifin qəbul edilib-edilmədiyini bilmirik. Sonra yenidən yoxla.')
                       : answer === 'gone'
-                        ? 'Bu təklif serverdə tapılmadı — çox güman ki, geri götürülüb.'
+                        ? t('Bu təklif serverdə tapılmadı — çox güman ki, geri götürülüb.')
                         : answer === 'pending'
-                          ? `${partner.name} hələ cavab verməyib. Cavab gələndə söhbət açılacaq.`
-                          : `${partner.name} cavab verənə qədər söhbət açılmır. Cavab gələndə «Sorğular»da görünəcək.`}
+                          ? t('{name} hələ cavab verməyib. Cavab gələndə söhbət açılacaq.', { name: partner.name })
+                          : t('{name} cavab verənə qədər söhbət açılmır. Cavab gələndə «Sorğular»da görünəcək.', { name: partner.name })}
               </AppText>
               {/* This line used to say the chosen hour stayed on this phone, because
                   `match_requests` had no column to carry it. schema54 added `note`
@@ -303,8 +316,10 @@ export default function Match() {
                   </AppText>
                   <AppText variant="caption" color={palette.caption} style={{ marginTop: 3, lineHeight: 17 }}>
                     {deliverable
-                      ? 'Bu vaxt və zal təkliflə birlikdə göndərilib — qarşı tərəf onları «Sorğular»da görür. Qəbul ediləndən sonra söhbətdə dəqiqləşdirin.'
-                      : 'Bu təklif göndərilməyib — vaxt yalnız sənin cihazında qeyd olunub.'}
+                      ? t(
+                          'Bu vaxt və zal təkliflə birlikdə göndərilib — qarşı tərəf onları «Sorğular»da görür. Qəbul ediləndən sonra söhbətdə dəqiqləşdirin.'
+                        )
+                      : t('Bu təklif göndərilməyib — vaxt yalnız sənin cihazında qeyd olunub.')}
                   </AppText>
                 </>
               ) : null}
@@ -313,17 +328,17 @@ export default function Match() {
         ) : (
           <>
             <AppText variant="overline" color={palette.caption} style={{ marginTop: 24, marginBottom: 6 }}>
-              İlk məşqi təklif et
+              {t('İlk məşqi təklif et')}
             </AppText>
             {/* The caption states exactly which calendar produced the dates below —
                 it is written from the basis buildSlots really used, not from a guess. */}
             {slots.length > 0 ? (
               <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 4, lineHeight: 18 }}>
                 {basis === 'overlap'
-                  ? 'Vaxtlar sənin və onun məşq günlərinizin kəsişməsindən hesablanıb.'
+                  ? t('Vaxtlar sənin və onun məşq günlərinizin kəsişməsindən hesablanıb.')
                   : basis === 'partner'
-                    ? 'Ortaq gün yoxdur — vaxtlar onun məşq günlərinə görə seçilib.'
-                    : 'Onun cədvəli bizdə yoxdur — vaxtlar yalnız sənin məşq günlərinə görə seçilib.'}
+                    ? t('Ortaq gün yoxdur — vaxtlar onun məşq günlərinə görə seçilib.')
+                    : t('Onun cədvəli bizdə yoxdur — vaxtlar yalnız sənin məşq günlərinə görə seçilib.')}
               </AppText>
             ) : null}
             {/* Said BEFORE the choice, because the choice is what gets sent: the
@@ -334,8 +349,10 @@ export default function Match() {
             {slots.length > 0 ? (
               <AppText variant="caption" color={palette.caption} style={{ marginBottom: 12, lineHeight: 17 }}>
                 {deliverable
-                  ? 'Seçdiyin vaxt və zal təklifin içində gedir — qarşı tərəf onları görəcək. Dəqiq vaxtı o qəbul edəndən sonra söhbətdə razılaşacaqsınız.'
-                  : `${localOnlyReason} Seçdiyin vaxt da yalnız səndə qalır.`}
+                  ? t(
+                      'Seçdiyin vaxt və zal təklifin içində gedir — qarşı tərəf onları görəcək. Dəqiq vaxtı o qəbul edəndən sonra söhbətdə razılaşacaqsınız.'
+                    )
+                  : `${localOnlyReason} ${t('Seçdiyin vaxt da yalnız səndə qalır.')}`}
               </AppText>
             ) : null}
             {slots.length === 0 ? (
@@ -343,13 +360,13 @@ export default function Match() {
                 <Icon name="cal" size={18} color={palette.textSecondary} />
                 <View style={{ flex: 1 }}>
                   <AppText variant="footnote" color={palette.textSecondary} style={{ lineHeight: 18 }}>
-                    Məşq günü seçilməyib — nə səndə, nə onda. Vaxt təklif etmək üçün profilində məşq günlərini işarələ.
+                    {t('Məşq günü seçilməyib — nə səndə, nə onda. Vaxt təklif etmək üçün profilində məşq günlərini işarələ.')}
                   </AppText>
                   <PressableScale
                     activeScale={0.96}
                     onPress={() => router.push('/(tabs)/profile/edit')}
                     style={{ marginTop: 10, alignSelf: 'flex-start' }}>
-                    <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>Məşq günlərini seç</AppText>
+                    <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>{t('Məşq günlərini seç')}</AppText>
                   </PressableScale>
                 </View>
               </View>
@@ -375,17 +392,17 @@ export default function Match() {
       <View style={styles.footer}>
         {accepted ? (
           <Button
-            title="Söhbətə keç"
+            title={t('Söhbətə keç')}
             icon="msg"
             full
             onPress={() => router.replace({ pathname: '/chat/[id]', params: { id: partner.id } })}
           />
         ) : sent ? (
-          <Button title="Bağla" variant="secondary" full onPress={() => router.back()} />
+          <Button title={t('Bağla')} variant="secondary" full onPress={() => router.back()} />
         ) : (
           <>
             <Button
-              title={sending ? 'Göndərilir…' : 'Təklif göndər'}
+              title={sending ? t('Göndərilir…') : t('Təklif göndər')}
               full
               notify
               disabled={sending || slots.length === 0}
@@ -393,7 +410,7 @@ export default function Match() {
             />
             <PressableScale haptic={false} activeScale={0.97} onPress={() => router.back()} style={{ alignItems: 'center', paddingVertical: 14 }}>
               <AppText variant="body" color={palette.textSecondary}>
-                Sonra
+                {t('Sonra')}
               </AppText>
             </PressableScale>
           </>

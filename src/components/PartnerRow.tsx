@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Partner } from '@/data/types';
+import { useT } from '@/lib/useT';
 import { seedById } from '@/store/db';
 import { palette } from '@/theme';
 import { Avatar } from './ui/Avatar';
@@ -68,6 +69,7 @@ export function splitReasons(p: Pick<Partner, 'matchReasons' | 'mismatches'> | n
 
 /** Workout-partner row. Compatibility is computed from workout params, not photos. */
 export function PartnerRow({ partner, onPress }: { partner: Partner; onPress?: () => void }) {
+  const t = useT();
   const score = compatOf(partner);
   const { pros, cons } = splitReasons(partner);
   // Compact row: never let the two-chip budget swallow the mismatch — one of
@@ -93,16 +95,16 @@ export function PartnerRow({ partner, onPress }: { partner: Partner; onPress?: (
           {partner.hereNow && !seedById(partner.id) ? (
             <View style={styles.hereBadge}>
               <View style={styles.dot} />
-              <AppText style={styles.hereText}>indi zalda</AppText>
+              <AppText style={styles.hereText}>{t('indi zalda')}</AppText>
             </View>
           ) : null}
         </View>
         <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2 }}>
-          {[partner.level, partner.usualTime].filter(Boolean).join(' · ')}
+          {[partner.level ? t(partner.level) : null, partner.usualTime].filter(Boolean).join(' · ')}
         </AppText>
         {score === null ? (
           <AppText variant="caption" color={palette.caption} style={{ marginTop: 7, lineHeight: 16 }}>
-            {COMPAT_UNKNOWN}
+            {t(COMPAT_UNKNOWN)}
           </AppText>
         ) : chips.length > 0 ? (
           <View style={styles.reasons}>
@@ -110,7 +112,7 @@ export function PartnerRow({ partner, onPress }: { partner: Partner; onPress?: (
               <View key={c.text} style={[styles.reason, c.bad && styles.reasonBad]}>
                 <AppText style={[styles.reasonText, c.bad && { color: MISMATCH_COLOR }]}>
                   {c.bad ? '≠ ' : ''}
-                  {c.text}
+                  {t(c.text)}
                 </AppText>
               </View>
             ))}
@@ -123,7 +125,7 @@ export function PartnerRow({ partner, onPress }: { partner: Partner; onPress?: (
         ) : (
           <>
             <AppText style={styles.compat}>{score}%</AppText>
-            <AppText style={styles.compatLabel}>uyğun</AppText>
+            <AppText style={styles.compatLabel}>{t('uyğun')}</AppText>
           </>
         )}
       </View>

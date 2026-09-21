@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui/AppText';
 import { Icon } from '@/components/Icon';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { t } from '@/lib/i18n';
 import { palette, radius, spacing } from '@/theme';
 
 /**
@@ -60,15 +61,14 @@ export class AppErrorBoundary extends Component<Props, State> {
             <Icon name="x" size={26} color={palette.red} />
           </View>
           <AppText variant="title3" center style={{ marginTop: 18 }}>
-            {this.props.label ?? 'Bu ekran açılmadı'}
+            {this.props.label ?? t('Bu ekran açılmadı')}
           </AppText>
           <AppText variant="body" color={palette.textSecondary} center style={styles.body}>
-            Tətbiqdə xəta baş verdi. Hesabın, məşq tarixçən və digər məlumatların yerindədir — problem
-            yalnız bu ekrandadır.
+            {t('Tətbiqdə xəta baş verdi. Hesabın, məşq tarixçən və digər məlumatların yerindədir — problem yalnız bu ekrandadır.')}
           </AppText>
 
           <PressableScale activeScale={0.97} onPress={this.reset} style={styles.retry}>
-            <AppText style={{ fontSize: 15, fontWeight: '600', color: palette.white }}>Yenidən cəhd et</AppText>
+            <AppText style={{ fontSize: 15, fontWeight: '600', color: palette.white }}>{t('Yenidən cəhd et')}</AppText>
           </PressableScale>
 
           {__DEV__ ? (

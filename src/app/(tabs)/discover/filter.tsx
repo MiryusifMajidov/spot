@@ -8,6 +8,7 @@ import { Chip } from '@/components/ui/Chip';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { useGyms } from '@/lib/hooks';
+import { useT } from '@/lib/useT';
 import { applyGymFilter, useDiscoverPrefs } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
 
@@ -31,6 +32,7 @@ const AMENITIES = ['Duş', 'Park', 'Sauna', 'Basseyn', 'Kardio zonası', 'Qrup d
 
 export default function Filter() {
   const router = useRouter();
+  const t = useT();
   const gyms = useGyms();
   const f = useDiscoverPrefs((s) => s.gymFilter);
   const setFilter = useDiscoverPrefs((s) => s.setGymFilter);
@@ -48,30 +50,30 @@ export default function Filter() {
       <View style={styles.header}>
         <PressableScale haptic={false} activeScale={0.94} onPress={reset}>
           <AppText variant="body" color={palette.blue}>
-            Sıfırla
+            {t('Sıfırla')}
           </AppText>
         </PressableScale>
-        <AppText variant="headline">Filtr</AppText>
+        <AppText variant="headline">{t('Filtr')}</AppText>
         <PressableScale haptic={false} activeScale={0.94} onPress={() => router.back()}>
           <AppText variant="body" color={palette.blue}>
-            Bağla
+            {t('Bağla')}
           </AppText>
         </PressableScale>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <Section title="Məsafə">
+        <Section title={t('Məsafə')}>
           {DISTANCE.map((d) => (
             <Chip
               key={d.label}
-              label={d.label}
+              label={t(d.label)}
               tone="card"
               selected={f.maxDistanceKm === d.km}
               onPress={() => setFilter({ maxDistanceKm: f.maxDistanceKm === d.km ? null : d.km })}
             />
           ))}
         </Section>
-        <Section title="Aylıq qiymət (dək)">
+        <Section title={t('Aylıq qiymət (dək)')}>
           {PRICE.map((p) => (
             <Chip
               key={p.label}
@@ -82,31 +84,31 @@ export default function Filter() {
             />
           ))}
         </Section>
-        <Section title="İş saatı">
+        <Section title={t('İş saatı')}>
           {HOURS.map((h) => (
             <Chip
               key={h.value}
-              label={h.label}
+              label={t(h.label)}
               tone="card"
               selected={f.hours === h.value}
               onPress={() => setFilter({ hours: f.hours === h.value ? null : h.value })}
             />
           ))}
         </Section>
-        <Section title="İmkanlar">
+        <Section title={t('İmkanlar')}>
           {AMENITIES.map((a) => (
-            <Chip key={a} label={a} tone="card" selected={f.amenities.includes(a)} onPress={() => toggleAmenity(a)} />
+            <Chip key={a} label={t(a)} tone="card" selected={f.amenities.includes(a)} onPress={() => toggleAmenity(a)} />
           ))}
         </Section>
 
         <AppText variant="footnote" color={palette.caption} style={{ lineHeight: 18 }}>
-          Məsafə yalnız məsafəsi bilinən zallara tətbiq olunur. Filtr Kəşf siyahısına dərhal işləyir.
+          {t('Məsafə yalnız məsafəsi bilinən zallara tətbiq olunur. Filtr Kəşf siyahısına dərhal işləyir.')}
         </AppText>
       </ScrollView>
 
       <View style={styles.footer}>
         <Button
-          title={matched.length === 0 ? 'Uyğun zal yoxdur' : `${matched.length} zal göstər`}
+          title={matched.length === 0 ? t('Uyğun zal yoxdur') : t('{n} zal göstər', { n: matched.length, count: matched.length })}
           full
           disabled={matched.length === 0}
           onPress={() => router.back()}

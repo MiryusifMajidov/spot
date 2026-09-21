@@ -9,13 +9,20 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { getPartner } from '@/lib/api';
+import { timeAgo } from '@/lib/format';
 import { useTrainers } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { seedById, timeAgoAz, useDb } from '@/store/db';
+import { useLang, useT } from '@/lib/useT';
+import { seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { useDiscoverPrefs } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
 import { getMyThreads, type ThreadSummary } from '@/lib/chat';
+
+/** «indi» / «5 dəq» / «Dünən», in the language the person chose. `timeAgo` takes
+ *  the clock as an argument so the formatter itself stays pure; reading it stays
+ *  here, exactly where the old `timeAgoAz` read it. */
+const ago = (iso: string) => timeAgo(iso, Date.now());
 
 type Row = {
   id: string;
@@ -28,6 +35,10 @@ type Row = {
 };
 
 export default function Chats() {
+  const t = useT();
+  // The rows below are built inside a useMemo, so the memo has to know the
+  // language too — otherwise its cached Azerbaijani survives the switch.
+  const lang = useLang();
   const router = useRouter();
   const matches = useDb((s) => s.matches);
   const threads = useDb((s) => s.threads);
@@ -107,9 +118,9 @@ export default function Chats() {
         // into «📅 <vaxt>», which outlived the invite cards themselves — the branch
         // could only ever fire on a leftover row in an upgraded install's storage,
         // and it dressed a message nobody received up as a scheduled meeting.
-        last: last ? last.text : 'Söhbətə başla',
+        last: last ? last.text : t('Söhbətə başla'),
         at: last?.at ?? '',
-        time: last ? timeAgoAz(last.at) : '',
+        time: last ? ago(last.at) : '',
         // Unread = they wrote after I last opened the thread — not "they wrote last".
         unread: !!last && last.from === 'them' && last.at > (lastRead[id] ?? ''),
       };
@@ -119,13 +130,13 @@ export default function Chats() {
     // leaves the list — the block dialog says they will.
     const partnerRows = Object.values(matches)
       .filter((m) => m.state === 'accepted' && !blocked.includes(m.partnerId))
-      .map((m) => build(m.partnerId, seedById(m.partnerId)?.name ?? names[m.partnerId] ?? 'Adı göstərilmir', 'partner'));
+      .map((m) => build(m.partnerId, seedById(m.partnerId)?.name ?? names[m.partnerId] ?? t('Adı göstərilmir'), 'partner'));
 
     // Real trainer/other conversations: any thread the user actually wrote in.
     const partnerIds = new Set(partnerRows.map((r) => r.id));
     const otherRows = Object.keys(threads)
       .filter((id) => !partnerIds.has(id) && !blocked.includes(id) && (threads[id]?.length ?? 0) > 0)
-      .map((id) => build(id, trainers.find((t) => t.id === id)?.name ?? seedById(id)?.name ?? names[id] ?? 'Adı göstərilmir', 'trainer'));
+      .map((id) => build(id, trainers.find((tr) => tr.id === id)?.name ?? seedById(id)?.name ?? names[id] ?? t('Adı göstərilmir'), 'trainer'));
 
     /* Server threads (schema42) are the real conversations — a message that
        reached the other person. They replace the device-only row for the same
@@ -133,25 +144,25 @@ export default function Chats() {
        received. Anything the server does not know about still shows from the
        local store, with its own honest state. */
     const serverRows: Row[] = serverThreads
-      .filter((t) => !blocked.includes(t.otherProfileId))
-      .map((t) => ({
-        id: t.otherProfileId,
-        name: t.otherName ?? names[t.otherProfileId] ?? 'Adı göstərilmir',
+      .filter((th) => !blocked.includes(th.otherProfileId))
+      .map((th) => ({
+        id: th.otherProfileId,
+        name: th.otherName ?? names[th.otherProfileId] ?? t('Adı göstərilmir'),
         kind: 'partner' as const,
-        last: t.lastBody ? (t.lastMine ? `Sən: ${t.lastBody}` : t.lastBody) : 'Söhbətə başla',
-        at: t.lastAt ?? '',
-        time: t.lastAt ? timeAgoAz(t.lastAt) : '',
-        unread: t.unread > 0,
+        last: th.lastBody ? (th.lastMine ? t('Sən: {text}', { text: th.lastBody }) : th.lastBody) : t('Söhbətə başla'),
+        at: th.lastAt ?? '',
+        time: th.lastAt ? ago(th.lastAt) : '',
+        unread: th.unread > 0,
       }));
 
     const fromServer = new Set(serverRows.map((r) => r.id));
     return [...serverRows, ...partnerRows.filter((r) => !fromServer.has(r.id)), ...otherRows.filter((r) => !fromServer.has(r.id))]
       .sort((a, b) => b.at.localeCompare(a.at));
-  }, [matches, threads, lastRead, trainers, blocked, names, serverThreads]);
+  }, [matches, threads, lastRead, trainers, blocked, names, serverThreads, lang, t]);
 
   return (
     <Screen>
-      <NavBar title="Söhbətlər" />
+      <NavBar title={t('Söhbətlər')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {/* Requests box */}
         <PressableScale activeScale={0.98} onPress={() => router.push('/chat/requests')} style={styles.requests}>
@@ -159,13 +170,13 @@ export default function Chats() {
             <Icon name="users" size={21} color={palette.streak} />
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="headline">Sorğular</AppText>
+            <AppText variant="headline">{t('Sorğular')}</AppText>
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 3 }}>
               {incomingCount > 0
-                ? `${incomingCount} yeni sorğu`
+                ? t('{n} yeni sorğu', { n: incomingCount, count: incomingCount })
                 : pendingOut > 0
-                  ? `${pendingOut} təklifin cavab gözləyir`
-                  : 'Gələn və göndərdiyin təkliflər'}
+                  ? t('{n} təklifin cavab gözləyir', { n: pendingOut, count: pendingOut })
+                  : t('Gələn və göndərdiyin təkliflər')}
             </AppText>
           </View>
           {incomingCount > 0 ? (
@@ -182,12 +193,12 @@ export default function Chats() {
           <View style={styles.empty}>
             <Icon name="msg" size={28} color={palette.tertiary} />
             <AppText variant="headline" style={{ marginTop: 12 }}>
-              {threadsFailed ? 'Söhbətlər yüklənmədi' : 'Hələ söhbət yoxdur'}
+              {threadsFailed ? t('Söhbətlər yüklənmədi') : t('Hələ söhbət yoxdur')}
             </AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, maxWidth: 260, lineHeight: 21 }}>
               {threadsFailed
-                ? 'Söhbətləri gətirmək alınmadı — neçəsi olduğunu bilmirik. İnternet qayıdanda yenidən aç.'
-                : 'Yoldaşa məşq təklif et və ya müəllimə yaz — söhbət qarşı tərəf qəbul edəndə burada açılacaq.'}
+                ? t('Söhbətləri gətirmək alınmadı — neçəsi olduğunu bilmirik. İnternet qayıdanda yenidən aç.')
+                : t('Yoldaşa məşq təklif et və ya müəllimə yaz — söhbət qarşı tərəf qəbul edəndə burada açılacaq.')}
             </AppText>
           </View>
         ) : (
@@ -204,7 +215,7 @@ export default function Chats() {
         <View style={styles.note}>
           <Icon name="shield" size={15} color={palette.caption} />
           <AppText variant="caption" color={palette.caption} style={{ flex: 1, lineHeight: 17 }}>
-            Naməlum adamdan gələn mesaj birbaşa buraya düşmür — əvvəlcə «Sorğular»a gedir.
+            {t('Naməlum adamdan gələn mesaj birbaşa buraya düşmür — əvvəlcə «Sorğular»a gedir.')}
           </AppText>
         </View>
       </ScrollView>
@@ -213,6 +224,7 @@ export default function Chats() {
 }
 
 function ChatRow({ chat, onPress }: { chat: Row; onPress: () => void }) {
+  const t = useT();
   return (
     <PressableScale activeScale={0.99} haptic={false} onPress={onPress} style={styles.row}>
       <Avatar name={chat.name} size={52} />
@@ -223,7 +235,7 @@ function ChatRow({ chat, onPress }: { chat: Row; onPress: () => void }) {
           </AppText>
           <View style={chat.kind === 'partner' ? styles.partnerTag : styles.trainerTag}>
             <AppText style={{ fontSize: 9.5, fontWeight: '700', color: chat.kind === 'partner' ? palette.voltText : palette.textSecondary }}>
-              {chat.kind === 'partner' ? 'YOLDAŞ' : 'MÜƏLLİM'}
+              {chat.kind === 'partner' ? t('YOLDAŞ') : t('MÜƏLLİM')}
             </AppText>
           </View>
           <AppText variant="caption" color={palette.tertiary} style={{ marginLeft: 'auto' }}>

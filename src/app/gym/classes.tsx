@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { EmptyNote, GymGate, updateMyGym, useMyGym, type OwnedGym, type ScheduleItem } from '@/lib/gymOwner';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
+import { useT } from '@/lib/useT';
 import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
 const sortByTime = (a: ScheduleItem, b: ScheduleItem) => a.time.localeCompare(b.time);
 
 export default function GymClasses() {
+  const t = useT();
   const insets = useSafeAreaInsets();
   // The row editor is a Modal — its own window, which Android never resizes for
   // the keyboard. Pad it by the measured overlap so the fields and «Saxla» stay
@@ -57,13 +59,13 @@ export default function GymClasses() {
            `extrasSaved: false` for a write that touched no row as well — which
            is what an RLS refusal looks like — and naming a .sql file as the
            cause of that would send the owner after the wrong thing. */
-        toast('Cədvəl saxlanılmadı — serverdə yazıla bilmədi', 'error');
+        toast(t('Cədvəl saxlanılmadı — serverdə yazıla bilmədi'), 'error');
       } else {
-        toast('Cədvəl yeniləndi');
+        toast(t('Cədvəl yeniləndi'));
       }
     } catch {
       setEdited({ from: gym, items: prev });
-      toast('Cədvəl saxlanılmadı — bağlantını yoxla', 'error');
+      toast(t('Cədvəl saxlanılmadı — bağlantını yoxla'), 'error');
     }
     setSaving(false);
   };
@@ -80,9 +82,9 @@ export default function GymClasses() {
   };
 
   const remove = (index: number) => {
-    confirm('Cədvəldən silinsin?', items[index]?.name, [
-      { label: 'Ləğv et', style: 'cancel' },
-      { label: 'Sil', style: 'destructive', onPress: () => persist(items.filter((_, i) => i !== index)) },
+    confirm(t('Cədvəldən silinsin?'), items[index]?.name, [
+      { label: t('Ləğv et'), style: 'cancel' },
+      { label: t('Sil'), style: 'destructive', onPress: () => persist(items.filter((_, i) => i !== index)) },
     ]);
   };
 
@@ -92,7 +94,7 @@ export default function GymClasses() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: spacing.screen, paddingBottom: 24 }}>
         <View style={styles.head}>
-          <AppText variant="largeTitle">Cədvəl</AppText>
+          <AppText variant="largeTitle">{t('Cədvəl')}</AppText>
           <PressableScale
             activeScale={0.9}
             onPress={() => setEditing({ index: null, time: '', name: '', trainer: '' })}
@@ -108,15 +110,15 @@ export default function GymClasses() {
             anywhere on their own gym's page. Until the customer-side section
             exists, the screen states what is actually true today. */}
         <AppText variant="body" color={palette.textSecondary} style={{ marginBottom: 16, lineHeight: 21 }}>
-          Zalının dərs cədvəlini özün yazırsan və saxlanılır, amma hazırda yalnız bu paneldə görünür — müştərinin
-          gördüyü zal səhifəsində cədvəl bölməsi hələ yoxdur. Üzvlər tətbiq daxilində dərsə də yazıla bilmir: yer
-          sayı və növbə göstərmirik, çünki belə bir sistem yoxdur.
+          {t(
+            'Zalının dərs cədvəlini özün yazırsan və saxlanılır, amma hazırda yalnız bu paneldə görünür — müştərinin gördüyü zal səhifəsində cədvəl bölməsi hələ yoxdur. Üzvlər tətbiq daxilində dərsə də yazıla bilmir: yer sayı və növbə göstərmirik, çünki belə bir sistem yoxdur.'
+          )}
         </AppText>
 
         {!items.length ? (
           <EmptyNote
-            title="Hələ cədvəl yoxdur"
-            body="«+» düyməsi ilə saat, dərsin adı və məşqçini əlavə et. Yalnız sənin yazdıqların görünür."
+            title={t('Hələ cədvəl yoxdur')}
+            body={t('«+» düyməsi ilə saat, dərsin adı və məşqçini əlavə et. Yalnız sənin yazdıqların görünür.')}
           />
         ) : (
           <View style={{ gap: 11 }}>
@@ -147,7 +149,7 @@ export default function GymClasses() {
 
         {items.length ? (
           <AppText style={{ fontSize: 11.5, lineHeight: 16, color: palette.tertiary, marginTop: 14, paddingHorizontal: 4 }}>
-            Sətrə toxun — redaktə et. Uzun bas və ya «×» — sil.
+            {t('Sətrə toxun — redaktə et. Uzun bas və ya «×» — sil.')}
           </AppText>
         ) : null}
       </ScrollView>
@@ -155,32 +157,34 @@ export default function GymClasses() {
       <Modal visible={!!editing} animationType="slide" transparent onRequestClose={() => setEditing(null)}>
         <View style={styles.modalBg}>
           <View style={[styles.sheet, { paddingBottom: (kb > 0 ? kb : insets.bottom) + 16 }]}>
-            <AppText variant="headline">{editing?.index === null ? 'Cədvələ əlavə et' : 'Sətri redaktə et'}</AppText>
+            <AppText variant="headline">
+              {editing?.index === null ? t('Cədvələ əlavə et') : t('Sətri redaktə et')}
+            </AppText>
             <Field
-              label="Saat"
+              label={t('Saat')}
               value={editing?.time ?? ''}
-              onChangeText={(t) => setEditing((e) => (e ? { ...e, time: t } : e))}
+              onChangeText={(v) => setEditing((e) => (e ? { ...e, time: v } : e))}
               placeholder="18:00"
             />
             <Field
-              label="Dərsin adı"
+              label={t('Dərsin adı')}
               value={editing?.name ?? ''}
-              onChangeText={(t) => setEditing((e) => (e ? { ...e, name: t } : e))}
-              placeholder="HIIT · 45 dəq"
+              onChangeText={(v) => setEditing((e) => (e ? { ...e, name: v } : e))}
+              placeholder={t('HIIT · 45 dəq')}
             />
             <Field
-              label="Məşqçi (istəyə bağlı)"
+              label={t('Məşqçi (istəyə bağlı)')}
               value={editing?.trainer ?? ''}
-              onChangeText={(t) => setEditing((e) => (e ? { ...e, trainer: t } : e))}
-              placeholder="Ad Soyad"
+              onChangeText={(v) => setEditing((e) => (e ? { ...e, trainer: v } : e))}
+              placeholder={t('Ad Soyad')}
             />
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
               <View style={{ flex: 1 }}>
-                <Button title="Ləğv et" variant="secondary" full onPress={() => setEditing(null)} />
+                <Button title={t('Ləğv et')} variant="secondary" full onPress={() => setEditing(null)} />
               </View>
               <View style={{ flex: 1 }}>
                 <Button
-                  title={saving ? 'Saxlanılır…' : 'Saxla'}
+                  title={saving ? t('Saxlanılır…') : t('Saxla')}
                   variant="primary"
                   full
                   disabled={!editing?.time.trim() || !editing?.name.trim() || saving}

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { KeyboardLift, useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
+import { useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
 
 export function OnboardingScaffold({
@@ -31,6 +32,7 @@ export function OnboardingScaffold({
   onSkip?: () => void;
   children: ReactNode;
 }) {
+  const t = useT();
   const router = useRouter();
 
   /* Android edge-to-edge does not resize the window when the keyboard opens, and an
@@ -66,7 +68,7 @@ export function OnboardingScaffold({
         </View>
         <PressableScale activeScale={0.92} onPress={onSkip} style={styles.skip}>
           <AppText variant="body" color={onSkip ? palette.blue : 'transparent'}>
-            Keç
+            {t('Keç')}
           </AppText>
         </PressableScale>
       </View>
@@ -93,7 +95,7 @@ export function OnboardingScaffold({
       </ScrollView>
 
       <KeyboardLift extra={8} style={styles.footer}>
-        <Button title={nextLabel} onPress={onNext} disabled={nextDisabled} full />
+        <Button title={t(nextLabel)} onPress={onNext} disabled={nextDisabled} full />
       </KeyboardLift>
     </Screen>
   );

@@ -25,6 +25,7 @@ import { applyGymFilter, applyPartnerFilter, gymFilterCount, partnerFilterCount,
 import { palette, spacing } from '@/theme';
 import { searchKey, azUpper } from '@/lib/az';
 import { getUnreadCount } from '@/lib/notifications';
+import { useT } from '@/lib/useT';
 
 // Shared fold — a plain toLocaleLowerCase('az') turned «Iron Bay» into
 // «ıron bay», so typing `iron` found nothing. See src/lib/az.ts.
@@ -32,6 +33,7 @@ const norm = searchKey;
 
 export default function Discover() {
   const router = useRouter();
+  const t = useT();
   const guest = useIsGuest();
   const [rawSegment, setSegment] = useState(0);
   /* A guest has only two segments. Clamping here rather than resetting the state
@@ -167,12 +169,13 @@ export default function Discover() {
   const weeklyCount = Math.min(3, filteredPartners.length);
   const pendingOut = useMemo(() => Object.values(matches).filter((m) => m.state === 'requested').length, [matches]);
 
-  const searchPlaceholder = segment === 0 ? 'Zal, rayon axtar' : segment === 1 ? 'Müəllim, ixtisas axtar' : 'Yoldaş, məqsəd axtar';
+  const searchPlaceholder =
+    segment === 0 ? t('Zal, rayon axtar') : segment === 1 ? t('Müəllim, ixtisas axtar') : t('Yoldaş, məqsəd axtar');
 
   return (
     <Screen edges={['top']}>
       <LargeHeader
-        title="Kəşf"
+        title={t('Kəşf')}
         right={
           guest ? (
             /* The only way in. A guest has no Profil tab, so without this button
@@ -180,7 +183,7 @@ export default function Discover() {
                only the prompts that appear after tapping something. */
             <PressableScale activeScale={0.96} onPress={() => router.push('/onboarding/welcome')} style={styles.signIn}>
               <AppText variant="subhead" style={{ color: palette.inkText, fontWeight: '700' }}>
-                Daxil ol
+                {t('Daxil ol')}
               </AppText>
             </PressableScale>
           ) : (
@@ -218,7 +221,7 @@ export default function Discover() {
               ever be empty or a prompt. Browsing without an account is the
               catalogue: gyms, and the coaches in them. */}
           <Segmented
-            options={guest ? ['Zallar', 'Müəllimlər'] : ['Zallar', 'Müəllimlər', 'Yoldaşlar']}
+            options={guest ? [t('Zallar'), t('Müəllimlər')] : [t('Zallar'), t('Müəllimlər'), t('Yoldaşlar')]}
             value={segment}
             onChange={setSegment}
           />
@@ -232,27 +235,27 @@ export default function Discover() {
             style={{ marginTop: 12, marginHorizontal: -spacing.screen }}>
             {/* The map is the second way to browse gyms — it must be visible in the
                 Zallar segment itself, not only behind the header pin. */}
-            <Chip label="Xəritə" icon="pin" tone="card" onPress={() => router.push('/(tabs)/discover/map')} />
+            <Chip label={t('Xəritə')} icon="pin" tone="card" onPress={() => router.push('/(tabs)/discover/map')} />
             <Chip
-              label={filterN > 0 ? `Filtr · ${filterN}` : 'Filtr'}
+              label={filterN > 0 ? t('Filtr · {n}', { n: filterN, count: filterN }) : t('Filtr')}
               icon="sliders"
               selected={filterN > 0}
               onPress={() => router.push('/(tabs)/discover/filter')}
             />
             <Chip
-              label="2 km-ə qədər"
+              label={t('2 km-ə qədər')}
               tone="card"
               selected={gymFilter.maxDistanceKm === 2}
               onPress={() => setGymFilter({ maxDistanceKm: gymFilter.maxDistanceKm === 2 ? null : 2 })}
             />
             <Chip
-              label="50 ₼-dək"
+              label={t('50 ₼-dək')}
               tone="card"
               selected={gymFilter.maxPrice === 50}
               onPress={() => setGymFilter({ maxPrice: gymFilter.maxPrice === 50 ? null : 50 })}
             />
             <Chip
-              label="24 saat"
+              label={t('24 saat')}
               tone="card"
               selected={gymFilter.hours === '24h'}
               onPress={() => setGymFilter({ hours: gymFilter.hours === '24h' ? null : '24h' })}
@@ -260,7 +263,7 @@ export default function Discover() {
             {['Duş', 'Park'].map((a) => (
               <Chip
                 key={a}
-                label={a}
+                label={t(a)}
                 tone="card"
                 selected={gymFilter.amenities.includes(a)}
                 onPress={() =>
@@ -280,14 +283,18 @@ export default function Discover() {
             contentContainerStyle={styles.chips}
             style={{ marginTop: 12, marginHorizontal: -spacing.screen }}>
             <Chip
-              label={partnerFilterN > 0 ? `Filtr · ${partnerFilterN}` : 'Filtr'}
+              label={partnerFilterN > 0 ? t('Filtr · {n}', { n: partnerFilterN, count: partnerFilterN }) : t('Filtr')}
               icon="sliders"
               selected={partnerFilterN > 0}
               onPress={() => router.push('/(tabs)/discover/partner-filter')}
             />
-            <Chip label="Kartlar" icon="grid" tone="card" onPress={() => router.push('/(tabs)/discover/cards')} />
+            <Chip label={t('Kartlar')} icon="grid" tone="card" onPress={() => router.push('/(tabs)/discover/cards')} />
             {pendingOut > 0 ? (
-              <Chip label={`Gözləyən təklif · ${pendingOut}`} tone="card" onPress={() => router.push('/chat/requests')} />
+              <Chip
+                label={t('Gözləyən təklif · {n}', { n: pendingOut, count: pendingOut })}
+                tone="card"
+                onPress={() => router.push('/chat/requests')}
+              />
             ) : null}
           </ScrollView>
         ) : null}
@@ -303,14 +310,14 @@ export default function Discover() {
                    was also printed over a read that never landed — there was no
                    failed branch for gyms at all. */
                 gymsPhase === 'failed'
-                  ? 'Zallar yüklənmədi — bu, zal olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç.'
+                  ? t('Zallar yüklənmədi — bu, zal olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç.')
                   : gymsPhase === 'loading'
-                    ? 'Zallar yüklənir…'
+                    ? t('Zallar yüklənir…')
                     : q || filterN > 0
-                      ? 'Bu axtarışa uyğun zal tapılmadı. Filtri sıfırla və ya başqa söz yaz.'
-                      : 'Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, Profil → «Zal əlavə et» ilə özün əlavə edə bilərsən.'
+                      ? t('Bu axtarışa uyğun zal tapılmadı. Filtri sıfırla və ya başqa söz yaz.')
+                      : t('Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, Profil → «Zal əlavə et» ilə özün əlavə edə bilərsən.')
               }
-              action={{ label: 'Xəritədə bax', onPress: () => router.push('/(tabs)/discover/map') }}
+              action={{ label: t('Xəritədə bax'), onPress: () => router.push('/(tabs)/discover/map') }}
             />
           ) : (
             <>
@@ -321,7 +328,11 @@ export default function Discover() {
                     <View style={styles.liveRow}>
                       <LiveDot />
                       <AppText style={styles.liveLabel}>
-                        İNDİ ZALDA {homeGym.liveCount} NƏFƏR · {azUpper(homeGym.name)}
+                        {t('İNDİ ZALDA {n} NƏFƏR · {gym}', {
+                          n: homeGym.liveCount,
+                          count: homeGym.liveCount,
+                          gym: azUpper(homeGym.name),
+                        })}
                       </AppText>
                     </View>
                   ) : null}
@@ -344,9 +355,9 @@ export default function Discover() {
                     <Icon name="pin" size={18} color={palette.voltDeep} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <AppText variant="headline">Əsas zalın seçilməyib</AppText>
+                    <AppText variant="headline">{t('Əsas zalın seçilməyib')}</AppText>
                     <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2, lineHeight: 18 }}>
-                      Zalını seç — yoldaşlar zala görə tapılır.
+                      {t('Zalını seç — yoldaşlar zala görə tapılır.')}
                     </AppText>
                   </View>
                   <Icon name="chevR" size={18} color={palette.tertiary} />
@@ -373,10 +384,10 @@ export default function Discover() {
               icon="user"
               text={
                 trainerPhase === 'failed'
-                  ? 'Müəllimlər yüklənmədi — serverlə əlaqə alınmadı. Bu, müəllim olmadığı demək deyil.'
+                  ? t('Müəllimlər yüklənmədi — serverlə əlaqə alınmadı. Bu, müəllim olmadığı demək deyil.')
                   : q
-                    ? 'Bu ada uyğun müəllim tapılmadı.'
-                    : 'Hələ müəllim yoxdur. Zalını seç — müəllimlər orada görünəcək.'
+                    ? t('Bu ada uyğun müəllim tapılmadı.')
+                    : t('Hələ müəllim yoxdur. Zalını seç — müəllimlər orada görünəcək.')
               }
             />
           ) : (
@@ -397,9 +408,9 @@ export default function Discover() {
                   <Icon name="star" size={18} color={palette.voltDeep} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <AppText variant="headline">{weeklyCount} həftəlik təklif</AppText>
+                  <AppText variant="headline">{t('{n} həftəlik təklif', { n: weeklyCount, count: weeklyCount })}</AppText>
                   <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2 }}>
-                    Bu həftənin ən uyğun yoldaşları
+                    {t('Bu həftənin ən uyğun yoldaşları')}
                   </AppText>
                 </View>
                 <Icon name="chevR" size={18} color={palette.tertiary} />
@@ -409,7 +420,9 @@ export default function Discover() {
             {savedPartners.length > 0 ? (
               <>
                 <AppText variant="overline" color={palette.caption} style={{ marginBottom: 10 }}>
-                  Saxlanılanlar{savedPhase === 'ready' ? ` · ${saved.length}` : ''}
+                  {savedPhase === 'ready'
+                    ? t('Saxlanılanlar · {n}', { n: saved.length, count: saved.length })
+                    : t('Saxlanılanlar')}
                 </AppText>
                 {saved.map((p) => (
                   <PartnerRow
@@ -420,19 +433,19 @@ export default function Discover() {
                 ))}
                 {savedPhase === 'loading' && saved.length === 0 ? (
                   <AppText variant="footnote" color={palette.caption} style={{ paddingVertical: 10, lineHeight: 18 }}>
-                    Saxladıqların yüklənir…
+                    {t('Saxladıqların yüklənir…')}
                   </AppText>
                 ) : null}
                 {savedPhase === 'error' ? (
                   <AppText variant="footnote" color={palette.caption} style={{ paddingVertical: 10, lineHeight: 18 }}>
                     {hasSupabaseConfig
-                      ? 'Saxladıqların yüklənmədi — internet bağlantısını yoxla və bu səhifəni yenidən aç.'
-                      : 'Bu quraşdırmada server bağlantısı yoxdur — saxladığın profilləri oxuya bilmirik.'}
+                      ? t('Saxladıqların yüklənmədi — internet bağlantısını yoxla və bu səhifəni yenidən aç.')
+                      : t('Bu quraşdırmada server bağlantısı yoxdur — saxladığın profilləri oxuya bilmirik.')}
                   </AppText>
                 ) : null}
                 {savedPhase === 'ready' && saved.length === 0 ? (
                   <AppText variant="footnote" color={palette.caption} style={{ paddingVertical: 10, lineHeight: 18 }}>
-                    Saxladığın profillər artıq görünmür — profillərini gizlədiblər və ya hesabları yoxdur.
+                    {t('Saxladığın profillər artıq görünmür — profillərini gizlədiblər və ya hesabları yoxdur.')}
                   </AppText>
                 ) : null}
                 <View style={{ height: 8 }} />
@@ -442,25 +455,25 @@ export default function Discover() {
             {!homeGymId ? (
               <EmptyBlock
                 icon="pin"
-                text="Zalını seç — yoldaşlar zala görə tapılır."
-                action={{ label: 'Zalını seç', onPress: () => router.push('/(tabs)/profile/edit') }}
+                text={t('Zalını seç — yoldaşlar zala görə tapılır.')}
+                action={{ label: t('Zalını seç'), onPress: () => router.push('/(tabs)/profile/edit') }}
               />
             ) : (
               <>
                 <AppText variant="subhead" color={palette.textSecondary} style={{ marginBottom: 10 }}>
-                  Uyğun yoldaşlar · səbəb etiketləri ilə
+                  {t('Uyğun yoldaşlar · səbəb etiketləri ilə')}
                 </AppText>
                 {visiblePartners.length === 0 ? (
                   <EmptyBlock
                     icon="users"
                     text={
                       partnerPhase === 'failed'
-                        ? 'Yoldaşlar yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda kimsə olmadığı demək deyil.'
+                        ? t('Yoldaşlar yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda kimsə olmadığı demək deyil.')
                         : q
-                          ? 'Bu axtarışa uyğun yoldaş yoxdur.'
+                          ? t('Bu axtarışa uyğun yoldaş yoxdur.')
                           : partnerFilterN > 0
-                            ? 'Seçdiyin filtrə uyğun yoldaş yoxdur. Filtri yumşalt.'
-                            : 'Bu zalda hələ uyğun yoldaş yoxdur. Başqa zal seç və ya profilini tamamla.'
+                            ? t('Seçdiyin filtrə uyğun yoldaş yoxdur. Filtri yumşalt.')
+                            : t('Bu zalda hələ uyğun yoldaş yoxdur. Başqa zal seç və ya profilini tamamla.')
                     }
                   />
                 ) : (

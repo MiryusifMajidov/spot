@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { EmptyNote, GymGate, daysSince, getGymRoster, useMyGym, type RosterMember } from '@/lib/gymOwner';
+import { useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
 
 /** No check-in for this many days = at risk of churn. Derived, never invented. */
@@ -34,6 +35,7 @@ const isRisk = (m: RosterMember) => {
 };
 
 export default function GymMembers() {
+  const t = useT();
   const insets = useSafeAreaInsets();
   const state = useMyGym();
   const gym = state.gym;
@@ -101,9 +103,9 @@ export default function GymMembers() {
   };
 
   const FILTERS: { key: Filter; label: string }[] = [
-    { key: 'all', label: `Hamısı ${counts.all}` },
-    { key: 'new', label: `Yeni ${counts.new}` },
-    { key: 'risk', label: `İtirilmə riski ${counts.risk}` },
+    { key: 'all', label: t('Hamısı {n}', { n: counts.all, count: counts.all }) },
+    { key: 'new', label: t('Yeni {n}', { n: counts.new, count: counts.new }) },
+    { key: 'risk', label: t('İtirilmə riski {n}', { n: counts.risk, count: counts.risk }) },
   ];
 
   return (
@@ -113,7 +115,7 @@ export default function GymMembers() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.tertiary} />}
         contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: spacing.screen, paddingBottom: 24 }}>
         <AppText variant="largeTitle" style={{ marginBottom: 14 }}>
-          {loaded && !failed ? `Üzvlər · ${members.length}` : 'Üzvlər'}
+          {loaded && !failed ? t('Üzvlər · {n}', { n: members.length, count: members.length }) : t('Üzvlər')}
         </AppText>
 
         {failed ? (
@@ -121,16 +123,16 @@ export default function GymMembers() {
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
               <Icon name="x" size={17} color="#D14A15" />
               <View style={{ flex: 1 }}>
-                <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>Üzv siyahısı yüklənmədi</AppText>
+                <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{t('Üzv siyahısı yüklənmədi')}</AppText>
                 <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 5 }}>
                   {members.length
-                    ? 'Aşağıdakı siyahı əvvəlki yükləmədən qalıb — köhnə ola bilər. Bağlantını yoxla.'
-                    : 'Bu, «üzv yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və yenidən cəhd et.'}
+                    ? t('Aşağıdakı siyahı əvvəlki yükləmədən qalıb — köhnə ola bilər. Bağlantını yoxla.')
+                    : t('Bu, «üzv yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və yenidən cəhd et.')}
                 </AppText>
               </View>
             </View>
             <View style={{ marginTop: 12 }}>
-              <Button title="Yenidən cəhd et" variant="secondary" full onPress={refresh} />
+              <Button title={t('Yenidən cəhd et')} variant="secondary" full onPress={refresh} />
             </View>
           </View>
         ) : null}
@@ -153,32 +155,37 @@ export default function GymMembers() {
 
             <View style={styles.card}>
               <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 13 }}>
-                DAVAMİYYƏT · SON 30 GÜN
+                {t('DAVAMİYYƏT · SON 30 GÜN')}
               </AppText>
               {stats && stats.enough ? (
                 <View style={{ flexDirection: 'row', gap: 11 }}>
-                  <Stat value={stats.avg} label="üzv başına check-in" />
+                  <Stat value={stats.avg} label={t('üzv başına check-in')} />
                   <View style={styles.vdiv} />
-                  <Stat value={stats.activeShare} label="aktiv üzv payı" />
+                  <Stat value={stats.activeShare} label={t('aktiv üzv payı')} />
                   <View style={styles.vdiv} />
-                  <Stat value={String(stats.lapsed)} label={`${RISK_DAYS} gün gəlməyən`} danger />
+                  <Stat value={String(stats.lapsed)} label={t('{n} gün gəlməyən', { n: RISK_DAYS, count: RISK_DAYS })} danger />
                 </View>
               ) : (
                 <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary }}>
                   {members.length
-                    ? `Hələ ${members.length} üzv var — faiz hesablamaq üçün az. Rəqəmlər 5 üzvdən sonra göstərilir ki, yanıltmasın.`
-                    : 'Yetərli məlumat yoxdur.'}
+                    ? t('Hələ {n} üzv var — faiz hesablamaq üçün az. Rəqəmlər 5 üzvdən sonra göstərilir ki, yanıltmasın.', {
+                        n: members.length,
+                        count: members.length,
+                      })
+                    : t('Yetərli məlumat yoxdur.')}
                 </AppText>
               )}
             </View>
 
             {!members.length ? (
               <EmptyNote
-                title={loaded ? 'Hələ üzv yoxdur' : 'Yüklənir…'}
-                body="SPOT-da zalını seçən hər kəs burada görünəcək — ad, check-in tezliyi və üzvlük statusu ilə. Siyahı üzvlər zalını özləri seçdikcə dolur."
+                title={loaded ? t('Hələ üzv yoxdur') : t('Yüklənir…')}
+                body={t(
+                  'SPOT-da zalını seçən hər kəs burada görünəcək — ad, check-in tezliyi və üzvlük statusu ilə. Siyahı üzvlər zalını özləri seçdikcə dolur.'
+                )}
               />
             ) : !shown.length ? (
-              <EmptyNote title="Bu filtrdə üzv yoxdur" body="Filtri dəyiş və ya bütün üzvlərə bax." />
+              <EmptyNote title={t('Bu filtrdə üzv yoxdur')} body={t('Filtri dəyiş və ya bütün üzvlərə bax.')} />
             ) : (
               <View style={{ gap: 10 }}>
                 {shown.map((m) => {
@@ -189,12 +196,12 @@ export default function GymMembers() {
                   const last =
                     since === null
                       ? // The query only looks 30 days back, so this is all we know.
-                        'son 30 gündə check-in yoxdur'
+                        t('son 30 gündə check-in yoxdur')
                       : since === 0
-                        ? 'bugün check-in edib'
+                        ? t('bugün check-in edib')
                         : since === 1
-                          ? 'dünən check-in edib'
-                          : `son check-in: ${since} gün əvvəl`;
+                          ? t('dünən check-in edib')
+                          : t('son check-in: {n} gün əvvəl', { n: since, count: since });
                   return (
                     <View key={m.profileId} style={styles.memberCard}>
                       <View style={styles.memberHead}>
@@ -209,13 +216,15 @@ export default function GymMembers() {
                           </AppText>
                           <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
                             {m.anonymous
-                              ? 'Adını zal siyahısında göstərməyə icazə verməyib'
-                              : `30 gündə ${m.checkIns30d} check-in · ${last}${m.hereNow ? ' · indi zalda' : ''}`}
+                              ? t('Adını zal siyahısında göstərməyə icazə verməyib')
+                              : `${t('30 gündə {n} check-in', { n: m.checkIns30d, count: m.checkIns30d })} · ${last}${
+                                  m.hereNow ? ` · ${t('indi zalda')}` : ''
+                                }`}
                           </AppText>
                         </View>
                         {tag ? (
                           <View style={[styles.tag, { backgroundColor: tag.bg }]}>
-                            <AppText style={{ fontSize: 10.5, fontWeight: '700', color: tag.color }}>{tag.label}</AppText>
+                            <AppText style={{ fontSize: 10.5, fontWeight: '700', color: tag.color }}>{t(tag.label)}</AppText>
                           </View>
                         ) : null}
                       </View>
@@ -230,15 +239,17 @@ export default function GymMembers() {
         <View style={styles.privacy}>
           <Icon name="lock" size={15} color={palette.tertiary} />
           <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.textSecondary, flex: 1 }}>
-            Zal admini üzvün məşq detallarını, çəkisini və söhbətlərini GÖRMÜR — yalnız check-in tezliyini və üzvlük
-            statusunu. Üzvə birbaşa yazmaq imkanı da yoxdur.
+            {t(
+              'Zal admini üzvün məşq detallarını, çəkisini və söhbətlərini GÖRMÜR — yalnız check-in tezliyini və üzvlük statusunu. Üzvə birbaşa yazmaq imkanı da yoxdur.'
+            )}
           </AppText>
         </View>
 
         <AppText style={{ fontSize: 11.5, lineHeight: 16, color: palette.tertiary, marginTop: 12, paddingHorizontal: 4 }}>
-          Bütün rəqəmlər son 30 günün real check-in-lərindən hesablanır — uydurma statistika göstərmirik. «Yeni» = bu ay
-          SPOT-a qeydiyyatdan keçib və zalın kimi bu zalı seçib. «Risk» = ən azı {RISK_DAYS} gündür SPOT-dadır və son{' '}
-          {RISK_DAYS} gündə check-in etməyib. Təzə qoşulan üzv risk sayılmır — hələ gəlməyə vaxtı olmayıb.
+          {t(
+            'Bütün rəqəmlər son 30 günün real check-in-lərindən hesablanır — uydurma statistika göstərmirik. «Yeni» = bu ay SPOT-a qeydiyyatdan keçib və zalın kimi bu zalı seçib. «Risk» = ən azı {days} gündür SPOT-dadır və son {days} gündə check-in etməyib. Təzə qoşulan üzv risk sayılmır — hələ gəlməyə vaxtı olmayıb.',
+            { days: RISK_DAYS }
+          )}
         </AppText>
       </ScrollView>
     </View>

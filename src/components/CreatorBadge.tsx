@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { CreatorType } from '@/data/types';
+import { useT } from '@/lib/useT';
 import { palette } from '@/theme';
 import { Avatar } from './ui/Avatar';
 import { AppText } from './ui/AppText';
@@ -21,14 +22,15 @@ export function CreatorBadge({
   verified: boolean;
   avatarSize?: number;
 }) {
+  const t = useT();
   const tag =
     type === 'spot'
-      ? { label: 'SPOT proqramı', color: palette.textSecondary, bg: palette.element }
+      ? { label: t('SPOT proqramı'), color: palette.textSecondary, bg: palette.element }
       : type === 'trainer'
         ? verified
-          ? { label: 'Doğrulanmış müəllim', color: palette.blue, bg: 'rgba(10,132,255,0.12)' }
-          : { label: 'Müəllim', color: palette.textSecondary, bg: palette.element }
-        : { label: 'İstifadəçi', color: palette.textSecondary, bg: palette.element };
+          ? { label: t('Doğrulanmış müəllim'), color: palette.blue, bg: 'rgba(10,132,255,0.12)' }
+          : { label: t('Müəllim'), color: palette.textSecondary, bg: palette.element }
+        : { label: t('İstifadəçi'), color: palette.textSecondary, bg: palette.element };
 
   return (
     <View style={styles.row}>

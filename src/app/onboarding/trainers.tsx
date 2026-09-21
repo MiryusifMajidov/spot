@@ -9,9 +9,11 @@ import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
+import { decimal } from '@/lib/format';
 import { followProfile } from '@/lib/social';
 import { SuggestedTrainer, suggestedTrainers } from '@/lib/suggested';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 
@@ -41,6 +43,7 @@ import { palette, radius, spacing } from '@/theme';
 type State = { k: 'loading' } | { k: 'ready'; rows: SuggestedTrainer[] };
 
 export default function SuggestTrainers() {
+  const t = useT();
   const router = useRouter();
   const [state, setState] = useState<State>({ k: 'loading' });
   const [picked, setPicked] = useState<Record<string, boolean>>({});
@@ -81,12 +84,12 @@ export default function SuggestTrainers() {
     };
   }, [leave]);
 
-  const chosen = state.k === 'ready' ? state.rows.filter((t) => picked[t.ownerId]) : [];
+  const chosen = state.k === 'ready' ? state.rows.filter((tr) => picked[tr.ownerId]) : [];
 
   const follow = async () => {
     if (busy || chosen.length === 0) return;
     setBusy(true);
-    const results = await Promise.allSettled(chosen.map((t) => followProfile(t.ownerId)));
+    const results = await Promise.allSettled(chosen.map((tr) => followProfile(tr.ownerId)));
     setBusy(false);
     const ok = results.filter((r) => r.status === 'fulfilled').length;
 
@@ -94,14 +97,18 @@ export default function SuggestTrainers() {
       // Every one of them failed. «İzlənilir» here would leave the person
       // believing in a follow the server never recorded.
       errorFeedback();
-      toast('İzləmək alınmadı — bağlantını yoxla. Müəllimləri sonra Kəşf-dən tapa bilərsən.', 'error');
+      toast(t('İzləmək alınmadı — bağlantını yoxla. Müəllimləri sonra Kəşf-dən tapa bilərsən.'), 'error');
       return;
     }
     successFeedback();
     toast(
       ok === chosen.length
-        ? `${ok} müəllim izlənilir`
-        : `${chosen.length} müəllimdən ${ok}-i izlənildi — qalanını sonra yenidən yoxla`
+        ? t('{n} müəllim izlənilir', { n: ok, count: ok })
+        : t('{total} müəllimdən {n}-i izlənildi — qalanını sonra yenidən yoxla', {
+            total: chosen.length,
+            n: ok,
+            count: chosen.length,
+          })
     );
     leave();
   };
@@ -114,31 +121,31 @@ export default function SuggestTrainers() {
             network request the person did not ask for. */}
         <PressableScale activeScale={0.92} haptic={false} onPress={leave} style={styles.skip}>
           <AppText variant="body" color={palette.blue}>
-            Keç
+            {t('Keç')}
           </AppText>
         </PressableScale>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <AppText variant="title" style={{ marginBottom: 8 }}>
-          Hesabın hazırdır
+          {t('Hesabın hazırdır')}
         </AppText>
         <AppText variant="body" color={palette.textSecondary} style={{ marginBottom: 22, lineHeight: 21 }}>
-          SPOT-dakı müəllimlərdən bəziləri. İzləsən, paylaşdıqları məşq videoları lentində görünəcək. İstəmirsənsə keç — sonra Kəşf-dən tapa bilərsən.
+          {t('SPOT-dakı müəllimlərdən bəziləri. İzləsən, paylaşdıqları məşq videoları lentində görünəcək. İstəmirsənsə keç — sonra Kəşf-dən tapa bilərsən.')}
         </AppText>
 
         {state.k === 'ready' ? (
-          state.rows.map((t) => (
+          state.rows.map((tr) => (
             <TrainerRow
-              key={t.ownerId}
-              trainer={t}
-              on={!!picked[t.ownerId]}
-              onToggle={() => setPicked((p) => ({ ...p, [t.ownerId]: !p[t.ownerId] }))}
+              key={tr.ownerId}
+              trainer={tr}
+              on={!!picked[tr.ownerId]}
+              onToggle={() => setPicked((p) => ({ ...p, [tr.ownerId]: !p[tr.ownerId] }))}
             />
           ))
         ) : (
           <AppText variant="body" color={palette.textSecondary}>
-            Yüklənir…
+            {t('Yüklənir…')}
           </AppText>
         )}
       </ScrollView>
@@ -147,12 +154,12 @@ export default function SuggestTrainers() {
         <Button
           title={
             busy
-              ? 'İzlənilir…'
+              ? t('İzlənilir…')
               : chosen.length === 0
-                ? 'Seç və izlə'
+                ? t('Seç və izlə')
                 : chosen.length === 1
-                  ? '1 müəllimi izlə'
-                  : `${chosen.length} müəllimi izlə`
+                  ? t('1 müəllimi izlə')
+                  : t('{n} müəllimi izlə', { n: chosen.length, count: chosen.length })
           }
           onPress={() => void follow()}
           disabled={busy || chosen.length === 0}
@@ -160,7 +167,7 @@ export default function SuggestTrainers() {
         />
         <PressableScale haptic={false} onPress={leave} style={styles.later}>
           <AppText variant="subhead" color={palette.textSecondary}>
-            İndi yox
+            {t('İndi yox')}
           </AppText>
         </PressableScale>
       </View>
@@ -169,6 +176,7 @@ export default function SuggestTrainers() {
 }
 
 function TrainerRow({ trainer, on, onToggle }: { trainer: SuggestedTrainer; on: boolean; onToggle: () => void }) {
+  const t = useT();
   return (
     <PressableScale activeScale={0.98} onPress={onToggle} style={[styles.row, on ? styles.rowOn : null]}>
       <Avatar name={trainer.name} uri={trainer.photoUrl} size={48} />
@@ -180,7 +188,7 @@ function TrainerRow({ trainer, on, onToggle }: { trainer: SuggestedTrainer; on: 
           {trainer.verified ? <Icon name="verified" size={15} color={palette.blue} /> : null}
         </View>
         <AppText variant="footnote" color={palette.textSecondary} numberOfLines={1} style={{ marginTop: 2 }}>
-          {trainer.specialty || 'Məşqçi'}
+          {trainer.specialty || t('Məşqçi')}
         </AppText>
         {/* A rating is printed only when somebody actually gave one. The column
             defaults to 0, and «0,0 ★» reads as a bad coach rather than as a
@@ -189,7 +197,7 @@ function TrainerRow({ trainer, on, onToggle }: { trainer: SuggestedTrainer; on: 
           <View style={styles.metaRow}>
             <Icon name="star" size={12} color={palette.voltDeep} />
             <AppText variant="caption" color={palette.caption}>
-              {trainer.rating.toFixed(1).replace('.', ',')}
+              {decimal(trainer.rating, 1)}
             </AppText>
           </View>
         ) : null}

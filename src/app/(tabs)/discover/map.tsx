@@ -17,6 +17,7 @@ import { getGymsNear } from '@/lib/api';
 import { tapFeedback } from '@/lib/feedback';
 import { useGyms } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useLang, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { applyGymFilter, useDiscoverPrefs } from '@/store/discoverPrefs';
 import { palette, radius, shadow, spacing } from '@/theme';
@@ -40,6 +41,10 @@ const hasCoords = (g: Gym): g is Gym & { lat: number; lng: number } =>
  */
 export default function GymMap() {
   const router = useRouter();
+  const t = useT();
+  /* The marker list is memoized, and its text is translated: without the active
+     language in the deps the pins would keep the language they were built in. */
+  const lang = useLang();
   const gymFilter = useDiscoverPrefs((s) => s.gymFilter);
   const homeGymId = useAppStore((s) => s.profile.homeGymId);
   const fallback = useGyms();
@@ -98,26 +103,26 @@ export default function GymMap() {
         lat: g.lat,
         lng: g.lng,
         title: g.name,
-        subtitle: [g.district, `${g.priceMonth} ₼/ay`].filter(Boolean).join(' · '),
+        subtitle: [g.district, t('{price} ₼/ay', { price: g.priceMonth })].filter(Boolean).join(' · '),
         active: g.id === homeGymId,
       })),
-    [plottable, homeGymId]
+    [plottable, homeGymId, t, lang]
   );
 
   const selected = selectedId ? plottable.find((g) => g.id === selectedId) ?? null : null;
 
   const notice =
     status === 'asking' || status === 'loading'
-      ? 'Məkan müəyyən olunur…'
+      ? t('Məkan müəyyən olunur…')
       : status === 'denied'
-        ? 'Məkan icazəsi verilmədi — xəritə ümumi görünüşdə açılıb, məsafələr hesablanmır.'
+        ? t('Məkan icazəsi verilmədi — xəritə ümumi görünüşdə açılıb, məsafələr hesablanmır.')
         : status === 'error'
-          ? 'Məkan alınmadı — xəritə ümumi görünüşdə açılıb.'
+          ? t('Məkan alınmadı — xəritə ümumi görünüşdə açılıb.')
           : near
             ? null
             : hasSupabaseConfig
-              ? 'Xəritə sənin yerinə görə mərkəzləndi. Məsafələr alınmadı.'
-              : 'Xəritə sənin yerinə görə mərkəzləndi. Məsafələr üçün internet lazımdır.';
+              ? t('Xəritə sənin yerinə görə mərkəzləndi. Məsafələr alınmadı.')
+              : t('Xəritə sənin yerinə görə mərkəzləndi. Məsafələr üçün internet lazımdır.');
 
   /* There is no «bu pin təxminidir» line any more, and there must not be a fake
      one. It was computed from `Gym.approxLocation`, which only the deleted seed
@@ -128,18 +133,18 @@ export default function GymMap() {
      precision has to come back from the server before the footer may claim it. */
   const footer =
     list.length === 0
-      ? 'Filtrə uyğun zal yoxdur.'
+      ? t('Filtrə uyğun zal yoxdur.')
       : plottable.length === 0
-        ? `${list.length} zalın heç birinin yeri hələ qeyd olunmayıb — «Siyahı»ya bax.`
+        ? t('{n} zalın heç birinin yeri hələ qeyd olunmayıb — «Siyahı»ya bax.', { n: list.length, count: list.length })
         : missing > 0
-          ? `${missing} zalın yeri hələ qeyd olunmayıb — onlar «Siyahı»dadır.`
+          ? t('{n} zalın yeri hələ qeyd olunmayıb — onlar «Siyahı»dadır.', { n: missing, count: missing })
           : null;
 
   return (
     <Screen edges={['top']}>
-      <NavBar title="Zallar xəritəsi" />
+      <NavBar title={t('Zallar xəritəsi')} />
       <View style={styles.tabs}>
-        <Segmented options={['Xəritə', 'Siyahı']} value={tab} onChange={setTab} />
+        <Segmented options={[t('Xəritə'), t('Siyahı')]} value={tab} onChange={setTab} />
       </View>
 
       {tab === 0 ? (
@@ -165,7 +170,7 @@ export default function GymMap() {
               </AppText>
               {status === 'denied' || status === 'error' ? (
                 <PressableScale activeScale={0.94} onPress={locate} hitSlop={10}>
-                  <AppText style={styles.retry}>Yenidən</AppText>
+                  <AppText style={styles.retry}>{t('Yenidən')}</AppText>
                 </PressableScale>
               ) : null}
             </View>
@@ -179,7 +184,7 @@ export default function GymMap() {
                 onPress={() => setSelectedId(null)}
                 style={styles.close}
                 accessibilityRole="button"
-                accessibilityLabel="Bağla">
+                accessibilityLabel={t('Bağla')}>
                 <Icon name="x" size={14} color={palette.textSecondary} />
               </PressableScale>
 
@@ -194,7 +199,7 @@ export default function GymMap() {
                   <AppText variant="footnote" color={palette.caption} style={{ marginTop: 4 }}>
                     {[
                       selected.district,
-                      selected.distanceKm > 0 ? `${selected.distanceKm} km` : null,
+                      selected.distanceKm > 0 ? t('{km} km', { km: selected.distanceKm }) : null,
                       selected.reviewCount > 0 ? `★ ${selected.rating}` : null,
                     ]
                       .filter(Boolean)
@@ -204,7 +209,7 @@ export default function GymMap() {
                 <View style={{ alignItems: 'flex-end' }}>
                   <AppText style={styles.price}>{selected.priceMonth} ₼</AppText>
                   <AppText variant="caption" color={palette.caption}>
-                    aylıq
+                    {t('aylıq')}
                   </AppText>
                 </View>
               </View>
@@ -212,12 +217,12 @@ export default function GymMap() {
               {selected.liveCount > 0 ? (
                 <View style={styles.live}>
                   <Icon name="users" size={13} color={palette.voltDeep} />
-                  <AppText style={styles.liveText}>İndi zalda {selected.liveCount} nəfər</AppText>
+                  <AppText style={styles.liveText}>{t('İndi zalda {n} nəfər', { n: selected.liveCount, count: selected.liveCount })}</AppText>
                 </View>
               ) : null}
 
               <Button
-                title="Zala bax"
+                title={t('Zala bax')}
                 full
                 onPress={() => router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: selected.id } })}
                 style={{ height: 46, marginTop: 12 }}
@@ -238,7 +243,7 @@ export default function GymMap() {
             <View style={styles.empty}>
               <Icon name="pin" size={26} color={palette.tertiary} />
               <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 260, lineHeight: 21 }}>
-                Filtrə uyğun zal tapılmadı.
+                {t('Filtrə uyğun zal tapılmadı.')}
               </AppText>
             </View>
           ) : (

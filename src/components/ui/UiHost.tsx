@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { t } from '@/lib/i18n';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { UiAction, useUi } from '@/store/ui';
 import { palette } from '@/theme';
@@ -33,15 +35,16 @@ function untilLabel(until: Date): string {
   const now = new Date();
   const day = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
   const time = until.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' });
-  if (day(until) === day(now)) return `bu gün saat ${time}-a qədər`;
+  if (day(until) === day(now)) return t('bu gün saat {time}-a qədər', { time });
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
-  if (day(until) === day(tomorrow)) return `sabah saat ${time}-a qədər`;
-  return `${until.toLocaleDateString('az-AZ')} tarixinə qədər`;
+  if (day(until) === day(tomorrow)) return t('sabah saat {time}-a qədər', { time });
+  return t('{date} tarixinə qədər', { date: until.toLocaleDateString('az-AZ') });
 }
 
 /** Global overlay host — renders custom toasts, dialogs and action sheets. */
 export function UiHost() {
+  const t = useT();
   const insets = useSafeAreaInsets();
   const toast = useUi((s) => s.toast);
   const dialog = useUi((s) => s.dialog);
@@ -163,7 +166,7 @@ export function UiHost() {
             </View>
             <PressableScale activeScale={0.98} onPress={dismiss} style={styles.sheetCancel}>
               <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
-                {sheet.actions.find((a) => a.style === 'cancel')?.label ?? 'Ləğv et'}
+                {sheet.actions.find((a) => a.style === 'cancel')?.label ?? t('Ləğv et')}
               </AppText>
             </PressableScale>
           </Animated.View>
@@ -210,12 +213,12 @@ export function UiHost() {
             <Icon name="shield" size={16} color={palette.white} />
             <AppText style={styles.sanctionText}>
               {sanction.status === 'banned'
-                ? 'Hesabın bağlanıb — yeni paylaşım, şərh və mesaj göndərə bilmirsən.'
+                ? t('Hesabın bağlanıb — yeni paylaşım, şərh və mesaj göndərə bilmirsən.')
                 : sanction.status === 'suspended'
-                  ? 'Hesabın dayandırılıb — yeni paylaşım, şərh və mesaj göndərə bilmirsən.'
+                  ? t('Hesabın dayandırılıb — yeni paylaşım, şərh və mesaj göndərə bilmirsən.')
                   : sanction.until
-                    ? `Yazma məhdudiyyətin var — ${untilLabel(sanction.until)}.`
-                    : 'Yazma məhdudiyyətin var.'}
+                    ? t('Yazma məhdudiyyətin var — {until}.', { until: untilLabel(sanction.until) })
+                    : t('Yazma məhdudiyyətin var.')}
             </AppText>
           </View>
         </View>
@@ -234,8 +237,7 @@ export function UiHost() {
           <View style={styles.sanctionCard}>
             <Icon name="shield" size={16} color={palette.white} />
             <AppText style={styles.sanctionText}>
-              Hesabına bağlanmaq alınmadı — qonaq kimi davam edirsən. Məlumatların
-              itməyib; internet qayıdanda tətbiqi yenidən aç.
+              {t('Hesabına bağlanmaq alınmadı — qonaq kimi davam edirsən. Məlumatların itməyib; internet qayıdanda tətbiqi yenidən aç.')}
             </AppText>
           </View>
         </View>

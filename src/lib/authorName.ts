@@ -1,4 +1,5 @@
 import { azLower } from './az';
+import { t } from './i18n';
 
 /**
  * What to call an author whose profile never got a real name.
@@ -22,7 +23,7 @@ export function isPlaceholderName(name: string | null | undefined): boolean {
 }
 
 export function displayAuthor(name: string | null | undefined): string {
-  return isPlaceholderName(name) ? 'SPOT istifadəçisi' : (name ?? '').trim();
+  return isPlaceholderName(name) ? t('SPOT istifadəçisi') : (name ?? '').trim();
 }
 
 /** «Ad, yaş» — but only when the age is actually known.

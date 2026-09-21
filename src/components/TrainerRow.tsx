@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Trainer } from '@/data/types';
+import { useT } from '@/lib/useT';
 import { palette } from '@/theme';
 import { Avatar } from './ui/Avatar';
 import { AppText } from './ui/AppText';
@@ -9,14 +10,15 @@ import { Icon } from './Icon';
 
 /** Trainer list row. Unverified trainers read faded + get an explicit label (transparency, not hiding). */
 export function TrainerRow({ trainer, onPress }: { trainer: Trainer; onPress?: () => void }) {
+  const t = useT();
   // A rating of 0 means nobody has rated this trainer yet — an absence, not a score.
   // Same rule as the detail screen: say "new" instead of printing a zero.
   const rating = trainer.rating ?? 0;
   const clients = trainer.clients ?? 0;
   const isNew = rating === 0 && clients === 0;
   const meta = [
-    isNew ? 'Yeni müəllim' : clients > 0 ? `${clients} şagird` : null,
-    trainer.priceFrom > 0 ? `${trainer.priceFrom} ₼-dən` : null,
+    isNew ? t('Yeni müəllim') : clients > 0 ? t('{n} şagird', { n: clients, count: clients }) : null,
+    trainer.priceFrom > 0 ? t('{n} ₼-dən', { n: trainer.priceFrom }) : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -34,7 +36,7 @@ export function TrainerRow({ trainer, onPress }: { trainer: Trainer; onPress?: (
             <Icon name="verified" size={15} color={palette.blue} />
           ) : (
             <View style={styles.unverified}>
-              <AppText style={styles.unverifiedText}>Doğrulanmayıb</AppText>
+              <AppText style={styles.unverifiedText}>{t('Doğrulanmayıb')}</AppText>
             </View>
           )}
         </View>

@@ -21,17 +21,19 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
+import { useT } from '@/lib/useT';
 import { palette } from '@/theme';
 
 export default function NotFound() {
   const router = useRouter();
+  const t = useT();
   return (
     <Screen edges={['top', 'bottom']}>
       <NavBar />
       <View style={styles.body}>
         <Icon name="search" size={30} color={palette.tertiary} />
         <AppText variant="headline" center style={{ marginTop: 14 }}>
-          Belə səhifə yoxdur
+          {t('Belə səhifə yoxdur')}
         </AppText>
         <AppText
           variant="body"
@@ -39,10 +41,10 @@ export default function NotFound() {
           center
           style={{ marginTop: 8, maxWidth: 280, lineHeight: 21 }}
         >
-          Açmaq istədiyin ünvan SPOT-da tapılmadı. Keçid köhnəlmiş ola bilər.
+          {t('Açmaq istədiyin ünvan SPOT-da tapılmadı. Keçid köhnəlmiş ola bilər.')}
         </AppText>
         <Button
-          title="Ana səhifəyə qayıt"
+          title={t('Ana səhifəyə qayıt')}
           onPress={() => router.replace('/(tabs)/discover')}
           style={{ marginTop: 20, height: 46, paddingHorizontal: 22 }}
         />

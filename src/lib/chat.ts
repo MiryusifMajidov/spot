@@ -18,6 +18,7 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 import { getMyProfile } from './api';
+import { t } from './i18n';
 import { supabase } from './supabase';
 
 export interface ChatMessageRow {
@@ -60,17 +61,17 @@ function refusalOf(message: string): ChatRefusal {
 export function chatRefusalText(code: ChatRefusal): string {
   switch (code) {
     case 'no_relationship':
-      return 'Söhbət yalnız təklif qəbul ediləndən sonra açılır.';
+      return t('Söhbət yalnız təklif qəbul ediləndən sonra açılır.');
     case 'blocked':
-      return 'Bu adamla yazışmaq mümkün deyil.';
+      return t('Bu adamla yazışmaq mümkün deyil.');
     case 'wait_for_reply':
-      return 'Bir mesaj göndərdin — cavab gələnə qədər ikincisini göndərmək olmur.';
+      return t('Bir mesaj göndərdin — cavab gələnə qədər ikincisini göndərmək olmur.');
     case 'sanctioned':
-      return 'Hesabına məhdudiyyət qoyulub — mesaj göndərə bilmirsən.';
+      return t('Hesabına məhdudiyyət qoyulub — mesaj göndərə bilmirsən.');
     case 'not_signed_in':
-      return 'Profil tapılmadı — mesaj göndərmək üçün profilini tamamla.';
+      return t('Profil tapılmadı — mesaj göndərmək üçün profilini tamamla.');
     default:
-      return 'Mesaj göndərilmədi.';
+      return t('Mesaj göndərilmədi.');
   }
 }
 

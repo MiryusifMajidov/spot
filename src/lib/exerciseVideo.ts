@@ -14,6 +14,8 @@
  */
 import * as ImagePicker from 'expo-image-picker';
 
+import { decimal } from './format';
+import { t } from './i18n';
 import { supabase } from './supabase';
 
 /** The videos bucket's own ceiling (schema33), refused before a long upload. */
@@ -33,14 +35,19 @@ export function clipProblem(a: PickedAsset): string | null {
      from the gallery has to be measured here as well. */
   const secs = a.duration != null ? Math.round(a.duration / 1000) : null;
   if (secs != null && secs > CLIP_MAX_SECONDS) {
-    return `Video ${secs} saniyədir — ${CLIP_MAX_SECONDS} saniyəyə qədər olmalıdır. Qısaldıb yenidən seç.`;
+    return t('Video {n} saniyədir — {max} saniyəyə qədər olmalıdır. Qısaldıb yenidən seç.', {
+      n: secs,
+      max: CLIP_MAX_SECONDS,
+      count: secs,
+    });
   }
   if (a.fileSize != null && a.fileSize > CLIP_MAX_BYTES) {
     // One decimal, comma-separated: a 100,4 MB clip rounded to whole MB reads as
     // the app refusing a file that fits.
-    return `Video ${(a.fileSize / 1048576).toFixed(1).replace('.', ',')} MB-dır — ${Math.round(
-      CLIP_MAX_BYTES / 1048576
-    )} MB-a qədər qəbul olunur.`;
+    return t('Video {size} MB-dır — {limit} MB-a qədər qəbul olunur.', {
+      size: decimal(a.fileSize / 1048576, 1),
+      limit: Math.round(CLIP_MAX_BYTES / 1048576),
+    });
   }
   return null;
 }

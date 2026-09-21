@@ -15,6 +15,7 @@ import { useAuthGate } from '@/lib/authGate';
 import { useFeedVideos, useTrainers } from '@/lib/hooks';
 import { followProfile, unfollowProfile } from '@/lib/social';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
@@ -23,6 +24,7 @@ import { azLower } from '@/lib/az';
 const sameText = (a: string, b: string) => azLower(a.trim()) === azLower(b.trim());
 
 export default function Creator() {
+  const t = useT();
   const params = useLocalSearchParams<{ name?: string; authorId?: string; verified?: string; isTrainer?: string }>();
   const name = params.name ?? '';
   const router = useRouter();
@@ -52,7 +54,7 @@ export default function Creator() {
       // `followProfile` (schema43) is the real record; the store is the instant
       // answer and is rolled back when the write is refused.
       if (!authorId) {
-        toast('Bu profilin kimliyi qeyd olunmayıb — izləmək mümkün deyil', 'error');
+        toast(t('Bu profilin kimliyi qeyd olunmayıb — izləmək mümkün deyil'), 'error');
         return;
       }
       const next = !following;
@@ -60,9 +62,9 @@ export default function Creator() {
       if (!hasSupabaseConfig) return;
       (next ? followProfile(authorId) : unfollowProfile(authorId)).catch(() => {
         toggleFollow(authorId);
-        toast('İzləmə göndərilmədi — yenidən cəhd et', 'error');
+        toast(t('İzləmə göndərilmədi — yenidən cəhd et'), 'error');
       });
-    }, 'İzləmək üçün');
+    }, t('İzləmək üçün'));
 
   const guest = useAppStore((s) => s.guest);
   const onboarded = useAppStore((s) => s.onboarded);
@@ -105,7 +107,7 @@ export default function Creator() {
               {isTrainer ? (
                 <View style={styles.trainerTag}>
                   <Icon name="verified" size={12} color={palette.blue} />
-                  <AppText style={{ color: palette.blue, fontSize: 12, fontWeight: '700' }}>MÜƏLLİM{trainer ? ` · ${trainer.specialty}` : ''}</AppText>
+                  <AppText style={{ color: palette.blue, fontSize: 12, fontWeight: '700' }}>{trainer ? t('MÜƏLLİM · {specialty}', { specialty: trainer.specialty }) : t('MÜƏLLİM')}</AppText>
                 </View>
               ) : null}
               {trainer?.bio ? (
@@ -117,35 +119,35 @@ export default function Creator() {
                 {/* A client count or rating of 0 means nobody has hired or rated
                     this trainer yet. Printing «0» / «0.0» would state that as a
                     measured result, so an absent figure shows as «—». */}
-                <Stat value={`${videos.length}`} label="video" />
-                <Stat value={trainer && trainer.clients > 0 ? `${trainer.clients}` : '—'} label="şagird" />
-                <Stat value={trainer && trainer.rating > 0 ? trainer.rating.toFixed(1) : '—'} label="reytinq" />
+                <Stat value={`${videos.length}`} label={t('video')} />
+                <Stat value={trainer && trainer.clients > 0 ? `${trainer.clients}` : '—'} label={t('şagird')} />
+                <Stat value={trainer && trainer.rating > 0 ? trainer.rating.toFixed(1) : '—'} label={t('reytinq')} />
               </View>
               {/* Your own page: you cannot follow yourself, and you cannot book
                   yourself as a trainer — both controls go away, and the honest
                   affordance left is editing the profile you are looking at. */}
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 18, paddingHorizontal: spacing.screen, alignSelf: 'stretch' }}>
                 {isMe ? (
-                  <Button title="Profili redaktə et" variant="secondary" icon="edit" full onPress={() => router.push('/(tabs)/profile/edit')} style={{ flex: 1 }} />
+                  <Button title={t('Profili redaktə et')} variant="secondary" icon="edit" full onPress={() => router.push('/(tabs)/profile/edit')} style={{ flex: 1 }} />
                 ) : unknownAuthor ? null : (
                   <>
-                    <Button title={following ? 'İzlənir' : 'İzlə'} variant={following ? 'secondary' : 'primary'} full onPress={() => onFollow()} style={{ flex: 1 }} />
+                    <Button title={following ? t('İzlənir') : t('İzlə')} variant={following ? 'secondary' : 'primary'} full onPress={() => onFollow()} style={{ flex: 1 }} />
                     {trainer ? (
-                      <Button title="Rezervasiya" variant="volt" full onPress={() => router.push({ pathname: '/(tabs)/discover/reserve/[id]', params: { id: trainer.id } })} style={{ flex: 1 }} />
+                      <Button title={t('Rezervasiya')} variant="volt" full onPress={() => router.push({ pathname: '/(tabs)/discover/reserve/[id]', params: { id: trainer.id } })} style={{ flex: 1 }} />
                     ) : null}
                   </>
                 )}
               </View>
             </View>
             <AppText variant="overline" color={palette.caption} style={{ paddingHorizontal: spacing.screen, marginTop: 22, marginBottom: 12 }}>
-              VİDEOLAR
+              {t('VİDEOLAR')}
             </AppText>
           </View>
         }
         renderItem={({ item }) => <VideoTile v={item} />}
         ListEmptyComponent={
           <AppText variant="body" color={palette.textSecondary} center style={{ paddingTop: 30 }}>
-            Hələ video paylaşılmayıb.
+            {t('Hələ video paylaşılmayıb.')}
           </AppText>
         }
       />

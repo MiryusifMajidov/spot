@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Program } from '@/data/types';
+import { useT } from '@/lib/useT';
 import { palette, radius, shadow } from '@/theme';
 import { CreatorBadge } from './CreatorBadge';
 import { Icon } from './Icon';
@@ -9,6 +10,7 @@ import { AppText } from './ui/AppText';
 import { PressableScale } from './ui/PressableScale';
 
 function PriceOrFree({ program }: { program: Program }) {
+  const t = useT();
   if (program.paid && program.price) {
     return (
       <View style={[styles.cornerBadge, { backgroundColor: palette.ink }]}>
@@ -18,7 +20,7 @@ function PriceOrFree({ program }: { program: Program }) {
   }
   return (
     <View style={[styles.cornerBadge, { backgroundColor: palette.volt }]}>
-      <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.inkText }}>PULSUZ</AppText>
+      <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.inkText }}>{t('PULSUZ')}</AppText>
     </View>
   );
 }
@@ -75,14 +77,15 @@ export function ProgramCard({ program, variant = 'row', onPress }: { program: Pr
  *  each figure appears only once it is real, and the plan's own properties
  *  (days/week, minutes) carry the row on their own. */
 function Meta({ program, compact }: { program: Program; compact?: boolean }) {
+  const t = useT();
   /* The real number of days the program defines, not the number it advertises.
      «Push Pull Legs» claimed 6 gün/həftə on the card while the detail screen
      listed 3 — the card was quoting a seed field the content does not back up. */
   const days = program.days?.length || program.daysPerWeek;
   const parts = [
-    `${days} gün/həftə`,
-    `${program.minutes} dəq`,
-    program.doneBy > 0 ? `${program.doneBy} nəfər edir` : null,
+    t('{n} gün/həftə', { n: days, count: days }),
+    t('{n} dəq', { n: program.minutes, count: program.minutes }),
+    program.doneBy > 0 ? t('{n} nəfər edir', { n: program.doneBy, count: program.doneBy }) : null,
   ].filter(Boolean);
 
   return (

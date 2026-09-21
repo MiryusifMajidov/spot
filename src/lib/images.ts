@@ -13,6 +13,8 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { toast } from '@/store/ui';
 import { getMyProfile } from './api';
+import { decimal } from './format';
+import { t } from './i18n';
 import { supabase } from './supabase';
 import { invalidateFocusCache, invalidateFocusPrefix } from './focusFetch';
 
@@ -52,10 +54,13 @@ const pickLimit = (opts?: { square?: boolean; maxBytes?: number }) =>
 /** «5,4» — the decimal separator in Azerbaijani is a comma. Rounded to whole MB a
  *  5,4 MB file reads as «5 MB-dır — 5 MB-a qədər qəbul olunur», which looks like
  *  the app refusing a file that fits. */
-const mbText = (bytes: number) => (bytes / 1048576).toFixed(1).replace('.', ',');
+const mbText = (bytes: number) => decimal(bytes / 1048576, 1);
 
 const limitText = (bytes: number, limit: number) =>
-  `Şəkil ${mbText(bytes)} MB-dır — ${Math.round(limit / 1048576)} MB-a qədər qəbul olunur. Daha kiçik şəkil seç.`;
+  t('Şəkil {size} MB-dır — {limit} MB-a qədər qəbul olunur. Daha kiçik şəkil seç.', {
+    size: mbText(bytes),
+    limit: Math.round(limit / 1048576),
+  });
 
 /**
  * The long edge every picked photo is brought down to before it leaves the phone.
@@ -138,7 +143,10 @@ export function imageTooLargeMessage(e: unknown): string | null {
   if (!(e instanceof Error) || e.message !== 'image-too-large') return null;
   const { sizeBytes, maxBytes } = e as Error & { sizeBytes?: number; maxBytes?: number };
   const limit = maxBytes ?? BUCKET_MAX_BYTES.avatars;
-  if (sizeBytes == null) return `Şəkil çox böyükdür — ${Math.round(limit / 1048576)} MB-a qədər qəbul olunur. Daha kiçik şəkil seç.`;
+  if (sizeBytes == null)
+    return t('Şəkil çox böyükdür — {limit} MB-a qədər qəbul olunur. Daha kiçik şəkil seç.', {
+      limit: Math.round(limit / 1048576),
+    });
   return limitText(sizeBytes, limit);
 }
 
@@ -148,7 +156,7 @@ export async function pickImage(opts?: { square?: boolean; maxBytes?: number }):
   // A denied permission used to make the button completely inert — the user could
   // not tell the app from a frozen screen. Say what happened and where to fix it.
   if (!perm.granted) {
-    toast('Şəkil üçün icazə verilməyib — cihaz Ayarlarından SPOT-a qalereya icazəsi ver', 'error');
+    toast(t('Şəkil üçün icazə verilməyib — cihaz Ayarlarından SPOT-a qalereya icazəsi ver'), 'error');
     return null;
   }
   const res = await ImagePicker.launchImageLibraryAsync({
@@ -166,7 +174,7 @@ export async function pickImage(opts?: { square?: boolean; maxBytes?: number }):
 export async function shootImage(opts?: { square?: boolean; maxBytes?: number }): Promise<string | null> {
   const perm = await ImagePicker.requestCameraPermissionsAsync();
   if (!perm.granted) {
-    toast('Kamera üçün icazə verilməyib — cihaz Ayarlarından SPOT-a kamera icazəsi ver', 'error');
+    toast(t('Kamera üçün icazə verilməyib — cihaz Ayarlarından SPOT-a kamera icazəsi ver'), 'error');
     return null;
   }
   const res = await ImagePicker.launchCameraAsync({
@@ -405,7 +413,11 @@ export async function removeGymPhoto(gymId: string, url: string): Promise<string
     // Said out loud, because "it disappeared from the gallery" is exactly what
     // makes the owner believe the picture is off the internet. Neither caller
     // toasts on success, so this is the message that stays on screen.
-    if (!gone) toast('Şəkil qalereyadan silindi, amma fayl serverdən silinmədi — hələ də linklə açıla bilər', 'error');
+    if (!gone)
+      toast(
+        t('Şəkil qalereyadan silindi, amma fayl serverdən silinmədi — hələ də linklə açıla bilər'),
+        'error'
+      );
   }
   invalidateFocusCache('gyms');
   return next;

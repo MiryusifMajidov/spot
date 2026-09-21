@@ -21,6 +21,7 @@
 import { Program } from '@/data/types';
 import { getMyProfile } from '@/lib/api';
 import { estimateDuration } from '@/lib/duration';
+import { t } from '@/lib/i18n';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { exerciseLibrary, useDb } from '@/store/db';
 import { DraftDay, draftDaysForSave, itemReps } from '@/store/programDraft';
@@ -252,12 +253,12 @@ export async function saveProgramDays(programId: string, days: Program['days']):
 /** What the server refused, in Azerbaijani. The codes come from schema76. */
 export function dayProblemMessage(raw: string): string | null {
   const m = String(raw ?? '').toLowerCase();
-  if (m.includes('program_item_bad_video')) return 'Video SPOT-a yüklənməyib — yenidən əlavə et.';
-  if (m.includes('program_item_unnamed')) return 'Adı olmayan hərəkət var — adını yaz və ya sil.';
-  if (m.includes('program_item_name_long')) return 'Hərəkət adı çox uzundur (80 hərfə qədər).';
-  if (m.includes('program_item_reps_long')) return 'Təkrar sahəsi çox uzundur.';
-  if (m.includes('program_item_sets_range')) return 'Set sayı 1 ilə 20 arasında olmalıdır.';
-  if (m.includes('program_too_many_items')) return 'Bir günə ən çoxu 40 hərəkət qoya bilərsən.';
-  if (m.includes('program_too_many_days')) return 'Proqramda ən çoxu 14 gün ola bilər.';
+  if (m.includes('program_item_bad_video')) return t('Video SPOT-a yüklənməyib — yenidən əlavə et.');
+  if (m.includes('program_item_unnamed')) return t('Adı olmayan hərəkət var — adını yaz və ya sil.');
+  if (m.includes('program_item_name_long')) return t('Hərəkət adı çox uzundur (80 hərfə qədər).');
+  if (m.includes('program_item_reps_long')) return t('Təkrar sahəsi çox uzundur.');
+  if (m.includes('program_item_sets_range')) return t('Set sayı 1 ilə 20 arasında olmalıdır.');
+  if (m.includes('program_too_many_items')) return t('Bir günə ən çoxu 40 hərəkət qoya bilərsən.');
+  if (m.includes('program_too_many_days')) return t('Proqramda ən çoxu 14 gün ola bilər.');
   return null;
 }

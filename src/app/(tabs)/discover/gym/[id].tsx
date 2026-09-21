@@ -22,8 +22,10 @@ import { createDayPass, DayPass, getGym, getMyDayPass, getMyProfile, getWhoIsHer
 import { useAuthGate, useIsGuest } from '@/lib/authGate';
 import { usePartnersForGym, usePartnersPhase, useTrainersForGym, useTrainersForGymPhase } from '@/lib/hooks';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
+import { dayAndMonth } from '@/lib/format';
 import { showModerationSheet } from '@/lib/moderation';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { gymById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
@@ -41,10 +43,9 @@ const NO_REVIEWS: MyReview[] = []; // stable ref — avoids an infinite re-rende
 /** «12 sentyabr». The app writes its own Azerbaijani dates everywhere else
  *  (workout/index.tsx, trainer/verify.tsx) rather than trusting Intl month
  *  names on Hermes, and a reply with no date reads as if it arrived today. */
-const AZ_MONTHS = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avqust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr'];
 const dayLabel = (iso: string): string | null => {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? null : `${d.getDate()} ${AZ_MONTHS[d.getMonth()]}`;
+  return Number.isNaN(d.getTime()) ? null : dayAndMonth(d);
 };
 
 interface GymReview {
@@ -135,6 +136,7 @@ export default function GymDetail() {
      hint that the thing they tapped for is three taps away. */
   const { id, seg: segParam } = useLocalSearchParams<{ id: string; seg?: string }>();
   const router = useRouter();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const gate = useAuthGate();
   const guest = useIsGuest();
@@ -312,19 +314,19 @@ export default function GymDetail() {
         });
         if (error) throw error;
         await reloadReviews().catch(() => {});
-        toast('Rəyin göndərildi');
+        toast(t('Rəyin göndərildi'));
       } catch (e) {
         // A refusal is not a network problem. Say which rule stopped it, so the
         // person is not told to check a connection that is working.
         const msg = String((e as { message?: string })?.message ?? '');
         toast(
           msg.includes('duplicate key') || msg.includes('reviews_one_per_member')
-            ? 'Bu zala rəyini artıq yazmısan — hər zala bir rəy yazmaq olar.'
+            ? t('Bu zala rəyini artıq yazmısan — hər zala bir rəy yazmaq olar.')
             : msg.includes('row-level security') || msg.includes('violates')
-              ? 'Rəy qəbul edilmədi — bu zalda ən azı 3 check-in lazımdır və hər zala bir rəy yazmaq olar.'
+              ? t('Rəy qəbul edilmədi — bu zalda ən azı 3 check-in lazımdır və hər zala bir rəy yazmaq olar.')
               : msg === 'no-profile'
-                ? 'Profil tapılmadı — rəy yazmaq üçün profilini tamamla.'
-                : 'Rəy zala çatmadı — internet yoxlanılsın, sonra yenidən yaz',
+                ? t('Profil tapılmadı — rəy yazmaq üçün profilini tamamla.')
+                : t('Rəy zala çatmadı — internet yoxlanılsın, sonra yenidən yaz'),
           'error'
         );
         // The draft stays exactly where it was — the composer, the text and the
@@ -336,7 +338,7 @@ export default function GymDetail() {
       // No backend to refuse it: this really is a device-only note, and it is
       // labelled as one below instead of joining the gym's rating.
       addReview(id, rating, body);
-      toast('Rəy yalnız cihazda saxlanıldı — zala çatması üçün internet lazımdır', 'info');
+      toast(t('Rəy yalnız cihazda saxlanıldı — zala çatması üçün internet lazımdır'), 'info');
     }
     setSavingReview(false);
     setReviewText('');
@@ -348,7 +350,7 @@ export default function GymDetail() {
     if (!gym) return;
     gate(async () => {
       if (!hasSupabaseConfig) {
-        toast('Day-pass qeydə alınmadı — internet bağlantısı lazımdır', 'error');
+        toast(t('Day-pass qeydə alınmadı — internet bağlantısı lazımdır'), 'error');
         return;
       }
       setBuyingPass(true);
@@ -359,13 +361,13 @@ export default function GymDetail() {
         // Pressing again while a pass is live returns the SAME one. Saying
         // «qeydə alındı» then would claim a second registration that did not
         // happen, so the two cases are named apart.
-        toast(pass.reused ? 'Bu zal üçün day-pass artıq var — kod aşağıdadır' : 'Day-pass qeydə alındı — kod aşağıdadır');
+        toast(pass.reused ? t('Bu zal üçün day-pass artıq var — kod aşağıdadır') : t('Day-pass qeydə alındı — kod aşağıdadır'));
       } catch {
-        toast('Day-pass alınmadı — yenidən cəhd et', 'error');
+        toast(t('Day-pass alınmadı — yenidən cəhd et'), 'error');
       } finally {
         setBuyingPass(false);
       }
-    }, 'Day-pass üçün');
+    }, t('Day-pass üçün'));
   };
 
   // Coordinates only exist once the gym owner pinned the place on the map.
@@ -381,7 +383,7 @@ export default function GymDetail() {
     const web = coords
       ? `https://www.google.com/maps/search/?api=1&query=${coords.lat},${coords.lng}`
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${gym.name} ${gym.district ?? ''}`.trim())}`;
-    const fail = () => toast('Xəritə açılmadı', 'error');
+    const fail = () => toast(t('Xəritə açılmadı'), 'error');
     if (coords) {
       Linking.openURL(`geo:${coords.lat},${coords.lng}?q=${coords.lat},${coords.lng}(${encodeURIComponent(gym.name)})`).catch(() =>
         Linking.openURL(web).catch(fail)
@@ -399,14 +401,14 @@ export default function GymDetail() {
         <View style={styles.missing}>
           <Icon name="pin" size={30} color={palette.tertiary} />
           <AppText variant="headline" style={{ marginTop: 12 }}>
-            {resolved ? 'Zal tapılmadı' : 'Yüklənir…'}
+            {resolved ? t('Zal tapılmadı') : t('Yüklənir…')}
           </AppText>
           {resolved ? (
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, maxWidth: 260, lineHeight: 21 }}>
-              Bu zal silinib və ya ünvan səhvdir.
+              {t('Bu zal silinib və ya ünvan səhvdir.')}
             </AppText>
           ) : null}
-          <Button title="Geri" variant="secondary" onPress={() => router.back()} style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }} />
+          <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }} />
         </View>
       </Screen>
     );
@@ -438,7 +440,12 @@ export default function GymDetail() {
         <PressableScale
           activeScale={0.9}
           onPress={() =>
-            Share.share({ message: `${gym.name}${gym.district ? ' — ' + gym.district : ''} · ${gym.priceMonth} ₼/ay. SPOT-da bax.` }).catch(() => {})
+            Share.share({
+              message: t('{gym} · {price} ₼/ay. SPOT-da bax.', {
+                gym: `${gym.name}${gym.district ? ' — ' + gym.district : ''}`,
+                price: gym.priceMonth,
+              }),
+            }).catch(() => {})
           }
           style={styles.circleBtn}>
           <Icon name="share" size={17} color={palette.inkText} />
@@ -495,31 +502,31 @@ export default function GymDetail() {
                       <Icon name="star" size={14} color={palette.streak} />
                       <AppText style={styles.rating}>{avgRating}</AppText>
                       <AppText variant="footnote" color={palette.caption}>
-                        · {totalReviews} rəy ·{' '}
+                        · {t('{n} rəy', { n: totalReviews, count: totalReviews })} ·{' '}
                       </AppText>
                     </>
                   ) : (
                     <AppText variant="footnote" color={palette.caption}>
-                      Hələ rəy yoxdur ·{' '}
+                      {t('Hələ rəy yoxdur')} ·{' '}
                     </AppText>
                   )}
                   <AppText variant="footnote" color={palette.caption}>
                     {gym.district}
-                    {gym.distanceKm > 0 ? `, ${gym.distanceKm} km` : ''}
+                    {gym.distanceKm > 0 ? t(', {n} km', { n: gym.distanceKm }) : ''}
                   </AppText>
                 </View>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <AppText variant="title2">{gym.priceMonth} ₼</AppText>
                 <AppText variant="caption" color={palette.caption}>
-                  aylıq · məlumat
+                  {t('aylıq · məlumat')}
                 </AppText>
               </View>
             </View>
 
             <View style={styles.ctaRow}>
                             <Button
-                title="Check-in et"
+                title={t('Check-in et')}
                 icon="pin"
                 /* Straight to the scanner. It takes no gym id any more: the QR on the
                    wall names the gym, so the app cannot check somebody into a gym
@@ -527,7 +534,7 @@ export default function GymDetail() {
                    Through the gate: a guest has no Check-in tab, and this button
                    pushed them into it anyway — a camera, a scan, and a refusal
                    from the server at the end of it. Ask for the account first. */
-                onPress={() => gate(() => router.push('/(tabs)/checkin'), 'Check-in etmək üçün')}
+                onPress={() => gate(() => router.push('/(tabs)/checkin'), t('Check-in etmək üçün'))}
                 style={{ flex: 1, height: 46 }}
               />
               <Button
@@ -536,12 +543,12 @@ export default function GymDetail() {
                     ? /* «Alınır…» put a purchase verb straight onto a price tag on the
                          one screen where SPOT takes no money. The RPC only issues a
                          code — the same words the success toast uses. */
-                      'Qeydə alınır…'
+                      t('Qeydə alınır…')
                     : dayPass
-                      ? 'Day-pass aktivdir'
+                      ? t('Day-pass aktivdir')
                       : passReadFailed
-                        ? 'Day-pass yoxlanılmadı'
-                        : `1 günlük · ${gym.dayPass} ₼`
+                        ? t('Day-pass yoxlanılmadı')
+                        : t('1 günlük · {price} ₼', { price: gym.dayPass })
                 }
                 variant="secondary"
                 disabled={buyingPass || !!dayPass || passReadFailed}
@@ -550,7 +557,7 @@ export default function GymDetail() {
               />
             </View>
             <AppText variant="caption" color={palette.caption} style={{ marginTop: 8, lineHeight: 17 }}>
-              Üzvlük zalın özündə rəsmiləşir — SPOT ödəniş qəbul etmir, qiymətlər yalnız məlumat üçündür.
+              {t('Üzvlük zalın özündə rəsmiləşir — SPOT ödəniş qəbul etmir, qiymətlər yalnız məlumat üçündür.')}
             </AppText>
 
             {/* The pass is only useful with its door code — show it, do not just claim success. */}
@@ -559,13 +566,15 @@ export default function GymDetail() {
                 <View style={styles.passHead}>
                   <Icon name="qr" size={15} color={palette.voltDeep} />
                   <AppText variant="overline" color={palette.voltDeep}>
-                    DAY-PASS KODU
+                    {t('DAY-PASS KODU')}
                   </AppText>
                 </View>
                 <AppText style={styles.passCode}>{dayPass.code}</AppText>
                 <AppText variant="footnote" color={palette.text3} style={{ marginTop: 6, lineHeight: 18 }}>
-                  Resepsiyada bu kodu göstər — zal onu SPOT panelindən yoxlayır. Bu gün {hhmm(dayPass.expiresAt)}-a qədər
-                  keçərlidir. {dayPass.price} ₼ zalın özünə ödənilir; SPOT komissiya götürmür.
+                  {t(
+                    'Resepsiyada bu kodu göstər — zal onu SPOT panelindən yoxlayır. Bu gün {time}-a qədər keçərlidir. {price} ₼ zalın özünə ödənilir; SPOT komissiya götürmür.',
+                    { time: hhmm(dayPass.expiresAt), price: dayPass.price }
+                  )}
                 </AppText>
               </View>
             ) : passReadFailed ? (
@@ -575,10 +584,10 @@ export default function GymDetail() {
                  refresh a page that has neither pull-to-refresh nor a button. */
               <View style={styles.passCard}>
                 <AppText variant="footnote" color={palette.text3} style={{ lineHeight: 18 }}>
-                  Day-pass məlumatın yüklənmədi — bu, day-pass olmadığı demək deyil. Bağlantını yoxla və yenidən yoxlat.
+                  {t('Day-pass məlumatın yüklənmədi — bu, day-pass olmadığı demək deyil. Bağlantını yoxla və yenidən yoxlat.')}
                 </AppText>
                 <Button
-                  title={passChecking ? 'Yoxlanılır…' : 'Yenidən yoxla'}
+                  title={passChecking ? t('Yoxlanılır…') : t('Yenidən yoxla')}
                   variant="secondary"
                   disabled={passChecking}
                   onPress={() => void loadDayPass()}
@@ -609,15 +618,20 @@ export default function GymDetail() {
                   </View>
                 ) : null}
                 <AppText style={styles.liveText}>
-                  {gym.liveCount} nəfər indi zalda
-                  {visibleHere.length > 0 ? ` · ${visibleHere.length}-i sənə uyğundur` : ''}
+                  {visibleHere.length > 0
+                    ? t('{n} nəfər indi zalda · {m}-i sənə uyğundur', {
+                        n: gym.liveCount,
+                        count: gym.liveCount,
+                        m: visibleHere.length,
+                      })
+                    : t('{n} nəfər indi zalda', { n: gym.liveCount, count: gym.liveCount })}
                 </AppText>
                 <Icon name="chevR" size={17} color={palette.voltDeep} />
               </PressableScale>
             ) : null}
 
             <View style={{ marginTop: 16 }}>
-              <Segmented options={[...SEGS]} value={Math.min(seg, SEGS.length - 1)} onChange={setSeg} />
+              <Segmented options={SEGS.map((s) => t(s))} value={Math.min(seg, SEGS.length - 1)} onChange={setSeg} />
             </View>
 
             <View style={{ marginTop: 16 }}>
@@ -629,7 +643,7 @@ export default function GymDetail() {
                     </AppText>
                   ) : null}
                   <View style={styles.infoRow}>
-                    <InfoCard icon="clock" title={gym.hours} sub="iş saatı" />
+                    <InfoCard icon="clock" title={gym.hours} sub={t('iş saatı')} />
                     {/* `gyms.trainers` is a seeded column nothing maintains — it claimed
                         «9 müəllim» on a gym whose Müəllimlər tab correctly says there are
                         none. The count comes from the real trainer rows this screen
@@ -638,21 +652,25 @@ export default function GymDetail() {
                     {gym.members > 0 || gymTrainers.length > 0 ? (
                       <InfoCard
                         icon="users"
-                        title={gym.members > 0 ? `${gym.members} üzv` : `${gymTrainers.length} müəllim`}
+                        title={
+                          gym.members > 0
+                            ? t('{n} üzv', { n: gym.members, count: gym.members })
+                            : t('{n} müəllim', { n: gymTrainers.length, count: gymTrainers.length })
+                        }
                         sub={
                           gym.members > 0 && gymTrainers.length > 0
-                            ? `${gymTrainers.length} müəllim`
-                            : 'SPOT-da qeydiyyatlı'
+                            ? t('{n} müəllim', { n: gymTrainers.length, count: gymTrainers.length })
+                            : t('SPOT-da qeydiyyatlı')
                         }
                       />
                     ) : null}
-                    <InfoCard icon="pin" title={gym.district} sub="Yol göstər" onPress={openDirections} />
+                    <InfoCard icon="pin" title={gym.district} sub={t('Yol göstər')} onPress={openDirections} />
                   </View>
                   {/* Real photos the gym uploaded — nothing is shown when there are none. */}
                   {photos.length > 0 ? (
                     <>
                       <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
-                        Şəkillər · {photos.length}
+                        {t('Şəkillər · {n}', { n: photos.length, count: photos.length })}
                       </AppText>
                       <ScrollView
                         horizontal
@@ -670,13 +688,13 @@ export default function GymDetail() {
                   {coords ? (
                     <>
                       <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
-                        Yeri
+                        {t('Yeri')}
                       </AppText>
                       <PressableScale
                         activeScale={0.98}
                         onPress={openDirections}
                         accessibilityRole="button"
-                        accessibilityLabel={`${gym.name} — yol göstər`}
+                        accessibilityLabel={t('{name} — yol göstər', { name: gym.name })}
                         style={styles.mapCard}>
                         {/* preview only: touches go to the card, not into the map */}
                         <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -689,7 +707,7 @@ export default function GymDetail() {
                         </View>
                         <View style={styles.mapCta}>
                           <Icon name="pin" size={15} color={palette.inkText} />
-                          <AppText style={styles.mapCtaText}>Yol göstər</AppText>
+                          <AppText style={styles.mapCtaText}>{t('Yol göstər')}</AppText>
                         </View>
                       </PressableScale>
                     </>
@@ -704,7 +722,7 @@ export default function GymDetail() {
                   {schedule.length > 0 ? (
                     <>
                       <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
-                        Cədvəl
+                        {t('Cədvəl')}
                       </AppText>
                       <View style={{ gap: 9 }}>
                         {schedule.map((c, i) => (
@@ -727,7 +745,7 @@ export default function GymDetail() {
                           can tap to book: SPOT has no places, no queue and no
                           booking, so it must not imply one. */}
                       <AppText variant="caption" color={palette.caption} style={{ marginTop: 9, lineHeight: 17 }}>
-                        Cədvəli zalın özü yazır. Dərsə yazılma SPOT-da yoxdur — yer üçün zalla danış.
+                        {t('Cədvəli zalın özü yazır. Dərsə yazılma SPOT-da yoxdur — yer üçün zalla danış.')}
                       </AppText>
                     </>
                   ) : null}
@@ -735,11 +753,11 @@ export default function GymDetail() {
                   {gym.amenities.length > 0 ? (
                     <>
                       <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
-                        İmkanlar
+                        {t('İmkanlar')}
                       </AppText>
                       <View style={styles.amenities}>
                         {gym.amenities.map((a) => (
-                          <Tag key={a} label={a} />
+                          <Tag key={a} label={t(a)} />
                         ))}
                       </View>
                     </>
@@ -759,10 +777,10 @@ export default function GymDetail() {
                       icon={trainersPhase === 'failed' ? 'x' : 'user'}
                       text={
                         trainersPhase === 'failed'
-                          ? 'Müəllimlər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda müəllim olmadığı demək deyil.'
+                          ? t('Müəllimlər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda müəllim olmadığı demək deyil.')
                           : trainersPhase === 'loading'
-                            ? 'Müəllimlər yüklənir…'
-                            : 'Bu zalda hələ SPOT-da qeydiyyatdan keçmiş müəllim yoxdur.'
+                            ? t('Müəllimlər yüklənir…')
+                            : t('Bu zalda hələ SPOT-da qeydiyyatdan keçmiş müəllim yoxdur.')
                       }
                     />
                   ) : (
@@ -780,10 +798,10 @@ export default function GymDetail() {
                       icon={membersPhase === 'failed' ? 'x' : 'users'}
                       text={
                         membersPhase === 'failed'
-                          ? 'Üzvlər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda istifadəçi olmadığı demək deyil.'
+                          ? t('Üzvlər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda istifadəçi olmadığı demək deyil.')
                           : membersPhase === 'loading'
-                            ? 'Üzvlər yüklənir…'
-                            : 'Bu zalda hələ SPOT istifadəçisi yoxdur. Birinci sən ol — check-in et.'
+                            ? t('Üzvlər yüklənir…')
+                            : t('Bu zalda hələ SPOT istifadəçisi yoxdur. Birinci sən ol — check-in et.')
                       }
                     />
                   ) : (
@@ -791,7 +809,7 @@ export default function GymDetail() {
                       <View style={styles.hintRow}>
                         <Icon name="msg" size={15} color={palette.textSecondary} />
                         <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 18 }}>
-                          Bu zalı öz zalı seçən istifadəçilər. Uyğunluq sənin cədvəlinə görə hesablanır.
+                          {t('Bu zalı öz zalı seçən istifadəçilər. Uyğunluq sənin cədvəlinə görə hesablanır.')}
                         </AppText>
                       </View>
                       {members.map((p) => (
@@ -811,9 +829,9 @@ export default function GymDetail() {
                     <View style={styles.gateCard}>
                       <Icon name="check" size={18} color={palette.voltDeep} />
                       <View style={{ flex: 1 }}>
-                        <AppText variant="callout">Bu zala rəyini yazmısan</AppText>
+                        <AppText variant="callout">{t('Bu zala rəyini yazmısan')}</AppText>
                         <AppText variant="footnote" color={palette.caption} style={{ marginTop: 3, lineHeight: 18 }}>
-                          Hər zala bir rəy yazmaq olar — rəyin aşağıdakı siyahıdadır.
+                          {t('Hər zala bir rəy yazmaq olar — rəyin aşağıdakı siyahıdadır.')}
                         </AppText>
                       </View>
                     </View>
@@ -821,7 +839,7 @@ export default function GymDetail() {
                   myCheckins >= 3 ? (
                     composing ? (
                       <View style={styles.composeCard}>
-                        <AppText variant="headline">Rəyin</AppText>
+                        <AppText variant="headline">{t('Rəyin')}</AppText>
                         <View style={styles.starRow}>
                           {[1, 2, 3, 4, 5].map((s) => (
                             <PressableScale
@@ -829,7 +847,7 @@ export default function GymDetail() {
                               activeScale={0.85}
                               onPress={() => setRating(s)}
                               accessibilityRole="button"
-                              accessibilityLabel={`${s} ulduz`}
+                              accessibilityLabel={t('{n} ulduz', { n: s, count: s })}
                               accessibilityState={{ selected: s <= rating }}>
                               <Icon name="star" size={30} color={s <= rating ? palette.streak : palette.separator} />
                             </PressableScale>
@@ -838,15 +856,15 @@ export default function GymDetail() {
                         <TextInput
                           value={reviewText}
                           onChangeText={setReviewText}
-                          placeholder="Təcrübəni yaz…"
+                          placeholder={t('Təcrübəni yaz…')}
                           placeholderTextColor={palette.caption}
                           multiline
                           style={styles.reviewInput}
                         />
                         <View style={{ flexDirection: 'row', gap: 9 }}>
-                          <Button title="Ləğv et" variant="secondary" onPress={() => setComposing(false)} style={{ flex: 1, height: 44 }} />
+                          <Button title={t('Ləğv et')} variant="secondary" onPress={() => setComposing(false)} style={{ flex: 1, height: 44 }} />
                           <Button
-                            title={savingReview ? 'Göndərilir…' : 'Göndər'}
+                            title={savingReview ? t('Göndərilir…') : t('Göndər')}
                             disabled={savingReview || !reviewText.trim()}
                             onPress={submitReview}
                             style={{ flex: 1, height: 44 }}
@@ -854,15 +872,19 @@ export default function GymDetail() {
                         </View>
                       </View>
                     ) : (
-                      <Button title="Rəy yaz" icon="edit" full onPress={() => setComposing(true)} style={{ marginBottom: 14 }} />
+                      <Button title={t('Rəy yaz')} icon="edit" full onPress={() => setComposing(true)} style={{ marginBottom: 14 }} />
                     )
                   ) : (
                     <View style={styles.gateCard}>
                       <Icon name="lock" size={18} color={palette.textSecondary} />
                       <View style={{ flex: 1 }}>
-                        <AppText variant="callout">Rəy yazmaq üçün {3 - myCheckins} check-in qalıb</AppText>
+                        <AppText variant="callout">
+                          {t('Rəy yazmaq üçün {n} check-in qalıb', { n: 3 - myCheckins, count: 3 - myCheckins })}
+                        </AppText>
                         <AppText variant="footnote" color={palette.caption} style={{ marginTop: 3, lineHeight: 18 }}>
-                          Yalnız bu zalda ən azı 3 dəfə check-in edən rəy yaza bilər — saxta rəylərin qarşısını alır. ({myCheckins}/3)
+                          {t('Yalnız bu zalda ən azı 3 dəfə check-in edən rəy yaza bilər — saxta rəylərin qarşısını alır. ({n}/3)', {
+                            n: myCheckins,
+                          })}
                         </AppText>
                       </View>
                     </View>
@@ -884,7 +906,7 @@ export default function GymDetail() {
                       <View style={styles.tenure}>
                         <Icon name="clock" size={12} color={palette.textSecondary} />
                         <AppText style={{ fontSize: 11, fontWeight: '600', color: palette.textSecondary }}>
-                          Yalnız sənin cihazında — zala göndərilməyib
+                          {t('Yalnız sənin cihazında — zala göndərilməyib')}
                         </AppText>
                       </View>
                       <AppText variant="body" color={palette.text3} style={{ marginTop: 8, lineHeight: 21 }}>
@@ -920,8 +942,7 @@ export default function GymDetail() {
                       {r.reply ? (
                         <View style={styles.reply}>
                           <AppText style={{ fontSize: 12, fontWeight: '700', color: palette.blue }}>
-                            {gym.name} · rəsmi cavab
-                            {r.replyAt && dayLabel(r.replyAt) ? ` · ${dayLabel(r.replyAt)}` : ''}
+                            {t('{gym} · rəsmi cavab', { gym: gym.name })}{r.replyAt && dayLabel(r.replyAt) ? ` · ${dayLabel(r.replyAt)}` : ''}
                           </AppText>
                           <AppText variant="footnote" color={palette.text3} style={{ marginTop: 4, lineHeight: 18 }}>
                             {r.reply}
@@ -934,15 +955,15 @@ export default function GymDetail() {
                   {reviewsFailed ? (
                     <EmptyState
                       icon="x"
-                      text="Rəylər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda rəy olmadığı demək deyil."
+                      text={t('Rəylər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda rəy olmadığı demək deyil.')}
                     />
                   ) : reviewsLoaded && totalReviews === 0 && mineOnly.length === 0 ? (
                     <EmptyState
                       icon="star"
                       text={
                         myCheckins >= 3
-                          ? 'Hələ rəy yoxdur — ilk rəyi sən yaz.'
-                          : 'Hələ rəy yoxdur. Bu zalda 3 check-in etdikdən sonra ilk rəyi sən yaza bilərsən.'
+                          ? t('Hələ rəy yoxdur — ilk rəyi sən yaz.')
+                          : t('Hələ rəy yoxdur. Bu zalda 3 check-in etdikdən sonra ilk rəyi sən yaza bilərsən.')
                       }
                     />
                   ) : null}
@@ -968,6 +989,7 @@ function EmptyState({ icon, text }: { icon: 'user' | 'users' | 'star' | 'x'; tex
 }
 
 function InfoCard({ icon, title, sub, onPress }: { icon: 'clock' | 'users' | 'pin'; title: string; sub: string; onPress?: () => void }) {
+  const t = useT();
   const body = (
     <>
       <Icon name={icon} size={18} color={palette.textSecondary} />
@@ -979,7 +1001,12 @@ function InfoCard({ icon, title, sub, onPress }: { icon: 'clock' | 'users' | 'pi
   );
   if (onPress) {
     return (
-      <PressableScale activeScale={0.96} onPress={onPress} style={styles.infoCard} accessibilityRole="button" accessibilityLabel={`${title} — yol göstər`}>
+      <PressableScale
+        activeScale={0.96}
+        onPress={onPress}
+        style={styles.infoCard}
+        accessibilityRole="button"
+        accessibilityLabel={t('{name} — yol göstər', { name: title })}>
         {body}
       </PressableScale>
     );

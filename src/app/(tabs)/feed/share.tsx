@@ -8,13 +8,16 @@ import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { uploadFeedVideo } from '@/lib/api';
+import { decimal } from '@/lib/format';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { useAllPrograms } from '@/store/db';
 import { actionSheet, toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 
 export default function Share() {
+  const t = useT();
   const router = useRouter();
   const profile = useAppStore((s) => s.profile);
   const programs = useAllPrograms();
@@ -43,7 +46,7 @@ export default function Share() {
        not trimmed by it, so the length is checked here too. */
     const secs = a.duration != null ? Math.round(a.duration / 1000) : null;
     if (secs != null && secs > MAX_SECONDS) {
-      toast(`Video ${secs} saniyədir — ${MAX_SECONDS} saniyəyə qədər olmalıdır. Qısaldıb yenidən seç.`, 'error');
+      toast(t('Video {n} saniyədir — {max} saniyəyə qədər olmalıdır. Qısaldıb yenidən seç.', { n: secs, max: MAX_SECONDS, count: secs }), 'error');
       return;
     }
     if (a.fileSize != null && a.fileSize > MAX_BYTES) {
@@ -51,7 +54,10 @@ export default function Share() {
          «Video 100 MB-dır — 100 MB-a qədər qəbul olunur», i.e. the app refusing a
          file that fits. The decimal separator in Azerbaijani is a comma. */
       toast(
-        `Video ${(a.fileSize / 1048576).toFixed(1).replace('.', ',')} MB-dır — ${Math.round(MAX_BYTES / 1048576)} MB-a qədər qəbul olunur. Telefonun kamera ayarından daha aşağı keyfiyyət seç.`,
+        t('Video {size} MB-dır — {max} MB-a qədər qəbul olunur. Telefonun kamera ayarından daha aşağı keyfiyyət seç.', {
+          size: decimal(a.fileSize / 1048576),
+          max: Math.round(MAX_BYTES / 1048576),
+        }),
         'error'
       );
       return;
@@ -73,7 +79,7 @@ export default function Share() {
   const fromCamera = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      toast('Kamera üçün icazə verilməyib — cihaz Ayarlarından SPOT-a kamera icazəsi ver', 'error');
+      toast(t('Kamera üçün icazə verilməyib — cihaz Ayarlarından SPOT-a kamera icazəsi ver'), 'error');
       return;
     }
     const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: MAX_SECONDS });
@@ -83,12 +89,12 @@ export default function Share() {
 
   const pick = () =>
     actionSheet({
-      title: 'Texnika videosu',
-      message: `Maksimum ${MAX_SECONDS} saniyə.`,
+      title: t('Texnika videosu'),
+      message: t('Maksimum {n} saniyə.', { n: MAX_SECONDS, count: MAX_SECONDS }),
       actions: [
-        { label: 'Çək', onPress: fromCamera },
-        { label: 'Qalereyadan seç', onPress: fromLibrary },
-        { label: 'Ləğv et', style: 'cancel' as const },
+        { label: t('Çək'), onPress: fromCamera },
+        { label: t('Qalereyadan seç'), onPress: fromLibrary },
+        { label: t('Ləğv et'), style: 'cancel' as const },
       ],
     });
 
@@ -96,12 +102,12 @@ export default function Share() {
   // catalog) — the video's "Proqrama bax" card must point somewhere that opens.
   const pickProgram = () =>
     actionSheet({
-      title: 'Proqrama bağla',
-      message: 'Videon həmin proqramın altında toplanır.',
+      title: t('Proqrama bağla'),
+      message: t('Videon həmin proqramın altında toplanır.'),
       actions: [
         ...programs.slice(0, 10).map((p) => ({ label: p.title, onPress: () => setLinked({ id: p.id, title: p.title }) })),
-        ...(linked ? [{ label: 'Bağlantını sil', style: 'destructive' as const, onPress: () => setLinked(null) }] : []),
-        { label: 'Ləğv et', style: 'cancel' as const },
+        ...(linked ? [{ label: t('Bağlantını sil'), style: 'destructive' as const, onPress: () => setLinked(null) }] : []),
+        { label: t('Ləğv et'), style: 'cancel' as const },
       ],
     });
 
@@ -111,11 +117,11 @@ export default function Share() {
       return;
     }
     if (!profile.name.trim()) {
-      toast('Əvvəlcə profilində adını yaz — video adınla paylaşılır', 'error');
+      toast(t('Əvvəlcə profilində adını yaz — video adınla paylaşılır'), 'error');
       return;
     }
     if (!hasSupabaseConfig) {
-      toast('Video yüklənə bilmədi — server bağlantısı yoxdur', 'error');
+      toast(t('Video yüklənə bilmədi — server bağlantısı yoxdur'), 'error');
       return;
     }
     setUploading(true);
@@ -136,17 +142,17 @@ export default function Share() {
       const msg = String((e as Error)?.message ?? '');
       if (msg === 'video-too-large') {
         const mb = Math.round(((e as { sizeBytes?: number }).sizeBytes ?? 0) / 1048576);
-        toast(`Video ${mb} MB-dır — 100 MB-a qədər qəbul olunur.`, 'error');
+        toast(t('Video {n} MB-dır — 100 MB-a qədər qəbul olunur.', { n: mb }), 'error');
       } else if (msg === 'video-read-failed') {
-        toast('Video faylı oxunmadı — başqa video seç.', 'error');
+        toast(t('Video faylı oxunmadı — başqa video seç.'), 'error');
       } else if (msg === 'no profile') {
-        toast('Profil yüklənmədi — video yalnız hesabla paylaşılır.', 'error');
+        toast(t('Profil yüklənmədi — video yalnız hesabla paylaşılır.'), 'error');
       } else {
-        toast('Video yüklənə bilmədi', 'error');
+        toast(t('Video yüklənə bilmədi'), 'error');
       }
       return;
     }
-    toast('Videon feed-ə əlavə olundu');
+    toast(t('Videon feed-ə əlavə olundu'));
     router.back();
   };
 
@@ -156,16 +162,16 @@ export default function Share() {
       <View style={styles.header}>
         <PressableScale haptic={false} activeScale={0.94} onPress={() => router.back()}>
           <AppText variant="body" color={palette.blue}>
-            Bağla
+            {t('Bağla')}
           </AppText>
         </PressableScale>
-        <AppText variant="headline">Paylaş</AppText>
+        <AppText variant="headline">{t('Paylaş')}</AppText>
         {uploading ? (
           <ActivityIndicator color={palette.blue} />
         ) : (
           <PressableScale haptic={false} activeScale={0.94} onPress={publish} disabled={!uri}>
             <AppText variant="headline" color={uri ? palette.blue : palette.tertiary}>
-              Paylaş
+              {t('Paylaş')}
             </AppText>
           </PressableScale>
         )}
@@ -177,36 +183,36 @@ export default function Share() {
             <Icon name={uri ? 'check' : 'cam'} size={26} color={uri ? palette.volt : palette.white} />
           </View>
           <AppText variant="headline" color={palette.white} style={{ marginTop: 12 }}>
-            {uri ? 'Video seçildi' : 'Video çək və ya seç'}
+            {uri ? t('Video seçildi') : t('Video çək və ya seç')}
           </AppText>
           <AppText variant="footnote" color="rgba(255,255,255,0.5)" style={{ marginTop: 4 }}>
-            {uri ? 'Dəyişmək üçün toxun' : `Çək və ya qalereyadan seç · maksimum ${MAX_SECONDS} saniyə`}
+            {uri ? t('Dəyişmək üçün toxun') : t('Çək və ya qalereyadan seç · maksimum {n} saniyə', { n: MAX_SECONDS, count: MAX_SECONDS })}
           </AppText>
         </PressableScale>
 
         <AppText variant="overline" color={palette.caption} style={styles.label}>
-          Təsvir
+          {t('Təsvir')}
         </AppText>
         <TextInput
           value={caption}
           onChangeText={setCaption}
-          placeholder="Nə göstərirsən? Hansı hərəkət?"
+          placeholder={t('Nə göstərirsən? Hansı hərəkət?')}
           placeholderTextColor={palette.caption}
           multiline
           style={styles.input}
         />
 
         <AppText variant="overline" color={palette.caption} style={styles.label}>
-          Proqrama bağla · istəyə bağlı
+          {t('Proqrama bağla · istəyə bağlı')}
         </AppText>
         <PressableScale activeScale={0.98} onPress={pickProgram} style={styles.linkRow}>
           <View style={[styles.linkIcon, linked && { backgroundColor: 'rgba(198,255,61,0.30)' }]}>
             <Icon name="dumbbell" size={18} color={linked ? palette.voltDeep : palette.textSecondary} />
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="callout">{linked?.title ?? 'Proqram seç'}</AppText>
+            <AppText variant="callout">{linked?.title ?? t('Proqram seç')}</AppText>
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 2 }}>
-              Feed strukturlu olur — videonun altında proqrama keçid görünür
+              {t('Feed strukturlu olur — videonun altında proqrama keçid görünür')}
             </AppText>
           </View>
           <Icon name={linked ? 'check' : 'chevR'} size={18} color={linked ? palette.voltDeep : palette.tertiary} />
@@ -215,7 +221,7 @@ export default function Share() {
         <View style={styles.note}>
           <Icon name="users" size={15} color={palette.textSecondary} />
           <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 18 }}>
-            Video hər kəsə açıq olur və adınla göstərilir. Yalnız zala görünmə hələ yoxdur — paylaşmadan əvvəl bunu nəzərə al.
+            {t('Video hər kəsə açıq olur və adınla göstərilir. Yalnız zala görünmə hələ yoxdur — paylaşmadan əvvəl bunu nəzərə al.')}
           </AppText>
         </View>
       </ScrollView>

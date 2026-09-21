@@ -5,6 +5,7 @@ import { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Gym } from '@/data/types';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { palette, radius, shadow } from '@/theme';
 import { AppText } from './ui/AppText';
@@ -14,6 +15,7 @@ import { Icon } from './Icon';
 import { GymImage } from './GymImage';
 
 export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?: 'hero' | 'compact'; onPress?: () => void }) {
+  const t = useT();
   const bookmarks = useAppStore((s) => s.bookmarks);
   const toggle = useAppStore((s) => s.toggleBookmark);
   const saved = bookmarks.includes(gym.id);
@@ -31,7 +33,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
             <Price value={gym.priceMonth} />
           </View>
           <AppText variant="footnote" color={palette.caption} style={{ marginTop: 5 }}>
-            {[gym.district, gym.distanceKm > 0 ? `${gym.distanceKm} km` : null, gym.hours].filter(Boolean).join(" · ")}
+            {[gym.district, gym.distanceKm > 0 ? t('{n} km', { n: gym.distanceKm }) : null, gym.hours].filter(Boolean).join(" · ")}
           </AppText>
         </View>
       </PressableScale>
@@ -52,7 +54,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
             ) : null}
             {gym.liveCount > 0 ? (
               <View style={styles.liveBadge}>
-                <AppText style={styles.liveText}>{gym.liveCount} nəfər burada</AppText>
+                <AppText style={styles.liveText}>{t('{n} nəfər burada', { n: gym.liveCount, count: gym.liveCount })}</AppText>
               </View>
             ) : null}
           </View>
@@ -74,7 +76,12 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
           <Price value={gym.priceMonth} />
         </View>
         <AppText variant="footnote" color={palette.caption} style={{ marginTop: 5 }}>
-          {[gym.district, gym.distanceKm > 0 ? `${gym.distanceKm} km` : null, gym.hours, gym.members > 0 ? `${gym.members} üzv` : null]
+          {[
+            gym.district,
+            gym.distanceKm > 0 ? t('{n} km', { n: gym.distanceKm }) : null,
+            gym.hours,
+            gym.members > 0 ? t('{n} üzv', { n: gym.members, count: gym.members }) : null,
+          ]
             .filter(Boolean)
             .join(" · ")}
         </AppText>
@@ -115,15 +122,16 @@ function Cover({ gym, height, children }: { gym: Gym; height: number; children?:
    «Aylıq (₼)» empty was advertised at «0 ₼/ay» next to gyms at 45 and 60 — read
    by every new user as free membership. Nobody measured a zero here. */
 function Price({ value }: { value: number }) {
+  const t = useT();
   if (!value || value <= 0) {
     return (
-      <AppText style={{ fontSize: 12, color: palette.caption }}>Qiymət göstərilməyib</AppText>
+      <AppText style={{ fontSize: 12, color: palette.caption }}>{t('Qiymət göstərilməyib')}</AppText>
     );
   }
   return (
     <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
       <AppText style={{ fontSize: 16, fontWeight: '700', color: palette.inkText }}>{value} ₼</AppText>
-      <AppText style={{ fontSize: 12, color: palette.caption }}>/ay</AppText>
+      <AppText style={{ fontSize: 12, color: palette.caption }}>{t('/ay')}</AppText>
     </View>
   );
 }
