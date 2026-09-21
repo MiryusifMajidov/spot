@@ -25,6 +25,10 @@ CHUNKS = ["auth", "discover", "workout", "social", "panels", "system", "content"
 
 def chunk_for(files, kind):
     f = files[0] if files else ""
+    # Legal prose first: it is data too, but it gets its own file so a lawyer
+    # can review one place without wading through exercise names.
+    if any("legal" in x for x in files):
+        return "legal"
     if kind == "data":
         return "content"
     if "/onboarding/" in f or "/auth" in f or f.endswith("auth.ts") or "authGate" in f or "auth-callback" in f:

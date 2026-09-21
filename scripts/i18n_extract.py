@@ -26,7 +26,7 @@ SRC = "src"
 I18N = os.path.normpath(os.path.join(SRC, "i18n"))
 
 # SPOT's own content, rendered through t(value). NOT user content.
-DATA_FILES = ["src/store/db.ts", "src/data/mock.ts", "src/lib/notifications.ts"]
+DATA_FILES = ["src/store/db.ts", "src/data/mock.ts", "src/lib/notifications.ts", "src/lib/legal.ts"]
 
 CALL = re.compile(
     r"""\bt\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")\s*(,\s*\{([^}]*)\})?""",

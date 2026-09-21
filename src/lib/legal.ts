@@ -102,7 +102,9 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
         heading: 'Dəyişikliklər və əlaqə',
         body: [
           'Bu şərtlər dəyişə bilər. Əhəmiyyətli dəyişiklikdə tətbiqdə bildiriş göstərilir.',
-          `Operator: ${OPERATOR}. Əlaqə: ${CONTACT}.`,
+          // Placeholders, filled at render: interpolating OPERATOR here would make
+          // the translation key change the day the owner fills the blank in.
+          'Operator: {operator}. Əlaqə: {contact}.',
         ],
       },
     ],
@@ -163,7 +165,7 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
           'Profilini istənilən vaxt redaktə edə bilərsən.',
           'Hesabını tətbiqin içindən silə bilərsən: Profil → Məxfilik → Hesabı sil. Bu, profilini, məşqlərini, çəki qeydlərini, videolarını, şərhlərini və yüklədiyin faylları silir.',
           'Görünürlüyünü söndürə bilərsən — bu halda kəşf siyahılarında və «indi zalda» siyahısında görünmürsən.',
-          `Sualın varsa: ${CONTACT}.`,
+          'Sualın varsa: {contact}.',
         ],
       },
       {

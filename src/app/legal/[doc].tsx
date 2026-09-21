@@ -4,7 +4,8 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui/AppText';
 import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
-import { LEGAL, LegalDoc } from '@/lib/legal';
+import { CONTACT, LEGAL, LegalDoc, OPERATOR } from '@/lib/legal';
+import { useLang, useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
 
 /**
@@ -17,7 +18,11 @@ import { palette, spacing } from '@/theme';
  * exactly when somebody is being asked to agree to them.
  */
 export default function LegalScreen() {
+  const t = useT();
+  const lang = useLang();
   const { doc } = useLocalSearchParams<{ doc: string }>();
+  // Filled into the two lines that name who runs SPOT (see lib/legal.ts).
+  const who = { operator: OPERATOR, contact: CONTACT };
   const key = (['terms', 'privacy', 'rules'] as LegalDoc[]).includes(doc as LegalDoc)
     ? (doc as LegalDoc)
     : 'terms';
@@ -25,25 +30,36 @@ export default function LegalScreen() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <NavBar title={c.title} />
+      <NavBar title={t(c.title)} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <AppText variant="caption" color={palette.caption}>
-          Son yenilənmə: {c.updated}
+          {t('Son yenilənmə: {date}', { date: t(c.updated) })}
         </AppText>
+        {/* A translation of a legal text is a convenience, not the text. Said
+            once, at the top, in the reader's own language — the alternative is
+            a Russian reader who agreed to a Russian sentence that is not what
+            the binding Azerbaijani one says, and nobody told them which counts. */}
+        {lang !== 'az' ? (
+          <View style={styles.notice}>
+            <AppText variant="footnote" color={palette.textSecondary} style={{ lineHeight: 18 }}>
+              {t('Bu, tərcümədir. Hüquqi qüvvəsi olan mətn Azərbaycan dilindəki versiyadır; fərq olarsa, o əsas götürülür.')}
+            </AppText>
+          </View>
+        ) : null}
         <AppText variant="body" color={palette.text3} style={styles.intro}>
-          {c.intro}
+          {t(c.intro)}
         </AppText>
 
         {c.sections.map((sec) => (
           <View key={sec.heading ?? sec.body[0]} style={styles.section}>
             {sec.heading ? (
               <AppText variant="headline" style={{ marginBottom: 8 }}>
-                {sec.heading}
+                {t(sec.heading)}
               </AppText>
             ) : null}
             {sec.body.map((line) => (
               <AppText key={line} variant="body" color={palette.text3} style={styles.line}>
-                {line}
+                {t(line, who)}
               </AppText>
             ))}
           </View>
@@ -56,6 +72,7 @@ export default function LegalScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 48 },
   intro: { marginTop: 10, lineHeight: 22 },
+  notice: { backgroundColor: palette.grouped, borderRadius: 12, padding: 12, marginTop: 12 },
   section: { marginTop: 26 },
   line: { lineHeight: 22, marginBottom: 8 },
 });
