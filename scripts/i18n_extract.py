@@ -29,9 +29,30 @@ I18N = os.path.normpath(os.path.join(SRC, "i18n"))
 DATA_FILES = ["src/store/db.ts", "src/data/mock.ts", "src/lib/notifications.ts", "src/lib/legal.ts"]
 
 CALL = re.compile(
-    r"""\bt\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")\s*(,\s*\{([^}]*)\})?""",
+    r"""\b(?:t|tr)\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")""",
     re.S,
 )
+
+
+def call_args(body, start):
+    """The text of a call's remaining arguments, up to its closing paren.
+
+    The regex used to swallow the vars object as well, and a NESTED t() inside
+    it -- t('... ({records})', { records: bests.map(b => t('{lift} {n} kq', ...)) })
+    -- was consumed with it and never became a key. The match now stops after
+    the string literal, and this walks the parens to find `count` instead.
+    """
+    depth, i, n = 1, start, len(body)
+    while i < n and depth:
+        c = body[i]
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        i += 1
+    return body[start:i]
+
+
 LIT = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"", re.S)
 
 
@@ -66,7 +87,7 @@ def main():
             if not raw:
                 continue
             k = unescape(raw)
-            vars_ = m.group(4) or ""
+            vars_ = call_args(body, m.end())
             e = keys.setdefault(k, {"key": k, "counted": False, "files": set(), "kind": "ui"})
             e["files"].add(rel)
             if re.search(r"\bcount\b", vars_):
