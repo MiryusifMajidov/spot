@@ -13,6 +13,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
+import { useT } from '@/lib/useT';
+
 export interface MapMarker {
   id: string;
   lat: number;
@@ -40,8 +42,9 @@ interface Props {
 const BAKU = { lat: 40.4093, lng: 49.8671 };
 
 export function SpotMap({ markers = [], center, zoom = 12, pickable = false, picked, onPick, onMarkerPress, style, onStatus }: Props) {
+  const t = useT();
   const ref = useRef<WebView>(null);
-  const start = center ?? picked ?? markers[0] ?? BAKU;
+  const start =center ?? picked ?? markers[0] ?? BAKU;
 
   /* Leaflet and the OSM tiles both come over the network. When they don't arrive
      the honest thing is to say so and offer a retry — not to leave a grey box
@@ -188,10 +191,10 @@ export function SpotMap({ markers = [], center, zoom = 12, pickable = false, pic
             <ActivityIndicator color="#6E6E76" />
           ) : (
             <>
-              <Text style={styles.failTitle}>Xəritə yüklənmədi</Text>
-              <Text style={styles.failBody}>İnternet bağlantını yoxla və yenidən cəhd et.</Text>
+              <Text style={styles.failTitle}>{t('Xəritə yüklənmədi')}</Text>
+              <Text style={styles.failBody}>{t('İnternet bağlantını yoxla və yenidən cəhd et.')}</Text>
               <Pressable onPress={retry} style={styles.retry} hitSlop={8}>
-                <Text style={styles.retryText}>Yenidən cəhd et</Text>
+                <Text style={styles.retryText}>{t('Yenidən cəhd et')}</Text>
               </Pressable>
             </>
           )}

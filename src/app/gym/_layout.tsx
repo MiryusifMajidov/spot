@@ -2,6 +2,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { ColorValue } from 'react-native';
 
 import { Icon, IconName } from '@/components/Icon';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
 
@@ -16,6 +17,7 @@ function tab(name: IconName) {
 }
 
 export default function GymLayout() {
+  const t = useT();
   const hydrated = useAppStore((s) => s.hydrated);
   const ownsGym = useAppStore((s) => s.ownsGym);
 
@@ -37,10 +39,10 @@ export default function GymLayout() {
         tabBarStyle: { backgroundColor: palette.white, borderTopColor: palette.separator },
         tabBarLabelStyle: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
       }}>
-      <Tabs.Screen name="index" options={{ title: 'Panel', tabBarIcon: tab('grid') }} />
-      <Tabs.Screen name="members" options={{ title: 'Üzvlər', tabBarIcon: tab('users') }} />
-      <Tabs.Screen name="classes" options={{ title: 'Cədvəl', tabBarIcon: tab('cal') }} />
-      <Tabs.Screen name="reviews" options={{ title: 'Rəylər', tabBarIcon: tab('star') }} />
+      <Tabs.Screen name="index" options={{ title: t('Panel'), tabBarIcon: tab('grid') }} />
+      <Tabs.Screen name="members" options={{ title: t('Üzvlər'), tabBarIcon: tab('users') }} />
+      <Tabs.Screen name="classes" options={{ title: t('Cədvəl'), tabBarIcon: tab('cal') }} />
+      <Tabs.Screen name="reviews" options={{ title: t('Rəylər'), tabBarIcon: tab('star') }} />
       <Tabs.Screen name="edit" options={{ href: null }} />
       <Tabs.Screen name="claim" options={{ href: null }} />
       <Tabs.Screen name="qr" options={{ href: null }} />

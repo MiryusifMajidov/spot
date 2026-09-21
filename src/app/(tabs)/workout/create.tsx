@@ -19,6 +19,7 @@ import {
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { useProgram } from '@/lib/hooks';
 import { saveProgramDraft } from '@/lib/saveProgram';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { findProgram } from '@/store/db';
 import { DraftItem, useProgramDraft } from '@/store/programDraft';
@@ -49,6 +50,7 @@ import { palette, radius, spacing } from '@/theme';
 
 export default function CreateProgram() {
   const router = useRouter();
+  const t = useT();
   const gate = useAuthGate();
   const profile = useAppStore((s) => s.profile);
 
@@ -92,7 +94,7 @@ export default function CreateProgram() {
     const attach = async (get: () => Promise<PickedAsset | null | 'no-permission'>) => {
       const asset = await get();
       if (asset === 'no-permission') {
-        toast('Kamera üçün icazə verilməyib — cihaz Ayarlarından SPOT-a icazə ver', 'error');
+        toast(t('Kamera üçün icazə verilməyib — cihaz Ayarlarından SPOT-a icazə ver'), 'error');
         return;
       }
       if (!asset) return;
@@ -107,12 +109,12 @@ export default function CreateProgram() {
         const url = await uploadExerciseClip(asset.uri, asset.fileSize ?? null);
         draft.patchItem(dayKey, item.key, { videoUrl: url });
         successFeedback();
-        toast('Video əlavə olundu');
+        toast(t('Video əlavə olundu'));
       } catch {
         // Nothing is written to the row. A program that claims a video the
         // server never received plays nothing for the person following it.
         errorFeedback();
-        toast('Video yüklənmədi — bağlantını yoxla və yenidən cəhd et', 'error');
+        toast(t('Video yüklənmədi — bağlantını yoxla və yenidən cəhd et'), 'error');
       } finally {
         setUploading(null);
       }
@@ -120,20 +122,20 @@ export default function CreateProgram() {
 
     actionSheet({
       title: item.name,
-      message: 'Bu hərəkətin necə edildiyini göstər — 30 saniyəyə qədər.',
+      message: t('Bu hərəkətin necə edildiyini göstər — 30 saniyəyə qədər.'),
       actions: [
-        { label: 'Video çək', onPress: () => void attach(recordClip) },
-        { label: 'Qalereyadan seç', onPress: () => void attach(pickClipFromLibrary) },
+        { label: t('Video çək'), onPress: () => void attach(recordClip) },
+        { label: t('Qalereyadan seç'), onPress: () => void attach(pickClipFromLibrary) },
         ...(item.videoUrl
           ? [
               {
-                label: 'Videonu sil',
+                label: t('Videonu sil'),
                 style: 'destructive' as const,
                 onPress: () => draft.patchItem(dayKey, item.key, { videoUrl: null }),
               },
             ]
           : []),
-        { label: 'Ləğv et', style: 'cancel' as const },
+        { label: t('Ləğv et'), style: 'cancel' as const },
       ],
     });
   };
@@ -141,10 +143,10 @@ export default function CreateProgram() {
   // ---- save ----------------------------------------------------------------
   const sayWhatIsMissing = () => {
     if (!draft.title.trim()) {
-      toast('Proqramın başlığını yaz', 'info');
+      toast(t('Proqramın başlığını yaz'), 'info');
       return;
     }
-    toast('Ən azı bir günə hərəkət əlavə et', 'info');
+    toast(t('Ən azı bir günə hərəkət əlavə et'), 'info');
   };
 
   const save = () =>
@@ -152,7 +154,7 @@ export default function CreateProgram() {
       if (!ready || saving) return;
       const unnamed = allItems.find((it) => !it.name.trim());
       if (unnamed) {
-        toast('Adı olmayan hərəkət var — adını yaz və ya sil', 'error');
+        toast(t('Adı olmayan hərəkət var — adını yaz və ya sil'), 'error');
         return;
       }
       setSaving(true);
@@ -168,7 +170,7 @@ export default function CreateProgram() {
 
       if (result === 'failed') {
         errorFeedback();
-        toast('Proqram saxlanılmadı. Yenidən cəhd et.', 'error');
+        toast(t('Proqram saxlanılmadı. Yenidən cəhd et.'), 'error');
         return;
       }
       if (result === 'refused') {
@@ -176,20 +178,20 @@ export default function CreateProgram() {
            «yenidən cəhd et» would be a lie about something that cannot succeed
            until the person changes what the message names. */
         errorFeedback();
-        toast(problem ?? 'Server proqramı qəbul etmədi.', 'error');
+        toast(problem ?? t('Server proqramı qəbul etmədi.'), 'error');
         return;
       }
       if (result === 'local') {
         // Said out loud, because it matters: a program only on this phone is
         // one nobody else — no student, no follower — can open.
-        toast('Proqram yalnız bu cihazda saxlanıldı — serverə göndərilmədi', 'info');
+        toast(t('Proqram yalnız bu cihazda saxlanıldı — serverə göndərilmədi'), 'info');
       } else {
         successFeedback();
-        toast(draft.editingId ? 'Dəyişikliklər saxlanıldı' : 'Proqram yaradıldı — kitabxanadadır', 'success');
+        toast(draft.editingId ? t('Dəyişikliklər saxlanıldı') : t('Proqram yaradıldı — kitabxanadadır'), 'success');
       }
       leavingRef.current = true;
       router.back();
-    }, draft.editingId ? 'Proqramı dəyişmək üçün' : 'Proqram yaratmaq üçün');
+    }, draft.editingId ? t('Proqramı dəyişmək üçün') : t('Proqram yaratmaq üçün'));
 
   /* Leaving with work in it — by ANY route off the screen.
      The prompt used to hang on the NavBar chevron alone. The iOS edge swipe and
@@ -206,9 +208,9 @@ export default function CreateProgram() {
       navigation.dispatch(data.action);
       return;
     }
-    confirm('Yazdıqların silinsin?', 'Bu proqram hələ saxlanılmayıb.', [
-      { label: 'Yazmağa davam et', style: 'cancel' },
-      { label: 'Sil və çıx', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+    confirm(t('Yazdıqların silinsin?'), t('Bu proqram hələ saxlanılmayıb.'), [
+      { label: t('Yazmağa davam et'), style: 'cancel' },
+      { label: t('Sil və çıx'), style: 'destructive', onPress: () => navigation.dispatch(data.action) },
     ]);
   });
 
@@ -218,7 +220,7 @@ export default function CreateProgram() {
         <NavBar />
         <View style={styles.center}>
           <AppText variant="body" color={palette.textSecondary}>
-            Proqram yüklənir…
+            {t('Proqram yüklənir…')}
           </AppText>
         </View>
       </Screen>
@@ -231,37 +233,37 @@ export default function CreateProgram() {
         right={
           <PressableScale onPress={ready ? save : sayWhatIsMissing} haptic={false} activeScale={0.94} disabled={saving}>
             <AppText variant="headline" color={ready && !saving ? palette.blue : palette.tertiary}>
-              {saving ? 'Saxlanılır…' : draft.editingId ? 'Saxla' : 'Yarat'}
+              {saving ? t('Saxlanılır…') : draft.editingId ? t('Saxla') : t('Yarat')}
             </AppText>
           </PressableScale>
         }
       />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <AppText variant="title" style={{ marginBottom: 18 }}>
-          {draft.editingId ? 'Proqramı redaktə et' : 'Proqram yarat'}
+          {draft.editingId ? t('Proqramı redaktə et') : t('Proqram yarat')}
         </AppText>
 
-        <Label text="Başlıq" first />
+        <Label text={t('Başlıq')} first />
         <TextInput
           value={draft.title}
           onChangeText={(title) => draft.set({ title })}
-          placeholder="Məsələn: 3 günlük güc"
+          placeholder={t('Məsələn: 3 günlük güc')}
           placeholderTextColor={palette.caption}
           maxLength={80}
           style={styles.input}
         />
 
-        <Label text="Təsvir" />
+        <Label text={t('Təsvir')} />
         <TextInput
           value={draft.desc}
           onChangeText={(desc) => draft.set({ desc })}
-          placeholder="Kimə uyğundur, nə lazımdır, necə işləyir?"
+          placeholder={t('Kimə uyğundur, nə lazımdır, necə işləyir?')}
           placeholderTextColor={palette.caption}
           multiline
           style={[styles.input, { height: 92, paddingTop: 12, textAlignVertical: 'top' }]}
         />
 
-        <Label text="Günlər" />
+        <Label text={t('Günlər')} />
         {draft.days.map((d, i) => (
           <View key={d.key} style={styles.dayCard}>
             <View style={styles.dayHead}>
@@ -271,7 +273,7 @@ export default function CreateProgram() {
               <TextInput
                 value={d.title}
                 onChangeText={(v) => draft.patchDay(d.key, { title: v })}
-                placeholder={`Gün ${i + 1}`}
+                placeholder={t('Gün {n}', { n: i + 1 })}
                 placeholderTextColor={palette.caption}
                 maxLength={40}
                 style={styles.dayTitleInput}
@@ -285,7 +287,7 @@ export default function CreateProgram() {
             <TextInput
               value={d.focus}
               onChangeText={(v) => draft.patchDay(d.key, { focus: v })}
-              placeholder="Fokus (məs: sinə, triseps)"
+              placeholder={t('Fokus (məs: sinə, triseps)')}
               placeholderTextColor={palette.caption}
               maxLength={60}
               style={styles.focusInput}
@@ -308,7 +310,7 @@ export default function CreateProgram() {
               style={styles.addMove}>
               <Icon name="plus" size={16} color={palette.blue} />
               <AppText variant="subhead" color={palette.blue}>
-                Hərəkət əlavə et
+                {t('Hərəkət əlavə et')}
               </AppText>
             </PressableScale>
           </View>
@@ -316,19 +318,21 @@ export default function CreateProgram() {
 
         <PressableScale activeScale={0.97} onPress={draft.addDay} style={styles.addDay}>
           <Icon name="plus" size={17} color={palette.inkText} />
-          <AppText variant="headline">Gün əlavə et</AppText>
+          <AppText variant="headline">{t('Gün əlavə et')}</AppText>
         </PressableScale>
 
         <View style={styles.note}>
           <Icon name="lock" size={17} color={palette.caption} />
           <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 18 }}>
-            Bu versiyada bütün proqramlar hər kəsə açıqdır və pulsuzdur. SPOT-da onlayn ödəniş yoxdur.
+            {t('Bu versiyada bütün proqramlar hər kəsə açıqdır və pulsuzdur. SPOT-da onlayn ödəniş yoxdur.')}
           </AppText>
         </View>
 
         {!ready ? (
           <AppText variant="footnote" color={palette.caption} style={{ marginTop: 16, lineHeight: 18 }}>
-            {draft.editingId ? 'Saxlamaq' : 'Yaratmaq'} üçün başlıq yaz və ən azı bir günə hərəkət əlavə et.
+            {draft.editingId
+              ? t('Saxlamaq üçün başlıq yaz və ən azı bir günə hərəkət əlavə et.')
+              : t('Yaratmaq üçün başlıq yaz və ən azı bir günə hərəkət əlavə et.')}
           </AppText>
         ) : null}
       </ScrollView>
@@ -357,6 +361,7 @@ function ItemEditor({
   onRemove: () => void;
   onVideo: () => void;
 }) {
+  const t = useT();
   const timed = item.mode === 'time';
   const [setsText, setSetsText] = useState(String(item.sets));
   return (
@@ -366,7 +371,7 @@ function ItemEditor({
         <TextInput
           value={item.name}
           onChangeText={(name) => onPatch({ name })}
-          placeholder="Hərəkətin adı"
+          placeholder={t('Hərəkətin adı')}
           placeholderTextColor={palette.caption}
           maxLength={80}
           style={styles.itemName}
@@ -379,7 +384,7 @@ function ItemEditor({
       <View style={styles.fields}>
         <View style={styles.field}>
           <AppText variant="caption" color={palette.caption}>
-            Set
+            {t('Set')}
           </AppText>
           {/* The text the person is typing lives here, not in the number.
               Coercing every keystroke made most counts unreachable: backspace
@@ -420,7 +425,7 @@ function ItemEditor({
                 onPress={() => onPatch({ mode: m })}
                 style={[styles.mode, item.mode === m ? styles.modeOn : null]}>
                 <AppText variant="caption" color={item.mode === m ? palette.ink : palette.caption}>
-                  {m === 'reps' ? 'Təkrar' : 'Müddət'}
+                  {m === 'reps' ? t('Təkrar') : t('Müddət')}
                 </AppText>
               </PressableScale>
             ))}
@@ -437,7 +442,7 @@ function ItemEditor({
             />
             {timed ? (
               <AppText variant="footnote" color={palette.caption}>
-                san
+                {t('san')}
               </AppText>
             ) : null}
           </View>
@@ -447,7 +452,7 @@ function ItemEditor({
       <PressableScale activeScale={0.97} haptic={false} onPress={onVideo} disabled={uploading} style={styles.videoBtn}>
         <Icon name={item.videoUrl ? 'check' : 'video'} size={15} color={item.videoUrl ? palette.voltDeep : palette.blue} />
         <AppText variant="footnote" color={item.videoUrl ? palette.voltDeep : palette.blue}>
-          {uploading ? 'Yüklənir…' : item.videoUrl ? 'Video əlavə olunub' : 'Video əlavə et'}
+          {uploading ? t('Yüklənir…') : item.videoUrl ? t('Video əlavə olunub') : t('Video əlavə et')}
         </AppText>
       </PressableScale>
     </View>

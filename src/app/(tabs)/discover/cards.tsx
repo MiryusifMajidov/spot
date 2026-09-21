@@ -405,7 +405,7 @@ function CardFace({ partner }: { partner: Partner }) {
       </View>
       <View style={styles.body}>
         <View style={styles.grid}>
-          <DataCell label={t('Səviyyə')} value={t(partner.level ?? 'göstərilməyib')} />
+          <DataCell label={t('Səviyyə')} value={partner.level ? t(partner.level) : t('göstərilməyib')} />
           <DataCell label={t('Məqsəd')} value={partner.goals[0] ? t(partner.goals[0]) : '—'} />
           <DataCell label={t('Qrafik')} value={t(partner.usualTime).replace(/\s?\d.*/, '') || t(partner.usualTime)} volt />
           <DataCell label={t('Tip')} value={partner.types[0] ? t(partner.types[0]) : '—'} />

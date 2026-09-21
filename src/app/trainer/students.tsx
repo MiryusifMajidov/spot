@@ -9,11 +9,16 @@ import { LargeHeader } from '@/components/ui/LargeHeader';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
+import { timeAgo } from '@/lib/format';
 import { decideTrainerRequest, getMyStudents, type StudentRow } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { timeAgoAz } from '@/store/db';
+import { useT } from '@/lib/useT';
 import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
+
+/** Reads the clock here, exactly where the old `timeAgoAz` read it. */
+const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) => string) =>
+  timeAgo(iso, Date.now(), tr);
 
 export interface MyStudents {
   pending: StudentRow[];
@@ -63,6 +68,7 @@ export function useMyStudents(): MyStudents {
 }
 
 export default function Students() {
+  const t = useT();
   const router = useRouter();
   const { pending, active, loading, failed, offline, reload } = useMyStudents();
   const [tab, setTab] = useState(0);
@@ -73,10 +79,10 @@ export default function Students() {
       setBusy(s.requestId);
       try {
         await decideTrainerRequest(s.requestId, accept);
-        toast(accept ? `${s.name} artıq şagirdindir` : 'Sorğu rədd edildi', accept ? 'success' : 'info');
+        toast(accept ? t('{name} artıq şagirdindir', { name: s.name }) : t('Sorğu rədd edildi'), accept ? 'success' : 'info');
         reload();
       } catch {
-        toast('Sorğunu emal etmək alınmadı — internetini yoxla', 'error');
+        toast(t('Sorğunu emal etmək alınmadı — internetini yoxla'), 'error');
       } finally {
         setBusy(null);
       }
@@ -85,9 +91,9 @@ export default function Students() {
       run();
       return;
     }
-    confirm(`${s.name} sorğusunu rədd edəsən?`, 'Şagird yenidən sorğu göndərə bilər.', [
-      { label: 'Ləğv et', style: 'cancel' },
-      { label: 'Rədd et', style: 'destructive', onPress: run },
+    confirm(t('{name} sorğusunu rədd edəsən?', { name: s.name }), t('Şagird yenidən sorğu göndərə bilər.'), [
+      { label: t('Ləğv et'), style: 'cancel' },
+      { label: t('Rədd et'), style: 'destructive', onPress: run },
     ]);
   };
 
@@ -99,11 +105,11 @@ export default function Students() {
 
   return (
     <Screen edges={['top']}>
-      <LargeHeader title="Şagirdlər" subtitle="Sənə müraciət edən və qəbul etdiyin insanlar" />
+      <LargeHeader title={t('Şagirdlər')} subtitle={t('Sənə müraciət edən və qəbul etdiyin insanlar')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 28 }}>
         <View style={{ marginBottom: 14 }}>
           <Segmented
-            options={[counted ? `Şagirdlər ${active.length}` : 'Şagirdlər', counted ? `Sorğular ${pending.length}` : 'Sorğular']}
+            options={[counted ? t('Şagirdlər {n}', { n: active.length, count: active.length }) : t('Şagirdlər'), counted ? t('Sorğular {n}', { n: pending.length, count: pending.length }) : t('Sorğular')]}
             value={tab}
             onChange={setTab}
           />
@@ -111,20 +117,20 @@ export default function Students() {
 
         {offline ? (
           <Notice
-            title="Server bağlantısı yoxdur"
-            body="Şagird sorğuları serverdən gəlir. Bağlantı qurulanda sorğular və şagirdlərin burada görünəcək."
+            title={t('Server bağlantısı yoxdur')}
+            body={t('Şagird sorğuları serverdən gəlir. Bağlantı qurulanda sorğular və şagirdlərin burada görünəcək.')}
           />
         ) : loading ? (
           <View style={{ paddingVertical: 40 }}>
             <ActivityIndicator color={palette.tertiary} />
           </View>
         ) : failed ? (
-          <Notice title="Yüklənmədi" body="Şagird siyahısını gətirmək alınmadı." action={{ label: 'Yenidən cəhd et', onPress: reload }} />
+          <Notice title={t('Yüklənmədi')} body={t('Şagird siyahısını gətirmək alınmadı.')} action={{ label: t('Yenidən cəhd et'), onPress: reload }} />
         ) : tab === 0 ? (
           active.length === 0 ? (
             <Notice
-              title="Hələ şagirdin yoxdur"
-              body="İstifadəçilər səni Kəşf bölməsində tapıb sorğu göndərəndə sorğu «Sorğular» tabında görünəcək. Qəbul etdiyin insanlar burada olacaq."
+              title={t('Hələ şagirdin yoxdur')}
+              body={t('İstifadəçilər səni Kəşf bölməsində tapıb sorğu göndərəndə sorğu «Sorğular» tabında görünəcək. Qəbul etdiyin insanlar burada olacaq.')}
             />
           ) : (
             <View style={{ gap: 11 }}>
@@ -133,7 +139,7 @@ export default function Students() {
                   <PressableScale
                     activeScale={0.99}
                     accessibilityRole="button"
-                    accessibilityLabel={`${s.name} şagird kartını aç`}
+                    accessibilityLabel={t('{name} şagird kartını aç', { name: s.name })}
                     onPress={() => openStudent(s)}
                     style={styles.head}>
                     <Avatar name={s.name} size={48} />
@@ -143,7 +149,7 @@ export default function Students() {
                         {s.age ? `, ${s.age}` : ''}
                       </AppText>
                       <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
-                        {[s.level, s.goals[0], `${timeAgoAz(s.since)} əvvəldən`].filter(Boolean).join(' · ')}
+                        {[s.level && t(s.level), s.goals[0] && t(s.goals[0]), t('{ago} əvvəldən', { ago: ago(s.since, t) })].filter(Boolean).join(' · ')}
                       </AppText>
                     </View>
                     <Icon name="chevR" size={18} color={palette.tertiary} />
@@ -152,7 +158,7 @@ export default function Students() {
                   <View style={styles.programRow}>
                     <Icon name="dumbbell" size={15} color={s.programTitle ? palette.voltDeep : palette.tertiary} />
                     <AppText style={{ fontSize: 12.5, color: s.programTitle ? palette.text3 : palette.tertiary, flex: 1 }} numberOfLines={1}>
-                      {s.programTitle ? s.programTitle : 'Proqram təyin edilməyib'}
+                      {s.programTitle ? s.programTitle : t('Proqram təyin edilməyib')}
                     </AppText>
                   </View>
 
@@ -160,17 +166,17 @@ export default function Students() {
                     <PressableScale
                       activeScale={0.97}
                       accessibilityRole="button"
-                      accessibilityLabel={`${s.name} üçün proqram təyin et`}
+                      accessibilityLabel={t('{name} üçün proqram təyin et', { name: s.name })}
                       onPress={() => openStudent(s)}
                       style={styles.primaryBtn}>
                       <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>
-                        {s.programTitle ? 'Proqramı yenilə' : 'Proqram təyin et'}
+                        {s.programTitle ? t('Proqramı yenilə') : t('Proqram təyin et')}
                       </AppText>
                     </PressableScale>
                     <PressableScale
                       activeScale={0.9}
                       accessibilityRole="button"
-                      accessibilityLabel={`${s.name} ilə söhbət`}
+                      accessibilityLabel={t('{name} ilə söhbət', { name: s.name })}
                       hitSlop={8}
                       onPress={() => router.push({ pathname: '/chat/[id]', params: { id: s.profileId } })}
                       style={styles.iconBtn}>
@@ -183,8 +189,8 @@ export default function Students() {
           )
         ) : pending.length === 0 ? (
           <Notice
-            title="Yeni sorğu yoxdur"
-            body="Kimsə səninlə məşq etmək istəyəndə sorğusu — qeydi və uyğun vaxtı ilə birlikdə — burada görünəcək."
+            title={t('Yeni sorğu yoxdur')}
+            body={t('Kimsə səninlə məşq etmək istəyəndə sorğusu — qeydi və uyğun vaxtı ilə birlikdə — burada görünəcək.')}
           />
         ) : (
           <View style={{ gap: 11 }}>
@@ -198,7 +204,7 @@ export default function Students() {
                       {s.age ? `, ${s.age}` : ''}
                     </AppText>
                     <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
-                      {[s.level, s.goals[0], timeAgoAz(s.since)].filter(Boolean).join(' · ')}
+                      {[s.level && t(s.level), s.goals[0] && t(s.goals[0]), ago(s.since, t)].filter(Boolean).join(' · ')}
                     </AppText>
                   </View>
                 </View>
@@ -218,19 +224,19 @@ export default function Students() {
                     activeScale={0.97}
                     disabled={busy === s.requestId}
                     accessibilityRole="button"
-                    accessibilityLabel={`${s.name} sorğusunu qəbul et`}
+                    accessibilityLabel={t('{name} sorğusunu qəbul et', { name: s.name })}
                     onPress={() => decide(s, true)}
                     style={[styles.primaryBtn, { backgroundColor: palette.volt }, busy === s.requestId && { opacity: 0.5 }]}>
-                    <AppText style={{ color: palette.inkText, fontSize: 13, fontWeight: '600' }}>Qəbul et</AppText>
+                    <AppText style={{ color: palette.inkText, fontSize: 13, fontWeight: '600' }}>{t('Qəbul et')}</AppText>
                   </PressableScale>
                   <PressableScale
                     activeScale={0.97}
                     disabled={busy === s.requestId}
                     accessibilityRole="button"
-                    accessibilityLabel={`${s.name} sorğusunu rədd et`}
+                    accessibilityLabel={t('{name} sorğusunu rədd et', { name: s.name })}
                     onPress={() => decide(s, false)}
                     style={styles.declineBtn}>
-                    <AppText style={{ color: palette.textSecondary, fontSize: 13, fontWeight: '600' }}>İmtina</AppText>
+                    <AppText style={{ color: palette.textSecondary, fontSize: 13, fontWeight: '600' }}>{t('İmtina')}</AppText>
                   </PressableScale>
                 </View>
               </View>

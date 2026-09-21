@@ -10,8 +10,10 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { getMyProfile } from '@/lib/api';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
+import { dayAndMonth } from '@/lib/format';
 import { addTrainerCert, imageTooLargeMessage, pickImage, shootImage, signedCertUrl } from '@/lib/images';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { actionSheet, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
@@ -35,9 +37,7 @@ const BENEFITS = [
 
 function fmt(iso: string | null) {
   if (!iso) return '';
-  const d = new Date(iso);
-  const months = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avqust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr'];
-  return `${d.getDate()} ${months[d.getMonth()]}`;
+  return dayAndMonth(new Date(iso));
 }
 
 /**
@@ -56,6 +56,7 @@ function fmt(iso: string | null) {
  * the INSERT carries the newest certificate and a trainer is allowed to insert.
  */
 export default function Verify() {
+  const t = useT();
   const [row, setRow] = useState<VerificationRow | null>(null);
   const [loading, setLoading] = useState(hasSupabaseConfig);
   const [failed, setFailed] = useState(false);
@@ -132,11 +133,11 @@ export default function Verify() {
   const addCert = async (source: 'camera' | 'library') => {
     if (certBusy) return;
     if (!hasSupabaseConfig) {
-      toast('Sənəd yükləmək üçün server bağlantısı lazımdır', 'error');
+      toast(t('Sənəd yükləmək üçün server bağlantısı lazımdır'), 'error');
       return;
     }
     if (!trainerId) {
-      toast('Əvvəlcə müəllim profilini yarat', 'error');
+      toast(t('Əvvəlcə müəllim profilini yarat'), 'error');
       return;
     }
     let local: string | null = null;
@@ -169,22 +170,22 @@ export default function Verify() {
           // trainer. What failed is attaching it to the open request, and the
           // reviewer's queue row still shows no document. Say exactly that.
           errorFeedback();
-          toast('Sertifikat saxlancda saxlanıldı, amma açıq sorğuna əlavə olunmadı — dəstəyə yaz', 'error');
+          toast(t('Sertifikat saxlancda saxlanıldı, amma açıq sorğuna əlavə olunmadı — dəstəyə yaz'), 'error');
           return;
         }
         setRow({ ...row, doc_cert_url: newest });
       }
       successFeedback();
       // Without an open request the file is stored but nothing is queued — say so.
-      if (!row) toast('Sertifikat yükləndi — yoxlanması üçün doğrulama sorğusu göndər', 'info');
-      else if (row.status === 'approved') toast('Sertifikat saxlanıldı — açıq sorğun yoxdur, ona görə növbəyə düşmür', 'info');
-      else toast('Sertifikat yükləndi və sorğuna əlavə olundu');
+      if (!row) toast(t('Sertifikat yükləndi — yoxlanması üçün doğrulama sorğusu göndər'), 'info');
+      else if (row.status === 'approved') toast(t('Sertifikat saxlanıldı — açıq sorğun yoxdur, ona görə növbəyə düşmür'), 'info');
+      else toast(t('Sertifikat yükləndi və sorğuna əlavə olundu'));
     } catch (e) {
       errorFeedback();
       /* A diploma photographed at full resolution is routinely over the 10 MB
          `certs` ceiling, and «yenidən cəhd et» kept a trainer re-uploading the
          same file while their verification sat undocumented. Name the limit. */
-      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      toast(imageTooLargeMessage(e) ?? t('Şəkil yüklənmədi — yenidən cəhd et'), 'error');
     } finally {
       setCertBusy(false);
     }
@@ -192,28 +193,28 @@ export default function Verify() {
 
   const pickCert = () =>
     actionSheet({
-      title: 'Sertifikat əlavə et',
-      message: 'Məşqçi sertifikatının şəklini yüklə. Sənəd qapalı saxlancda saxlanılır — yalnız SPOT komandası açır.',
+      title: t('Sertifikat əlavə et'),
+      message: t('Məşqçi sertifikatının şəklini yüklə. Sənəd qapalı saxlancda saxlanılır — yalnız SPOT komandası açır.'),
       actions: [
-        { label: 'Kamera', onPress: () => addCert('camera') },
-        { label: 'Qalereya', onPress: () => addCert('library') },
-        { label: 'Ləğv et', style: 'cancel' as const },
+        { label: t('Kamera'), onPress: () => addCert('camera') },
+        { label: t('Qalereya'), onPress: () => addCert('library') },
+        { label: t('Ləğv et'), style: 'cancel' as const },
       ],
     });
 
   const submit = async () => {
     if (sending) return;
     if (!hasSupabaseConfig) {
-      toast('Doğrulama üçün server bağlantısı lazımdır', 'error');
+      toast(t('Doğrulama üçün server bağlantısı lazımdır'), 'error');
       return;
     }
     setSending(true);
     try {
       const me = await getMyProfile();
       if (!me?.user_id) throw new Error('no profile');
-      const { data: t } = await supabase.from('trainers').select('id').eq('id', me.id).maybeSingle();
-      if (!t) {
-        toast('Əvvəlcə müəllim profilini yarat', 'error');
+      const { data: tr } = await supabase.from('trainers').select('id').eq('id', me.id).maybeSingle();
+      if (!tr) {
+        toast(t('Əvvəlcə müəllim profilini yarat'), 'error');
         return;
       }
       const { error } = await supabase
@@ -229,10 +230,10 @@ export default function Verify() {
           doc_cert_url: certs.length ? certs[certs.length - 1] : null,
         });
       if (error) throw error;
-      toast(certs.length ? 'Doğrulama sorğusu göndərildi — sertifikatın da əlavə olundu' : 'Doğrulama sorğusu göndərildi — sertifikat əlavə etməmisən', certs.length ? 'success' : 'info');
+      toast(certs.length ? t('Doğrulama sorğusu göndərildi — sertifikatın da əlavə olundu') : t('Doğrulama sorğusu göndərildi — sertifikat əlavə etməmisən'), certs.length ? 'success' : 'info');
       setTick((n) => n + 1);
     } catch {
-      toast('Sorğunu göndərmək alınmadı — internetini yoxla', 'error');
+      toast(t('Sorğunu göndərmək alınmadı — internetini yoxla'), 'error');
     } finally {
       setSending(false);
     }
@@ -245,18 +246,18 @@ export default function Verify() {
   const canApply = status === null || status === 'rejected' || approvedNoBadge;
   const statusTone =
     approvedNoBadge
-      ? { bg: 'rgba(255,149,0,0.16)', fg: '#8A5A00', icon: 'shield' as IconName, label: 'Nişan aktiv deyil' }
+      ? { bg: 'rgba(255,149,0,0.16)', fg: '#8A5A00', icon: 'shield' as IconName, label: t('Nişan aktiv deyil') }
       : status === 'approved'
-      ? { bg: 'rgba(198,255,61,0.3)', fg: palette.voltDeep, icon: 'check' as IconName, label: 'Təsdiqləndi' }
+      ? { bg: 'rgba(198,255,61,0.3)', fg: palette.voltDeep, icon: 'check' as IconName, label: t('Təsdiqləndi') }
       : status === 'rejected'
-        ? { bg: 'rgba(255,59,48,0.1)', fg: palette.red, icon: 'x' as IconName, label: 'Rədd edildi' }
+        ? { bg: 'rgba(255,59,48,0.1)', fg: palette.red, icon: 'x' as IconName, label: t('Rədd edildi') }
         : status === 'pending'
-          ? { bg: 'rgba(255,149,0,0.16)', fg: '#8A5A00', icon: 'clock' as IconName, label: 'Yoxlanılır' }
-          : { bg: palette.element, fg: palette.textSecondary, icon: 'shield' as IconName, label: 'Başlanmayıb' };
+          ? { bg: 'rgba(255,149,0,0.16)', fg: '#8A5A00', icon: 'clock' as IconName, label: t('Yoxlanılır') }
+          : { bg: palette.element, fg: palette.textSecondary, icon: 'shield' as IconName, label: t('Başlanmayıb') };
 
   return (
     <Screen edges={['top']}>
-      <NavBar title="Müəllim doğrulanması" />
+      <NavBar title={t('Müəllim doğrulanması')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
         {/* --- real status --- */}
         {loading ? (
@@ -271,22 +272,24 @@ export default function Verify() {
               </View>
               <View style={{ flex: 1 }}>
                 <AppText style={{ fontSize: 15.5, fontWeight: '600' }}>
-                  {!hasSupabaseConfig ? 'Server bağlantısı yoxdur' : failed ? 'Status yüklənmədi' : statusTone.label}
+                  {!hasSupabaseConfig ? t('Server bağlantısı yoxdur') : failed ? t('Status yüklənmədi') : statusTone.label}
                 </AppText>
                 <AppText style={{ fontSize: 12.5, color: palette.tertiary, marginTop: 4, lineHeight: 18 }}>
                   {!hasSupabaseConfig
-                    ? 'Doğrulama serverdə aparılır — bağlantı olmadan status oxunmur.'
+                    ? t('Doğrulama serverdə aparılır — bağlantı olmadan status oxunmur.')
                     : failed
-                      ? 'Doğrulama statusunu gətirmək alınmadı.'
+                      ? t('Doğrulama statusunu gətirmək alınmadı.')
                       : approvedNoBadge
-                        ? 'Sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Yenidən müraciət et — sorğun yenidən yoxlamaya düşəcək.'
+                        ? t('Sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Yenidən müraciət et — sorğun yenidən yoxlamaya düşəcək.')
                         : status === 'approved'
-                        ? 'Profilin mavi nişanla görünür.'
+                        ? t('Profilin mavi nişanla görünür.')
                         : status === 'rejected'
-                          ? (row?.reject_reason ?? 'Səbəb göstərilməyib.')
+                          ? (row?.reject_reason ?? t('Səbəb göstərilməyib.'))
                           : status === 'pending'
-                            ? `Sorğu ${fmt(row?.created_at ?? null)} tarixində göndərildi${row?.sla_due_at ? ` · yoxlama ${fmt(row.sla_due_at)}-a qədər` : ''}.`
-                            : 'Hələ doğrulama sorğusu göndərməmisən.'}
+                            ? row?.sla_due_at
+                              ? t('Sorğu {date} tarixində göndərildi · yoxlama {due}-a qədər.', { date: fmt(row?.created_at ?? null), due: fmt(row.sla_due_at) })
+                              : t('Sorğu {date} tarixində göndərildi.', { date: fmt(row?.created_at ?? null) })
+                            : t('Hələ doğrulama sorğusu göndərməmisən.')}
                 </AppText>
               </View>
             </View>
@@ -295,21 +298,21 @@ export default function Verify() {
               <PressableScale
                 activeScale={0.97}
                 accessibilityRole="button"
-                accessibilityLabel="Yenidən cəhd et"
+                accessibilityLabel={t('Yenidən cəhd et')}
                 onPress={() => setTick((n) => n + 1)}
                 style={styles.primaryBtn}>
-                <AppText style={{ color: palette.white, fontSize: 13.5, fontWeight: '600' }}>Yenidən cəhd et</AppText>
+                <AppText style={{ color: palette.white, fontSize: 13.5, fontWeight: '600' }}>{t('Yenidən cəhd et')}</AppText>
               </PressableScale>
             ) : hasSupabaseConfig && canApply ? (
               <PressableScale
                 activeScale={0.97}
                 disabled={sending}
                 accessibilityRole="button"
-                accessibilityLabel="Doğrulama sorğusu göndər"
+                accessibilityLabel={t('Doğrulama sorğusu göndər')}
                 onPress={submit}
                 style={[styles.primaryBtn, sending && { opacity: 0.5 }]}>
                 <AppText style={{ color: palette.white, fontSize: 13.5, fontWeight: '600' }}>
-                  {sending ? 'Göndərilir…' : status === null ? 'Doğrulamaya başla' : 'Yenidən müraciət et'}
+                  {sending ? t('Göndərilir…') : status === null ? t('Doğrulamaya başla') : t('Yenidən müraciət et')}
                 </AppText>
               </PressableScale>
             ) : null}
@@ -319,24 +322,24 @@ export default function Verify() {
         {/* --- what the badge actually gives --- */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-            MAVİ NİŞAN NƏ VERİR
+            {t('MAVİ NİŞAN NƏ VERİR')}
           </AppText>
           <View style={{ gap: 9 }}>
             {BENEFITS.map((b) => (
               <View key={b} style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                 <Icon name="check" size={15} color={palette.voltDeep} />
-                <AppText style={{ fontSize: 13.5, flex: 1 }}>{b}</AppText>
+                <AppText style={{ fontSize: 13.5, flex: 1 }}>{t(b)}</AppText>
               </View>
             ))}
           </View>
           <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.caption, marginTop: 12 }}>
-            Doğrulanma pulsuzdur. SPOT-da ödəniş sistemi yoxdur — nişan satış deyil, etibar üçündür.
+            {t('Doğrulanma pulsuzdur. SPOT-da ödəniş sistemi yoxdur — nişan satış deyil, etibar üçündür.')}
           </AppText>
         </View>
 
         {/* --- real document state: certificates upload for real, the rest says the truth --- */}
         <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 10 }}>
-          SƏNƏDLƏR
+          {t('SƏNƏDLƏR')}
         </AppText>
         <View style={{ gap: 11 }}>
           {/* Certificates — real uploads into trainers.cert_urls */}
@@ -346,9 +349,9 @@ export default function Verify() {
                 <Icon name={certs.length ? 'check' : 'shield'} size={19} color={certs.length ? palette.voltDeep : palette.tertiary} />
               </View>
               <View style={{ flex: 1 }}>
-                <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>Məşqçi sertifikatı</AppText>
+                <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{t('Məşqçi sertifikatı')}</AppText>
                 <AppText style={{ fontSize: 12, marginTop: 4, color: certs.length ? palette.voltDeep : palette.tertiary }}>
-                  {certs.length ? `${certs.length} şəkil yükləndi` : 'Hələ yüklənməyib'}
+                  {certs.length ? t('{n} şəkil yükləndi', { n: certs.length, count: certs.length }) : t('Hələ yüklənməyib')}
                 </AppText>
               </View>
             </View>
@@ -368,7 +371,7 @@ export default function Verify() {
               <View style={styles.warnRow}>
                 <Icon name="shield" size={14} color="#8A5A00" />
                 <AppText style={{ fontSize: 12, lineHeight: 17, color: '#8A5A00', flex: 1 }}>
-                  Şəkillər saxlancdadır, amma açıq doğrulama sorğuna bağlanmayıb — yoxlayan onları görmür. Dəstəyə yaz ki, sorğuna əlavə etsinlər.
+                  {t('Şəkillər saxlancdadır, amma açıq doğrulama sorğuna bağlanmayıb — yoxlayan onları görmür. Dəstəyə yaz ki, sorğuna əlavə etsinlər.')}
                 </AppText>
               </View>
             ) : null}
@@ -377,37 +380,37 @@ export default function Verify() {
               activeScale={0.97}
               disabled={certBusy}
               accessibilityRole="button"
-              accessibilityLabel="Sertifikat şəkli əlavə et"
+              accessibilityLabel={t('Sertifikat şəkli əlavə et')}
               onPress={pickCert}
               style={[styles.addBtn, certBusy && { opacity: 0.5 }]}>
               <Icon name={certBusy ? 'clock' : 'plus'} size={15} color={palette.inkText} />
               <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>
-                {certBusy ? 'Yüklənir…' : certs.length ? 'Daha bir şəkil' : 'Sertifikat şəkli əlavə et'}
+                {certBusy ? t('Yüklənir…') : certs.length ? t('Daha bir şəkil') : t('Sertifikat şəkli əlavə et')}
               </AppText>
             </PressableScale>
 
             <AppText style={{ fontSize: 11.5, lineHeight: 16, color: palette.caption, marginTop: 10 }}>
-              Sənədlər qapalı saxlancdadır — yalnız SPOT komandası yoxlayır, profilində göstərilmir. Ona görə burada şəkil əvəzinə sənəd nişanı görə bilərsən.
+              {t('Sənədlər qapalı saxlancdadır — yalnız SPOT komandası yoxlayır, profilində göstərilmir. Ona görə burada şəkil əvəzinə sənəd nişanı görə bilərsən.')}
             </AppText>
           </View>
 
-          <DocRow title="Şəxsiyyət vəsiqəsi" done={!!row?.doc_id_url} pendingText="Tətbiqdən hələ yüklənmir — lazım olsa SPOT komandası soruşacaq" />
-          <DocRow title="Təqdimat videosu · istəyə görə" done={!!row?.intro_video_url} pendingText="Tətbiqdən hələ yüklənmir" />
+          <DocRow title={t('Şəxsiyyət vəsiqəsi')} done={!!row?.doc_id_url} pendingText={t('Tətbiqdən hələ yüklənmir — lazım olsa SPOT komandası soruşacaq')} />
+          <DocRow title={t('Təqdimat videosu · istəyə görə')} done={!!row?.intro_video_url} pendingText={t('Tətbiqdən hələ yüklənmir')} />
           {/* There is no gym-side approval surface anywhere in the app, and nothing
            *  ever writes gym_confirm = true (RLS also limits trainer_verifications
            *  writes to ops). Telling the trainer to wait on a gym admin would be
            *  waiting on a button that does not exist — so we say what really happens. */}
           <DocRow
-            title="Zal təsdiqi"
+            title={t('Zal təsdiqi')}
             done={!!row?.gym_confirm}
-            pendingText="Bu versiyada zal təsdiqi tətbiqdən alınmır — lazım olsa SPOT komandası zalla özü əlaqə saxlayır"
+            pendingText={t('Bu versiyada zal təsdiqi tətbiqdən alınmır — lazım olsa SPOT komandası zalla özü əlaqə saxlayır')}
           />
         </View>
 
         <View style={styles.disclaimer}>
           <Icon name="shield" size={16} color={palette.textSecondary} />
           <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, flex: 1 }}>
-            Yüklədiyin sertifikatlar qapalı saxlancda saxlanılır. Yoxlayana yalnız doğrulama sorğusuna bağlanmış sənəd çatır — ona görə sertifikatı sorğunu göndərməzdən əvvəl yüklə. Doğrulanma olmadan da profil yarada və pulsuz proqram paylaşa bilərsən; sadəcə nişansız görünürsən.
+            {t('Yüklədiyin sertifikatlar qapalı saxlancda saxlanılır. Yoxlayana yalnız doğrulama sorğusuna bağlanmış sənəd çatır — ona görə sertifikatı sorğunu göndərməzdən əvvəl yüklə. Doğrulanma olmadan da profil yarada və pulsuz proqram paylaşa bilərsən; sadəcə nişansız görünürsən.')}
           </AppText>
         </View>
       </ScrollView>
@@ -421,12 +424,13 @@ export default function Verify() {
  * photo, fall back to an honest "document uploaded" tile.
  */
 function CertThumb({ uri, index }: { uri: string; index: number }) {
+  const t = useT();
   const [broken, setBroken] = useState(!/^https?:\/\//i.test(uri));
   if (broken) {
     return (
       <View style={[styles.thumb, styles.thumbFallback]}>
         <Icon name="shield" size={18} color={palette.tertiary} />
-        <AppText style={{ fontSize: 10.5, color: palette.tertiary, marginTop: 4 }}>{index + 1}. sənəd</AppText>
+        <AppText style={{ fontSize: 10.5, color: palette.tertiary, marginTop: 4 }}>{t('{n}. sənəd', { n: index + 1 })}</AppText>
       </View>
     );
   }
@@ -434,6 +438,7 @@ function CertThumb({ uri, index }: { uri: string; index: number }) {
 }
 
 function DocRow({ title, done, pendingText }: { title: string; done: boolean; pendingText?: string }) {
+  const t = useT();
   return (
     <View style={styles.docCardRow}>
       <View style={[styles.docIcon, { backgroundColor: done ? 'rgba(198,255,61,0.3)' : palette.element }]}>
@@ -442,7 +447,7 @@ function DocRow({ title, done, pendingText }: { title: string; done: boolean; pe
       <View style={{ flex: 1 }}>
         <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{title}</AppText>
         <AppText style={{ fontSize: 12, marginTop: 4, color: done ? palette.voltDeep : palette.tertiary }}>
-          {done ? 'Təsdiqləndi' : (pendingText ?? 'Hələ yüklənməyib')}
+          {done ? t('Təsdiqləndi') : (pendingText ?? t('Hələ yüklənməyib'))}
         </AppText>
       </View>
     </View>

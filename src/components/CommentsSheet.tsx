@@ -30,6 +30,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { useAuthGate } from '@/lib/authGate';
 import {
   MENTION_RE,
+  UNKNOWN_AUTHOR,
   addComment,
   deleteComment,
   fetchComments,
@@ -45,6 +46,7 @@ import { timeAgoAz } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
+import { useT } from '@/lib/useT';
 
 /** Drag further than this (or flick faster) and the sheet closes. */
 const CLOSE_DISTANCE = 120;
@@ -59,6 +61,12 @@ const MENTION_DEBOUNCE = 200;
 type Status = 'loading' | 'ready' | 'error';
 type Thread = { root: Comment; replies: Comment[] };
 type ReplyTarget = { parentId: string; name: string; handle: string | null };
+
+/** `comments.ts` stores a vanished author as its Azerbaijani label; it is translated
+ *  here, where it is shown. A real person's name is never run through the dictionary. */
+function shownName(name: string, t: ReturnType<typeof useT>): string {
+  return name === UNKNOWN_AUTHOR ? t('Silinmiş istifadəçi') : name;
+}
 
 /**
  * In-page comments bottom sheet (Instagram-style): slides up from the bottom over the
@@ -82,6 +90,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const t = useT();
   /* Android edge-to-edge (the default from Expo SDK 54) means `adjustResize` does
      NOT shrink the window when the keyboard opens — the app is told about it as an
      inset instead. So the sheet has to lift itself, and `height` stays the full
@@ -323,9 +332,9 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
         // Put the heart back where it was — the count on screen must be the count on the server.
         setRows((rs) => rs.map((r) => (r.id === c.id ? { ...r, likedByMe: !next, likes: Math.max(0, r.likes + (next ? -1 : 1)) } : r)));
         errorFeedback();
-        toast(next ? 'Bəyənilmədi — yenidən cəhd et' : 'Bəyənmə geri götürülmədi — yenidən cəhd et', 'error');
+        toast(next ? t('Bəyənilmədi — yenidən cəhd et') : t('Bəyənmə geri götürülmədi — yenidən cəhd et'), 'error');
       });
-    }, 'Şərhi bəyənmək üçün');
+    }, t('Şərhi bəyənmək üçün'));
 
   /** `parentId` is always the TOP-LEVEL comment: a reply to a reply joins the same thread. */
   const startReply = (c: Comment, parentId: string) =>
@@ -341,7 +350,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
         setForceSel({ start: next.length, end: next.length });
       }
       inputRef.current?.focus();
-    }, 'Cavab yazmaq üçün');
+    }, t('Cavab yazmaq üçün'));
 
   const remove = async (c: Comment) => {
     const before = rows;
@@ -351,7 +360,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
     } catch {
       setRows(before);
       errorFeedback();
-      toast('Şərh silinmədi — yenidən cəhd et', 'error');
+      toast(t('Şərh silinmədi — yenidən cəhd et'), 'error');
       return;
     }
     /* A delete the policy refuses removes 0 rows WITHOUT raising an error, and only
@@ -360,23 +369,23 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
     const after = await load(true);
     if (after?.some((r) => r.id === c.id)) {
       errorFeedback();
-      toast('Şərh silinmədi', 'error');
+      toast(t('Şərh silinmədi'), 'error');
       return;
     }
     successFeedback();
-    toast('Şərh silindi');
+    toast(t('Şərh silindi'));
   };
 
   const more = (c: Comment) => {
     if (c.mine) {
-      confirm('Şərhi sil', 'Şərh həmişəlik silinir — geri qaytarmaq olmur.', [
-        { label: 'Ləğv et', style: 'cancel' },
-        { label: 'Sil', style: 'destructive', onPress: () => remove(c) },
+      confirm(t('Şərhi sil'), t('Şərh həmişəlik silinir — geri qaytarmaq olmur.'), [
+        { label: t('Ləğv et'), style: 'cancel' },
+        { label: t('Sil'), style: 'destructive', onPress: () => remove(c) },
       ]);
       return;
     }
     // Report/block acts on the person, so blocking actually filters them everywhere else.
-    showModerationSheet(c.authorName, { type: 'user', id: c.authorId });
+    showModerationSheet(shownName(c.authorName, t), { type: 'user', id: c.authorId });
   };
 
   const send = () => {
@@ -402,11 +411,11 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
       } catch {
         // The text stays in the box — a failed send must never look like a sent one.
         errorFeedback();
-        toast('Şərh göndərilmədi — yenidən cəhd et', 'error');
+        toast(t('Şərh göndərilmədi — yenidən cəhd et'), 'error');
       } finally {
         setSending(false);
       }
-    }, 'Şərh yazmaq üçün');
+    }, t('Şərh yazmaq üçün'));
   };
 
   // ------------------------------------------------------------- animation
@@ -484,7 +493,9 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
           <View onLayout={(e) => (headerH.value = e.nativeEvent.layout.height)}>
             <View style={styles.grabber} />
             <View style={styles.header}>
-              <AppText variant="headline">{showList ? `Şərhlər · ${rows.length}` : 'Şərhlər'}</AppText>
+              <AppText variant="headline">
+                {showList ? t('Şərhlər · {n}', { n: rows.length, count: rows.length }) : t('Şərhlər')}
+              </AppText>
               <PressableScale haptic={false} activeScale={0.9} onPress={onClose}>
                 <Icon name="x" size={22} color={palette.inkText} />
               </PressableScale>
@@ -507,7 +518,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                   <View style={styles.state}>
                     <ActivityIndicator color={palette.tertiary} />
                     <AppText variant="body" color={palette.textSecondary} style={{ marginTop: 12 }}>
-                      Şərhlər yüklənir…
+                      {t('Şərhlər yüklənir…')}
                     </AppText>
                   </View>
                 ) : status === 'error' ? (
@@ -516,34 +527,34 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                   <View style={styles.state}>
                     <Icon name="x" size={24} color="#D14A15" />
                     <AppText variant="headline" style={{ marginTop: 12 }}>
-                      Şərhlər yüklənmədi
+                      {t('Şərhlər yüklənmədi')}
                     </AppText>
                     <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, lineHeight: 20, maxWidth: 260 }}>
-                      Bu, «şərh yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və yenidən cəhd et.
+                      {t('Bu, «şərh yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və yenidən cəhd et.')}
                     </AppText>
-                    <Button title="Yenidən cəhd et" variant="secondary" style={{ marginTop: 14 }} onPress={() => load()} />
+                    <Button title={t('Yenidən cəhd et')} variant="secondary" style={{ marginTop: 14 }} onPress={() => load()} />
                   </View>
                 ) : threads.length === 0 ? (
                   <View style={styles.state}>
                     <Icon name="msg" size={26} color={palette.tertiary} />
                     <AppText variant="headline" style={{ marginTop: 12 }}>
-                      Hələ şərh yoxdur
+                      {t('Hələ şərh yoxdur')}
                     </AppText>
                     <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, lineHeight: 20, maxWidth: 250 }}>
-                      İlk şərhi sən yaz. Sual ver, texnikanı müzakirə et.
+                      {t('İlk şərhi sən yaz. Sual ver, texnikanı müzakirə et.')}
                     </AppText>
                   </View>
                 ) : (
-                  threads.map((t) => {
-                    const expanded = !!openThreads[t.root.id];
-                    const shown = expanded ? t.replies : t.replies.slice(0, REPLIES_PREVIEW);
-                    const hidden = t.replies.length - shown.length;
+                  threads.map((thread) => {
+                    const expanded = !!openThreads[thread.root.id];
+                    const shown = expanded ? thread.replies : thread.replies.slice(0, REPLIES_PREVIEW);
+                    const hidden = thread.replies.length - shown.length;
                     return (
-                      <View key={t.root.id}>
+                      <View key={thread.root.id}>
                         <CommentItem
-                          c={t.root}
-                          parentId={t.root.id}
-                          mine={t.root.mine}
+                          c={thread.root}
+                          parentId={thread.root.id}
+                          mine={thread.root.mine}
                           onLike={like}
                           onReply={startReply}
                           onMore={more}
@@ -553,7 +564,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                           <CommentItem
                             key={r.id}
                             c={r}
-                            parentId={t.root.id}
+                            parentId={thread.root.id}
                             reply
                             mine={r.mine}
                             onLike={like}
@@ -566,11 +577,11 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                           <PressableScale
                             haptic={false}
                             activeScale={0.98}
-                            onPress={() => setOpenThreads((s) => ({ ...s, [t.root.id]: !expanded }))}
+                            onPress={() => setOpenThreads((s) => ({ ...s, [thread.root.id]: !expanded }))}
                             style={styles.moreReplies}>
                             <View style={styles.threadLine} />
                             <AppText variant="caption" color={palette.textSecondary} style={{ fontWeight: '600' }}>
-                              {expanded ? 'Cavabları gizlət' : `Daha ${hidden} cavaba bax`}
+                              {expanded ? t('Cavabları gizlət') : t('Daha {n} cavaba bax', { n: hidden, count: hidden })}
                             </AppText>
                           </PressableScale>
                         ) : null}
@@ -605,7 +616,9 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                 <View style={styles.replyChip}>
                   <Icon name="msg" size={13} color={palette.textSecondary} />
                   <AppText variant="caption" color={palette.textSecondary} numberOfLines={1} style={{ flex: 1 }}>
-                    {replyTo.handle ? `@${replyTo.handle}-ə cavab` : `${replyTo.name} adlı istifadəçiyə cavab`}
+                    {replyTo.handle
+                      ? t('@{handle}-ə cavab', { handle: replyTo.handle })
+                      : t('{name} adlı istifadəçiyə cavab', { name: shownName(replyTo.name, t) })}
                   </AppText>
                   {/* Changed your mind? Drop the chip and the same text posts as a normal comment. */}
                   <PressableScale haptic={false} activeScale={0.85} onPress={() => setReplyTo(null)} hitSlop={8}>
@@ -626,7 +639,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                       setSel(e.nativeEvent.selection);
                       if (forceSel) setForceSel(null); // hand the caret back to the user
                     }}
-                    placeholder={replyTo ? 'Cavab yaz…' : 'Şərh yaz…'}
+                    placeholder={replyTo ? t('Cavab yaz…') : t('Şərh yaz…')}
                     placeholderTextColor={palette.caption}
                     style={styles.input}
                     onSubmitEditing={send}
@@ -681,7 +694,8 @@ function CommentItem({
   onMore: (c: Comment) => void;
   onMention: (handle: string) => void;
 }) {
-  const name = c.authorName;
+  const t = useT();
+  const name = shownName(c.authorName, t);
   const uname = c.authorUsername?.trim();
   return (
     <Pressable onLongPress={() => onMore(c)} delayLongPress={350} style={[styles.row, reply && styles.rowReply]}>
@@ -699,7 +713,7 @@ function CommentItem({
           ) : null}
           {mine ? (
             <View style={styles.mineTag}>
-              <AppText style={{ fontSize: 9.5, fontWeight: '700', color: palette.voltDeep }}>SƏN</AppText>
+              <AppText style={{ fontSize: 9.5, fontWeight: '700', color: palette.voltDeep }}>{t('SƏN')}</AppText>
             </View>
           ) : null}
           <AppText variant="caption" color={palette.tertiary}>
@@ -712,7 +726,7 @@ function CommentItem({
         <View style={styles.actions}>
           <PressableScale haptic={false} activeScale={0.95} onPress={() => onReply(c, parentId)} hitSlop={6}>
             <AppText variant="caption" color={palette.textSecondary} style={{ fontWeight: '600' }}>
-              Cavab yaz
+              {t('Cavab yaz')}
             </AppText>
           </PressableScale>
           <PressableScale haptic={false} activeScale={0.9} onPress={() => onMore(c)} hitSlop={6} style={{ paddingHorizontal: 2 }}>

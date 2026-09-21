@@ -8,12 +8,20 @@ import { Avatar } from '@/components/ui/Avatar';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
+import { timeAgo } from '@/lib/format';
 import { assignStudentProgram } from '@/lib/roles';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
-import { timeAgoAz, useDb } from '@/store/db';
+import { useT } from '@/lib/useT';
+import { useDb } from '@/store/db';
 import { toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 import { useMyStudents } from '../students';
+
+/** «5 dəq» / «Dünən», in the language the person chose. `timeAgo` takes the
+ *  clock as an argument so the formatter itself stays pure; reading it stays
+ *  here, exactly where the old `timeAgoAz` read it. */
+const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) => string) =>
+  timeAgo(iso, Date.now(), tr);
 
 /**
  * One student, seen by their trainer.
@@ -30,13 +38,14 @@ import { useMyStudents } from '../students';
  * must say so before the trainer types something they would not say out loud.
  */
 export default function StudentDetail() {
+  const t = useT();
   const { id, name: nameParam } = useLocalSearchParams<{ id: string; name?: string }>();
   const router = useRouter();
   const { active, loading, offline, failed, reload } = useMyStudents();
   const myPrograms = useDb((s) => s.myPrograms);
 
   const student = useMemo(() => active.find((s) => s.profileId === id) ?? null, [active, id]);
-  const name = student?.name ?? nameParam ?? 'Şagird';
+  const name = student?.name ?? nameParam ?? t('Şagird');
 
   // The title is read out of the student first, so the memo really depends on
   // the one field the lookup uses. Written as `student?.programTitle` inline it
@@ -76,11 +85,11 @@ export default function StudentDetail() {
       await assignStudentProgram({ studentId: student.profileId, programId: chosen?.id ?? null, title, note: noteValue.trim() });
       // The student really does receive this: their Məşq səhifəsi reads
       // student_programs on every focus. Say what happened, not less.
-      toast(`${name} üçün proqram təyin edildi — «Məşq» səhifəsində ona görünür`);
+      toast(t('{name} üçün proqram təyin edildi — «Məşq» səhifəsində ona görünür', { name }));
       reload();
       router.back();
     } catch {
-      toast('Yadda saxlamaq alınmadı — internetini yoxla', 'error');
+      toast(t('Yadda saxlamaq alınmadı — internetini yoxla'), 'error');
     } finally {
       setSaving(false);
     }
@@ -104,22 +113,22 @@ export default function StudentDetail() {
         <View style={{ paddingHorizontal: spacing.screen }}>
           <View style={styles.card}>
             <AppText style={{ fontSize: 15, fontWeight: '600', marginBottom: 6 }}>
-              {offline ? 'Server bağlantısı yoxdur' : failed ? 'Yüklənmədi' : 'Şagird tapılmadı'}
+              {offline ? t('Server bağlantısı yoxdur') : failed ? t('Yüklənmədi') : t('Şagird tapılmadı')}
             </AppText>
             <AppText style={{ fontSize: 13.5, lineHeight: 19, color: palette.textSecondary }}>
               {offline
-                ? 'Şagird məlumatları serverdən gəlir. Bağlantı qurulanda bu səhifə açılacaq.'
+                ? t('Şagird məlumatları serverdən gəlir. Bağlantı qurulanda bu səhifə açılacaq.')
                 : failed
-                  ? 'Məlumatı gətirmək alınmadı. Yenidən cəhd et.'
-                  : 'Bu şagird artıq siyahında deyil — sorğu ləğv edilmiş və ya bitmiş ola bilər.'}
+                  ? t('Məlumatı gətirmək alınmadı. Yenidən cəhd et.')
+                  : t('Bu şagird artıq siyahında deyil — sorğu ləğv edilmiş və ya bitmiş ola bilər.')}
             </AppText>
             <PressableScale
               activeScale={0.97}
               accessibilityRole="button"
-              accessibilityLabel="Şagirdlərə qayıt"
+              accessibilityLabel={t('Şagirdlərə qayıt')}
               onPress={() => router.back()}
               style={[styles.primaryBtn, { marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 }]}>
-              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>Şagirdlərə qayıt</AppText>
+              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Şagirdlərə qayıt')}</AppText>
             </PressableScale>
           </View>
         </View>
@@ -135,7 +144,7 @@ export default function StudentDetail() {
           <PressableScale
             activeScale={0.9}
             accessibilityRole="button"
-            accessibilityLabel={`${name} ilə söhbət`}
+            accessibilityLabel={t('{name} ilə söhbət', { name })}
             hitSlop={8}
             onPress={() => router.push({ pathname: '/chat/[id]', params: { id: student.profileId } })}>
             <Icon name="msg" size={21} color={palette.inkText} />
@@ -157,7 +166,7 @@ export default function StudentDetail() {
                 {student.age ? `, ${student.age}` : ''}
               </AppText>
               <AppText style={{ fontSize: 12.5, color: palette.tertiary, marginTop: 4 }}>
-                {[student.level, `${timeAgoAz(student.since)} əvvəldən şagirdin`].filter(Boolean).join(' · ')}
+                {[student.level ? t(student.level) : null, t('{ago} əvvəldən şagirdin', { ago: ago(student.since, t) })].filter(Boolean).join(' · ')}
               </AppText>
             </View>
           </View>
@@ -166,7 +175,7 @@ export default function StudentDetail() {
             <View style={{ flexDirection: 'row', gap: 7, flexWrap: 'wrap', marginTop: 13 }}>
               {student.goals.map((g) => (
                 <View key={g} style={styles.tag}>
-                  <AppText style={{ fontSize: 11.5, fontWeight: '600', color: palette.text3 }}>{g}</AppText>
+                  <AppText style={{ fontSize: 11.5, fontWeight: '600', color: palette.text3 }}>{t(g)}</AppText>
                 </View>
               ))}
             </View>
@@ -175,7 +184,7 @@ export default function StudentDetail() {
           {student.note ? (
             <View style={styles.quote}>
               <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 6 }}>
-                SORĞUSUNDA YAZDIĞI
+                {t('SORĞUSUNDA YAZDIĞI')}
               </AppText>
               <AppText style={{ fontSize: 13.5, lineHeight: 19, color: palette.text3 }}>«{student.note}»</AppText>
             </View>
@@ -184,7 +193,7 @@ export default function StudentDetail() {
           {student.preferredTime ? (
             <View style={styles.timeChip}>
               <Icon name="clock" size={13} color={palette.textSecondary} />
-              <AppText style={{ fontSize: 12, color: palette.textSecondary }}>Uyğun vaxt: {student.preferredTime}</AppText>
+              <AppText style={{ fontSize: 12, color: palette.textSecondary }}>{t('Uyğun vaxt: {time}', { time: student.preferredTime })}</AppText>
             </View>
           ) : null}
         </View>
@@ -193,13 +202,13 @@ export default function StudentDetail() {
         <View style={styles.privacy}>
           <Icon name="lock" size={15} color={palette.textSecondary} />
           <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, flex: 1 }}>
-            Şagirdin məşq jurnalı, çəkisi və şəxsi qeydləri sənə göstərilmir — bu məlumat yalnız ona aiddir. Nə etdiyini bilmək üçün ondan söhbətdə soruş.
+            {t('Şagirdin məşq jurnalı, çəkisi və şəxsi qeydləri sənə göstərilmir — bu məlumat yalnız ona aiddir. Nə etdiyini bilmək üçün ondan söhbətdə soruş.')}
           </AppText>
         </View>
 
         {/* --- what the trainer actually controls --- */}
         <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 10, marginTop: 4 }}>
-          TƏYİN EDİLMİŞ PROQRAM
+          {t('TƏYİN EDİLMİŞ PROQRAM')}
         </AppText>
 
         {student.programTitle ? (
@@ -215,27 +224,27 @@ export default function StudentDetail() {
         ) : (
           <View style={[styles.card, { marginBottom: 12 }]}>
             <AppText style={{ fontSize: 13.5, lineHeight: 19, color: palette.textSecondary }}>
-              Hələ proqram təyin etməmisən. Aşağıdan öz proqramlarından birini seç və təyin et.
+              {t('Hələ proqram təyin etməmisən. Aşağıdan öz proqramlarından birini seç və təyin et.')}
             </AppText>
           </View>
         )}
 
         <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 10 }}>
-          PROQRAMLARIN
+          {t('PROQRAMLARIN')}
         </AppText>
 
         {myPrograms.length === 0 ? (
           <View style={[styles.card, { marginBottom: 12 }]}>
             <AppText style={{ fontSize: 13.5, lineHeight: 19, color: palette.textSecondary }}>
-              Hələ proqram yaratmamısan. Əvvəlcə bir proqram yarat, sonra onu şagirdə təyin edə bilərsən.
+              {t('Hələ proqram yaratmamısan. Əvvəlcə bir proqram yarat, sonra onu şagirdə təyin edə bilərsən.')}
             </AppText>
             <PressableScale
               activeScale={0.97}
               accessibilityRole="button"
-              accessibilityLabel="Proqram yarat"
+              accessibilityLabel={t('Proqram yarat')}
               onPress={() => router.push('/(tabs)/workout/create')}
               style={[styles.primaryBtn, { marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 }]}>
-              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>Proqram yarat</AppText>
+              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Proqram yarat')}</AppText>
             </PressableScale>
           </View>
         ) : (
@@ -248,7 +257,7 @@ export default function StudentDetail() {
                   activeScale={0.99}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: on }}
-                  accessibilityLabel={`${p.title} proqramını seç`}
+                  accessibilityLabel={t('{title} proqramını seç', { title: p.title })}
                   onPress={() => setSelectedId(p.id)}
                   style={[styles.pickRow, on && { borderColor: palette.ink }]}>
                   <View style={[styles.radio, on && { borderColor: palette.ink, backgroundColor: palette.ink }]}>
@@ -257,7 +266,7 @@ export default function StudentDetail() {
                   <View style={{ flex: 1 }}>
                     <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{p.title}</AppText>
                     <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 3 }}>
-                      {p.weeks} həftə · {p.daysPerWeek} gün/həftə · {p.level}
+                      {t('{n} həftə', { n: p.weeks, count: p.weeks })} · {t('{n} gün/həftə', { n: p.daysPerWeek, count: p.daysPerWeek })} · {t(p.level)}
                     </AppText>
                   </View>
                 </PressableScale>
@@ -267,13 +276,13 @@ export default function StudentDetail() {
         )}
 
         <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 10 }}>
-          QEYD · ŞAGİRD BUNU OXUYUR
+          {t('QEYD · ŞAGİRD BUNU OXUYUR')}
         </AppText>
         <TextInput
           value={noteValue}
           onChangeText={setNote}
           multiline
-          placeholder="Məs: həftədə 3 gün, çöməltmədə çəkini saxla, video qeydini göndər."
+          placeholder={t('Məs: həftədə 3 gün, çöməltmədə çəkini saxla, video qeydini göndər.')}
           placeholderTextColor={palette.caption}
           style={styles.input}
         />
@@ -282,27 +291,27 @@ export default function StudentDetail() {
           activeScale={0.98}
           disabled={!title || saving}
           accessibilityRole="button"
-          accessibilityLabel="Proqramı şagirdə təyin et"
+          accessibilityLabel={t('Proqramı şagirdə təyin et')}
           onPress={save}
           style={[styles.saveBtn, (!title || saving) && { opacity: 0.4 }]}>
           <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '600' }}>
-            {saving ? 'Yadda saxlanılır…' : 'Proqramı təyin et'}
+            {saving ? t('Yadda saxlanılır…') : t('Proqramı təyin et')}
           </AppText>
         </PressableScale>
         {/* The student reads this. (tabs)/workout/index.tsx prints the title and
             the note verbatim on their Məşq screen — do not call it private. */}
         <AppText style={{ fontSize: 12, color: palette.caption, marginTop: 10, lineHeight: 17 }}>
-          Proqramın adı və qeydin şagirdin «Məşq» səhifəsində eynilə ona görünür — birbaşa ona yazdığını nəzərə al.
-          SPOT-da ödəniş yoxdur — hesablaşmanı şagirdlə özün aparırsan.
+          {t('Proqramın adı və qeydin şagirdin «Məşq» səhifəsində eynilə ona görünür — birbaşa ona yazdığını nəzərə al.')}{' '}
+          {t('SPOT-da ödəniş yoxdur — hesablaşmanı şagirdlə özün aparırsan.')}
         </AppText>
         <PressableScale
           activeScale={0.97}
           accessibilityRole="button"
-          accessibilityLabel={`${name} ilə söhbəti aç`}
+          accessibilityLabel={t('{name} ilə söhbəti aç', { name })}
           onPress={() => router.push({ pathname: '/chat/[id]', params: { id: student.profileId } })}
           style={styles.chatBtn}>
           <Icon name="msg" size={15} color={palette.inkText} />
-          <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.inkText }}>Söhbəti aç</AppText>
+          <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.inkText }}>{t('Söhbəti aç')}</AppText>
         </PressableScale>
       </ScrollView>
     </Screen>

@@ -15,8 +15,10 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { createGym } from '@/lib/api';
 import { errorFeedback, successFeedback, tapFeedback } from '@/lib/feedback';
+import { t } from '@/lib/i18n';
 import { addGymPhoto, imageTooLargeMessage, isNotSavedError, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, confirm, toast, type UiAction } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -42,12 +44,13 @@ const coverFailOf = (e: unknown): CoverFail => {
   if (tooLarge) return { text: tooLarge, retry: false };
   /* The upload landed and the row refused it — the same photo will be refused
      again, so this one does not offer a retry. */
-  if (isNotSavedError(e)) return { text: 'Şəkil zalın məlumatına yazılmadı — bu zalı dəyişməyə icazən yoxdur.', retry: false };
-  return { text: 'Şəkil yüklənmədi — yenidən cəhd et.', retry: true };
+  if (isNotSavedError(e)) return { text: t('Şəkil zalın məlumatına yazılmadı — bu zalı dəyişməyə icazən yoxdur.'), retry: false };
+  return { text: t('Şəkil yüklənmədi — yenidən cəhd et.'), retry: true };
 };
 
 
 export default function CreateGym() {
+  const t = useT();
   const router = useRouter();
   const setOwnsGym = useAppStore((s) => s.setOwnsGym);
   const setMode = useAppStore((s) => s.setMode);
@@ -133,14 +136,14 @@ export default function CreateGym() {
     tapFeedback();
     const actions: UiAction[] = [
       {
-        label: 'Kamera',
+        label: t('Kamera'),
         onPress: async () => {
           const uri = await shootImage();
           if (uri) takeCover(uri);
         },
       },
       {
-        label: 'Qalereyadan seç',
+        label: t('Qalereyadan seç'),
         onPress: async () => {
           const uri = await pickImage();
           if (uri) takeCover(uri);
@@ -150,9 +153,9 @@ export default function CreateGym() {
     /* Only while the gym is still a draft. Once the row exists this would clear
        the preview and leave the uploaded cover on the server — «silindi» about a
        photo that is still on every customer's gym card. */
-    if (coverUri && !createdId) actions.push({ label: 'Şəkli sil', style: 'destructive', onPress: () => setCoverUri(null) });
-    actions.push({ label: 'Ləğv et', style: 'cancel' });
-    actionSheet({ title: 'Zalın şəkli', message: 'Zalın içindən çəkilmiş bir şəkil müştəriyə ən çox məlumat verir.', actions });
+    if (coverUri && !createdId) actions.push({ label: t('Şəkli sil'), style: 'destructive', onPress: () => setCoverUri(null) });
+    actions.push({ label: t('Ləğv et'), style: 'cancel' });
+    actionSheet({ title: t('Zalın şəkli'), message: t('Zalın içindən çəkilmiş bir şəkil müştəriyə ən çox məlumat verir.'), actions });
   };
 
   const useMyLocation = async () => {
@@ -162,7 +165,7 @@ export default function CreateGym() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        toast('Məkan icazəsi verilmədi — pini xəritədə özün qoy', 'error');
+        toast(t('Məkan icazəsi verilmədi — pini xəritədə özün qoy'), 'error');
       } else {
         const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         setPicked({ lat: pos.coords.latitude, lng: pos.coords.longitude });
@@ -170,7 +173,7 @@ export default function CreateGym() {
         successFeedback();
       }
     } catch {
-      toast('Məkan alınmadı — xəritədə özün seç', 'error');
+      toast(t('Məkan alınmadı — xəritədə özün seç'), 'error');
     }
     setLocating(false);
   };
@@ -187,7 +190,7 @@ export default function CreateGym() {
       errorFeedback();
       // Retrying a file over the 10 MB gyms ceiling can only fail again — that
       // case says the real size and limit instead of asking for another attempt.
-      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      toast(imageTooLargeMessage(e) ?? t('Şəkil yüklənmədi — yenidən cəhd et'), 'error');
     }
     setPhotoBusy(false);
   };
@@ -195,21 +198,21 @@ export default function CreateGym() {
   const addPhotoSheet = () => {
     tapFeedback();
     actionSheet({
-      title: 'Zal şəkli əlavə et',
+      title: t('Zal şəkli əlavə et'),
       actions: [
-        { label: 'Kamera', onPress: addPhoto('cam') },
-        { label: 'Qalereyadan seç', onPress: addPhoto('lib') },
-        { label: 'Ləğv et', style: 'cancel' },
+        { label: t('Kamera'), onPress: addPhoto('cam') },
+        { label: t('Qalereyadan seç'), onPress: addPhoto('lib') },
+        { label: t('Ləğv et'), style: 'cancel' },
       ],
     });
   };
 
   const dropPhoto = (url: string) => {
     if (!createdId) return;
-    confirm('Şəkli sil?', undefined, [
-      { label: 'Ləğv et', style: 'cancel' },
+    confirm(t('Şəkli sil?'), undefined, [
+      { label: t('Ləğv et'), style: 'cancel' },
       {
-        label: 'Sil',
+        label: t('Sil'),
         style: 'destructive',
         onPress: async () => {
           setPhotoBusy(true);
@@ -217,7 +220,7 @@ export default function CreateGym() {
             setPhotos(await removeGymPhoto(createdId, url));
           } catch {
             errorFeedback();
-            toast('Şəkil silinmədi — yenidən cəhd et', 'error');
+            toast(t('Şəkil silinmədi — yenidən cəhd et'), 'error');
           }
           setPhotoBusy(false);
         },
@@ -235,13 +238,13 @@ export default function CreateGym() {
   const save = async () => {
     if (!name.trim() || locationBlocks || saving) return;
     if (!hasSupabaseConfig) {
-      toast('Zal qeydiyyatı üçün internet bağlantısı lazımdır', 'error');
+      toast(t('Zal qeydiyyatı üçün internet bağlantısı lazımdır'), 'error');
       return;
     }
     if (!hours) {
       // Refused rather than stored half-written: an unreadable window silently
       // drops the gym out of the «24 saat» filter and breaks check-in.
-      toast('İş saatlarını tam yaz — məsələn 06:00 və 24:00', 'error');
+      toast(t('İş saatlarını tam yaz — məsələn 06:00 və 24:00'), 'error');
       return;
     }
     setSaving(true);
@@ -262,22 +265,22 @@ export default function CreateGym() {
       if (reason === 'gym-exists') {
         // The row is already there — a second one would brick the panel. Send the
         // owner into the gym he already has instead of asking him to try again.
-        toast('Bu hesabda artıq zal var', 'error');
+        toast(t('Bu hesabda artıq zal var'), 'error');
         setOwnsGym(true);
         setMode('gym_admin');
         router.replace('/gym');
         return;
       }
       if (reason === 'no profile') {
-        toast('Hesab profilin oxunmadı — çıxış edib yenidən daxil ol', 'error');
+        toast(t('Hesab profilin oxunmadı — çıxış edib yenidən daxil ol'), 'error');
         return;
       }
-      toast('Zal qeydiyyata alınmadı — bağlantını yoxlayıb yenidən cəhd et', 'error');
+      toast(t('Zal qeydiyyata alınmadı — bağlantını yoxlayıb yenidən cəhd et'), 'error');
       return;
     }
     if (!gymId) {
       errorFeedback();
-      toast('Zal qeydiyyata alınmadı — yenidən cəhd et', 'error');
+      toast(t('Zal qeydiyyata alınmadı — yenidən cəhd et'), 'error');
       setSaving(false);
       return;
     }
@@ -319,14 +322,14 @@ export default function CreateGym() {
   if (createdId) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <NavBar title="Zal yaradıldı" />
+        <NavBar title={t('Zal yaradıldı')} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.doneCard}>
             <Icon name="check" size={22} color={palette.voltDeep} />
             <View style={{ flex: 1 }}>
-              <AppText style={{ fontSize: 15, fontWeight: '600' }}>{name.trim()} qeydə alındı</AppText>
+              <AppText style={{ fontSize: 15, fontWeight: '600' }}>{t('{name} qeydə alındı', { name: name.trim() })}</AppText>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.tertiary, marginTop: 3 }}>
-                Zal panelin açıqdır — amma zal HƏLƏ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, spam və saxta zalların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.
+                {t('Zal panelin açıqdır — amma zal HƏLƏ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, spam və saxta zalların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.')}
               </AppText>
             </View>
           </View>
@@ -334,7 +337,7 @@ export default function CreateGym() {
           <PressableScale
             activeScale={0.98}
             accessibilityRole="button"
-            accessibilityLabel="Sahiblik təsdiqini göndər"
+            accessibilityLabel={t('Sahiblik təsdiqini göndər')}
             onPress={() => {
               tapFeedback();
               router.push('/gym/claim');
@@ -342,9 +345,9 @@ export default function CreateGym() {
             style={styles.claimRow}>
             <Icon name="shield" size={18} color={palette.inkText} />
             <View style={{ flex: 1 }}>
-              <AppText style={{ fontSize: 14, fontWeight: '600' }}>Sahiblik təsdiqini göndər</AppText>
+              <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Sahiblik təsdiqini göndər')}</AppText>
               <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.tertiary, marginTop: 2 }}>
-                VÖEN və ya qeydiyyat nömrəsini yaz — admin komandası yoxlayacaq.
+                {t('VÖEN və ya qeydiyyat nömrəsini yaz — admin komandası yoxlayacaq.')}
               </AppText>
             </View>
             <Icon name="chevR" size={16} color={palette.tertiary} />
@@ -352,13 +355,12 @@ export default function CreateGym() {
 
           {!locSaved ? (
             <AppText style={styles.warn}>
-              Xəritədəki yer saxlanılmadı — zal panelindən «Profil → Zalın yeri» ilə pini yenidən qoy, əks halda zal
-              müştəri xəritəsində görünməyəcək.
+              {t('Xəritədəki yer saxlanılmadı — zal panelindən «Profil → Zalın yeri» ilə pini yenidən qoy, əks halda zal müştəri xəritəsində görünməyəcək.')}
             </AppText>
           ) : null}
 
           <AppText variant="footnote" color={palette.caption} style={styles.sectionLabel}>
-            Zalın şəkli
+            {t('Zalın şəkli')}
           </AppText>
           <View style={styles.coverWrap}>
             {coverUri ? (
@@ -376,26 +378,26 @@ export default function CreateGym() {
             <View style={{ marginTop: 8 }}>
               <AppText style={styles.warn}>{coverFail.text}</AppText>
               {coverFail.retry ? (
-                <Button title={coverBusy ? 'Yüklənir…' : 'Şəkli yenidən yüklə'} variant="secondary" disabled={coverBusy} onPress={retryCover} />
+                <Button title={coverBusy ? t('Yüklənir…') : t('Şəkli yenidən yüklə')} variant="secondary" disabled={coverBusy} onPress={retryCover} />
               ) : (
                 /* The file is over the bucket ceiling: the same photo fails the
                    same way every time, so offering «yenidən yüklə» would be a
                    button that can only ever fail. Another photo is the only way
                    out, and this one uploads the moment it is picked. */
-                <Button title={coverBusy ? 'Yüklənir…' : 'Başqa şəkil seç'} variant="secondary" disabled={coverBusy} onPress={chooseCover} />
+                <Button title={coverBusy ? t('Yüklənir…') : t('Başqa şəkil seç')} variant="secondary" disabled={coverBusy} onPress={chooseCover} />
               )}
             </View>
           ) : null}
 
           <AppText variant="footnote" color={palette.caption} style={[styles.sectionLabel, { marginTop: 22 }]}>
-            Daha çox şəkil
+            {t('Daha çox şəkil')}
           </AppText>
-          <AppText style={styles.hint}>Zalın zalları, avadanlıq, duş — nə qədər çox real şəkil, o qədər çox üzv.</AppText>
+          <AppText style={styles.hint}>{t('Zalın zalları, avadanlıq, duş — nə qədər çox real şəkil, o qədər çox üzv.')}</AppText>
           <Gallery photos={photos} busy={photoBusy} onAdd={addPhotoSheet} onRemove={dropPhoto} />
 
           <View style={{ height: 20 }} />
           <Button
-            title="Zal panelinə keç"
+            title={t('Zal panelinə keç')}
             variant="volt"
             full
             onPress={() => {
@@ -404,7 +406,7 @@ export default function CreateGym() {
             }}
           />
           <AppText style={[styles.hint, { marginTop: 12, textAlign: 'center' }]}>
-            Şəkilləri və yeri sonra da zal profilindən dəyişə bilərsən.
+            {t('Şəkilləri və yeri sonra da zal profilindən dəyişə bilərsən.')}
           </AppText>
         </ScrollView>
       </Screen>
@@ -414,7 +416,7 @@ export default function CreateGym() {
   // ---------------------------------------------------------- the form ----
   return (
     <Screen edges={['top', 'bottom']}>
-      <NavBar title="Zal əlavə et" />
+      <NavBar title={t('Zal əlavə et')} />
       <ScrollView
         ref={scroller}
         showsVerticalScrollIndicator={false}
@@ -426,7 +428,7 @@ export default function CreateGym() {
         scrollEventThrottle={16}>
         {/* Cover photo */}
         <AppText variant="footnote" color={palette.caption} style={styles.sectionLabel}>
-          Zalın şəkli
+          {t('Zalın şəkli')}
         </AppText>
         <PressableScale activeScale={0.98} onPress={chooseCover} style={styles.coverWrap}>
           {coverUri ? (
@@ -437,31 +439,31 @@ export default function CreateGym() {
           <View style={styles.coverBadge}>
             <Icon name={coverUri ? 'edit' : 'plus'} size={13} color={palette.white} />
             <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>
-              {coverUri ? 'Şəkli dəyiş' : 'Şəkil əlavə et'}
+              {coverUri ? t('Şəkli dəyiş') : t('Şəkil əlavə et')}
             </AppText>
           </View>
         </PressableScale>
-        <AppText style={styles.hint}>Şəkil zal yaradıldıqdan sonra yüklənir. Qalereyanı da o zaman əlavə edəcəksən.</AppText>
+        <AppText style={styles.hint}>{t('Şəkil zal yaradıldıqdan sonra yüklənir. Qalereyanı da o zaman əlavə edəcəksən.')}</AppText>
 
         <View style={{ height: 20 }} />
-        <Field label="Zalın adı *" value={name} onChangeText={setName} placeholder="Məs: Titan Fitness" />
-        <Field label="Rayon / ünvan" value={district} onChangeText={setDistrict} placeholder="Məs: Nərimanov" />
+        <Field label={t('Zalın adı *')} value={name} onChangeText={setName} placeholder={t('Məs: Titan Fitness')} />
+        <Field label={t('Rayon / ünvan')} value={district} onChangeText={setDistrict} placeholder={t('Məs: Nərimanov')} />
         <HoursField always={hrs.always} open={hrs.open} close={hrs.close} onChange={setHrs} />
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <View style={{ flex: 1 }}>
-            <Field label="Aylıq (₼)" value={priceMonth} onChangeText={setPriceMonth} placeholder="45" keyboardType="numeric" />
+            <Field label={t('Aylıq (₼)')} value={priceMonth} onChangeText={setPriceMonth} placeholder="45" keyboardType="numeric" />
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="Günlük (₼)" value={dayPass} onChangeText={setDayPass} placeholder="5" keyboardType="numeric" />
+            <Field label={t('Günlük (₼)')} value={dayPass} onChangeText={setDayPass} placeholder="5" keyboardType="numeric" />
           </View>
         </View>
 
         {/* Location — required */}
         <AppText variant="footnote" color={palette.caption} style={styles.sectionLabel}>
-          Zalın yeri *
+          {t('Zalın yeri *')}
         </AppText>
         <AppText style={[styles.hint, { marginBottom: 10 }]}>
-          Xəritəyə toxunub pini zalın üstünə qoy — pini basıb sürüşdürərək dəqiqləşdirə bilərsən.
+          {t('Xəritəyə toxunub pini zalın üstünə qoy — pini basıb sürüşdürərək dəqiqləşdirə bilərsən.')}
         </AppText>
         <SpotMap
           key={mapKey}
@@ -476,7 +478,7 @@ export default function CreateGym() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 }}>
           <View style={{ flex: 1 }}>
             <Button
-              title={locating ? 'Axtarılır…' : 'Mövcud yerimi istifadə et'}
+              title={locating ? t('Axtarılır…') : t('Mövcud yerimi istifadə et')}
               variant="secondary"
               full
               disabled={locating}
@@ -488,27 +490,27 @@ export default function CreateGym() {
           <View style={styles.pinRow}>
             <Icon name="pin" size={14} color={palette.voltDeep} />
             <AppText style={{ fontSize: 12.5, color: palette.textSecondary }}>
-              Pin qoyuldu · {picked.lat.toFixed(5)}, {picked.lng.toFixed(5)}
+              {t('Pin qoyuldu · {lat}, {lng}', { lat: picked.lat.toFixed(5), lng: picked.lng.toFixed(5) })}
             </AppText>
           </View>
         ) : (
           <AppText style={[styles.hint, { marginTop: 10 }]}>
             {mapStatus === 'failed'
-              ? 'Xəritə açılmadı, ona görə yeri indi seçmək olmur. Zalı indi qeydiyyata ala bilərsən — pini sonra zal panelindən qoyarsan. Pin qoyulana qədər zal müştəri xəritəsində görünməyəcək.'
-              : 'Pin qoyulmadan zalı qeydiyyata almaq olmur — koordinatı olmayan zal müştəri xəritəsində görünmür.'}
+              ? t('Xəritə açılmadı, ona görə yeri indi seçmək olmur. Zalı indi qeydiyyata ala bilərsən — pini sonra zal panelindən qoyarsan. Pin qoyulana qədər zal müştəri xəritəsində görünməyəcək.')
+              : t('Pin qoyulmadan zalı qeydiyyata almaq olmur — koordinatı olmayan zal müştəri xəritəsində görünmür.')}
           </AppText>
         )}
 
         <View style={{ height: 22 }} />
         <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 10, fontWeight: '600' }}>
-          İmkanlar
+          {t('İmkanlar')}
         </AppText>
         <View style={styles.chips}>
           {AMENITIES.map((a) => {
             const on = amenities.includes(a);
             return (
               <PressableScale key={a} activeScale={0.95} onPress={() => toggle(a)} style={[styles.chip, on && styles.chipOn]}>
-                <AppText style={{ fontSize: 13, fontWeight: '600', color: on ? palette.inkText : palette.textSecondary }}>{a}</AppText>
+                <AppText style={{ fontSize: 13, fontWeight: '600', color: on ? palette.inkText : palette.textSecondary }}>{t(a)}</AppText>
               </PressableScale>
             );
           })}
@@ -518,11 +520,10 @@ export default function CreateGym() {
           the keyboard overlap carries the whole form with it. */}
       <View style={{ paddingHorizontal: spacing.screen, paddingBottom: 8, marginBottom: lift }}>
         <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 10, lineHeight: 17 }}>
-          Qiymətlər yalnız məlumat üçündür — SPOT ödəniş qəbul etmir və komissiya tutmur. Qeydiyyatdan sonra zal
-          paneli açılır; sahiblik təsdiqi ayrıca addımdır və onu sonra özün göndərirsən.
+          {t('Qiymətlər yalnız məlumat üçündür — SPOT ödəniş qəbul etmir və komissiya tutmur. Qeydiyyatdan sonra zal paneli açılır; sahiblik təsdiqi ayrıca addımdır və onu sonra özün göndərirsən.')}
         </AppText>
         <Button
-          title={saving ? 'Göndərilir…' : 'Zalı qeydiyyata al'}
+          title={saving ? t('Göndərilir…') : t('Zalı qeydiyyata al')}
           variant="volt"
           full
           disabled={!name.trim() || locationBlocks || saving}

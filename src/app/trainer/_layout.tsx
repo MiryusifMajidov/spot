@@ -2,6 +2,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { ColorValue } from 'react-native';
 
 import { Icon, IconName } from '@/components/Icon';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
 
@@ -16,6 +17,7 @@ function tab(name: IconName) {
 }
 
 export default function TrainerLayout() {
+  const t = useT();
   const hydrated = useAppStore((s) => s.hydrated);
   const role = useAppStore((s) => s.profile.role);
 
@@ -35,10 +37,10 @@ export default function TrainerLayout() {
         tabBarStyle: { backgroundColor: palette.white, borderTopColor: palette.separator },
         tabBarLabelStyle: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
       }}>
-      <Tabs.Screen name="index" options={{ title: 'Panel', tabBarIcon: tab('grid') }} />
-      <Tabs.Screen name="students" options={{ title: 'Şagirdlər', tabBarIcon: tab('users') }} />
-      <Tabs.Screen name="programs" options={{ title: 'Proqramlar', tabBarIcon: tab('dumbbell') }} />
-      <Tabs.Screen name="chat" options={{ title: 'Söhbət', tabBarIcon: tab('msg') }} />
+      <Tabs.Screen name="index" options={{ title: t('Panel'), tabBarIcon: tab('grid') }} />
+      <Tabs.Screen name="students" options={{ title: t('Şagirdlər'), tabBarIcon: tab('users') }} />
+      <Tabs.Screen name="programs" options={{ title: t('Proqramlar'), tabBarIcon: tab('dumbbell') }} />
+      <Tabs.Screen name="chat" options={{ title: t('Söhbət'), tabBarIcon: tab('msg') }} />
       <Tabs.Screen name="verify" options={{ href: null }} />
       <Tabs.Screen name="student/[id]" options={{ href: null }} />
     </Tabs>

@@ -16,6 +16,7 @@ import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { invalidateFocusCache } from '@/lib/focusFetch';
 import { imageTooLargeMessage, pickImage, setTrainerPhoto, shootImage } from '@/lib/images';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -108,6 +109,7 @@ async function publishTrainer(input: { specialty: string; bio: string; priceFrom
 }
 
 export default function BecomeTrainer() {
+  const t = useT();
   const router = useRouter();
   const gate = useAuthGate();
   const profile = useAppStore((s) => s.profile);
@@ -206,31 +208,31 @@ export default function BecomeTrainer() {
     if (!local) return; // cancelled or permission denied
     if (!hasSupabaseConfig) {
       setPhotoLocal(local);
-      toast('Şəkil cihazda seçildi — server bağlantısı olmadan yüklənmir', 'info');
+      toast(t('Şəkil cihazda seçildi — server bağlantısı olmadan yüklənmir'), 'info');
       return;
     }
     setPhotoBusy(true);
     try {
       const me = await getMyProfile();
       if (!me?.id) throw new Error('no profile');
-      const { data: t } = await supabase.from('trainers').select('id').eq('id', me.id).maybeSingle();
-      if (!t) {
+      const { data: row } = await supabase.from('trainers').select('id').eq('id', me.id).maybeSingle();
+      if (!row) {
         // No row to attach to yet — hold it until «Müəllim profilini yarat».
         setPhotoLocal(local);
-        toast('Şəkil seçildi — müəllim profilini yaradanda yüklənəcək', 'info');
+        toast(t('Şəkil seçildi — müəllim profilini yaradanda yüklənəcək'), 'info');
         return;
       }
       const url = await setTrainerPhoto(me.id, local);
       setPhotoUrl(url);
       setPhotoLocal(null);
       successFeedback();
-      toast('Profil şəklin yeniləndi');
+      toast(t('Profil şəklin yeniləndi'));
     } catch (e) {
       errorFeedback();
       /* «yenidən cəhd et» is a lie about a file over the 5 MB avatars ceiling —
          the same photo fails the same way forever. That case names itself and
          carries the real numbers; everything else keeps the retry wording. */
-      toast(imageTooLargeMessage(e) ?? 'Şəkil yüklənmədi — yenidən cəhd et', 'error');
+      toast(imageTooLargeMessage(e) ?? t('Şəkil yüklənmədi — yenidən cəhd et'), 'error');
     } finally {
       setPhotoBusy(false);
     }
@@ -238,12 +240,12 @@ export default function BecomeTrainer() {
 
   const changePhoto = () =>
     actionSheet({
-      title: 'Profil şəkli',
-      message: 'Şəklin Kəşf → Müəllimlər siyahısında və profilində görünür.',
+      title: t('Profil şəkli'),
+      message: t('Şəklin Kəşf → Müəllimlər siyahısında və profilində görünür.'),
       actions: [
-        { label: 'Kamera', onPress: () => choosePhoto('camera') },
-        { label: 'Qalereya', onPress: () => choosePhoto('library') },
-        { label: 'Ləğv et', style: 'cancel' as const },
+        { label: t('Kamera'), onPress: () => choosePhoto('camera') },
+        { label: t('Qalereya'), onPress: () => choosePhoto('library') },
+        { label: t('Ləğv et'), style: 'cancel' as const },
       ],
     });
 
@@ -276,8 +278,8 @@ export default function BecomeTrainer() {
             } catch (e) {
               const why = imageTooLargeMessage(e);
               photoFailMsg = why
-                ? `Profil saxlanıldı, amma şəkil yüklənmədi. ${why}`
-                : 'Profil saxlanıldı, amma şəkil yüklənmədi — yenidən cəhd et';
+                ? t('Profil saxlanıldı, amma şəkil yüklənmədi. {why}', { why })
+                : t('Profil saxlanıldı, amma şəkil yüklənmədi — yenidən cəhd et');
             }
           }
         } catch {
@@ -287,13 +289,13 @@ export default function BecomeTrainer() {
       setSaving(false);
 
       if (!hasSupabaseConfig) {
-        toast('Cihazda saxlanıldı — server bağlantısı olmadan başqaları səni görmür', 'info');
+        toast(t('Cihazda saxlanıldı — server bağlantısı olmadan başqaları səni görmür'), 'info');
       } else if (serverOk && photoFailMsg) {
         toast(photoFailMsg, 'error');
       } else if (serverOk) {
-        toast(alreadyTrainer ? 'Müəllim profilin yeniləndi' : 'Müəllim profilin yaradıldı');
+        toast(alreadyTrainer ? t('Müəllim profilin yeniləndi') : t('Müəllim profilin yaradıldı'));
       } else {
-        toast('Serverə yazmaq alınmadı — cihazda saxlanıldı, sonra «Yenidən sinxronla» ilə cəhd et', 'error');
+        toast(t('Serverə yazmaq alınmadı — cihazda saxlanıldı, sonra «Yenidən sinxronla» ilə cəhd et'), 'error');
       }
 
       if (alreadyTrainer) {
@@ -304,7 +306,7 @@ export default function BecomeTrainer() {
         setMode('trainer');
         router.replace('/trainer');
       }
-    }, 'Müəllim hesabı üçün');
+    }, t('Müəllim hesabı üçün'));
 
   const resync = async () => {
     if (saving) return;
@@ -322,16 +324,16 @@ export default function BecomeTrainer() {
           // «Yenidən sinxronla» retries this same held photo, so telling the user
           // to retry a file the bucket refuses would loop them here forever.
           toast(
-            why ? `Profil sinxronlaşdı, amma şəkil yüklənmədi. ${why}` : 'Profil sinxronlaşdı, amma şəkil yüklənmədi — yenidən cəhd et',
+            why ? t('Profil sinxronlaşdı, amma şəkil yüklənmədi. {why}', { why }) : t('Profil sinxronlaşdı, amma şəkil yüklənmədi — yenidən cəhd et'),
             'error'
           );
           return;
         }
       }
-      toast('Serverlə sinxronlaşdırıldı');
+      toast(t('Serverlə sinxronlaşdırıldı'));
     } catch {
       setSync('unsynced');
-      toast('Sinxronlaşma alınmadı — internetini yoxla', 'error');
+      toast(t('Sinxronlaşma alınmadı — internetini yoxla'), 'error');
     } finally {
       setSaving(false);
     }
@@ -348,18 +350,18 @@ export default function BecomeTrainer() {
    */
   const closeAccount = () =>
     confirm(
-      'Müəllim hesabını bağlamaq?',
-      'Müəllim paneli bağlanacaq, elanın Kəşf bölməsindən dərhal çıxarılacaq və cavabsız şagird sorğuların bitmiş kimi işarələnəcək.',
+      t('Müəllim hesabını bağlamaq?'),
+      t('Müəllim paneli bağlanacaq, elanın Kəşf bölməsindən dərhal çıxarılacaq və cavabsız şagird sorğuların bitmiş kimi işarələnəcək.'),
       [
-        { label: 'Ləğv et', style: 'cancel' },
+        { label: t('Ləğv et'), style: 'cancel' },
         {
-          label: 'Bağla',
+          label: t('Bağla'),
           style: 'destructive',
           onPress: async () => {
             setProfile({ role: 'user' });
             setMode('user');
             if (!hasSupabaseConfig) {
-              toast('Müəllim hesabı bu cihazda bağlandı — serverdə elanın toxunulmadı', 'info');
+              toast(t('Müəllim hesabı bu cihazda bağlandı — serverdə elanın toxunulmadı'), 'info');
               router.replace('/(tabs)/profile');
               return;
             }
@@ -405,11 +407,11 @@ export default function BecomeTrainer() {
               // Every branch below states exactly what did and did not happen.
             }
             if (unlisted && requestsClosed) {
-              toast('Müəllim hesabı bağlandı — elanın Kəşfdən çıxarıldı, açıq sorğular bitirildi');
+              toast(t('Müəllim hesabı bağlandı — elanın Kəşfdən çıxarıldı, açıq sorğular bitirildi'));
             } else if (unlisted) {
-              toast('Elanın Kəşfdən çıxarıldı, amma şagird sorğuları bağlanmadı — dəstəyə yaz', 'error');
+              toast(t('Elanın Kəşfdən çıxarıldı, amma şagird sorğuları bağlanmadı — dəstəyə yaz'), 'error');
             } else {
-              toast('Hesab bu cihazda bağlandı, amma elanın hələ Kəşfdə görünür — yenidən cəhd et', 'error');
+              toast(t('Hesab bu cihazda bağlandı, amma elanın hələ Kəşfdə görünür — yenidən cəhd et'), 'error');
             }
             router.replace('/(tabs)/profile');
           },
@@ -419,7 +421,7 @@ export default function BecomeTrainer() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <NavBar title={alreadyTrainer ? 'Müəllim profili' : 'Müəllim ol'} />
+      <NavBar title={alreadyTrainer ? t('Müəllim profili') : t('Müəllim ol')} />
       <ScrollView
         ref={scroller}
         showsVerticalScrollIndicator={false}
@@ -430,7 +432,7 @@ export default function BecomeTrainer() {
         }}
         scrollEventThrottle={16}>
         <AppText variant="body" color={palette.textSecondary} style={{ lineHeight: 21, marginBottom: 20 }}>
-          Öz təlim xidmətini yarat. İstifadəçilər səni Kəşf bölməsində tapıb məşq sorğusu göndərə biləcək. Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir.
+          {t('Öz təlim xidmətini yarat. İstifadəçilər səni Kəşf bölməsində tapıb məşq sorğusu göndərə biləcək. Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir.')}
         </AppText>
 
         {alreadyTrainer ? (
@@ -443,50 +445,50 @@ export default function BecomeTrainer() {
               />
               <AppText style={{ fontSize: 14, fontWeight: '600', flex: 1 }}>
                 {!hasSupabaseConfig
-                  ? 'Yalnız bu cihazda'
+                  ? t('Yalnız bu cihazda')
                   : sync === 'checking'
-                    ? 'Yoxlanılır…'
+                    ? t('Yoxlanılır…')
                     : sync === 'unsynced'
-                      ? 'Serverlə sinxronlaşdırılmayıb'
+                      ? t('Serverlə sinxronlaşdırılmayıb')
                       : status === 'approved'
                         ? badge
-                          ? 'Doğrulanmış müəllim'
-                          : 'Nişan profilində görünmür'
+                          ? t('Doğrulanmış müəllim')
+                          : t('Nişan profilində görünmür')
                         : status === 'rejected'
-                          ? 'Doğrulama rədd edilib'
+                          ? t('Doğrulama rədd edilib')
                           : status === 'pending'
-                            ? 'Doğrulama yoxlanılır'
-                            : 'Doğrulama başlanmayıb'}
+                            ? t('Doğrulama yoxlanılır')
+                            : t('Doğrulama başlanmayıb')}
               </AppText>
             </View>
             <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 8 }}>
               {!hasSupabaseConfig
-                ? 'Server bağlantısı yoxdur — müəllim elanın hələ başqalarına görünmür.'
+                ? t('Server bağlantısı yoxdur — müəllim elanın hələ başqalarına görünmür.')
                 : sync === 'unsynced'
-                  ? 'Elanın serverdə yoxdur, ona görə istifadəçilər səni tapa bilmir. Yenidən sinxronla.'
+                  ? t('Elanın serverdə yoxdur, ona görə istifadəçilər səni tapa bilmir. Yenidən sinxronla.')
                   : status === 'approved' && !badge
-                    ? 'Doğrulama sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.'
-                    : 'Doğrulama statusunu və sənədləri Müəllim doğrulanması səhifəsində görə bilərsən.'}
+                    ? t('Doğrulama sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.')
+                    : t('Doğrulama statusunu və sənədləri Müəllim doğrulanması səhifəsində görə bilərsən.')}
             </AppText>
             <View style={{ flexDirection: 'row', gap: 9, marginTop: 12 }}>
               {sync === 'unsynced' && hasSupabaseConfig ? (
                 <PressableScale
                   activeScale={0.97}
                   accessibilityRole="button"
-                  accessibilityLabel="Yenidən sinxronla"
+                  accessibilityLabel={t('Yenidən sinxronla')}
                   disabled={saving}
                   onPress={resync}
                   style={[styles.smallBtn, { backgroundColor: palette.ink }, saving && { opacity: 0.5 }]}>
-                  <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>Yenidən sinxronla</AppText>
+                  <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Yenidən sinxronla')}</AppText>
                 </PressableScale>
               ) : null}
               <PressableScale
                 activeScale={0.97}
                 accessibilityRole="button"
-                accessibilityLabel="Müəllim doğrulanmasını aç"
+                accessibilityLabel={t('Müəllim doğrulanmasını aç')}
                 onPress={() => router.push('/trainer/verify')}
                 style={[styles.smallBtn, { backgroundColor: palette.element }]}>
-                <AppText style={{ color: palette.inkText, fontSize: 13, fontWeight: '600' }}>Doğrulanma</AppText>
+                <AppText style={{ color: palette.inkText, fontSize: 13, fontWeight: '600' }}>{t('Doğrulanma')}</AppText>
               </PressableScale>
             </View>
           </View>
@@ -498,7 +500,7 @@ export default function BecomeTrainer() {
             activeScale={0.96}
             disabled={photoBusy}
             accessibilityRole="button"
-            accessibilityLabel="Profil şəklini seç"
+            accessibilityLabel={t('Profil şəklini seç')}
             onPress={changePhoto}
             style={[styles.photoWrap, photoBusy && { opacity: 0.6 }]}>
             <Avatar name={profile.name || 'Müəllim'} size={76} uri={photoLocal ?? photoUrl} />
@@ -507,39 +509,39 @@ export default function BecomeTrainer() {
             </View>
           </PressableScale>
           <View style={{ flex: 1 }}>
-            <AppText variant="headline">Profil şəkli</AppText>
+            <AppText variant="headline">{t('Profil şəkli')}</AppText>
             <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 4 }}>
               {photoLocal
-                ? 'Şəkil seçildi — «Yadda saxla» ilə yüklənəcək.'
-                : 'Kəşf → Müəllimlər siyahısında və profilində bu şəkil görünür. Üzü aydın görünən şəkil daha çox sorğu gətirir.'}
+                ? t('Şəkil seçildi — «Yadda saxla» ilə yüklənəcək.')
+                : t('Kəşf → Müəllimlər siyahısında və profilində bu şəkil görünür. Üzü aydın görünən şəkil daha çox sorğu gətirir.')}
             </AppText>
             <PressableScale
               activeScale={0.97}
               disabled={photoBusy}
               accessibilityRole="button"
-              accessibilityLabel="Şəkli dəyiş"
+              accessibilityLabel={t('Şəkli dəyiş')}
               onPress={changePhoto}
               style={[styles.photoBtn, photoBusy && { opacity: 0.5 }]}>
               <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>
-                {photoBusy ? 'Yüklənir…' : photoLocal || photoUrl ? 'Şəkli dəyiş' : 'Şəkil əlavə et'}
+                {photoBusy ? t('Yüklənir…') : photoLocal || photoUrl ? t('Şəkli dəyiş') : t('Şəkil əlavə et')}
               </AppText>
             </PressableScale>
           </View>
         </View>
 
-        <Field label="İxtisas *" value={specialty} onChangeText={setSpecialty} placeholder="Məs: Güc və hipertrofiya, Funksional…" />
-        <Field label="Sessiya qiyməti (₼, məlumat üçün)" value={price} onChangeText={setPrice} placeholder="Məs: 30" keyboardType="numeric" />
-        <Field label="Haqqında" value={bio} onChangeText={setBio} placeholder="Təcrübən, yanaşman, kimlərlə işləyirsən…" multiline />
+        <Field label={t('İxtisas *')} value={specialty} onChangeText={setSpecialty} placeholder={t('Məs: Güc və hipertrofiya, Funksional…')} />
+        <Field label={t('Sessiya qiyməti (₼, məlumat üçün)')} value={price} onChangeText={setPrice} placeholder={t('Məs: 30')} keyboardType="numeric" />
+        <Field label={t('Haqqında')} value={bio} onChangeText={setBio} placeholder={t('Təcrübən, yanaşman, kimlərlə işləyirsən…')} multiline />
 
         {alreadyTrainer ? (
           <PressableScale
             activeScale={0.98}
             accessibilityRole="button"
-            accessibilityLabel="Müəllim hesabını bağla"
+            accessibilityLabel={t('Müəllim hesabını bağla')}
             onPress={closeAccount}
             style={styles.dangerRow}>
             <Icon name="x" size={17} color={palette.red} />
-            <AppText style={{ fontSize: 14.5, fontWeight: '600', color: palette.red }}>Müəllim hesabını bağla</AppText>
+            <AppText style={{ fontSize: 14.5, fontWeight: '600', color: palette.red }}>{t('Müəllim hesabını bağla')}</AppText>
           </PressableScale>
         ) : null}
       </ScrollView>
@@ -547,7 +549,7 @@ export default function BecomeTrainer() {
           keyboard overlap carries the whole form with it. */}
       <View style={{ paddingHorizontal: spacing.screen, paddingBottom: 8, marginBottom: lift }}>
         <Button
-          title={alreadyTrainer ? 'Yadda saxla' : 'Müəllim profilini yarat'}
+          title={alreadyTrainer ? t('Yadda saxla') : t('Müəllim profilini yarat')}
           variant="volt"
           full
           disabled={!specialty.trim() || saving}

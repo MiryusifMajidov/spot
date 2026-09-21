@@ -8,22 +8,28 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
+import { t } from '@/lib/i18n';
 import { bestsInWorkout } from '@/lib/lifts';
 import { removeWorkout } from '@/lib/removeWorkout';
+import { useFormat, useT } from '@/lib/useT';
 import { seedById, useDb, type Workout } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
-const AZ_MONTHS = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
 const AZ_MON_SHORT = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avq', 'sen', 'okt', 'noy', 'dek'];
 
-function fmtDur(min: number) {
+/* The translator is passed in, not read from the module: the compiler memoises
+   this call by its arguments, and a helper that reads the language on the side
+   would keep the first language forever (see src/lib/useT.ts). */
+function fmtDur(min: number, tr: typeof t) {
   const h = Math.floor(min / 60);
   const m = min % 60;
-  return h > 0 ? `${h}s ${m}d` : `${m}d`;
+  return h > 0 ? tr('{h}s {m}d', { h, m }) : tr('{m}d', { m, count: m });
 }
 
 export default function History() {
+  const t = useT();
+  const fmt = useFormat();
   const [seg, setSeg] = useState(0);
   const workouts = useDb((s) => s.workouts);
   const checkIns = useDb((s) => s.checkIns);
@@ -93,15 +99,15 @@ export default function History() {
 
   return (
     <Screen edges={['top']}>
-      <NavBar title="Məşq tarixçəsi" />
+      <NavBar title={t('Məşq tarixçəsi')} />
       <View style={{ paddingHorizontal: spacing.screen, paddingBottom: 12 }}>
-        <Segmented options={['Siyahı', 'Təqvim']} value={seg} onChange={setSeg} />
+        <Segmented options={[t('Siyahı'), t('Təqvim')]} value={seg} onChange={setSeg} />
       </View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
         {seg === 1 ? (
         <View style={styles.calCard}>
           <View style={styles.calHead}>
-            <AppText variant="headline">{AZ_MONTHS[month]} {year}</AppText>
+            <AppText variant="headline">{fmt.monthAndYear(month, year)}</AppText>
             <View style={{ flexDirection: 'row', gap: 16 }}>
               <PressableScale haptic={false} activeScale={0.85} hitSlop={10} onPress={() => setOffset((o) => o - 1)}>
                 <Icon name="chevL" size={17} color={palette.inkText} />
@@ -124,11 +130,11 @@ export default function History() {
             ))}
           </View>
           <View style={styles.calStats}>
-            <CalStat value={`${monthStats.count}`} label="məşq" />
+            <CalStat value={`${monthStats.count}`} label={t('məşq')} />
             <View style={styles.vdiv} />
-            <CalStat value={`${(monthStats.volumeKg / 1000).toFixed(1)} t`} label="həcm" />
+            <CalStat value={t('{n} t', { n: (monthStats.volumeKg / 1000).toFixed(1) })} label={t('həcm')} />
             <View style={styles.vdiv} />
-            <CalStat value={fmtDur(monthStats.durationMin)} label="zalda" />
+            <CalStat value={fmtDur(monthStats.durationMin, t)} label={t('zalda')} />
           </View>
         </View>
         ) : null}
@@ -137,7 +143,7 @@ export default function History() {
           <View style={styles.empty}>
             <Icon name="dumbbell" size={26} color={palette.tertiary} />
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 240 }}>
-              Hələ məşq yoxdur. İlk məşqini qeyd et — burada tarixçən yığılacaq.
+              {t('Hələ məşq yoxdur. İlk məşqini qeyd et — burada tarixçən yığılacaq.')}
             </AppText>
           </View>
         ) : (
@@ -163,7 +169,8 @@ export default function History() {
                     <View style={{ flex: 1 }}>
                       <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{s.title}</AppText>
                       <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
-                        {d.getDate()} {AZ_MON_SHORT[d.getMonth()]} · {fmtDur(s.durationMin || 0)} · {(s.volumeKg / 1000).toFixed(1)} t · {setsN} set
+                        {d.getDate()} {t(AZ_MON_SHORT[d.getMonth()])} · {fmtDur(s.durationMin || 0, t)} ·{' '}
+                        {t('{n} t', { n: (s.volumeKg / 1000).toFixed(1) })} · {t('{n} set', { n: setsN, count: setsN })}
                       </AppText>
                     </View>
                     <View style={isOpen ? styles.chevOpen : undefined}>
@@ -173,7 +180,7 @@ export default function History() {
                   {partner ? (
                     <View style={{ flexDirection: 'row', gap: 7, marginTop: 11 }}>
                       <View style={styles.tag}>
-                        <AppText style={{ fontSize: 11, fontWeight: '600', color: '#3A3A42' }}>{partner.name} ilə</AppText>
+                        <AppText style={{ fontSize: 11, fontWeight: '600', color: '#3A3A42' }}>{t('{name} ilə', { name: partner.name })}</AppText>
                       </View>
                     </View>
                   ) : null}
@@ -183,14 +190,14 @@ export default function History() {
             })}
             {sorted.length > sessions.length ? (
               <PressableScale activeScale={0.98} onPress={() => setShown((n) => n + PAGE)} style={styles.more}>
-                <AppText style={{ fontSize: 14, fontWeight: '600' }}>Daha çox göstər</AppText>
+                <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Daha çox göstər')}</AppText>
                 <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
-                  {sessions.length} / {sorted.length} məşq göstərilir
+                  {t('{n} / {total} məşq göstərilir', { n: sessions.length, total: sorted.length, count: sorted.length })}
                 </AppText>
               </PressableScale>
             ) : sorted.length > PAGE ? (
               <AppText style={{ fontSize: 12, color: palette.tertiary, textAlign: 'center', paddingVertical: 10 }}>
-                Hamısı göstərilir · {sorted.length} məşq
+                {t('Hamısı göstərilir · {n} məşq', { n: sorted.length, count: sorted.length })}
               </AppText>
             ) : null}
           </View>
@@ -207,20 +214,22 @@ export default function History() {
  *  to the personal record too, because deleting a workout that set one takes
  *  the record with it and that is not obvious from the word «sil». */
 function DeleteWorkout({ workout }: { workout: Workout }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const ask = () => {
     const bests = bestsInWorkout(workout);
     confirm(
-      'Bu məşqi siləsən?',
+      t('Bu məşqi siləsən?'),
       bests.length
-        ? `${workout.title} — həmişəlik silinir. Bu məşqin yazdığı şəxsi rekord (${bests
-            .map((b) => `${b.lift} ${b.value} kq`)
-            .join(', ')}) da geri götürülür.`
-        : `${workout.title} — həmişəlik silinir.`,
+        ? t('{title} — həmişəlik silinir. Bu məşqin yazdığı şəxsi rekord ({records}) da geri götürülür.', {
+            title: workout.title,
+            records: bests.map((b) => t('{lift} {n} kq', { lift: t(b.lift), n: b.value })).join(', '),
+          })
+        : t('{title} — həmişəlik silinir.', { title: workout.title }),
       [
-        { label: 'Ləğv et', style: 'cancel' },
+        { label: t('Ləğv et'), style: 'cancel' },
         {
-          label: 'Sil',
+          label: t('Sil'),
           style: 'destructive',
           onPress: () => {
             setBusy(true);
@@ -232,11 +241,11 @@ function DeleteWorkout({ workout }: { workout: Workout }) {
                 // The workout is still on both sides. Saying «silindi» here and
                 // letting the next sync bring it back is the exact failure this
                 // whole path is written to avoid.
-                toast('Məşq silinmədi — serverə çatmadı. Bağlantını yoxla.', 'error');
+                toast(t('Məşq silinmədi — serverə çatmadı. Bağlantını yoxla.'), 'error');
                 return;
               }
               successFeedback();
-              toast(r.prsRemoved > 0 ? 'Məşq və onun rekordu silindi' : 'Məşq silindi');
+              toast(r.prsRemoved > 0 ? t('Məşq və onun rekordu silindi') : t('Məşq silindi'));
             })();
           },
         },
@@ -247,7 +256,7 @@ function DeleteWorkout({ workout }: { workout: Workout }) {
     <PressableScale activeScale={0.97} disabled={busy} onPress={ask} style={styles.deleteRow}>
       <Icon name="x" size={14} color={palette.red} />
       <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.red }}>
-        {busy ? 'Silinir…' : 'Məşqi sil'}
+        {busy ? t('Silinir…') : t('Məşqi sil')}
       </AppText>
     </PressableScale>
   );
@@ -263,14 +272,15 @@ function DeleteWorkout({ workout }: { workout: Workout }) {
  *   · a set that was left unfinished is counted separately rather than being
  *     quietly dropped or quietly included. */
 function SessionDetail({ workout }: { workout: Workout }) {
+  const t = useT();
   const withSets = workout.exercises.filter((e) => e.sets.length > 0);
   if (!withSets.length) {
     return (
       <View style={styles.detail}>
         <AppText style={{ fontSize: 12.5, color: palette.textSecondary, lineHeight: 18 }}>
           {workout.summaryOnly || (workout.setsDone ?? 0) > 0
-            ? 'Bu məşq serverdən bərpa olunub. Set-lər yalnız yazıldığı cihazda saxlanılır — SPOT serverində məşqin yalnız ümumi rəqəmləri var.'
-            : 'Bu məşqdə set qeyd olunmayıb.'}
+            ? t('Bu məşq serverdən bərpa olunub. Set-lər yalnız yazıldığı cihazda saxlanılır — SPOT serverində məşqin yalnız ümumi rəqəmləri var.')
+            : t('Bu məşqdə set qeyd olunmayıb.')}
         </AppText>
         <DeleteWorkout workout={workout} />
       </View>
@@ -291,8 +301,8 @@ function SessionDetail({ workout }: { workout: Workout }) {
         return (
           <View key={`${e.name}-${i}`} style={i > 0 ? { marginTop: 12 } : undefined}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-              <AppText style={{ fontSize: 13.5, fontWeight: '600', flexShrink: 1 }}>{e.name}</AppText>
-              <AppText style={{ fontSize: 11, color: palette.tertiary }}>{e.muscle}</AppText>
+              <AppText style={{ fontSize: 13.5, fontWeight: '600', flexShrink: 1 }}>{t(e.name)}</AppText>
+              <AppText style={{ fontSize: 11, color: palette.tertiary }}>{t(e.muscle)}</AppText>
             </View>
             <View style={styles.setRows}>
               {e.sets.map((x, j) => (
@@ -304,7 +314,7 @@ function SessionDetail({ workout }: { workout: Workout }) {
                         `bodyweight ?? 0` for every set when the person has never
                         logged a weight. «0 kq × 10» states a load nobody entered;
                         the rep count is the part we actually know. */}
-                    {x.weight > 0 ? `${x.weight} kq × ${x.reps}` : `${x.reps} təkrar`}
+                    {x.weight > 0 ? t('{weight} kq × {reps}', { weight: x.weight, reps: x.reps }) : t('{n} təkrar', { n: x.reps, count: x.reps })}
                     {/* Per-set RPE, if a writer ever records one. Today «Necə
                         keçdi?» on the summary screen rates the whole session,
                         so this stays empty rather than inventing a number for

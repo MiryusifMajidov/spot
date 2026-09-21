@@ -21,7 +21,9 @@ const DAYS: Record<string, string[]> = {
 };
 
 const DAYS_SHORT: Record<string, string[]> = {
-  az: ['B', 'B.e', 'Ç.a', 'Ç', 'C.a', 'C', 'Ş'],
+  // The app's own abbreviations (src/data/mock.ts DAYS), Sunday-first here to
+  // match Date#getDay. «Ç» and «C» alone were ambiguous — two weekdays each.
+  az: ['Baz', 'B.e', 'Ç.a', 'Çər', 'C.a', 'Cüm', 'Şən'],
   ru: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
   en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
 };
@@ -88,19 +90,23 @@ export function weight(n: number): string {
  * Replaces `timeAgoAz` in src/store/db.ts. Same shape — «indi», minutes, then
  * the clock time within a day, then «Dünən», then days — with the Russian
  * three-form plural handled by the dictionary rather than by string maths here.
+ *
+ * `tr` is the COMPONENT's translator (from useT). Passing it makes the call
+ * depend on it, so the React Compiler recomputes the label when the language
+ * changes instead of keeping the first language it cached.
  */
-export function timeAgo(iso: string, now: number): string {
+export function timeAgo(iso: string, now: number, tr: typeof t = t): string {
   const then = new Date(iso).getTime();
   if (!Number.isFinite(then)) return '';
   const min = Math.floor((now - then) / 60000);
-  if (min < 1) return t('indi');
-  if (min < 60) return t('{n} dəq', { n: min, count: min });
+  if (min < 1) return tr('indi');
+  if (min < 60) return tr('{n} dəq', { n: min, count: min });
   const hr = Math.floor(min / 60);
   if (hr < 24) {
     const d = new Date(iso);
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
   const days = Math.floor(hr / 24);
-  if (days === 1) return t('Dünən');
-  return t('{n} gün', { n: days, count: days });
+  if (days === 1) return tr('Dünən');
+  return tr('{n} gün', { n: days, count: days });
 }

@@ -11,12 +11,14 @@ import { tapFeedback } from '@/lib/feedback';
 import { NOTIF_TYPES, getNotifPrefs, setNotifPref, type NotifType } from '@/lib/notifications';
 import { pushPermission, pushRegistrationProblem, registerPush } from '@/lib/push';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
 type State = 'loading' | 'ready' | 'failed';
 
 export default function NotificationSettings() {
+  const t = useT();
   const [prefs, setPrefs] = useState<Record<string, boolean>>({});
   const [state, setState] = useState<State>('loading');
   const [busy, setBusy] = useState<NotifType | null>(null);
@@ -64,7 +66,7 @@ export default function NotificationSettings() {
       await setNotifPref(type, next);
     } catch {
       setPrefs((p) => ({ ...p, [type]: !next }));
-      toast('Ayar saxlanılmadı — yenidən cəhd et', 'error');
+      toast(t('Ayar saxlanılmadı — yenidən cəhd et'), 'error');
     } finally {
       setBusy(null);
     }
@@ -72,17 +74,16 @@ export default function NotificationSettings() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <NavBar title="Bildirişlər" />
+      <NavBar title={t('Bildirişlər')} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {perm === 'granted' && regProblem ? (
           <View style={[styles.permCard, { borderColor: palette.red }]}>
             <Icon name="x" size={18} color={palette.red} />
             <View style={{ flex: 1 }}>
-              <AppText variant="subhead">Bu cihaz bildiriş üçün qeydə alınmadı</AppText>
+              <AppText variant="subhead">{t('Bu cihaz bildiriş üçün qeydə alınmadı')}</AppText>
               <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3, lineHeight: 18 }}>
-                Telefon icazə verib, amma cihazın ünvanı alınmadı — aşağıdakı ayarlar saxlanılır, lakin bu
-                telefona push gəlməyəcək. Mesaj və məşq təklifini yalnız tətbiqi açanda görəcəksən.
+                {t('Telefon icazə verib, amma cihazın ünvanı alınmadı — aşağıdakı ayarlar saxlanılır, lakin bu telefona push gəlməyəcək. Mesaj və məşq təklifini yalnız tətbiqi açanda görəcəksən.')}
               </AppText>
             </View>
           </View>
@@ -100,45 +101,45 @@ export default function NotificationSettings() {
             style={styles.permCard}>
             <Icon name="bell" size={18} color={palette.streak} />
             <View style={{ flex: 1 }}>
-              <AppText variant="subhead">Telefon bildirişləri bağlıdır</AppText>
+              <AppText variant="subhead">{t('Telefon bildirişləri bağlıdır')}</AppText>
               {/* «Aşağıdaki» put a front-vowel suffix on a back-vowel stem; the
                   form Azerbaijani takes here is «Aşağıdakı». */}
               <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3, lineHeight: 18 }}>
-                Aşağıdakı ayarlar işləyir, amma telefon SPOT-a bildiriş göstərməyə icazə vermir — mesaj və məşq
-                təklifi yalnız tətbiqi açanda görünəcək. {perm === 'undetermined' ? 'İcazə vermək üçün toxun.' : 'Telefon ayarlarını açmaq üçün toxun.'}
+                {t('Aşağıdakı ayarlar işləyir, amma telefon SPOT-a bildiriş göstərməyə icazə vermir — mesaj və məşq təklifi yalnız tətbiqi açanda görünəcək.')}{' '}
+                {perm === 'undetermined' ? t('İcazə vermək üçün toxun.') : t('Telefon ayarlarını açmaq üçün toxun.')}
               </AppText>
             </View>
           </PressableScale>
         ) : null}
         {state === 'loading' ? (
-          <AppText variant="body" color={palette.textSecondary} style={styles.note}>Yüklənir…</AppText>
+          <AppText variant="body" color={palette.textSecondary} style={styles.note}>{t('Yüklənir…')}</AppText>
         ) : state === 'failed' ? (
           <View style={styles.failed}>
             <Icon name="shield" size={24} color={palette.tertiary} />
-            <AppText variant="headline" style={{ marginTop: 10 }}>Ayarlar yüklənmədi</AppText>
+            <AppText variant="headline" style={{ marginTop: 10 }}>{t('Ayarlar yüklənmədi')}</AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 5, lineHeight: 20 }}>
-              Hansı bildirişlərin açıq olduğunu oxuya bilmədik — ona görə açarları göstərmirik.
+              {t('Hansı bildirişlərin açıq olduğunu oxuya bilmədik — ona görə açarları göstərmirik.')}
             </AppText>
             <PressableScale onPress={load} style={styles.retry}>
-              <AppText variant="callout" color={palette.white}>Yenidən cəhd et</AppText>
+              <AppText variant="callout" color={palette.white}>{t('Yenidən cəhd et')}</AppText>
             </PressableScale>
           </View>
         ) : (
           <>
             <View style={styles.card}>
-              {NOTIF_TYPES.map((t, i) => (
-                <View key={t.type} style={[styles.row, i > 0 && styles.rowBorder]}>
+              {NOTIF_TYPES.map((nt, i) => (
+                <View key={nt.type} style={[styles.row, i > 0 && styles.rowBorder]}>
                   <View style={{ flex: 1 }}>
-                    <AppText variant="callout">{t.label}</AppText>
+                    <AppText variant="callout">{t(nt.label)}</AppText>
                     <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2, lineHeight: 17 }}>
-                      {t.hint}
+                      {t(nt.hint)}
                     </AppText>
                   </View>
                   <Switch
                     // A missing key means ON — see notif_prefs in schema35.
-                    value={prefs[t.type] !== false}
-                    disabled={busy === t.type}
-                    onValueChange={(v) => void toggle(t.type, v)}
+                    value={prefs[nt.type] !== false}
+                    disabled={busy === nt.type}
+                    onValueChange={(v) => void toggle(nt.type, v)}
                     trackColor={{ false: palette.separator, true: palette.voltDeep }}
                   />
                 </View>
@@ -146,14 +147,11 @@ export default function NotificationSettings() {
             </View>
 
             <AppText variant="footnote" color={palette.textSecondary} style={styles.footer}>
-              Söndürdüyün növ ümumiyyətlə qeyd olunmur — gizlədilmir, yazılmır. Yenidən açsan,
-              bundan sonrakılar gələcək.
+              {t('Söndürdüyün növ ümumiyyətlə qeyd olunmur — gizlədilmir, yazılmır. Yenidən açsan, bundan sonrakılar gələcək.')}
             </AppText>
 
             <AppText variant="footnote" color={palette.caption} style={styles.footer2}>
-              Video və postlara qoyulan bəyənmələr üçün hələ bildiriş yoxdur: bəyənmə hazırda
-              yalnız cihazda saxlanılır, ona görə server kimin nəyi bəyəndiyini bilmir. Uydurma
-              bildiriş göndərməkdənsə, göndərmirik.
+              {t('Video və postlara qoyulan bəyənmələr üçün hələ bildiriş yoxdur: bəyənmə hazırda yalnız cihazda saxlanılır, ona görə server kimin nəyi bəyəndiyini bilmir. Uydurma bildiriş göndərməkdənsə, göndərmirik.')}
             </AppText>
           </>
         )}

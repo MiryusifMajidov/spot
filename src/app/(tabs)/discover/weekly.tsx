@@ -117,7 +117,7 @@ function Weekly() {
                     {nameWithAge(top.name, top.age)}
                   </AppText>
                   <AppText variant="footnote" color="rgba(255,255,255,0.55)" style={{ marginTop: 2 }}>
-                    {[t(top.level ?? 'Səviyyə göstərilməyib'), t(top.usualTime)].filter(Boolean).join(' · ')}
+                    {[top.level ? t(top.level) : t('Səviyyə göstərilməyib'), t(top.usualTime)].filter(Boolean).join(' · ')}
                   </AppText>
                 </View>
                 {/* null = the score was never computed. «0 %» would be a verdict; this

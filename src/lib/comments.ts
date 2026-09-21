@@ -48,7 +48,7 @@ interface CommentRow {
 
 /** A profile whose name never resolved has no name — we say «Silinmiş istifadəçi»
  *  rather than inventing one, because the row is real but the identity is gone. */
-const UNKNOWN_AUTHOR = 'Silinmiş istifadəçi';
+export const UNKNOWN_AUTHOR = 'Silinmiş istifadəçi';
 
 function toComment(r: CommentRow, myProfileId: string | null): Comment {
   return {

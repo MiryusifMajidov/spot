@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 
+import { t } from '@/lib/i18n';
 import { useAppStore } from '@/store/appStore';
 import { confirm } from '@/store/ui';
 
@@ -16,17 +17,17 @@ export function useAuthGate() {
   const onboarded = useAppStore((s) => s.onboarded);
   const router = useRouter();
 
-  return (action: () => void, reason = 'Bu funksiya üçün') => {
+  return (action: () => void, reason = t('Bu funksiya üçün')) => {
     if (guest || !onboarded) {
       confirm(
-        'Hesab lazımdır',
+        t('Hesab lazımdır'),
         // It no longer asks for «zalın, məqsədin, cədvəlin» — registration is a
         // name and an @ad. Promising a questionnaire that was deleted is the
         // kind of small lie that makes people close the dialog.
-        `${reason} hesabınla daxil ol və ya yenisini aç — bir dəqiqə çəkir. Onsuz sadəcə baxış rejimindəsən.`,
+        t('{reason} hesabınla daxil ol və ya yenisini aç — bir dəqiqə çəkir. Onsuz sadəcə baxış rejimindəsən.', { reason }),
         [
-          { label: 'İndi yox', style: 'cancel' },
-          { label: 'Daxil ol', style: 'primary', onPress: () => router.push('/onboarding/welcome') },
+          { label: t('İndi yox'), style: 'cancel' },
+          { label: t('Daxil ol'), style: 'primary', onPress: () => router.push('/onboarding/welcome') },
         ]
       );
       return;

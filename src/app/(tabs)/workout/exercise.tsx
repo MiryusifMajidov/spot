@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { useT } from '@/lib/useT';
 import { exerciseById, LibExercise } from '@/store/db';
 import { dark, palette } from '@/theme';
 
@@ -25,6 +26,7 @@ function fmt(s: number) {
 export default function ExerciseVideo() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useT();
   /* `name`/`video`/`sets`/`reps` arrive when the move came from somebody's
      PROGRAM rather than from SPOT's library: a coach may write a move the
      library has never heard of and film it themselves (schema76), and that clip
@@ -129,14 +131,13 @@ export default function ExerciseVideo() {
       <View style={[styles.root, { alignItems: 'center', justifyContent: 'center', padding: 32 }]}>
         <StatusBar style="light" />
         <AppText style={{ color: palette.white, fontSize: 17, fontWeight: '600', textAlign: 'center' }}>
-          Hərəkət tapılmadı
+          {t('Hərəkət tapılmadı')}
         </AppText>
         <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13.5, lineHeight: 20, textAlign: 'center', marginTop: 8 }}>
-          Bu hərəkət SPOT kitabxanasında yoxdur. Proqramın müəllifi onu özü yazıbsa, təfərrüatı proqram
-          səhifəsində görünür.
+          {t('Bu hərəkət SPOT kitabxanasında yoxdur. Proqramın müəllifi onu özü yazıbsa, təfərrüatı proqram səhifəsində görünür.')}
         </AppText>
         <PressableScale activeScale={0.95} onPress={() => router.back()} style={{ marginTop: 20 }}>
-          <AppText style={{ color: palette.volt, fontSize: 15, fontWeight: '600' }}>Geri</AppText>
+          <AppText style={{ color: palette.volt, fontSize: 15, fontWeight: '600' }}>{t('Geri')}</AppText>
         </PressableScale>
       </View>
     );
@@ -156,7 +157,7 @@ export default function ExerciseVideo() {
           </PressableScale>
           <PressableScale
             activeScale={0.9}
-            onPress={() => Share.share({ message: `${ex.name} — düzgün texnika. SPOT-da bax.` }).catch(() => {})}
+            onPress={() => Share.share({ message: t('{name} — düzgün texnika. SPOT-da bax.', { name: t(ex.name) }) }).catch(() => {})}
             style={styles.circle}>
             <Icon name="share" size={17} color={palette.white} />
           </PressableScale>
@@ -194,14 +195,14 @@ export default function ExerciseVideo() {
 
       {/* Info */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <AppText style={styles.title}>{ex.name}</AppText>
+        <AppText style={styles.title}>{t(ex.name)}</AppText>
         <View style={styles.authorRow}>
           <AppText style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12.5 }}>
-            {ex.muscle} · {ex.equipment} · {ex.defaultSets} set × {ex.reps}
+            {t(ex.muscle)} · {t(ex.equipment)} · {t('{sets} set × {reps}', { sets: ex.defaultSets, reps: t(ex.reps), count: ex.defaultSets })}
           </AppText>
           {ex.isCompound ? (
             <View style={styles.compoundTag}>
-              <AppText style={{ color: palette.inkText, fontSize: 10.5, fontWeight: '700' }}>ƏSAS</AppText>
+              <AppText style={{ color: palette.inkText, fontSize: 10.5, fontWeight: '700' }}>{t('ƏSAS')}</AppText>
             </View>
           ) : null}
         </View>
@@ -209,18 +210,18 @@ export default function ExerciseVideo() {
         <View style={styles.mistakeCard}>
           <Icon name="shield" size={18} color={palette.streak} />
           <View style={{ flex: 1 }}>
-            <AppText style={{ color: '#FFB394', fontSize: 13, fontWeight: '600' }}>Ən çox edilən səhv</AppText>
-            <AppText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20, marginTop: 5 }}>{ex.commonMistake}</AppText>
+            <AppText style={{ color: '#FFB394', fontSize: 13, fontWeight: '600' }}>{t('Ən çox edilən səhv')}</AppText>
+            <AppText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20, marginTop: 5 }}>{t(ex.commonMistake)}</AppText>
           </View>
         </View>
 
         <View style={styles.subsHead}>
-          <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600' }}>Əvəzedici hərəkətlər</AppText>
+          <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600' }}>{t('Əvəzedici hərəkətlər')}</AppText>
         </View>
         <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
           {ex.substitutes.map((s) => (
             <View key={s} style={styles.subCard}>
-              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{s}</AppText>
+              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t(s)}</AppText>
             </View>
           ))}
         </View>

@@ -15,10 +15,12 @@ import { currentIdentity, signOut } from '@/lib/auth';
 import { wipeDeviceData } from '@/lib/wipe';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { releaseSounds, successFeedback, tapFeedback } from '@/lib/feedback';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
 
 export default function Settings() {
+  const t = useT();
   const router = useRouter();
   const gate = useAuthGate();
   const haptics = useAppStore((s) => s.haptics);
@@ -92,12 +94,12 @@ export default function Settings() {
 
   const signOutRow = () =>
     confirm(
-      'Hesabdan çıx',
-      'Bu telefonda saxlanan məlumatlar silinir. Hesabın serverdə qalır — hansı yolla girmisənsə, eyni yolla yenidən girə bilərsən.',
+      t('Hesabdan çıx'),
+      t('Bu telefonda saxlanan məlumatlar silinir. Hesabın serverdə qalır — hansı yolla girmisənsə, eyni yolla yenidən girə bilərsən.'),
       [
-        { label: 'Ləğv et', style: 'cancel' },
+        { label: t('Ləğv et'), style: 'cancel' },
         {
-          label: 'Çıx',
+          label: t('Çıx'),
           style: 'destructive',
           onPress: () => {
             /* The dialog above promises the phone is cleared. Until now nothing
@@ -109,10 +111,10 @@ export default function Settings() {
             wipeDeviceData()
               .then(() => signOut())
               .then(() => {
-                toast('Hesabdan çıxdın — bu telefondakı məlumatlar silindi');
+                toast(t('Hesabdan çıxdın — bu telefondakı məlumatlar silindi'));
                 router.replace('/onboarding/welcome');
               })
-              .catch(() => toast('Çıxmaq alınmadı — yenidən cəhd et', 'error'));
+              .catch(() => toast(t('Çıxmaq alınmadı — yenidən cəhd et'), 'error'));
           },
         },
       ]
@@ -136,12 +138,12 @@ export default function Settings() {
      product ships in. */
   const resetOnboarding = () =>
     confirm(
-      'Qeydiyyatı yenidən keç',
-      'Qeydiyyat addımları bu cihazda yenidən başlayacaq və cavablarını yenidən verə bilərsən. Serverdəki profilin silinmir — dəyişmədiyin sahələr olduğu kimi qalır. Məşq, çəki və check-in tarixçən də toxunulmur; onları silmək üçün Məxfilik → «Datanı bu cihazdan sil».',
+      t('Qeydiyyatı yenidən keç'),
+      t('Qeydiyyat addımları bu cihazda yenidən başlayacaq və cavablarını yenidən verə bilərsən. Serverdəki profilin silinmir — dəyişmədiyin sahələr olduğu kimi qalır. Məşq, çəki və check-in tarixçən də toxunulmur; onları silmək üçün Məxfilik → «Datanı bu cihazdan sil».'),
       [
-        { label: 'Ləğv et', style: 'cancel' },
+        { label: t('Ləğv et'), style: 'cancel' },
         {
-          label: 'Yenidən keç',
+          label: t('Yenidən keç'),
           style: 'destructive',
           onPress: () => {
             reset();
@@ -153,7 +155,7 @@ export default function Settings() {
 
   return (
     <Screen>
-      <NavBar title="Parametrlər" />
+      <NavBar title={t('Parametrlər')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {/* There is no subscription tier. The SPOT+ card that used to sit here sold a
             «PULSUZ (hazırda)» plan — a paid tier that was cancelled permanently — and its
@@ -164,14 +166,14 @@ export default function Settings() {
             one is told what it is linked to and can sign out — signing out of an
             ANONYMOUS session would destroy it, so that is never offered. */}
         <ListGroup
-          header="Hesab"
+          header={t('Hesab')}
           footer={
             /* A confirmed «no session» means the same thing as an anonymous one for
                this warning: nothing on a server can bring this data back. */
             ident.phase === 'ready' && (ident.kind === 'anonymous' || ident.kind === 'none')
-              ? 'Hesabın yalnız bu telefondadır. Tətbiqi silsən və ya telefonu dəyişsən, məşq tarixçən və @adın qayıtmır.'
+              ? t('Hesabın yalnız bu telefondadır. Tətbiqi silsən və ya telefonu dəyişsən, məşq tarixçən və @adın qayıtmır.')
               : ident.phase === 'failed'
-                ? 'Hesabının qorunub-qorunmadığını indi yoxlaya bilmədik — sətrə toxunub yenidən cəhd et.'
+                ? t('Hesabının qorunub-qorunmadığını indi yoxlaya bilmədik — sətrə toxunub yenidən cəhd et.')
                 : undefined
           }>
           {ident.phase === 'loading' ? null : ident.phase === 'failed' ? (
@@ -179,8 +181,8 @@ export default function Settings() {
               icon="shield"
               iconBg={palette.streak}
               iconColor={palette.white}
-              title="Hesab məlumatı gətirilmədi"
-              subtitle="İnternetə qoşul və yenidən yoxla"
+              title={t('Hesab məlumatı gətirilmədi')}
+              subtitle={t('İnternetə qoşul və yenidən yoxla')}
               chevron={false}
               onPress={retryIdentity}
             />
@@ -189,27 +191,27 @@ export default function Settings() {
               icon="shield"
               iconBg={palette.red}
               iconColor={palette.white}
-              title="Hesabını qoru"
-              subtitle="Hesaba bağla — telefon dəyişəndə heç nə itmir"
+              title={t('Hesabını qoru')}
+              subtitle={t('Hesaba bağla — telefon dəyişəndə heç nə itmir')}
               onPress={() => router.push('/auth/sign-in')}
             />
           ) : (
             <ListRow
               icon="shield"
               iconBg={palette.voltDeep}
-              title="Giriş"
+              title={t('Giriş')}
               value={
                 ident.label ??
-                (ident.kind === 'google' ? 'Google' : ident.kind === 'apple' ? 'Apple' : 'Nömrə')
+                (ident.kind === 'google' ? 'Google' : ident.kind === 'apple' ? 'Apple' : t('Nömrə'))
               }
               chevron={false}
               onPress={signOutRow}
             />
           )}
-          <ListRow icon="user" iconBg={palette.blue} title="Profili redaktə et" onPress={() => router.push('/(tabs)/profile/edit')} />
-          <ListRow icon="lock" iconBg="#8A8A93" title="Məxfilik" subtitle="Görünürlük və data" onPress={() => router.push('/(tabs)/profile/privacy')} />
-          <ListRow icon="bookmark" iconBg={palette.voltDeep} title="Saxlanılanlar" subtitle="Videolar və zallar" onPress={() => router.push('/(tabs)/profile/saved')} />
-          <ListRow icon="bell" iconBg={palette.streak} title="Bildirişlər" subtitle="Hansı bildirişləri alacağını seç" onPress={() => router.push('/(tabs)/profile/notifications')} />
+          <ListRow icon="user" iconBg={palette.blue} title={t('Profili redaktə et')} onPress={() => router.push('/(tabs)/profile/edit')} />
+          <ListRow icon="lock" iconBg="#8A8A93" title={t('Məxfilik')} subtitle={t('Görünürlük və data')} onPress={() => router.push('/(tabs)/profile/privacy')} />
+          <ListRow icon="bookmark" iconBg={palette.voltDeep} title={t('Saxlanılanlar')} subtitle={t('Videolar və zallar')} onPress={() => router.push('/(tabs)/profile/saved')} />
+          <ListRow icon="bell" iconBg={palette.streak} title={t('Bildirişlər')} subtitle={t('Hansı bildirişləri alacağını seç')} onPress={() => router.push('/(tabs)/profile/notifications')} />
         </ListGroup>
 
         {/* Inline, not a row that pushes a screen: there are three options and
@@ -227,14 +229,14 @@ export default function Settings() {
             without one («Kəşfdə zal seç» in check-in, «Kəşfdən çıxarıldı» in
             become-trainer), so this footer spelled the tab differently from the
             tab. */}
-        <ListGroup header="Hesablar" footer="Müəllim və ya zal hesabı yarat — Kəşfdə görünəcəksən. Instagram kimi bir neçə hesab arasında keçə bilərsən.">
+        <ListGroup header={t('Hesablar')} footer={t('Müəllim və ya zal hesabı yarat — Kəşfdə görünəcəksən. Instagram kimi bir neçə hesab arasında keçə bilərsən.')}>
           {accountCount() > 1 ? (
-            <ListRow icon="grid" iconBg={palette.inkText} title="Hesabı dəyiş" subtitle="Şəxsi · Müəllim · Zal" onPress={() => showAccountSwitcher(router)} />
+            <ListRow icon="grid" iconBg={palette.inkText} title={t('Hesabı dəyiş')} subtitle={t('Şəxsi · Müəllim · Zal')} onPress={() => showAccountSwitcher(router)} />
           ) : null}
           {role === 'trainer' ? (
-            <ListRow icon="verified" iconBg={palette.blue} title="Müəllim hesabım" subtitle="Redaktə et" onPress={() => router.push('/(tabs)/profile/become-trainer')} />
+            <ListRow icon="verified" iconBg={palette.blue} title={t('Müəllim hesabım')} subtitle={t('Redaktə et')} onPress={() => router.push('/(tabs)/profile/become-trainer')} />
           ) : (
-            <ListRow icon="verified" iconBg={palette.blue} title="Müəllim ol" subtitle="Öz təlim hesabını yarat" onPress={() => router.push('/(tabs)/profile/become-trainer')} />
+            <ListRow icon="verified" iconBg={palette.blue} title={t('Müəllim ol')} subtitle={t('Öz təlim hesabını yarat')} onPress={() => router.push('/(tabs)/profile/become-trainer')} />
           )}
           {ownsGym ? null : (
             /* A guest has no profiles row, so the whole form would fail at the end —
@@ -242,21 +244,21 @@ export default function Settings() {
             <ListRow
               icon="dumbbell"
               iconBg={palette.voltDeep}
-              title="Zal hesabı yarat"
-              subtitle="Öz idman zalını qeydiyyata al"
-              onPress={() => gate(() => router.push('/(tabs)/profile/create-gym'), 'Zal hesabı üçün')}
+              title={t('Zal hesabı yarat')}
+              subtitle={t('Öz idman zalını qeydiyyata al')}
+              onPress={() => gate(() => router.push('/(tabs)/profile/create-gym'), t('Zal hesabı üçün'))}
             />
           )}
         </ListGroup>
 
         <ListGroup
-          header="Toxunma və səs"
-          footer="Düymələrə basanda titrəmə və qısa səs. İkisini də ayrıca söndürə bilərsən.">
+          header={t('Toxunma və səs')}
+          footer={t('Düymələrə basanda titrəmə və qısa səs. İkisini də ayrıca söndürə bilərsən.')}>
           <FeedbackRow
             icon="sliders"
             iconBg={palette.inkText}
-            title="Titrəmə"
-            subtitle="Basanda yüngül titrəmə"
+            title={t('Titrəmə')}
+            subtitle={t('Basanda yüngül titrəmə')}
             value={haptics}
             onChange={(v) => {
               setFeedback({ haptics: v });
@@ -266,8 +268,8 @@ export default function Settings() {
           <FeedbackRow
             icon="sound"
             iconBg={palette.blue}
-            title="Səs"
-            subtitle="Qısa interfeys səsləri"
+            title={t('Səs')}
+            subtitle={t('Qısa interfeys səsləri')}
             value={sounds}
             onChange={(v) => {
               setFeedback({ sounds: v });
@@ -277,46 +279,45 @@ export default function Settings() {
           />
         </ListGroup>
 
-        <ListGroup header="Tətbiq" footer="SPOT tam pulsuzdur — abunə, tətbiqdaxili ödəniş və ya kilidli funksiya yoxdur. Zal və məşqçi qiymətləri yalnız məlumat üçün göstərilir; SPOT bu ödənişlərə qarışmır və heç bir pay götürmür.">
-          <ListRow icon="target" iconBg={palette.ink} title="Analitika" subtitle="Həcm, 1RM, disbalans" onPress={() => router.push('/(tabs)/profile/analytics')} />
+        <ListGroup header={t('Tətbiq')} footer={t('SPOT tam pulsuzdur — abunə, tətbiqdaxili ödəniş və ya kilidli funksiya yoxdur. Zal və məşqçi qiymətləri yalnız məlumat üçün göstərilir; SPOT bu ödənişlərə qarışmır və heç bir pay götürmür.')}>
+          <ListRow icon="target" iconBg={palette.ink} title={t('Analitika')} subtitle={t('Həcm, 1RM, disbalans')} onPress={() => router.push('/(tabs)/profile/analytics')} />
           {/* «Seriya», not «streak». Every other place the counter is named — the
               profile badge, check-in, analitika, nailiyyətlər — calls it «seriya»,
               so this row advertised a screen by a name that appears nowhere on it. */}
-          <ListRow icon="trophy" iconBg={palette.streak} title="Nailiyyətlər" subtitle="Nişanlar və seriya" onPress={() => router.push('/(tabs)/profile/achievements')} />
-          <ListRow icon="shield" iconBg={palette.voltDeep} title="Kömək və dəstək" subtitle="Problemi komandaya bildir" onPress={help} />
-          <ListRow icon="share" iconBg="#8A8A93" title="Dil" value="Azərbaycanca" chevron={false} />
-          <ListRow icon="star" iconBg={palette.streak} title="SPOT haqqında" value="v1.0" chevron={false} />
+          <ListRow icon="trophy" iconBg={palette.streak} title={t('Nailiyyətlər')} subtitle={t('Nişanlar və seriya')} onPress={() => router.push('/(tabs)/profile/achievements')} />
+          <ListRow icon="shield" iconBg={palette.voltDeep} title={t('Kömək və dəstək')} subtitle={t('Problemi komandaya bildir')} onPress={help} />
+          <ListRow icon="star" iconBg={palette.streak} title={t('SPOT haqqında')} value="v1.0" chevron={false} />
         </ListGroup>
 
         {/* Reachable AFTER onboarding too: the store review checks that a
             privacy policy is available from inside the app, and somebody who
             agreed on the welcome screen must be able to read what they agreed
             to later. */}
-        <ListGroup header="Hüquqi">
+        <ListGroup header={t('Hüquqi')}>
           <ListRow
             icon="shield"
             iconBg={palette.ink}
-            title="İstifadə şərtləri"
+            title={t('İstifadə şərtləri')}
             onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'terms' } })}
           />
           <ListRow
             icon="shield"
             iconBg={palette.blue}
-            title="Məxfilik siyasəti"
-            subtitle="Hansı məlumat toplanır, kim görür"
+            title={t('Məxfilik siyasəti')}
+            subtitle={t('Hansı məlumat toplanır, kim görür')}
             onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'privacy' } })}
           />
           <ListRow
             icon="users"
             iconBg={palette.voltDeep}
-            title="İcma qaydaları"
-            subtitle="Bu tanışlıq tətbiqi deyil"
+            title={t('İcma qaydaları')}
+            subtitle={t('Bu tanışlıq tətbiqi deyil')}
             onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'rules' } })}
           />
         </ListGroup>
 
-        <ListGroup footer="Bu, test üçün qeydiyyatı yenidən başladır.">
-          <ListRow icon="arrowU" iconBg={palette.red} iconColor={palette.white} title="Qeydiyyatı yenidən keç" danger chevron={false} onPress={resetOnboarding} />
+        <ListGroup footer={t('Bu, test üçün qeydiyyatı yenidən başladır.')}>
+          <ListRow icon="arrowU" iconBg={palette.red} iconColor={palette.white} title={t('Qeydiyyatı yenidən keç')} danger chevron={false} onPress={resetOnboarding} />
         </ListGroup>
       </ScrollView>
     </Screen>

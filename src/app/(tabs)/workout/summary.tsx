@@ -11,6 +11,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { setMyWorkoutRpe } from '@/lib/api';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useDb, useStats } from '@/store/db';
 import { palette } from '@/theme';
 
@@ -21,6 +22,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function Summary() {
   const router = useRouter();
+  const t = useT();
   const params = useLocalSearchParams<{ title?: string; durationSec?: string; volumeKg?: string; setsDone?: string; maxKg?: string }>();
   const title = params.title || 'Məşq';
   const durationSec = Number(params.durationSec) || 0;
@@ -77,7 +79,16 @@ export default function Summary() {
 
   const share = () =>
     Share.share({
-      message: `${title} — ${durationMin} dəq · ${setsDone} set${volumeKg > 0 ? ` · ${(volumeKg / 1000).toFixed(1)} t həcm` : ''}. SPOT ilə.`,
+      message:
+        volumeKg > 0
+          ? t('{title} — {min} dəq · {sets} set · {vol} t həcm. SPOT ilə.', {
+              title: t(title),
+              min: durationMin,
+              sets: setsDone,
+              vol: (volumeKg / 1000).toFixed(1),
+              count: setsDone,
+            })
+          : t('{title} — {min} dəq · {sets} set. SPOT ilə.', { title: t(title), min: durationMin, sets: setsDone, count: setsDone }),
     }).catch(() => {});
 
   const finish = () => router.replace('/(tabs)/workout');
@@ -91,17 +102,17 @@ export default function Summary() {
             <Icon name="check" size={38} color={palette.inkText} />
           </View>
           <AppText variant="title" style={{ marginTop: 20 }}>
-            Məşq bitdi
+            {t('Məşq bitdi')}
           </AppText>
           <AppText variant="body" color={palette.textSecondary} style={{ marginTop: 6 }}>
-            {title} · {durationMin} dəqiqə
+            {t('{title} · {n} dəqiqə', { title: t(title), n: durationMin, count: durationMin })}
           </AppText>
         </Animated.View>
 
         <View style={styles.stats}>
-          <Stat value={`${durationMin}d`} label="müddət" />
-          <Stat value={volumeKg > 0 ? `${(volumeKg / 1000).toFixed(1)} t` : '—'} label="həcm" />
-          <Stat value={`${setsDone}`} label="set" />
+          <Stat value={t('{m}d', { m: durationMin, count: durationMin })} label={t('müddət')} />
+          <Stat value={volumeKg > 0 ? t('{n} t', { n: (volumeKg / 1000).toFixed(1) }) : '—'} label={t('həcm')} />
+          <Stat value={`${setsDone}`} label={t('set')} />
         </View>
 
         <View style={styles.streakCard}>
@@ -113,10 +124,12 @@ export default function Summary() {
                 counter — the English «streak» was the odd one out in an
                 Azerbaijani-only UI. */}
             <AppText variant="callout">
-              {stats.streakDays > 0 ? `${stats.streakDays} günlük seriya` : 'Seriya bugün başladı'}
+              {stats.streakDays > 0
+                ? t('{n} günlük seriya', { n: stats.streakDays, count: stats.streakDays })
+                : t('Seriya bugün başladı')}
             </AppText>
             <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2 }}>
-              Ümumi {stats.count} məşq qeyd olunub
+              {t('Ümumi {n} məşq qeyd olunub', { n: stats.count, count: stats.count })}
             </AppText>
           </View>
         </View>
@@ -127,22 +140,22 @@ export default function Summary() {
               <Icon name="trophy" size={18} color={palette.voltDeep} />
             </View>
             <View style={{ flex: 1 }}>
-              <AppText variant="callout">Bu məşqin ən ağır seti</AppText>
+              <AppText variant="callout">{t('Bu məşqin ən ağır seti')}</AppText>
               <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2 }}>
-                {maxKg} kq
+                {t('{n} kq', { n: maxKg })}
               </AppText>
             </View>
           </View>
         ) : null}
 
         <AppText variant="overline" color={palette.caption} style={{ marginTop: 24, marginBottom: 12 }}>
-          Necə keçdi?
+          {t('Necə keçdi?')}
         </AppText>
         <View style={styles.rpeRow}>
           {RPE.map((r, i) => (
             <PressableScale key={r} activeScale={0.96} haptic={false} onPress={() => rate(i)} style={[styles.rpe, rpe === i && styles.rpeOn]}>
               <AppText variant="headline" color={rpe === i ? palette.white : palette.inkText}>
-                {r}
+                {t(r)}
               </AppText>
             </PressableScale>
           ))}
@@ -153,21 +166,21 @@ export default function Summary() {
             color={stored ? palette.voltDeep : '#FF9500'}
             style={{ marginTop: 10, paddingHorizontal: 4, lineHeight: 18 }}>
             {!stored
-              ? 'Qiymətləndirmə yazılmadı — bu məşq artıq bağlanıb, ona görə növbəti çəki təklifinə təsir etməyəcək.'
+              ? t('Qiymətləndirmə yazılmadı — bu məşq artıq bağlanıb, ona görə növbəti çəki təklifinə təsir etməyəcək.')
               : rpe === 0
-                ? 'Qeyd olundu — növbəti dəfə çəki artırılmış təklif olunacaq: üst bədən +2.5 kq, ayaq +5 kq.'
+                ? t('Qeyd olundu — növbəti dəfə çəki artırılmış təklif olunacaq: üst bədən +2.5 kq, ayaq +5 kq.')
                 : rpe === 1
-                  ? 'Qeyd olundu — bütün setlərdə hədəf təkrarı vurmusansa, növbəti dəfə +2.5 kq təklif olunacaq, yoxsa eyni çəki.'
-                  : 'Qeyd olundu — növbəti dəfə eyni çəki təklif olunacaq. İki məşq ardıcıl «Ağır» keçsə, çəki 5% azaldılıb bərpa (deload) təklif olunacaq.'}
+                  ? t('Qeyd olundu — bütün setlərdə hədəf təkrarı vurmusansa, növbəti dəfə +2.5 kq təklif olunacaq, yoxsa eyni çəki.')
+                  : t('Qeyd olundu — növbəti dəfə eyni çəki təklif olunacaq. İki məşq ardıcıl «Ağır» keçsə, çəki 5% azaldılıb bərpa (deload) təklif olunacaq.')}
           </AppText>
         ) : null}
 
         <PressableScale activeScale={0.98} onPress={share} style={styles.shareRow}>
           <Icon name="share" size={19} color={palette.inkText} />
           <View style={{ flex: 1 }}>
-            <AppText variant="headline">Nəticəni paylaş</AppText>
+            <AppText variant="headline">{t('Nəticəni paylaş')}</AppText>
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 2 }}>
-              Yalnız sən seçdiyin yerə göndərilir
+              {t('Yalnız sən seçdiyin yerə göndərilir')}
             </AppText>
           </View>
           <Icon name="chevR" size={18} color={palette.tertiary} />
@@ -178,7 +191,7 @@ export default function Summary() {
           (tabs)/_layout — the floating pill's footprint with the home indicator folded in,
           and its 10pt breathing gap sits between this button and the pill. Adding the
           bottom safe-area inset on top of that only left a dead strip under the button. */}
-      <Button title="Bitir" full onPress={finish} />
+      <Button title={t('Bitir')} full onPress={finish} />
     </Screen>
   );
 }

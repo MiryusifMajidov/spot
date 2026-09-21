@@ -4,12 +4,14 @@ import { Icon, IconName } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
+import { useT } from '@/lib/useT';
 import { useDb, useStats } from '@/store/db';
 import { palette, spacing } from '@/theme';
 
 type Badge = { icon: IconName; label: string; earned: boolean };
 
 export default function Achievements() {
+  const t = useT();
   const stats = useStats();
   const checkInCount = useDb((s) => s.checkIns.length);
   const partners = useDb((s) => Object.values(s.matches).filter((m) => m.state === 'accepted').length);
@@ -46,7 +48,7 @@ export default function Achievements() {
 
   return (
     <Screen edges={['top']}>
-      <NavBar title="Nailiyyətlər" />
+      <NavBar title={t('Nailiyyətlər')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
         <View style={styles.streakCard}>
           <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
@@ -55,9 +57,9 @@ export default function Achievements() {
               <AppText style={{ fontSize: 15, fontWeight: '700', color: palette.white, marginTop: 5 }}>{stats.streakDays}</AppText>
             </View>
             <View style={{ flex: 1 }}>
-              <AppText style={{ fontSize: 18, fontWeight: '700', color: palette.white }}>{stats.streakDays} günlük seriya</AppText>
+              <AppText style={{ fontSize: 18, fontWeight: '700', color: palette.white }}>{t('{n} günlük seriya', { n: stats.streakDays, count: stats.streakDays })}</AppText>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>
-                {stats.streakDays > 0 ? 'Davam et — hər gün check-in və ya məşq seriyanı saxlayır.' : 'Check-in et və ya məşq qeyd et — seriya bu gün başlayır.'}
+                {stats.streakDays > 0 ? t('Davam et — hər gün check-in və ya məşq seriyanı saxlayır.') : t('Check-in et və ya məşq qeyd et — seriya bu gün başlayır.')}
               </AppText>
             </View>
           </View>
@@ -69,11 +71,11 @@ export default function Achievements() {
         </View>
 
         <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-          QAZANILMIŞ · {earned.length}
+          {t('QAZANILMIŞ · {n}', { n: earned.length, count: earned.length })}
         </AppText>
         {earned.length === 0 ? (
           <AppText variant="body" color={palette.textSecondary} style={{ marginBottom: 16, lineHeight: 21 }}>
-            Hələ nişan yoxdur. İlk check-in və ya məşqinlə başla.
+            {t('Hələ nişan yoxdur. İlk check-in və ya məşqinlə başla.')}
           </AppText>
         ) : (
           <View style={styles.grid}>
@@ -82,7 +84,7 @@ export default function Achievements() {
                 <View style={styles.badgeIcon}>
                   <Icon name={b.icon} size={22} color="#5B7F00" />
                 </View>
-                <AppText style={{ fontSize: 12, fontWeight: '600', textAlign: 'center', lineHeight: 15 }}>{b.label}</AppText>
+                <AppText style={{ fontSize: 12, fontWeight: '600', textAlign: 'center', lineHeight: 15 }}>{t(b.label)}</AppText>
               </View>
             ))}
           </View>
@@ -91,7 +93,7 @@ export default function Achievements() {
         {locked.length > 0 ? (
           <>
             <AppText variant="overline" color={palette.tertiary} style={{ marginTop: 16, marginBottom: 12 }}>
-              YAXINDIR
+              {t('YAXINDIR')}
             </AppText>
             <View style={{ gap: 10 }}>
               {close.filter((c) => c.cur < c.total).map((c) => (
@@ -100,7 +102,7 @@ export default function Achievements() {
                     <Icon name={c.icon} size={21} color="#B4B4BB" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <AppText style={{ fontSize: 14, fontWeight: '600' }}>{c.label}</AppText>
+                    <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t(c.label)}</AppText>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 8 }}>
                       <View style={styles.progressTrack}>
                         <View style={[styles.progressFill, { width: `${(c.cur / c.total) * 100}%` }]} />
@@ -119,7 +121,7 @@ export default function Achievements() {
           {/* «QR check-in» sent people looking for a scanner that does not exist — the
               check-in they can already do (the QR scan) is what earns it. */}
           <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.textSecondary, flex: 1 }}>
-            Nişanlar yalnız check-in və qeyd edilmiş məşqlərlə qazanılır. Satın alınmır, hədiyyə edilmir.
+            {t('Nişanlar yalnız check-in və qeyd edilmiş məşqlərlə qazanılır. Satın alınmır, hədiyyə edilmir.')}
           </AppText>
         </View>
       </ScrollView>

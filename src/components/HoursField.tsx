@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
+import { useT } from '@/lib/useT';
 import { palette } from '@/theme';
 
 /**
@@ -75,22 +76,23 @@ export function HoursField({
   close: string;
   onChange: (next: { always: boolean; open: string; close: string }) => void;
 }) {
+  const t = useT();
   const status = useMemo(() => {
-    if (always) return { text: 'Saxlanılacaq: 24 saat', bad: false };
-    if (!open && !close) return { text: 'Açılış və bağlanış saatını yaz', bad: false };
+    if (always) return { text: t('Saxlanılacaq: 24 saat'), bad: false };
+    if (!open && !close) return { text: t('Açılış və bağlanış saatını yaz'), bad: false };
     const composed = composeHours(false, open, close);
-    if (!composed) return { text: 'Saat tam deyil — məsələn 06:00 və 24:00', bad: true };
-    return { text: `Saxlanılacaq: ${composed}`, bad: false };
-  }, [always, open, close]);
+    if (!composed) return { text: t('Saat tam deyil — məsələn 06:00 və 24:00'), bad: true };
+    return { text: t('Saxlanılacaq: {hours}', { hours: composed }), bad: false };
+  }, [always, open, close, t]);
 
   return (
     <View style={{ marginBottom: 18 }}>
       <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 8, fontWeight: '600' }}>
-        İş saatları
+        {t('İş saatları')}
       </AppText>
 
       <View style={styles.row}>
-        <AppText variant="body">24 saat açıqdır</AppText>
+        <AppText variant="body">{t('24 saat açıqdır')}</AppText>
         <Switch
           value={always}
           onValueChange={(v) => onChange({ always: v, open, close })}

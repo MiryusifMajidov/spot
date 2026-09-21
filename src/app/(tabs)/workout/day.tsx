@@ -19,6 +19,7 @@ import {
   useDb,
 } from '@/store/db';
 import { estimateDuration } from '@/lib/duration';
+import { useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
 
 /* ------------------------------------------------------------------ *
@@ -68,6 +69,7 @@ export function estimateDurationMin(exercises: LibExercise[]): number {
 
 export default function DayDetail() {
   const router = useRouter();
+  const t = useT();
   const params = useLocalSearchParams<{ programId?: string; dayIndex?: string; title?: string; focus?: string }>();
   const workouts = useDb((s) => s.workouts);
   /* `useProgram`, not `useAllPrograms().find()`. The list hook holds only what is
@@ -97,9 +99,11 @@ export default function DayDetail() {
     <Screen edges={['top']}>
       <NavBar />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <AppText variant="title">{title}</AppText>
+        <AppText variant="title">{t(title)}</AppText>
         <AppText variant="footnote" color={palette.caption} style={{ marginTop: 4 }}>
-          {exercises.length ? `${focus} · ${exercises.length} hərəkət · ~${minutes} dəq` : focus}
+          {exercises.length
+            ? t('{focus} · {n} hərəkət · ~{min} dəq', { focus: t(focus), n: exercises.length, min: minutes, count: exercises.length })
+            : t(focus)}
         </AppText>
 
         {exercises.length === 0 ? (
@@ -111,18 +115,18 @@ export default function DayDetail() {
             <AppText variant="headline" style={{ marginTop: 10 }}>
               {programId && !program
                 ? phase === 'failed'
-                  ? 'Proqram yüklənmədi'
-                  : 'Proqram yüklənir…'
-                : 'Bu günə hərəkət əlavə olunmayıb'}
+                  ? t('Proqram yüklənmədi')
+                  : t('Proqram yüklənir…')
+                : t('Bu günə hərəkət əlavə olunmayıb')}
             </AppText>
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 6, textAlign: 'center', lineHeight: 18 }}>
               {programId && !program
                 ? phase === 'failed'
-                  ? 'Bu günün hərəkətlərini oxuya bilmədik — bu, günün boş olduğu demək deyil. Bağlantını yoxla və yenidən aç.'
-                  : 'Bir az gözlə.'
-                : 'Proqramın müəllifi bu günün hərəkətlərini hələ yazmayıb. Hərəkət kitabxanasından özün seçib başlaya bilərsən.'}
+                  ? t('Bu günün hərəkətlərini oxuya bilmədik — bu, günün boş olduğu demək deyil. Bağlantını yoxla və yenidən aç.')
+                  : t('Bir az gözlə.')
+                : t('Proqramın müəllifi bu günün hərəkətlərini hələ yazmayıb. Hərəkət kitabxanasından özün seçib başlaya bilərsən.')}
             </AppText>
-            <Button title="Hərəkət kitabxanası" variant="secondary" onPress={() => router.push('/(tabs)/workout/exercises')} style={{ marginTop: 14 }} />
+            <Button title={t('Hərəkət kitabxanası')} variant="secondary" onPress={() => router.push('/(tabs)/workout/exercises')} style={{ marginTop: 14 }} />
           </View>
         ) : (
           <View style={{ marginTop: 20 }}>
@@ -159,7 +163,7 @@ export default function DayDetail() {
 
       {exercises.length ? (
         <View style={styles.footer}>
-          <Button title="Məşqə başla" icon="play" full onPress={start} />
+          <Button title={t('Məşqə başla')} icon="play" full onPress={start} />
         </View>
       ) : null}
     </Screen>
@@ -167,25 +171,26 @@ export default function DayDetail() {
 }
 
 function ExerciseRow({ ex, last, onPress }: { ex: LibExercise; last: { weight: number; reps: number } | null; onPress?: () => void }) {
+  const t = useT();
   return (
     <PressableScale activeScale={onPress ? 0.98 : 1} haptic={!!onPress} onPress={onPress} style={styles.row}>
       <View style={styles.thumb}>
         <Icon name={onPress ? 'play' : 'dumbbell'} size={18} color={palette.textSecondary} />
       </View>
       <View style={{ flex: 1 }}>
-        <AppText variant="headline">{ex.name}</AppText>
+        <AppText variant="headline">{t(ex.name)}</AppText>
         <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3 }}>
           {/* Joined, not concatenated with «·» between fixed slots. An
               exercise the author typed themselves has no muscle — the library
               is where that comes from — and the fixed version rendered
               «3 set × 45 san · » with a dangling separator. */}
-          {[`${ex.defaultSets} set × ${ex.reps}`.trim(), ex.muscle].filter(Boolean).join(' · ')}
+          {[t('{sets} set × {reps}', { sets: ex.defaultSets, reps: t(ex.reps), count: ex.defaultSets }).trim(), t(ex.muscle)].filter(Boolean).join(' · ')}
         </AppText>
         {last ? (
           <View style={styles.lastRow}>
             <Icon name="clock" size={12} color={palette.caption} />
             <AppText variant="caption" color={palette.caption}>
-              Keçən dəfə: {last.weight}kg × {last.reps}
+              {t('Keçən dəfə: {weight}kg × {reps}', { weight: last.weight, reps: last.reps })}
             </AppText>
           </View>
         ) : null}

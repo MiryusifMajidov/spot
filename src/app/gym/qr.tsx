@@ -12,6 +12,7 @@ import { Screen } from '@/components/ui/Screen';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { GymGate, useMyGym } from '@/lib/gymOwner';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
@@ -40,6 +41,7 @@ type State =
   | { k: 'failed' };
 
 export default function GymQr() {
+  const t = useT();
   const state = useMyGym();
   const gym = state.gym;
   /* Hoisted so the memo's written dependency and the one the compiler infers are
@@ -83,21 +85,21 @@ export default function GymQr() {
     setBusy(false);
     if (error || !data) {
       errorFeedback();
-      toast('Kod yaradılmadı — bağlantını yoxla və yenidən cəhd et', 'error');
+      toast(t('Kod yaradılmadı — bağlantını yoxla və yenidən cəhd et'), 'error');
       return;
     }
     successFeedback();
     setCode({ k: 'ready', code: String(data) });
-    toast('Yeni kod hazırdır — köhnə çap artıq işləmir');
+    toast(t('Yeni kod hazırdır — köhnə çap artıq işləmir'));
   };
 
   const askRotate = () =>
     confirm(
-      'Yeni kod yaradılsın?',
-      'Divardakı köhnə QR həmin an işləməyi dayandırır. Yenisini çap edib asmalısan.',
+      t('Yeni kod yaradılsın?'),
+      t('Divardakı köhnə QR həmin an işləməyi dayandırır. Yenisini çap edib asmalısan.'),
       [
-        { label: 'Ləğv et', style: 'cancel' },
-        { label: 'Yenilə', style: 'destructive', onPress: () => void rotate() },
+        { label: t('Ləğv et'), style: 'cancel' },
+        { label: t('Yenilə'), style: 'destructive', onPress: () => void rotate() },
       ]
     );
 
@@ -105,7 +107,7 @@ export default function GymQr() {
 
   return (
     <Screen edges={['top']}>
-      <NavBar title="Zal kodu" />
+      <NavBar title={t('Zal kodu')} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
           {code.k === 'ready' ? (
@@ -117,54 +119,56 @@ export default function GymQr() {
                 {code.code}
               </AppText>
               <AppText variant="caption" color={palette.caption} center style={{ marginTop: 6, lineHeight: 17 }}>
-                QR oxunmasa, üzv bu kodu əl ilə də yaza bilər.
+                {t('QR oxunmasa, üzv bu kodu əl ilə də yaza bilər.')}
               </AppText>
             </>
           ) : code.k === 'loading' ? (
             <AppText variant="body" color={palette.textSecondary}>
-              Yüklənir…
+              {t('Yüklənir…')}
             </AppText>
           ) : code.k === 'failed' ? (
             <>
               <Icon name="x" size={28} color={palette.red} />
               <AppText variant="headline" center style={{ marginTop: 12 }}>
-                Kod yüklənmədi
+                {t('Kod yüklənmədi')}
               </AppText>
               <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, lineHeight: 21 }}>
-                Bu, kodun olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç — indi yeni kod yaratsan, divardakı köhnəsi işləməyi dayandırar.
+                {t(
+                  'Bu, kodun olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç — indi yeni kod yaratsan, divardakı köhnəsi işləməyi dayandırar.'
+                )}
               </AppText>
             </>
           ) : (
             <>
               <Icon name="qr" size={30} color={palette.tertiary} />
               <AppText variant="headline" center style={{ marginTop: 12 }}>
-                Hələ kod yoxdur
+                {t('Hələ kod yoxdur')}
               </AppText>
               <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, lineHeight: 21 }}>
-                Kod yarat, çap et və resepsiyaya as. Üzvlər onu oxuyub check-in edəcək.
+                {t('Kod yarat, çap et və resepsiyaya as. Üzvlər onu oxuyub check-in edəcək.')}
               </AppText>
             </>
           )}
         </View>
 
         {code.k === 'none' ? (
-          <Button title={busy ? 'Yaradılır…' : 'Kod yarat'} full disabled={busy} onPress={() => void rotate()} style={{ marginTop: 18 }} />
+          <Button title={busy ? t('Yaradılır…') : t('Kod yarat')} full disabled={busy} onPress={() => void rotate()} style={{ marginTop: 18 }} />
         ) : code.k === 'ready' ? (
           <>
             <Button
-              title="Kodu paylaş"
+              title={t('Kodu paylaş')}
               variant="secondary"
               full
               onPress={() =>
                 Share.share({
-                  message: `${gym.name} — SPOT check-in kodu: ${code.code}`,
+                  message: t('{gym} — SPOT check-in kodu: {code}', { gym: gym.name, code: code.code }),
                 }).catch(() => {})
               }
               style={{ marginTop: 18 }}
             />
             <PressableScale haptic={false} onPress={askRotate} disabled={busy} style={styles.rotate}>
               <AppText variant="subhead" color={palette.red}>
-                {busy ? 'Yenilənir…' : 'Yeni kod yarat'}
+                {busy ? t('Yenilənir…') : t('Yeni kod yarat')}
               </AppText>
             </PressableScale>
           </>
@@ -173,7 +177,9 @@ export default function GymQr() {
         <View style={styles.note}>
           <Icon name="shield" size={17} color={palette.voltDeep} />
           <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 19 }}>
-            Bu kodu yalnız sən görürsən. Onu kim oxuyursa, zalda olduğunu sübut edir — ona görə şəkildə paylaşma, divara as.
+            {t(
+              'Bu kodu yalnız sən görürsən. Onu kim oxuyursa, zalda olduğunu sübut edir — ona görə şəkildə paylaşma, divara as.'
+            )}
           </AppText>
         </View>
       </ScrollView>

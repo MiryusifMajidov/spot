@@ -25,8 +25,10 @@ import { getMyProfile } from './api';
 import { showAccountSwitcher } from './accounts';
 import { getUserId } from './api';
 import { invalidateFocusCache } from './focusFetch';
+import { t } from './i18n';
 import { getGymMembers, getMyGymId } from './roles';
 import { hasSupabaseConfig, supabase } from './supabase';
+import { useT } from './useT';
 
 export interface ScheduleItem {
   time: string;
@@ -272,7 +274,7 @@ export async function getGymReviews(gymId: string): Promise<GymReviewRow[]> {
   if (error) throw error;
   return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
     id: String(r.id),
-    name: (r.name as string) ?? 'Üzv',
+    name: (r.name as string) ?? t('Üzv'),
     tenure: (r.tenure as string) ?? '',
     rating: Number(r.rating ?? 0),
     text: (r.body as string) ?? '',
@@ -338,7 +340,7 @@ export async function getGymRoster(gymId: string): Promise<RosterMember[]> {
     const anonymous = p?.show_in_gym_list === false;
     return {
       profileId: m.profileId,
-      name: anonymous ? 'Anonim üzv' : m.name,
+      name: anonymous ? t('Anonim üzv') : m.name,
       anonymous,
       level: anonymous ? null : m.level,
       goals: anonymous ? [] : m.goals,
@@ -418,6 +420,7 @@ export async function postGymAnnouncement(gymName: string, body: string): Promis
  */
 export function GymGate({ state }: { state: MyGymState }) {
   const router = useRouter();
+  const t = useT();
   // The failed-lookup state is deliberately separate from the empty state: saying
   // «zal yoxdur» about a gym we simply could not read is a lie, and its only button
   // used to register a SECOND gym and brick the panel for good.
@@ -425,19 +428,19 @@ export function GymGate({ state }: { state: MyGymState }) {
   const empty = !state.offline && !state.loading && !state.error;
 
   const title = state.offline
-    ? 'Bağlantı yoxdur'
+    ? t('Bağlantı yoxdur')
     : state.loading
-      ? 'Yüklənir…'
+      ? t('Yüklənir…')
       : failed
-        ? 'Zalın məlumatları gətirilə bilmədi'
-        : 'Zal tapılmadı';
+        ? t('Zalın məlumatları gətirilə bilmədi')
+        : t('Zal tapılmadı');
   const body = state.offline
-    ? 'Zal hesabı serverdə saxlanılır. İnternet bağlantısı olmadan zalın məlumatlarını göstərə bilmirik — uydurma rəqəm göstərməkdənsə boş qalmağı seçirik.'
+    ? t('Zal hesabı serverdə saxlanılır. İnternet bağlantısı olmadan zalın məlumatlarını göstərə bilmirik — uydurma rəqəm göstərməkdənsə boş qalmağı seçirik.')
     : state.loading
-      ? 'Zalın məlumatları gətirilir.'
+      ? t('Zalın məlumatları gətirilir.')
       : failed
-        ? 'Serverə sorğu alınmadı, ona görə bu hesabda zal olub-olmadığını deyə bilmirik. Bağlantını yoxlayıb yenidən cəhd et — zalın silinməyib.'
-        : 'Bu hesaba bağlı zal yoxdur. Zalını qeydiyyata alsan panel dərhal onun real məlumatlarını göstərəcək.';
+        ? t('Serverə sorğu alınmadı, ona görə bu hesabda zal olub-olmadığını deyə bilmirik. Bağlantını yoxlayıb yenidən cəhd et — zalın silinməyib.')
+        : t('Bu hesaba bağlı zal yoxdur. Zalını qeydiyyata alsan panel dərhal onun real məlumatlarını göstərəcək.');
 
   return (
     <View style={gateStyles.wrap}>
@@ -452,17 +455,17 @@ export function GymGate({ state }: { state: MyGymState }) {
       </AppText>
       {failed ? (
         <View style={{ marginTop: 20, alignSelf: 'stretch' }}>
-          <Button title="Yenidən cəhd et" variant="primary" full onPress={state.reload} />
+          <Button title={t('Yenidən cəhd et')} variant="primary" full onPress={state.reload} />
         </View>
       ) : null}
       {empty ? (
         <View style={{ marginTop: 20, alignSelf: 'stretch' }}>
-          <Button title="Zalı qeydiyyata al" variant="primary" full onPress={() => router.push('/(tabs)/profile/create-gym')} />
+          <Button title={t('Zalı qeydiyyata al')} variant="primary" full onPress={() => router.push('/(tabs)/profile/create-gym')} />
         </View>
       ) : null}
       {/* The gate carries no NavBar, so without this the four gym tabs are a dead end. */}
       <View style={{ marginTop: 10, alignSelf: 'stretch' }}>
-        <Button title="Şəxsi hesaba qayıt" variant="secondary" full onPress={() => showAccountSwitcher(router)} />
+        <Button title={t('Şəxsi hesaba qayıt')} variant="secondary" full onPress={() => showAccountSwitcher(router)} />
       </View>
     </View>
   );

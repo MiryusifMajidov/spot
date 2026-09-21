@@ -9,6 +9,7 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { tapFeedback } from '@/lib/feedback';
+import { timeAgo } from '@/lib/format';
 import {
   getNotifications,
   markRead,
@@ -19,7 +20,7 @@ import {
   type NotifType,
 } from '@/lib/notifications';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { timeAgoAz } from '@/store/db';
+import { useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
 
 /** loading → the read is in flight; ready → the list IS the truth;
@@ -48,7 +49,13 @@ const ICON: Record<NotifType, { name: IconName; tint: string }> = {
   follow: { name: 'users', tint: palette.voltDeep },
 };
 
+/** «indi» / «5 dəq» / «Dünən», in the language the person chose. The clock is
+ *  read here, exactly where the old `timeAgoAz` read it. */
+const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) => string) =>
+  timeAgo(iso, Date.now(), tr);
+
 export default function Notifications() {
+  const t = useT();
   const [rows, setRows] = useState<NotifRow[]>([]);
   const [state, setState] = useState<State>('loading');
 
@@ -84,7 +91,7 @@ export default function Notifications() {
   return (
     <Screen edges={['top', 'bottom']}>
       <NavBar
-        title="Bildirişlər"
+        title={t('Bildirişlər')}
         right={
           unread > 0 ? (
             <PressableScale
@@ -94,7 +101,7 @@ export default function Notifications() {
                 setRows((rs) => rs.map((r) => ({ ...r, read: true })));
               }}
             >
-              <AppText variant="footnote" color={palette.blue}>Hamısını oxu</AppText>
+              <AppText variant="footnote" color={palette.blue}>{t('Hamısını oxu')}</AppText>
             </PressableScale>
           ) : undefined
         }
@@ -103,26 +110,26 @@ export default function Notifications() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {state === 'loading' ? (
           <AppText variant="body" color={palette.textSecondary} style={styles.note}>
-            Yüklənir…
+            {t('Yüklənir…')}
           </AppText>
         ) : state === 'failed' ? (
           /* A failed read is not an empty inbox. */
           <View style={styles.empty}>
             <Icon name="shield" size={26} color={palette.tertiary} />
-            <AppText variant="headline" style={{ marginTop: 12 }}>Yüklənmədi</AppText>
+            <AppText variant="headline" style={{ marginTop: 12 }}>{t('Yüklənmədi')}</AppText>
             <AppText variant="body" color={palette.textSecondary} center style={styles.emptySub}>
-              Bildirişləri gətirmək alınmadı — neçəsi olduğunu bilmirik.
+              {t('Bildirişləri gətirmək alınmadı — neçəsi olduğunu bilmirik.')}
             </AppText>
             <PressableScale onPress={load} style={styles.retry}>
-              <AppText variant="callout" color={palette.white}>Yenidən cəhd et</AppText>
+              <AppText variant="callout" color={palette.white}>{t('Yenidən cəhd et')}</AppText>
             </PressableScale>
           </View>
         ) : rows.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="bell" size={26} color={palette.tertiary} />
-            <AppText variant="headline" style={{ marginTop: 12 }}>Hələ bildiriş yoxdur</AppText>
+            <AppText variant="headline" style={{ marginTop: 12 }}>{t('Hələ bildiriş yoxdur')}</AppText>
             <AppText variant="body" color={palette.textSecondary} center style={styles.emptySub}>
-              Kimsə şərhini bəyənəndə, sənə təklif göndərəndə və ya səni etiketləyəndə burada görünəcək.
+              {t('Kimsə şərhini bəyənəndə, sənə təklif göndərəndə və ya səni etiketləyəndə burada görünəcək.')}
             </AppText>
           </View>
         ) : (
@@ -135,7 +142,7 @@ export default function Notifications() {
                   <View style={{ flex: 1 }}>
                     <AppText variant="callout" style={{ lineHeight: 20 }}>{notifText(n)}</AppText>
                     <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>
-                      {timeAgoAz(n.createdAt)}
+                      {ago(n.createdAt, t)}
                     </AppText>
                   </View>
                   <Icon name={ic.name} size={16} color={ic.tint} />

@@ -14,6 +14,7 @@ import { getMyProfile } from '@/lib/api';
 import { useIsGuest } from '@/lib/authGate';
 import { useCommunityPosts, useFeedVideos, useGyms } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useDb, useStats } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
@@ -25,13 +26,14 @@ function avatarOf(row: unknown): string | null {
 }
 
 export default function Profile() {
+  const t = useT();
   const router = useRouter();
   const [avatar, setAvatar] = useState<string | null>(null);
   const isGuest = useIsGuest();
   const profile = useAppStore((s) => s.profile);
   const gyms = useGyms();
   const gym = profile.homeGymId ? gyms.find((g) => g.id === profile.homeGymId) ?? null : null;
-  const name = profile.name || 'Sən';
+  const name = profile.name || t('Sən');
 
   const stats = useStats();
   const prs = stats.prs;
@@ -79,20 +81,20 @@ export default function Profile() {
             <View style={styles.guestIcon}>
               <Icon name="user" size={30} color={palette.voltDeep} />
             </View>
-            <AppText variant="title2" style={{ marginTop: 16 }}>Qonaq rejimi</AppText>
+            <AppText variant="title2" style={{ marginTop: 16 }}>{t('Qonaq rejimi')}</AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, lineHeight: 21, maxWidth: 290 }}>
-              Zallara və müəllimlərə baxırsan. Yoldaş tapmaq, söhbət, check-in və məşq tarixçəsi üçün qısa profil yarat — ad və istifadəçi adı, bir ekran.
+              {t('Zallara və müəllimlərə baxırsan. Yoldaş tapmaq, söhbət, check-in və məşq tarixçəsi üçün qısa profil yarat — ad və istifadəçi adı, bir ekran.')}
             </AppText>
-            <Button title="Daxil ol" onPress={() => router.push('/onboarding/welcome')} style={{ marginTop: 20, alignSelf: 'stretch' }} />
+            <Button title={t('Daxil ol')} onPress={() => router.push('/onboarding/welcome')} style={{ marginTop: 20, alignSelf: 'stretch' }} />
           </View>
 
           <View style={styles.guestPerks}>
             {[
-              { icon: 'users' as const, t: 'Məşq yoldaşı tap', s: 'Zal, saat, səviyyə və məqsədə görə uyğunluq' },
-              { icon: 'dumbbell' as const, t: 'Proqramları izlə', s: 'Gün-gün hərəkət, set və təkrar' },
+              { icon: 'users' as const, t: t('Məşq yoldaşı tap'), s: t('Zal, saat, səviyyə və məqsədə görə uyğunluq') },
+              { icon: 'dumbbell' as const, t: t('Proqramları izlə'), s: t('Gün-gün hərəkət, set və təkrar') },
               // «çəki» was in this list after the weight tracker was deleted —
               // three promises, one of them for a screen that no longer exists.
-              { icon: 'flame' as const, t: 'Seriya və statistika', s: 'Check-in, həcm, şəxsi rekordlar' },
+              { icon: 'flame' as const, t: t('Seriya və statistika'), s: t('Check-in, həcm, şəxsi rekordlar') },
             ].map((p) => (
               <View key={p.t} style={styles.perkRow}>
                 <View style={styles.perkIcon}>
@@ -118,7 +120,7 @@ export default function Profile() {
               the person sends to someone else, so the one place the product spoke
               English was the one place strangers read it. «idman» is the word the
               rest of the app uses («idman zalı»). */}
-          <PressableScale activeScale={0.9} onPress={() => Share.share({ message: `${name} — SPOT idman profili.${gym ? ` ${gym.name}.` : ''}${profile.level ? ` ${profile.level} səviyyə.` : ''}` }).catch(() => {})}>
+          <PressableScale activeScale={0.9} onPress={() => Share.share({ message: `${t('{name} — SPOT idman profili.', { name })}${gym ? ` ${gym.name}.` : ''}${profile.level ? ` ${t('{level} səviyyə.', { level: t(profile.level) })}` : ''}` }).catch(() => {})}>
             <Icon name="share" size={24} color={palette.inkText} />
           </PressableScale>
           <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/profile/settings')}>
@@ -139,26 +141,26 @@ export default function Profile() {
             {/* No home gym means the person simply has not picked one — never claim
                 "trains at home" on their behalf. */}
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 5 }}>
-              {gym ? gym.name : 'Zal seçilməyib'}
-              {profile.level ? ` · ${azLower(profile.level)} səviyyə` : ' · səviyyə seçilməyib'}
+              {gym ? gym.name : t('Zal seçilməyib')}
+              {profile.level ? ` · ${t('{level} səviyyə', { level: azLower(t(profile.level)) })}` : ` · ${t('səviyyə seçilməyib')}`}
             </AppText>
             <View style={styles.badges}>
               {profile.role === 'trainer' ? (
                 <View style={[styles.badge, { backgroundColor: 'rgba(10,132,255,0.12)' }]}>
                   <Icon name="verified" size={12} color={palette.blue} />
-                  <AppText style={{ fontSize: 11.5, fontWeight: '700', color: palette.blue }}>Müəllim</AppText>
+                  <AppText style={{ fontSize: 11.5, fontWeight: '700', color: palette.blue }}>{t('Müəllim')}</AppText>
                 </View>
               ) : null}
               <PressableScale activeScale={0.94} onPress={() => router.push('/(tabs)/profile/achievements')} style={[styles.badge, { backgroundColor: 'rgba(255,107,53,0.14)' }]}>
                 <Icon name="flame" size={12} color={palette.streak} />
                 <AppText style={{ fontSize: 11.5, fontWeight: '700', color: '#D14A15' }}>
-                  {stats.streakDays > 0 ? `${stats.streakDays} gün` : 'Seriya yoxdur'}
+                  {stats.streakDays > 0 ? t('{n} gün', { n: stats.streakDays, count: stats.streakDays }) : t('Seriya yoxdur')}
                 </AppText>
               </PressableScale>
               {partners > 0 ? (
                 <View style={[styles.badge, { backgroundColor: 'rgba(198,255,61,0.30)' }]}>
                   <Icon name="users" size={12} color={palette.voltDeep} />
-                  <AppText style={{ fontSize: 11.5, fontWeight: '700', color: '#3F5500' }}>{partners} yoldaş</AppText>
+                  <AppText style={{ fontSize: 11.5, fontWeight: '700', color: '#3F5500' }}>{t('{n} yoldaş', { n: partners, count: partners })}</AppText>
                 </View>
               ) : null}
             </View>
@@ -172,26 +174,26 @@ export default function Profile() {
         ) : null}
 
         <View style={styles.actions}>
-          <Button title="Profili redaktə et" onPress={() => router.push('/(tabs)/profile/edit')} style={{ flex: 1, height: 44 }} />
+          <Button title={t('Profili redaktə et')} onPress={() => router.push('/(tabs)/profile/edit')} style={{ flex: 1, height: 44 }} />
           <PressableScale activeScale={0.94} onPress={() => router.push('/(tabs)/profile/saved')} style={styles.squareBtn}>
             <Icon name="bookmark" size={20} color={palette.inkText} />
           </PressableScale>
         </View>
 
         <PressableScale activeScale={0.99} onPress={() => router.push('/(tabs)/profile/history')} style={styles.stats}>
-          <StatCard value={`${stats.count}`} label="məşq" />
-          <StatCard value={`${volumeT} t`} label="həcm" />
-          <StatCard value={stats.sinceDays > 0 ? `${stats.sinceDays} gün` : 'Yeni'} label="SPOT-da" />
+          <StatCard value={`${stats.count}`} label={t('məşq', { count: stats.count })} />
+          <StatCard value={t('{n} t', { n: volumeT })} label={t('həcm')} />
+          <StatCard value={stats.sinceDays > 0 ? t('{n} gün', { n: stats.sinceDays, count: stats.sinceDays }) : t('Yeni')} label={t('SPOT-da')} />
         </PressableScale>
 
         {/* PRs */}
         <View style={styles.prCard}>
           <View style={styles.prHead}>
-            <AppText variant="headline">Şəxsi rekordlar</AppText>
+            <AppText variant="headline">{t('Şəxsi rekordlar')}</AppText>
             {prs.length > 0 ? (
               <PressableScale haptic={false} activeScale={0.94} onPress={() => router.push('/(tabs)/profile/analytics')}>
                 <AppText variant="subhead" color={palette.blue}>
-                  Hamısı
+                  {t('Hamısı')}
                 </AppText>
               </PressableScale>
             ) : null}
@@ -200,15 +202,15 @@ export default function Profile() {
             <View style={{ flexDirection: 'row', gap: 10 }}>
               {prs.slice(0, 3).map((pr) => (
                 <View key={pr.lift} style={styles.pr}>
-                  <AppText style={styles.prLabel}>{azUpper(pr.lift)}</AppText>
-                  <AppText style={{ fontSize: 17, fontWeight: '700', marginTop: 8 }}>{pr.value} kq</AppText>
+                  <AppText style={styles.prLabel}>{azUpper(t(pr.lift))}</AppText>
+                  <AppText style={{ fontSize: 17, fontWeight: '700', marginTop: 8 }}>{t('{n} kq', { n: pr.value })}</AppText>
                   {pr.delta ? <AppText style={{ fontSize: 10.5, fontWeight: '500', color: palette.voltDeep, marginTop: 6 }}>{pr.delta}</AppText> : null}
                 </View>
               ))}
             </View>
           ) : (
             <AppText variant="body" color={palette.textSecondary} style={{ marginTop: 4, lineHeight: 21 }}>
-              Hələ rekord yoxdur. Məşqləri qeyd et — ən yaxşı nəticələrin burada görünəcək.
+              {t('Hələ rekord yoxdur. Məşqləri qeyd et — ən yaxşı nəticələrin burada görünəcək.')}
             </AppText>
           )}
         </View>
@@ -219,7 +221,7 @@ export default function Profile() {
             product from finding a gym and writing down what you lifted, and the
             second told every person who opened it that there was nothing there. */}
         <AppText variant="title3" style={{ marginTop: 20, marginBottom: 12 }}>
-          Paylaşdıqların
+          {t('Paylaşdıqların')}
         </AppText>
 
         {(
@@ -227,12 +229,12 @@ export default function Profile() {
             <View style={styles.placeholderBox}>
               <Icon name="cam" size={26} color={palette.tertiary} />
               <AppText variant="headline" style={{ marginTop: 12 }}>
-                Hələ paylaşmamısan
+                {t('Hələ paylaşmamısan')}
               </AppText>
               <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, lineHeight: 21, maxWidth: 260 }}>
-                Texnika videon və ya zal postun burada toplanacaq.
+                {t('Texnika videon və ya zal postun burada toplanacaq.')}
               </AppText>
-              <Button title="Video paylaş" icon="cam" onPress={() => router.push('/(tabs)/feed/share')} style={{ marginTop: 18 }} />
+              <Button title={t('Video paylaş')} icon="cam" onPress={() => router.push('/(tabs)/feed/share')} style={{ marginTop: 18 }} />
             </View>
           ) : (
             <View>

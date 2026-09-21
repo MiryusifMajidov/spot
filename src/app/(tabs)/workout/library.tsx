@@ -13,6 +13,7 @@ import { usePrograms } from '@/lib/hooks';
 import { useDb } from '@/store/db';
 import { palette, shadow, spacing } from '@/theme';
 import { searchKey } from '@/lib/az';
+import { useT } from '@/lib/useT';
 
 const FILTERS = ['Hamısı', 'Mənimkilər', 'Müəllimlər', 'İcma', 'Evdə'];
 
@@ -35,6 +36,7 @@ function matches(p: Program, filter: string, mineIds: string[]) {
 
 export default function Library() {
   const router = useRouter();
+  const t = useT();
   const remote = usePrograms();
   const mine = useDb((s) => s.myPrograms);
   const [filter, setFilter] = useState('Hamısı');
@@ -62,14 +64,14 @@ export default function Library() {
     <Screen>
       <View style={styles.top}>
         <AppText variant="largeTitle" style={{ marginBottom: 12 }}>
-          Proqramlar
+          {t('Proqramlar')}
         </AppText>
         <View style={styles.search}>
           <Icon name="search" size={17} color={palette.caption} />
           <TextInput
             value={q}
             onChangeText={setQ}
-            placeholder="Proqram, müəllif və ya etiket axtar"
+            placeholder={t('Proqram, müəllif və ya etiket axtar')}
             placeholderTextColor={palette.caption}
             style={styles.searchInput}
             returnKeyType="search"
@@ -82,7 +84,7 @@ export default function Library() {
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={{ marginTop: 12, marginHorizontal: -spacing.screen }}>
           {FILTERS.map((f) => (
-            <Chip key={f} label={f} tone="card" selected={filter === f} onPress={() => setFilter(f)} icon={f === 'Müəllimlər' ? 'verified' : undefined} />
+            <Chip key={f} label={t(f)} tone="card" selected={filter === f} onPress={() => setFilter(f)} icon={f === 'Müəllimlər' ? 'verified' : undefined} />
           ))}
         </ScrollView>
       </View>
@@ -92,11 +94,11 @@ export default function Library() {
           <View style={styles.empty}>
             <Icon name={loading ? 'timer' : 'search'} size={22} color={palette.tertiary} />
             <AppText variant="headline" style={{ marginTop: 10 }}>
-              {loading ? 'Proqramlar yüklənir…' : 'Bu filtrə uyğun proqram yoxdur'}
+              {loading ? t('Proqramlar yüklənir…') : t('Bu filtrə uyğun proqram yoxdur')}
             </AppText>
             {!loading ? (
               <AppText variant="footnote" color={palette.caption} style={{ marginTop: 6, textAlign: 'center', lineHeight: 18 }}>
-                Filtri dəyiş, axtarışı təmizlə — və ya aşağıdakı düymə ilə öz proqramını yarat.
+                {t('Filtri dəyiş, axtarışı təmizlə — və ya aşağıdakı düymə ilə öz proqramını yarat.')}
               </AppText>
             ) : null}
           </View>

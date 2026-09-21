@@ -217,11 +217,11 @@ export default function GymReviews() {
                     }}
                     style={styles.replyBtn}>
                     <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>
-                      {r.reply ? 'Cavabı redaktə et' : 'Rəsmi cavab yaz'}
+                      {r.reply ? t('Cavabı redaktə et') : t('Rəsmi cavab yaz')}
                     </AppText>
                   </PressableScale>
                   <PressableScale activeScale={0.97} onPress={() => report(r)}>
-                    <AppText style={{ fontSize: 12.5, color: palette.tertiary }}>Şikayət et</AppText>
+                    <AppText style={{ fontSize: 12.5, color: palette.tertiary }}>{t('Şikayət et')}</AppText>
                   </PressableScale>
                 </View>
               </View>
@@ -232,7 +232,7 @@ export default function GymReviews() {
         <View style={styles.rule}>
           <Icon name="shield" size={15} color={palette.tertiary} />
           <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.textSecondary, flex: 1 }}>
-            Sahib rəyi silə bilmir — yalnız cavab yaza və ya şikayət edə bilər. Şikayət rəyi silmir, moderator yoxlayır.
+            {t('Sahib rəyi silə bilmir — yalnız cavab yaza və ya şikayət edə bilər. Şikayət rəyi silmir, moderator yoxlayır.')}
           </AppText>
         </View>
       </ScrollView>
@@ -240,25 +240,25 @@ export default function GymReviews() {
       <Modal visible={!!replyTo} animationType="slide" transparent onRequestClose={() => setReplyTo(null)}>
         <View style={styles.modalBg}>
           <View style={[styles.sheet, { paddingBottom: (kb > 0 ? kb : insets.bottom) + 16 }]}>
-            <AppText variant="headline">Rəsmi cavab</AppText>
+            <AppText variant="headline">{t('Rəsmi cavab')}</AppText>
             <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 6 }}>
-              Cavabın rəyin altında {gym.name} adından görünəcək.
+              {t('Cavabın rəyin altında {gym} adından görünəcək.', { gym: gym.name })}
             </AppText>
             <TextInput
               value={replyText}
               onChangeText={setReplyText}
               multiline
-              placeholder="Qeydin üçün təşəkkür edirik…"
+              placeholder={t('Qeydin üçün təşəkkür edirik…')}
               placeholderTextColor={palette.caption}
               style={styles.input}
             />
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
               <View style={{ flex: 1 }}>
-                <Button title="Ləğv et" variant="secondary" full onPress={() => setReplyTo(null)} />
+                <Button title={t('Ləğv et')} variant="secondary" full onPress={() => setReplyTo(null)} />
               </View>
               <View style={{ flex: 1 }}>
                 <Button
-                  title={saving ? 'Yazılır…' : 'Yaz'}
+                  title={saving ? t('Yazılır…') : t('Yaz')}
                   variant="primary"
                   full
                   disabled={!replyText.trim() || saving}

@@ -9,6 +9,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Program } from '@/data/types';
 import { removeProgram } from '@/lib/removeProgram';
+import { useT } from '@/lib/useT';
 import { useDb } from '@/store/db';
 import { actionSheet, confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -34,6 +35,7 @@ import { palette, spacing } from '@/theme';
  * list, with a way in.
  */
 export default function TrainerPrograms() {
+  const t = useT();
   const router = useRouter();
   const programs = useDb((s) => s.myPrograms);
 
@@ -44,35 +46,35 @@ export default function TrainerPrograms() {
     actionSheet({
       title: p.title,
       actions: [
-        { label: 'Redaktə et', onPress: () => openEdit(p) },
+        { label: t('Redaktə et'), onPress: () => openEdit(p) },
         {
-          label: 'Sil',
+          label: t('Sil'),
           style: 'destructive',
           onPress: () =>
             confirm(
-              'Proqramı silmək?',
-              `«${p.title}» siyahından silinəcək. Şagirdə artıq təyin etmisənsə, ona yenidən proqram təyin etməlisən.`,
+              t('Proqramı silmək?'),
+              t('«{title}» siyahından silinəcək. Şagirdə artıq təyin etmisənsə, ona yenidən proqram təyin etməlisən.', { title: p.title }),
               [
-                { label: 'Ləğv et', style: 'cancel' },
+                { label: t('Ləğv et'), style: 'cancel' },
                 {
-                  label: 'Sil',
+                  label: t('Sil'),
                   style: 'destructive',
                   onPress: () => {
                     void (async () => {
                       const r = await removeProgram(p.id);
                       if (!r.ok) {
                         // Still published, under this trainer's name.
-                        toast('Proqram silinmədi — serverə çatmadı. Bağlantını yoxla.', 'error');
+                        toast(t('Proqram silinmədi — serverə çatmadı. Bağlantını yoxla.'), 'error');
                         return;
                       }
-                      toast('Proqram silindi');
+                      toast(t('Proqram silindi'));
                     })();
                   },
                 },
               ]
             ),
         },
-        { label: 'Bağla', style: 'cancel' },
+        { label: t('Bağla'), style: 'cancel' },
       ],
     });
 
@@ -88,10 +90,10 @@ export default function TrainerPrograms() {
       0
     );
     const parts = [
-      days ? `${days} gün` : 'gün yazılmayıb',
-      moves ? `${moves} hərəkət` : null,
-      clips ? `${clips} video` : null,
-      p.minutes ? `~${p.minutes} dəq` : null,
+      days ? t('{n} gün', { n: days, count: days }) : t('gün yazılmayıb'),
+      moves ? t('{n} hərəkət', { n: moves, count: moves }) : null,
+      clips ? t('{n} video', { n: clips, count: clips }) : null,
+      p.minutes ? t('~{n} dəq', { n: p.minutes, count: p.minutes }) : null,
     ].filter(Boolean);
     return parts.join(' · ');
   };
@@ -99,13 +101,13 @@ export default function TrainerPrograms() {
   return (
     <Screen edges={['top']}>
       <LargeHeader
-        title="Proqramlar"
-        subtitle="Yaratdığın proqramlar. Hamısı pulsuzdur."
+        title={t('Proqramlar')}
+        subtitle={t('Yaratdığın proqramlar. Hamısı pulsuzdur.')}
         right={
           <PressableScale
             activeScale={0.9}
             accessibilityRole="button"
-            accessibilityLabel="Yeni proqram yarat"
+            accessibilityLabel={t('Yeni proqram yarat')}
             hitSlop={8}
             onPress={openNew}
             style={styles.fab}>
@@ -116,18 +118,17 @@ export default function TrainerPrograms() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 28 }}>
         {programs.length === 0 ? (
           <View style={styles.empty}>
-            <AppText style={{ fontSize: 15, fontWeight: '600', marginBottom: 6 }}>Hələ proqram yaratmamısan</AppText>
+            <AppText style={{ fontSize: 15, fontWeight: '600', marginBottom: 6 }}>{t('Hələ proqram yaratmamısan')}</AppText>
             <AppText style={{ fontSize: 13.5, lineHeight: 19, color: palette.textSecondary }}>
-              İlk proqramını yarat — hər hərəkətin set sayını, təkrarını və ya müddətini özün yazırsan, istəsən
-              texnika videosu da əlavə edirsən. Sonra onu şagirdlərinə təyin edə bilərsən.
+              {t('İlk proqramını yarat — hər hərəkətin set sayını, təkrarını və ya müddətini özün yazırsan, istəsən texnika videosu da əlavə edirsən. Sonra onu şagirdlərinə təyin edə bilərsən.')}
             </AppText>
             <PressableScale
               activeScale={0.97}
               accessibilityRole="button"
-              accessibilityLabel="İlk proqramı yarat"
+              accessibilityLabel={t('İlk proqramı yarat')}
               onPress={openNew}
               style={[styles.primaryBtn, { marginTop: 15, alignSelf: 'flex-start', paddingHorizontal: 18 }]}>
-              <AppText style={{ color: palette.white, fontSize: 13.5, fontWeight: '600' }}>Proqram yarat</AppText>
+              <AppText style={{ color: palette.white, fontSize: 13.5, fontWeight: '600' }}>{t('Proqram yarat')}</AppText>
             </PressableScale>
           </View>
         ) : (
@@ -137,7 +138,7 @@ export default function TrainerPrograms() {
                 <PressableScale
                   activeScale={0.99}
                   accessibilityRole="button"
-                  accessibilityLabel={`${p.title} proqramını redaktə et`}
+                  accessibilityLabel={t('{title} proqramını redaktə et', { title: p.title })}
                   onPress={() => openEdit(p)}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <View style={styles.thumb}>
@@ -150,7 +151,7 @@ export default function TrainerPrograms() {
                   <PressableScale
                     activeScale={0.9}
                     accessibilityRole="button"
-                    accessibilityLabel={`${p.title} üçün əməliyyatlar`}
+                    accessibilityLabel={t('{title} üçün əməliyyatlar', { title: p.title })}
                     hitSlop={10}
                     onPress={() => rowMenu(p)}
                     style={styles.moreBtn}>
@@ -163,8 +164,7 @@ export default function TrainerPrograms() {
         )}
 
         <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.caption, marginTop: 18 }}>
-          Şagirdə proqram təyin edəndə ona proqramın özü açılır — günləri, hərəkətləri, yazdığın set və təkrar
-          sayı ilə birlikdə. SPOT-da ödəniş yoxdur, bütün proqramlar pulsuzdur.
+          {t('Şagirdə proqram təyin edəndə ona proqramın özü açılır — günləri, hərəkətləri, yazdığın set və təkrar sayı ilə birlikdə. SPOT-da ödəniş yoxdur, bütün proqramlar pulsuzdur.')}
         </AppText>
       </ScrollView>
     </Screen>

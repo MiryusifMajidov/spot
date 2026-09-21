@@ -9,6 +9,7 @@
  * Requires supabase/schema6_trainer_students.sql.
  */
 import { getMyProfile } from './api';
+import { t } from './i18n';
 import { supabase } from './supabase';
 
 // ---------------------------------------------------------------- trainer ----
@@ -185,7 +186,7 @@ export async function getMyStudents(): Promise<{ pending: StudentRow[]; active: 
     return {
       requestId: r.id,
       profileId: r.from_profile,
-      name: p?.name ?? 'İstifadəçi',
+      name: p?.name ?? t('İstifadəçi'),
       age: p?.age ?? null,
       level: p?.level ?? null,
       goals: p?.goals ?? [],
@@ -354,7 +355,7 @@ export async function getGymMembers(gymId: string): Promise<GymMemberRow[]> {
 
   return rows.map((p) => ({
     profileId: p.id,
-    name: p.name ?? 'Üzv',
+    name: p.name ?? t('Üzv'),
     level: p.level,
     goals: p.goals ?? [],
     lastCheckIn: counts.get(p.id)?.last ?? null,

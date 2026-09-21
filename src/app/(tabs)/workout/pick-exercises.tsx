@@ -10,6 +10,7 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { searchKey } from '@/lib/az';
+import { useT } from '@/lib/useT';
 import { exerciseLibrary } from '@/store/db';
 import { itemFromLibrary, itemFromName, useProgramDraft } from '@/store/programDraft';
 import { confirm, toast } from '@/store/ui';
@@ -43,6 +44,7 @@ const GROUPS: { label: string; muscles: string[] }[] = [
 
 export default function PickExercises() {
   const router = useRouter();
+  const t = useT();
   const { dayKey } = useLocalSearchParams<{ dayKey?: string }>();
   const addItems = useProgramDraft((s) => s.addItems);
   const days = useProgramDraft((s) => s.days);
@@ -78,7 +80,7 @@ export default function PickExercises() {
     const typed = own.trim();
     if (typed) items.push(itemFromName(typed));
     if (!items.length) {
-      toast('Ən azı bir hərəkət seç', 'info');
+      toast(t('Ən azı bir hərəkət seç'), 'info');
       return;
     }
     addItems(dayKey, items);
@@ -97,22 +99,22 @@ export default function PickExercises() {
       navigation.dispatch(data.action);
       return;
     }
-    confirm('Seçdiklərin əlavə olunsun?', 'Seçdiyin hərəkətlər hələ günə əlavə olunmayıb.', [
-      { label: 'Atmaq', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
-      { label: 'Əlavə et', style: 'primary', onPress: () => done() },
+    confirm(t('Seçdiklərin əlavə olunsun?'), t('Seçdiyin hərəkətlər hələ günə əlavə olunmayıb.'), [
+      { label: t('Atmaq'), style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+      { label: t('Əlavə et'), style: 'primary', onPress: () => done() },
     ]);
   });
 
   return (
     <Screen edges={['top']}>
-      <NavBar title={day ? day.title : 'Hərəkət seç'} />
+      <NavBar title={day ? day.title : t('Hərəkət seç')} />
 
       <View style={styles.searchWrap}>
         <Icon name="search" size={17} color={palette.caption} />
         <TextInput
           value={q}
           onChangeText={setQ}
-          placeholder="Hərəkət axtar"
+          placeholder={t('Hərəkət axtar')}
           placeholderTextColor={palette.caption}
           style={styles.search}
           autoCorrect={false}
@@ -133,7 +135,7 @@ export default function PickExercises() {
               onPress={() => setGroup(i)}
               style={[styles.chip, i === group ? styles.chipOn : null]}>
               <AppText variant="subhead" color={i === group ? palette.white : palette.textSecondary}>
-                {g.label}
+                {t(g.label)}
               </AppText>
             </PressableScale>
           ))}
@@ -146,9 +148,9 @@ export default function PickExercises() {
           return (
             <PressableScale key={e.id} activeScale={0.98} onPress={() => toggle(e.id)} style={[styles.row, on ? styles.rowOn : null]}>
               <View style={{ flex: 1 }}>
-                <AppText variant="headline">{e.name}</AppText>
+                <AppText variant="headline">{t(e.name)}</AppText>
                 <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>
-                  {e.muscle} · {e.equipment}
+                  {t(e.muscle)} · {t(e.equipment)}
                 </AppText>
               </View>
               <View style={[styles.check, on ? styles.checkOn : null]}>
@@ -160,7 +162,7 @@ export default function PickExercises() {
 
         {list.length === 0 ? (
           <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 26, lineHeight: 21 }}>
-            «{q}» üçün kitabxanada nəticə yoxdur. Aşağıda öz adınla yaza bilərsən.
+            {t('«{q}» üçün kitabxanada nəticə yoxdur. Aşağıda öz adınla yaza bilərsən.', { q })}
           </AppText>
         ) : null}
 
@@ -170,25 +172,25 @@ export default function PickExercises() {
             simply could not contain it. */}
         <View style={styles.ownBox}>
           <AppText variant="overline" color={palette.caption}>
-            Öz hərəkətini yaz
+            {t('Öz hərəkətini yaz')}
           </AppText>
           <TextInput
             value={own}
             onChangeText={setOwn}
-            placeholder="Məsələn: Bolqar split skvat"
+            placeholder={t('Məsələn: Bolqar split skvat')}
             placeholderTextColor={palette.caption}
             maxLength={80}
             style={styles.ownInput}
           />
           <AppText variant="caption" color={palette.caption} style={{ marginTop: 6, lineHeight: 17 }}>
-            Kitabxanada olmayan hərəkəti buraya yaz — set və təkrarını növbəti ekranda özün təyin edəcəksən.
+            {t('Kitabxanada olmayan hərəkəti buraya yaz — set və təkrarını növbəti ekranda özün təyin edəcəksən.')}
           </AppText>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
         <Button
-          title={count === 0 ? 'Hərəkət seç' : count === 1 ? '1 hərəkət əlavə et' : `${count} hərəkət əlavə et`}
+          title={count === 0 ? t('Hərəkət seç') : count === 1 ? t('1 hərəkət əlavə et') : t('{n} hərəkət əlavə et', { n: count, count })}
           full
           disabled={count === 0}
           onPress={done}

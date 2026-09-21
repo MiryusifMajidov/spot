@@ -9,11 +9,10 @@ import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
-import { decimal } from '@/lib/format';
 import { followProfile } from '@/lib/social';
 import { SuggestedTrainer, suggestedTrainers } from '@/lib/suggested';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
@@ -189,6 +188,7 @@ export default function SuggestTrainers() {
 }
 
 function TrainerRow({ trainer, on, onToggle }: { trainer: SuggestedTrainer; on: boolean; onToggle: () => void }) {
+  const fmt = useFormat();
   const t = useT();
   return (
     <PressableScale activeScale={0.98} onPress={onToggle} style={[styles.row, on ? styles.rowOn : null]}>
@@ -210,7 +210,7 @@ function TrainerRow({ trainer, on, onToggle }: { trainer: SuggestedTrainer; on: 
           <View style={styles.metaRow}>
             <Icon name="star" size={12} color={palette.voltDeep} />
             <AppText variant="caption" color={palette.caption}>
-              {decimal(trainer.rating, 1)}
+              {fmt.decimal(trainer.rating, 1)}
             </AppText>
           </View>
         ) : null}

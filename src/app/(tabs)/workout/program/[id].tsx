@@ -11,6 +11,7 @@ import { Tag } from '@/components/ui/Tag';
 import { useProgram, useProgramPhase } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { removeProgram } from '@/lib/removeProgram';
+import { useT } from '@/lib/useT';
 import { seedById, useAllPrograms, useDb } from '@/store/db';
 import { actionSheet, confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -19,6 +20,7 @@ import { estimateDurationMin, resolveDayExercises } from '../day';
 export default function ProgramDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const remote = useProgram(id);
   const all = useAllPrograms();
   const saved = useDb((s) => s.savedPrograms);
@@ -56,15 +58,15 @@ export default function ProgramDetail() {
        alone. Saying «silinib» about it would blame the wrong thing. */
     const trainerLocal = typeof id === 'string' && id.startsWith('mine-');
     const heading =
-      probe === 'pending' ? 'Yüklənir…' : probe === 'failed' ? 'Proqram yüklənmədi' : 'Proqram tapılmadı';
+      probe === 'pending' ? t('Yüklənir…') : probe === 'failed' ? t('Proqram yüklənmədi') : t('Proqram tapılmadı');
     const detail =
       probe === 'pending'
         ? null
         : probe === 'failed'
-          ? 'Bağlantı ilə problem oldu. İnternetini yoxla, geri qayıdıb yenidən aç.'
+          ? t('Bağlantı ilə problem oldu. İnternetini yoxla, geri qayıdıb yenidən aç.')
           : trainerLocal
-            ? 'Bu proqram serverə yüklənməyib — məzmunu yalnız onu yazan adamın cihazındadır. Ondan yenidən yadda saxlamasını xahiş et.'
-            : 'Bu proqram silinib və ya ünvan səhvdir.';
+            ? t('Bu proqram serverə yüklənməyib — məzmunu yalnız onu yazan adamın cihazındadır. Ondan yenidən yadda saxlamasını xahiş et.')
+            : t('Bu proqram silinib və ya ünvan səhvdir.');
     return (
       <View style={{ flex: 1, backgroundColor: palette.grouped }}>
         <NavBar />
@@ -87,7 +89,7 @@ export default function ProgramDetail() {
             </AppText>
           ) : null}
           <Button
-            title="Geri"
+            title={t('Geri')}
             variant="secondary"
             onPress={() => router.back()}
             style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }}
@@ -125,20 +127,20 @@ export default function ProgramDetail() {
   const startWithPartner = () => {
     const accepted = Object.values(matches).filter((m) => m.state === 'accepted');
     if (!accepted.length) {
-      confirm('Hələ yoldaşın yoxdur', 'Birlikdə məşq etmək üçün əvvəlcə yoldaş tap — eyni zalda, eyni cədvəldə.', [
-        { label: 'İndi yox', style: 'cancel' },
-        { label: 'Yoldaş tap', style: 'primary', onPress: () => router.push('/(tabs)/discover') },
+      confirm(t('Hələ yoldaşın yoxdur'), t('Birlikdə məşq etmək üçün əvvəlcə yoldaş tap — eyni zalda, eyni cədvəldə.'), [
+        { label: t('İndi yox'), style: 'cancel' },
+        { label: t('Yoldaş tap'), style: 'primary', onPress: () => router.push('/(tabs)/discover') },
       ]);
       return;
     }
     actionSheet({
-      title: 'Kiminlə məşq edirsən?',
+      title: t('Kiminlə məşq edirsən?'),
       actions: [
         ...accepted.map((m) => ({
           label: seedById(m.partnerId)?.name ?? m.partnerId,
           onPress: () => start(m.partnerId),
         })),
-        { label: 'Bağla', style: 'cancel' as const },
+        { label: t('Bağla'), style: 'cancel' as const },
       ],
     });
   };
@@ -153,19 +155,19 @@ export default function ProgramDetail() {
            editing goes to the builder that wrote the program, with the
            program loaded into it. */
         {
-          label: 'Redaktə et',
+          label: t('Redaktə et'),
           onPress: () => router.push({ pathname: '/(tabs)/workout/create', params: { id: p.id } }),
         },
         {
-          label: 'Proqramı sil',
+          label: t('Proqramı sil'),
           style: 'destructive' as const,
           onPress: () =>
             setTimeout(
               () =>
-                confirm('Proqram silinsin?', 'Geri qaytarmaq olmaz.', [
-                  { label: 'Ləğv et', style: 'cancel' },
+                confirm(t('Proqram silinsin?'), t('Geri qaytarmaq olmaz.'), [
+                  { label: t('Ləğv et'), style: 'cancel' },
                   {
-                    label: 'Sil',
+                    label: t('Sil'),
                     style: 'destructive',
                     onPress: () => {
                       void (async () => {
@@ -174,10 +176,10 @@ export default function ProgramDetail() {
                           // It is still published, under this author's name. Saying
                           // «silindi» and letting the library serve it again a minute
                           // later is what this whole path was.
-                          toast('Proqram silinmədi — serverə çatmadı. Bağlantını yoxla.', 'error');
+                          toast(t('Proqram silinmədi — serverə çatmadı. Bağlantını yoxla.'), 'error');
                           return;
                         }
-                        toast('Proqram silindi');
+                        toast(t('Proqram silindi'));
                         router.back();
                       })();
                     },
@@ -186,7 +188,7 @@ export default function ProgramDetail() {
               250
             ),
         },
-        { label: 'Bağla', style: 'cancel' as const },
+        { label: t('Bağla'), style: 'cancel' as const },
       ],
     });
 
@@ -204,7 +206,7 @@ export default function ProgramDetail() {
               activeScale={0.9}
               onPress={() => {
                 toggleSaved(p.id);
-                toast(isSaved ? 'Yadda saxlanılanlardan çıxarıldı' : 'Proqram yadda saxlanıldı');
+                toast(isSaved ? t('Yadda saxlanılanlardan çıxarıldı') : t('Proqram yadda saxlanıldı'));
               }}>
               <Icon name="bookmark" size={20} color={isSaved ? palette.voltDeep : palette.inkText} />
             </PressableScale>
@@ -216,7 +218,7 @@ export default function ProgramDetail() {
           {/* No image slot: a Program carries no cover, so the grey "video" block
               that used to sit here only announced that something was missing. */}
           <AppText variant="title" style={{ marginTop: 4 }}>
-            {p.title}
+            {t(p.title)}
           </AppText>
 
           {desc ? (
@@ -235,8 +237,7 @@ export default function ProgramDetail() {
               and SPOT never takes a payment. */}
           {p.paid && p.price ? (
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 10, lineHeight: 17 }}>
-              {p.price} ₼ — müəllifin öz qiymətidir və yalnız məlumat üçündür. SPOT ödəniş qəbul etmir; proqram
-              tətbiqdə pulsuz açılır.
+              {t('{price} ₼ — müəllifin öz qiymətidir və yalnız məlumat üçündür. SPOT ödəniş qəbul etmir; proqram tətbiqdə pulsuz açılır.', { price: p.price })}
             </AppText>
           ) : null}
 
@@ -245,11 +246,13 @@ export default function ProgramDetail() {
                 plans describe their length, level and goal; a program somebody
                 wrote in the app is a name and a list of days, and nothing here
                 invents the rest for them. */}
-            {p.weeks > 0 ? <Tag label={`${p.weeks} həftə`} /> : null}
-            {days.length || p.daysPerWeek ? <Tag label={`${days.length || p.daysPerWeek} gün`} /> : null}
-            {p.minutes > 0 ? <Tag label={`${p.minutes} dəq`} /> : null}
-            {p.level ? <Tag label={p.level} /> : null}
-            {p.goal ? <Tag label={p.goal} /> : null}
+            {p.weeks > 0 ? <Tag label={t('{n} həftə', { n: p.weeks, count: p.weeks })} /> : null}
+            {days.length || p.daysPerWeek ? (
+              <Tag label={t('{n} gün', { n: days.length || p.daysPerWeek, count: days.length || p.daysPerWeek })} />
+            ) : null}
+            {p.minutes > 0 ? <Tag label={t('{n} dəq', { n: p.minutes, count: p.minutes })} /> : null}
+            {p.level ? <Tag label={t(p.level)} /> : null}
+            {p.goal ? <Tag label={t(p.goal)} /> : null}
             {/* No «Qida planı daxil» tag. Nothing in SPOT attaches meals to a
                 program: `useMeals()` returns ONE global list, and the Qida screen
                 labels it «Nümunə yeməklər — Hamı üçün eyni nümunə gün» while
@@ -276,26 +279,26 @@ export default function ProgramDetail() {
                   content that is not there. Show the figure only when it is real. */}
               {p.videoCount > 0 ? (
                 <AppText variant="subhead" color={palette.textSecondary}>
-                  {p.videoCount} video
+                  {t('{n} video', { n: p.videoCount, count: p.videoCount })}
                 </AppText>
               ) : null}
               {p.doneBy > 0 ? (
                 <>
                   <View style={styles.vsep} />
                   <AppText variant="subhead" color={palette.textSecondary}>
-                    {p.doneBy} nəfər edir
+                    {t('{n} nəfər edir', { n: p.doneBy, count: p.doneBy })}
                   </AppText>
                 </>
               ) : null}
             </View>
           ) : (
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 14 }}>
-              Yeni proqram — hələ rəy yoxdur.
+              {t('Yeni proqram — hələ rəy yoxdur.')}
             </AppText>
           )}
 
           <AppText variant="overline" color={palette.caption} style={{ marginTop: 24, marginBottom: 12 }}>
-            Proqram günləri
+            {t('Proqram günləri')}
           </AppText>
           {hasDays ? (
             days.map((day, i) => {
@@ -310,15 +313,17 @@ export default function ProgramDetail() {
                     <AppText style={{ fontSize: 14, fontWeight: '700', color: palette.voltDeep }}>{i + 1}</AppText>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <AppText variant="callout">{day.title}</AppText>
+                    <AppText variant="callout">{t(day.title)}</AppText>
                     <AppText variant="footnote" color={palette.caption} style={{ marginTop: 2 }}>
                       {/* Joined rather than glued with a fixed «·». A day whose
                           exercises the author typed themselves has no focus to
                           derive — the muscle names come from the library — and
                           the fixed version opened with a leading separator. */}
                       {[
-                        day.focus,
-                        exs.length ? `${exs.length} hərəkət · ~${estimateDurationMin(exs)} dəq` : 'hərəkət əlavə olunmayıb',
+                        day.focus ? t(day.focus) : day.focus,
+                        exs.length
+                          ? t('{n} hərəkət · ~{min} dəq', { n: exs.length, min: estimateDurationMin(exs), count: exs.length })
+                          : t('hərəkət əlavə olunmayıb'),
                       ]
                         .filter(Boolean)
                         .join(' · ')}
@@ -332,18 +337,18 @@ export default function ProgramDetail() {
             <View style={styles.empty}>
               <Icon name="dumbbell" size={22} color={palette.tertiary} />
               <AppText variant="headline" style={{ marginTop: 10 }}>
-                Bu proqramın günləri hələ əlavə olunmayıb
+                {t('Bu proqramın günləri hələ əlavə olunmayıb')}
               </AppText>
               <AppText variant="footnote" color={palette.caption} style={{ marginTop: 6, textAlign: 'center', lineHeight: 18 }}>
                 {mine
-                  ? 'Öz proqramındır — redaktə edib gün və hərəkət əlavə edə bilərsən.'
-                  : 'Müəllif günləri yükləyəndə burada görünəcək. O vaxta qədər başqa proqram seç.'}
+                  ? t('Öz proqramındır — redaktə edib gün və hərəkət əlavə edə bilərsən.')
+                  : t('Müəllif günləri yükləyəndə burada görünəcək. O vaxta qədər başqa proqram seç.')}
               </AppText>
               {/* It pointed at the exercise library before, which is a browsing
                   screen that adds nothing to any program. */}
               {mine ? (
                 <Button
-                  title="Redaktə et"
+                  title={t('Redaktə et')}
                   variant="secondary"
                   onPress={() => router.push({ pathname: '/(tabs)/workout/create', params: { id: p.id } })}
                   style={{ marginTop: 14 }}
@@ -356,12 +361,12 @@ export default function ProgramDetail() {
 
       {hasDays ? (
         <View style={styles.footer}>
-          <Button title="Yoldaşımla başla" variant="secondary" icon="users" onPress={startWithPartner} style={{ flex: 1 }} />
-          <Button title="Başla" onPress={() => start()} style={{ flex: 1 }} />
+          <Button title={t('Yoldaşımla başla')} variant="secondary" icon="users" onPress={startWithPartner} style={{ flex: 1 }} />
+          <Button title={t('Başla')} onPress={() => start()} style={{ flex: 1 }} />
         </View>
       ) : mine ? (
         <View style={styles.footer}>
-          <Button title="Hərəkət əlavə et" icon="plus" full onPress={() => router.push('/(tabs)/workout/exercises')} />
+          <Button title={t('Hərəkət əlavə et')} icon="plus" full onPress={() => router.push('/(tabs)/workout/exercises')} />
         </View>
       ) : null}
     </View>

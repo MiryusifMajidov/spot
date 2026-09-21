@@ -22,7 +22,8 @@ import { getMyThreads, type ThreadSummary } from '@/lib/chat';
 /** «indi» / «5 dəq» / «Dünən», in the language the person chose. `timeAgo` takes
  *  the clock as an argument so the formatter itself stays pure; reading it stays
  *  here, exactly where the old `timeAgoAz` read it. */
-const ago = (iso: string) => timeAgo(iso, Date.now());
+const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) => string) =>
+  timeAgo(iso, Date.now(), tr);
 
 type Row = {
   id: string;
@@ -120,7 +121,7 @@ export default function Chats() {
         // and it dressed a message nobody received up as a scheduled meeting.
         last: last ? last.text : t('Söhbətə başla'),
         at: last?.at ?? '',
-        time: last ? ago(last.at) : '',
+        time: last ? ago(last.at, t) : '',
         // Unread = they wrote after I last opened the thread — not "they wrote last".
         unread: !!last && last.from === 'them' && last.at > (lastRead[id] ?? ''),
       };
@@ -151,7 +152,7 @@ export default function Chats() {
         kind: 'partner' as const,
         last: th.lastBody ? (th.lastMine ? t('Sən: {text}', { text: th.lastBody }) : th.lastBody) : t('Söhbətə başla'),
         at: th.lastAt ?? '',
-        time: th.lastAt ? ago(th.lastAt) : '',
+        time: th.lastAt ? ago(th.lastAt, t) : '',
         unread: th.unread > 0,
       }));
 

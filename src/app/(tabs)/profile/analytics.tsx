@@ -5,11 +5,13 @@ import { AppText } from '@/components/ui/AppText';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { computeMuscleVolume, estimate1RM, useDb, useStats, useWeekStats } from '@/store/db';
 import { palette, spacing } from '@/theme';
 
 export default function Analytics() {
+  const t = useT();
   const workouts = useDb((s) => s.workouts);
   const stats = useStats();
   const week = useWeekStats();
@@ -29,7 +31,7 @@ export default function Analytics() {
   const imbalance = minMuscle && topMuscle && topMuscle.kg > minMuscle.kg * 2.5 ? { low: minMuscle.name, ratio: (topMuscle.kg / minMuscle.kg).toFixed(1) } : null;
   const muscles = rawMuscles.map((m) => ({
     name: m.name,
-    vol: `${(m.kg / 1000).toFixed(1)} t`,
+    vol: t('{n} t', { n: (m.kg / 1000).toFixed(1) }),
     pct: Math.round((m.kg / maxVol) * 100),
     warn: imbalance ? m.name === imbalance.low : false,
   }));
@@ -41,12 +43,23 @@ export default function Analytics() {
 
   const shareReport = () => {
     const lines = [
-      'SPOT · məşq hesabatı',
-      `Ümumi: ${stats.count} məşq · ${(stats.volumeKg / 1000).toFixed(1)} t həcm · ${stats.streakDays} gün seriya`,
-      `Bu həftə: ${week.count} məşq${target > 0 ? ` / ${target} planlanmış` : ''}`,
-      bench1rm > 0 ? `Bench 1RM proqnozu: ${bench1rm} kq` : null,
-      nonZero.length > 0 ? `Əzələ həcmi: ${nonZero.map((m) => `${m.name} ${(m.kg / 1000).toFixed(1)} t`).join(' · ')}` : null,
-      imbalance ? `Disbalans: ${imbalance.low} ən yüksək qrupdan ${imbalance.ratio} dəfə azdır.` : null,
+      t('SPOT · məşq hesabatı'),
+      t('Ümumi: {n} məşq · {vol} t həcm · {days} gün seriya', {
+        n: stats.count,
+        vol: (stats.volumeKg / 1000).toFixed(1),
+        days: stats.streakDays,
+        count: stats.count,
+      }),
+      target > 0
+        ? t('Bu həftə: {n} məşq / {target} planlanmış', { n: week.count, target, count: week.count })
+        : t('Bu həftə: {n} məşq', { n: week.count, count: week.count }),
+      bench1rm > 0 ? t('Bench 1RM proqnozu: {n} kq', { n: bench1rm }) : null,
+      nonZero.length > 0
+        ? t('Əzələ həcmi: {list}', {
+            list: nonZero.map((m) => t('{muscle} {n} t', { muscle: t(m.name), n: (m.kg / 1000).toFixed(1) })).join(' · '),
+          })
+        : null,
+      imbalance ? t('Disbalans: {muscle} ən yüksək qrupdan {ratio} dəfə azdır.', { muscle: t(imbalance.low), ratio: imbalance.ratio }) : null,
     ].filter(Boolean);
     Share.share({ message: lines.join('\n') }).catch(() => {});
   };
@@ -60,15 +73,15 @@ export default function Analytics() {
           same account «SPOT tam pulsuzdur — abunə, tətbiqdaxili ödəniş və ya
           kilidli funksiya yoxdur»; both could not be true. Nothing in the app is
           gated by any plan, so the badge was also a status nobody obtained. */}
-      <NavBar title="Analitika" />
+      <NavBar title={t('Analitika')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 14 }}>
-            ƏZƏLƏ QRUPU ÜZRƏ HƏCM · 4 HƏFTƏ
+            {t('ƏZƏLƏ QRUPU ÜZRƏ HƏCM · 4 HƏFTƏ')}
           </AppText>
           {!hasData ? (
             <AppText variant="body" color={palette.textSecondary} style={{ lineHeight: 21 }}>
-              Hələ məşq qeyd etməmisən. İlk məşqindən sonra hansı əzələ qrupuna nə qədər həcm düşdüyü burada görünəcək.
+              {t('Hələ məşq qeyd etməmisən. İlk məşqindən sonra hansı əzələ qrupuna nə qədər həcm düşdüyü burada görünəcək.')}
             </AppText>
           ) : (
           <>
@@ -76,7 +89,7 @@ export default function Analytics() {
             {muscles.map((m) => (
               <View key={m.name}>
                 <View style={styles.muscleHead}>
-                  <AppText style={{ fontSize: 12.5, fontWeight: '600' }}>{m.name}</AppText>
+                  <AppText style={{ fontSize: 12.5, fontWeight: '600' }}>{t(m.name)}</AppText>
                   <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.tertiary }}>{m.vol}</AppText>
                 </View>
                 <View style={styles.barTrack}>
@@ -88,27 +101,32 @@ export default function Analytics() {
           {imbalance ? (
             <View style={styles.warn}>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: '#8A4A25' }}>
-                {imbalance.low} həcmi ən yüksək qrupdan {imbalance.ratio} dəfə azdır — disbalans riski. Bu qrupa hərəkət əlavə et.
+                {t('{muscle} həcmi ən yüksək qrupdan {ratio} dəfə azdır — disbalans riski. Bu qrupa hərəkət əlavə et.', {
+                  muscle: t(imbalance.low),
+                  ratio: imbalance.ratio,
+                })}
               </AppText>
             </View>
           ) : nonZero.length >= 3 ? (
             <View style={[styles.warn, { backgroundColor: 'rgba(198,255,61,0.16)' }]}>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: '#3F5500' }}>
-                Əzələ qrupları balanslıdır. Belə davam et.
+                {t('Əzələ qrupları balanslıdır. Belə davam et.')}
               </AppText>
             </View>
           ) : (
             <View style={[styles.warn, { backgroundColor: palette.grouped }]}>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary }}>
-                Balans qiymətləndirmək üçün hələ az datadır — ən azı 3 fərqli əzələ qrupuna məşq qeyd et.
+                {t('Balans qiymətləndirmək üçün hələ az datadır — ən azı 3 fərqli əzələ qrupuna məşq qeyd et.')}
               </AppText>
             </View>
           )}
           {summaryOnly > 0 ? (
             <View style={[styles.warn, { backgroundColor: palette.grouped, marginTop: 8 }]}>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary }}>
-                {summaryOnly} məşq başqa cihazdan bərpa olunub — onların həcmi ümumi statistikaya
-                daxildir, amma hansı əzələ qrupuna düşdüyü saxlanılmadığı üçün bu qrafikə düşmür.
+                {t(
+                  '{n} məşq başqa cihazdan bərpa olunub — onların həcmi ümumi statistikaya daxildir, amma hansı əzələ qrupuna düşdüyü saxlanılmadığı üçün bu qrafikə düşmür.',
+                  { n: summaryOnly, count: summaryOnly }
+                )}
               </AppText>
             </View>
           ) : null}
@@ -118,34 +136,39 @@ export default function Analytics() {
 
         <View style={styles.card}>
           <AppText variant="headline" style={{ marginBottom: 14 }}>
-            Sinə pressi · 1RM proqnozu
+            {t('Sinə pressi · 1RM proqnozu')}
           </AppText>
           {bench1rm > 0 ? (
             <>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 9 }}>
-                <AppText style={{ fontSize: 28, fontWeight: '700', letterSpacing: -0.8 }}>{bench1rm} kq</AppText>
-                <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.tertiary }}>Epley düsturu ilə</AppText>
+                <AppText style={{ fontSize: 28, fontWeight: '700', letterSpacing: -0.8 }}>{t('{n} kq', { n: bench1rm })}</AppText>
+                <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.tertiary }}>{t('Epley düsturu ilə')}</AppText>
               </View>
               <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 8, lineHeight: 19 }}>
-                Qeyd etdiyin ən ağır bench setinə əsaslanır. Daha çox məşq qeyd etdikcə dəqiqləşir.
+                {t('Qeyd etdiyin ən ağır bench setinə əsaslanır. Daha çox məşq qeyd etdikcə dəqiqləşir.')}
               </AppText>
             </>
           ) : (
             <AppText variant="body" color={palette.textSecondary} style={{ lineHeight: 21 }}>
-              Bench press qeyd et — 1RM proqnozun burada görünəcək.
+              {t('Bench press qeyd et — 1RM proqnozun burada görünəcək.')}
             </AppText>
           )}
         </View>
 
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
           <MetricCard
-            title="ARDICILLIQ"
+            title={t('ARDICILLIQ')}
             value={consistency == null ? '—' : `${consistency}%`}
-            sub={target > 0 ? `həftədə ${target} gün plan` : 'plan seçilməyib'}
+            sub={target > 0 ? t('həftədə {n} gün plan', { n: target, count: target }) : t('plan seçilməyib')}
             subColor={consistency != null && consistency >= 75 ? '#5B7F00' : palette.tertiary}
           />
-          <MetricCard title="SERIYA" value={`${stats.streakDays}`} sub="gün" subColor={palette.tertiary} />
-          <MetricCard title="ÜMUMİ HƏCM" value={`${(stats.volumeKg / 1000).toFixed(1)}t`} sub={`${stats.count} məşq`} subColor={palette.tertiary} />
+          <MetricCard title={t('SERIYA')} value={`${stats.streakDays}`} sub={t('gün', { count: stats.streakDays })} subColor={palette.tertiary} />
+          <MetricCard
+            title={t('ÜMUMİ HƏCM')}
+            value={t('{n}t', { n: (stats.volumeKg / 1000).toFixed(1) })}
+            sub={t('{n} məşq', { n: stats.count, count: stats.count })}
+            subColor={palette.tertiary}
+          />
         </View>
 
         {hasData ? (
@@ -154,9 +177,9 @@ export default function Analytics() {
               <Icon name="share" size={20} color={palette.volt} />
             </View>
             <View style={{ flex: 1 }}>
-              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>Hesabatı paylaş</AppText>
+              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Hesabatı paylaş')}</AppText>
               <AppText style={{ fontSize: 12, lineHeight: 17, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>
-                Rəqəmlərini mətn kimi kopyala və müəlliminə göndər
+                {t('Rəqəmlərini mətn kimi kopyala və müəlliminə göndər')}
               </AppText>
             </View>
           </PressableScale>

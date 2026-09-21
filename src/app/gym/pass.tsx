@@ -8,7 +8,9 @@ import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
 import { GymGate, useMyGym } from '@/lib/gymOwner';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
+import { t } from '@/lib/i18n';
 import { checkDayPass, redeemDayPass, type PassCheck } from '@/lib/roles';
+import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 
@@ -32,36 +34,40 @@ const stateText = (r: PassCheck): { title: string; body: string; tone: 'ok' | 'b
   switch (r.state) {
     case 'valid':
       return {
-        title: 'Kod keçərlidir',
+        title: t('Kod keçərlidir'),
         body: r.expires_at
-          ? `Bu gün ${new Date(r.expires_at).getHours()}:${String(new Date(r.expires_at).getMinutes()).padStart(2, '0')}-a qədər. Qonağı içəri burax və aşağıdan təsdiqlə.`
-          : 'Qonağı içəri burax və aşağıdan təsdiqlə.',
+          ? t('Bu gün {h}:{m}-a qədər. Qonağı içəri burax və aşağıdan təsdiqlə.', {
+              h: new Date(r.expires_at).getHours(),
+              m: String(new Date(r.expires_at).getMinutes()).padStart(2, '0'),
+            })
+          : t('Qonağı içəri burax və aşağıdan təsdiqlə.'),
         tone: 'ok',
       };
     case 'redeemed':
-      return { title: 'Təsdiqləndi', body: 'Bu day-pass indi istifadə olunmuş kimi qeyd edildi.', tone: 'ok' };
+      return { title: t('Təsdiqləndi'), body: t('Bu day-pass indi istifadə olunmuş kimi qeyd edildi.'), tone: 'ok' };
     case 'used':
       return {
-        title: 'Bu kod artıq istifadə olunub',
+        title: t('Bu kod artıq istifadə olunub'),
         body: r.used_at
-          ? `${new Date(r.used_at).toLocaleString('az-AZ')} tarixində təsdiqlənib. Yenidən keçmir.`
-          : 'Daha əvvəl təsdiqlənib. Yenidən keçmir.',
+          ? t('{date} tarixində təsdiqlənib. Yenidən keçmir.', { date: new Date(r.used_at).toLocaleString('az-AZ') })
+          : t('Daha əvvəl təsdiqlənib. Yenidən keçmir.'),
         tone: 'bad',
       };
     case 'expired':
-      return { title: 'Kodun vaxtı bitib', body: 'Day-pass yalnız alındığı gün keçərlidir.', tone: 'bad' };
+      return { title: t('Kodun vaxtı bitib'), body: t('Day-pass yalnız alındığı gün keçərlidir.'), tone: 'bad' };
     case 'refunded':
-      return { title: 'Bu day-pass ləğv edilib', body: 'Kod artıq keçərli deyil.', tone: 'bad' };
+      return { title: t('Bu day-pass ləğv edilib'), body: t('Kod artıq keçərli deyil.'), tone: 'bad' };
     default:
       return {
-        title: 'Belə kod tapılmadı',
-        body: 'Kodu bir də yoxla. Başqa zalın kodu da burada görünmür — hər zal yalnız öz day-passlarını yoxlaya bilir.',
+        title: t('Belə kod tapılmadı'),
+        body: t('Kodu bir də yoxla. Başqa zalın kodu da burada görünmür — hər zal yalnız öz day-passlarını yoxlaya bilir.'),
         tone: 'bad',
       };
   }
 };
 
 export default function GymPass() {
+  const t = useT();
   const state = useMyGym();
   const gym = state.gym;
   const [code, setCode] = useState('');
@@ -74,7 +80,7 @@ export default function GymPass() {
   if (!gym) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <NavBar title="Day-pass yoxla" />
+        <NavBar title={t('Day-pass yoxla')} />
         <GymGate state={state} />
       </Screen>
     );
@@ -90,11 +96,11 @@ export default function GymPass() {
       setResult(r);
       if (r.state === 'valid' || r.state === 'redeemed') successFeedback();
       else errorFeedback();
-      if (what === 'redeem' && r.state === 'redeemed') toast('Day-pass təsdiqləndi');
+      if (what === 'redeem' && r.state === 'redeemed') toast(t('Day-pass təsdiqləndi'));
     } catch {
       setResult(null);
       setFailed(true);
-      toast('Kod yoxlanılmadı — internet bağlantısını yoxla', 'error');
+      toast(t('Kod yoxlanılmadı — internet bağlantısını yoxla'), 'error');
     } finally {
       setBusy(null);
     }
@@ -105,11 +111,13 @@ export default function GymPass() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <NavBar title="Day-pass yoxla" />
+      <NavBar title={t('Day-pass yoxla')} />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
         <AppText variant="body" color={palette.textSecondary} style={{ lineHeight: 22 }}>
-          Qonaq telefonundakı 6 simvollu kodu göstərir. Kodu bura yaz və yoxla — {gym.name} üçün verilmiş day-passları
-          yalnız sən görürsən.
+          {t(
+            'Qonaq telefonundakı 6 simvollu kodu göstərir. Kodu bura yaz və yoxla — {gym} üçün verilmiş day-passları yalnız sən görürsən.',
+            { gym: gym.name }
+          )}
         </AppText>
 
         <TextInput
@@ -128,7 +136,7 @@ export default function GymPass() {
         />
 
         <Button
-          title={busy === 'check' ? 'Yoxlanılır…' : 'Yoxla'}
+          title={busy === 'check' ? t('Yoxlanılır…') : t('Yoxla')}
           full
           disabled={clean.length < 4 || !!busy}
           onPress={() => run('check')}
@@ -137,9 +145,9 @@ export default function GymPass() {
 
         {failed ? (
           <View style={styles.card}>
-            <AppText variant="headline">Yoxlanmadı</AppText>
+            <AppText variant="headline">{t('Yoxlanmadı')}</AppText>
             <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 4, lineHeight: 19 }}>
-              Sorğu serverə çatmadı — bu, kodun səhv olduğu demək DEYİL. Bağlantını yoxla və yenidən yoxla.
+              {t('Sorğu serverə çatmadı — bu, kodun səhv olduğu demək DEYİL. Bağlantını yoxla və yenidən yoxla.')}
             </AppText>
           </View>
         ) : null}
@@ -155,13 +163,15 @@ export default function GymPass() {
             </AppText>
             {result?.price ? (
               <AppText variant="footnote" color={palette.text3} style={{ marginTop: 8, lineHeight: 19 }}>
-                Zalın day-pass qiyməti: {result.price} ₼ — ödəniş zalda alınır. SPOT pul qəbul etmir və komissiya
-                tutmur.
+                {t(
+                  'Zalın day-pass qiyməti: {price} ₼ — ödəniş zalda alınır. SPOT pul qəbul etmir və komissiya tutmur.',
+                  { price: result.price }
+                )}
               </AppText>
             ) : null}
             {result?.state === 'valid' ? (
               <Button
-                title={busy === 'redeem' ? 'Təsdiqlənir…' : 'Təsdiqlə və istifadə olunmuş kimi qeyd et'}
+                title={busy === 'redeem' ? t('Təsdiqlənir…') : t('Təsdiqlə və istifadə olunmuş kimi qeyd et')}
                 full
                 disabled={!!busy}
                 onPress={() => run('redeem')}

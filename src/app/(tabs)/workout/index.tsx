@@ -8,8 +8,10 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { afterTransition } from '@/lib/afterTransition';
 import { useProgram } from '@/lib/hooks';
+import { t } from '@/lib/i18n';
 import { getMyAssignedProgram, type AssignedProgram } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useFormat, useT } from '@/lib/useT';
 import { exerciseLibrary, useAllPrograms, useDb, useWeekStats } from '@/store/db';
 import { palette, spacing } from '@/theme';
 import { estimateDurationMin, resolveDayExercises } from './day';
@@ -32,17 +34,19 @@ import { estimateDurationMin, resolveDayExercises } from './day';
  * gone. There is one exercise library and one session logger.
  */
 
-const AZ_DAYS = ['Bazar', 'Bazar ertəsi', 'Çərşənbə axşamı', 'Çərşənbə', 'Cümə axşamı', 'Cümə', 'Şənbə'];
-const AZ_MONTHS = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avqust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr'];
-
-const fmtDuration = (sec: number) => {
+/* The translator is passed in, not read from the module: the compiler memoises
+   this call by its arguments, and a helper that reads the language on the side
+   would keep the first language forever (see src/lib/useT.ts). */
+const fmtDuration = (sec: number, tr: typeof t) => {
   const h = Math.floor(sec / 3600);
   const m = Math.round((sec % 3600) / 60);
-  return h > 0 ? `${h}s ${m}d` : `${m}d`;
+  return h > 0 ? tr('{h}s {m}d', { h, m }) : tr('{m}d', { m, count: m });
 };
 
 export default function WorkoutToday() {
   const router = useRouter();
+  const t = useT();
+  const fmt = useFormat();
   const programs = useAllPrograms();
   const workouts = useDb((s) => s.workouts);
   const saved = useDb((s) => s.savedPrograms);
@@ -109,7 +113,7 @@ export default function WorkoutToday() {
   );
 
   const now = new Date();
-  const dateLabel = `${AZ_DAYS[now.getDay()]}, ${now.getDate()} ${AZ_MONTHS[now.getMonth()]}`;
+  const dateLabel = fmt.weekdayAndDate(now);
 
   return (
     <Screen>
@@ -120,7 +124,7 @@ export default function WorkoutToday() {
               {dateLabel}
             </AppText>
             <AppText variant="largeTitle" style={{ marginTop: 4 }}>
-              Məşq
+              {t('Məşq')}
             </AppText>
           </View>
           <PressableScale activeScale={0.9} onPress={() => router.push('/chat')}>
@@ -131,27 +135,32 @@ export default function WorkoutToday() {
         {/* ---------- 1. today, and the one button ---------- */}
         <View style={styles.todayCard}>
           <AppText variant="overline" style={{ color: palette.volt }}>
-            BUGÜNKÜ MƏŞQ
+            {t('BUGÜNKÜ MƏŞQ')}
           </AppText>
           <AppText variant="title2" style={{ color: palette.white, marginTop: 8 }}>
-            {todayTitle}
+            {t(todayTitle)}
           </AppText>
           <AppText variant="footnote" style={{ color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>
             {active
               ? todayExercises.length
-                ? `${todayExercises.length} hərəkət · ~${todayMinutes} dəq · ${active.title}`
-                : active.title
-              : 'Hərəkətləri özün seçəcəksən'}
+                ? t('{n} hərəkət · ~{min} dəq · {title}', {
+                    n: todayExercises.length,
+                    min: todayMinutes,
+                    title: t(active.title),
+                    count: todayExercises.length,
+                  })
+                : t(active.title)
+              : t('Hərəkətləri özün seçəcəksən')}
           </AppText>
 
           <PressableScale activeScale={0.97} onPress={start} style={styles.startBtn}>
             <Icon name="play" size={18} color={palette.ink} />
-            <AppText style={{ fontSize: 16, fontWeight: '700', color: palette.ink }}>Məşqə başla</AppText>
+            <AppText style={{ fontSize: 16, fontWeight: '700', color: palette.ink }}>{t('Məşqə başla')}</AppText>
           </PressableScale>
 
           {!active ? (
             <AppText variant="caption" style={{ color: 'rgba(255,255,255,0.5)', marginTop: 10, lineHeight: 17 }}>
-              Proqram seçsən, hər dəfə bura növbəti günün çıxacaq.
+              {t('Proqram seçsən, hər dəfə bura növbəti günün çıxacaq.')}
             </AppText>
           ) : null}
         </View>
@@ -175,7 +184,7 @@ export default function WorkoutToday() {
             <View style={{ flex: 1 }}>
               <AppText variant="subhead">{assigned.title}</AppText>
               <AppText variant="caption" color={palette.caption} style={{ marginTop: 3 }}>
-                {assigned.trainerName ? `${assigned.trainerName} sənə təyin etdi` : 'Müəllimin sənə təyin etdi'}
+                {assigned.trainerName ? t('{name} sənə təyin etdi', { name: assigned.trainerName }) : t('Müəllimin sənə təyin etdi')}
               </AppText>
             </View>
             {assigned.programId ? <Icon name="chevR" size={16} color={palette.tertiary} /> : null}
@@ -186,29 +195,29 @@ export default function WorkoutToday() {
               <Icon name="x" size={16} color={palette.red} />
             </View>
             <AppText variant="caption" color={palette.textSecondary} style={{ flex: 1, lineHeight: 17 }}>
-              Müəllim təyinatı yüklənmədi — bu, təyinat olmadığı demək deyil.
+              {t('Müəllim təyinatı yüklənmədi — bu, təyinat olmadığı demək deyil.')}
             </AppText>
           </View>
         ) : null}
 
         {/* ---------- 3. the week, in three numbers ---------- */}
         <View style={styles.week}>
-          <Stat value={String(week.count)} label="məşq" />
+          <Stat value={String(week.count)} label={t('məşq')} />
           <View style={styles.vdiv} />
-          <Stat value={`${(week.volumeKg / 1000).toFixed(1)} t`} label="həcm" />
+          <Stat value={t('{n} t', { n: (week.volumeKg / 1000).toFixed(1) })} label={t('həcm')} />
           <View style={styles.vdiv} />
-          <Stat value={fmtDuration(week.durationSec)} label="zalda" />
+          <Stat value={fmtDuration(week.durationSec, t)} label={t('zalda')} />
         </View>
         <AppText variant="caption" color={palette.caption} style={{ marginTop: 8 }}>
-          Bu həftə
+          {t('Bu həftə')}
         </AppText>
 
         {/* ---------- 4. programs ---------- */}
         <View style={styles.sectionHead}>
-          <AppText variant="title3">Proqramlar</AppText>
+          <AppText variant="title3">{t('Proqramlar')}</AppText>
           <PressableScale haptic={false} onPress={() => router.push('/(tabs)/workout/library')}>
             <AppText variant="subhead" color={palette.blue}>
-              Hamısı
+              {t('Hamısı')}
             </AppText>
           </PressableScale>
         </View>
@@ -222,9 +231,9 @@ export default function WorkoutToday() {
               <Icon name="dumbbell" size={17} color={palette.voltDeep} />
             </View>
             <View style={{ flex: 1 }}>
-              <AppText variant="subhead">{active.title}</AppText>
+              <AppText variant="subhead">{t(active.title)}</AppText>
               <AppText variant="caption" color={palette.caption} style={{ marginTop: 3 }}>
-                {active.creatorName} · {dayCount} gün
+                {active.creatorName} · {t('{n} gün', { n: dayCount, count: dayCount })}
               </AppText>
             </View>
             <Icon name="chevR" size={16} color={palette.tertiary} />
@@ -235,9 +244,9 @@ export default function WorkoutToday() {
               <Icon name="search" size={17} color={palette.voltDeep} />
             </View>
             <View style={{ flex: 1 }}>
-              <AppText variant="subhead">Proqram seç</AppText>
+              <AppText variant="subhead">{t('Proqram seç')}</AppText>
               <AppText variant="caption" color={palette.caption} style={{ marginTop: 3 }}>
-                SPOT-un, müəllimlərin və istifadəçilərin proqramları
+                {t('SPOT-un, müəllimlərin və istifadəçilərin proqramları')}
               </AppText>
             </View>
             <Icon name="chevR" size={16} color={palette.tertiary} />
@@ -249,9 +258,9 @@ export default function WorkoutToday() {
             <Icon name="plus" size={17} color={palette.voltDeep} />
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="subhead">Proqram yarat</AppText>
+            <AppText variant="subhead">{t('Proqram yarat')}</AppText>
             <AppText variant="caption" color={palette.caption} style={{ marginTop: 3 }}>
-              Günləri yaz, hərəkətləri seç — istəsən paylaş
+              {t('Günləri yaz, hərəkətləri seç — istəsən paylaş')}
             </AppText>
           </View>
           <Icon name="chevR" size={16} color={palette.tertiary} />
@@ -262,9 +271,9 @@ export default function WorkoutToday() {
             <Icon name="grid" size={17} color={palette.voltDeep} />
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="subhead">Hərəkət kitabxanası</AppText>
+            <AppText variant="subhead">{t('Hərəkət kitabxanası')}</AppText>
             <AppText variant="caption" color={palette.caption} style={{ marginTop: 3 }}>
-              {exerciseLibrary.length} hərəkət · texnika və səhvlər
+              {t('{n} hərəkət · texnika və səhvlər', { n: exerciseLibrary.length, count: exerciseLibrary.length })}
             </AppText>
           </View>
           <Icon name="chevR" size={16} color={palette.tertiary} />

@@ -10,6 +10,7 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { GymGate, getMyGymClaim, submitGymClaim, useMyGym, type GymClaimRow } from '@/lib/gymOwner';
+import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
@@ -28,6 +29,7 @@ const APPROVAL_MEANS = [
 ];
 
 export default function GymClaim() {
+  const t = useT();
   const router = useRouter();
   const state = useMyGym();
   const gym = state.gym;
@@ -62,7 +64,7 @@ export default function GymClaim() {
   if (!gym) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <NavBar title="Sahiblik təsdiqi" />
+        <NavBar title={t('Sahiblik təsdiqi')} />
         <GymGate state={state} />
       </Screen>
     );
@@ -71,7 +73,7 @@ export default function GymClaim() {
   const submit = async () => {
     if (sending) return;
     if (!voen.trim()) {
-      toast('VÖEN və ya qeydiyyat nömrəsini yaz', 'error');
+      toast(t('VÖEN və ya qeydiyyat nömrəsini yaz'), 'error');
       return;
     }
     setSending(true);
@@ -94,10 +96,10 @@ export default function GymClaim() {
       );
       setLoadFailed(false);
       state.reload();
-      toast('Müraciətin göndərildi — 2 iş günü içində cavab veriləcək');
+      toast(t('Müraciətin göndərildi — 2 iş günü içində cavab veriləcək'));
     } catch {
       // This row MUST reach the admin panel. Never fake a success.
-      toast('Müraciət göndərilmədi — bağlantını yoxlayıb yenidən cəhd et', 'error');
+      toast(t('Müraciət göndərilmədi — bağlantını yoxlayıb yenidən cəhd et'), 'error');
     }
     setSending(false);
   };
@@ -112,7 +114,7 @@ export default function GymClaim() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <NavBar title="Sahiblik təsdiqi" />
+      <NavBar title={t('Sahiblik təsdiqi')} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -125,12 +127,12 @@ export default function GymClaim() {
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 18, fontWeight: '700', color: palette.white }}>{gym.name}</AppText>
               <AppText style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.55)', marginTop: 5 }}>
-                {gym.district || 'Ünvan yazılmayıb'}
+                {gym.district || t('Ünvan yazılmayıb')}
               </AppText>
             </View>
           </View>
           <AppText style={{ fontSize: 13.5, lineHeight: 20, color: 'rgba(255,255,255,0.7)' }}>
-            Bu zalı SPOT-da sən qeydiyyata almısan. Sahibliyi rəsmi təsdiqləmək üçün admin komandası VÖEN-i yoxlayır.
+            {t('Bu zalı SPOT-da sən qeydiyyata almısan. Sahibliyi rəsmi təsdiqləmək üçün admin komandası VÖEN-i yoxlayır.')}
           </AppText>
         </View>
 
@@ -138,31 +140,34 @@ export default function GymClaim() {
           <StatusCard
             icon="verified"
             tone="ok"
-            title="Sahiblik təsdiqlənib"
-            body="Zalın bu hesaba aid olduğu rəsmi olaraq təsdiqləndi. Panel əvvəlki kimi tam açıqdır."
+            title={t('Sahiblik təsdiqlənib')}
+            body={t('Zalın bu hesaba aid olduğu rəsmi olaraq təsdiqləndi. Panel əvvəlki kimi tam açıqdır.')}
           />
         ) : !checked ? (
-          <StatusCard icon="clock" tone="wait" title="Yüklənir…" body="Müraciətinin statusu oxunur." />
+          <StatusCard icon="clock" tone="wait" title={t('Yüklənir…')} body={t('Müraciətinin statusu oxunur.')} />
         ) : loadFailed ? (
           <View style={styles.card}>
             <View style={{ flexDirection: 'row', gap: 11, alignItems: 'flex-start', marginBottom: 12 }}>
               <Icon name="x" size={18} color="#D14A15" />
               <View style={{ flex: 1 }}>
-                <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>Müraciətin statusu yüklənmədi</AppText>
+                <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{t('Müraciətin statusu yüklənmədi')}</AppText>
                 <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 5 }}>
-                  Bağlantını yoxla və yenidən cəhd et. Statusu bilmədən yeni müraciət göndərmirik ki, təkrar müraciət
-                  yaranmasın.
+                  {t(
+                    'Bağlantını yoxla və yenidən cəhd et. Statusu bilmədən yeni müraciət göndərmirik ki, təkrar müraciət yaranmasın.'
+                  )}
                 </AppText>
               </View>
             </View>
-            <Button title="Yenidən cəhd et" variant="secondary" full onPress={() => gymId && loadClaim(gymId)} />
+            <Button title={t('Yenidən cəhd et')} variant="secondary" full onPress={() => gymId && loadClaim(gymId)} />
           </View>
         ) : submitted ? (
           <StatusCard
             icon="clock"
             tone="wait"
-            title="Baxılır"
-            body={`Müraciətin admin komandasındadır — 2 iş günü ərzində yoxlanılır · VÖEN: ${claim?.voen}`}
+            title={t('Baxılır')}
+            body={t('Müraciətin admin komandasındadır — 2 iş günü ərzində yoxlanılır · VÖEN: {voen}', {
+              voen: String(claim?.voen),
+            })}
           />
         ) : (
           <>
@@ -170,26 +175,27 @@ export default function GymClaim() {
               <StatusCard
                 icon="x"
                 tone="bad"
-                title="Müraciət qəbul olunmadı"
-                body={claim?.reject_reason ? claim.reject_reason : 'Sənədləri yenidən yoxlayıb təkrar göndərə bilərsən.'}
+                title={t('Müraciət qəbul olunmadı')}
+                body={claim?.reject_reason ? claim.reject_reason : t('Sənədləri yenidən yoxlayıb təkrar göndərə bilərsən.')}
               />
             ) : null}
 
             <View style={styles.card}>
               <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-                VÖEN VƏ YA QEYDİYYAT NÖMRƏSİ
+                {t('VÖEN VƏ YA QEYDİYYAT NÖMRƏSİ')}
               </AppText>
               <TextInput
                 value={voen}
                 onChangeText={setVoen}
-                placeholder="Məs: 1234567891"
+                placeholder={t('Məs: 1234567891')}
                 placeholderTextColor={palette.caption}
                 autoCapitalize="characters"
                 style={styles.input}
               />
               <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.tertiary, marginTop: 10 }}>
-                Admin komandası nömrəni rəsmi reyestrdə yoxlayır. Lazım olsa zalın nömrəsinə zəng edirlər. Sənəd
-                yükləmə və selfie yoxlaması bu versiyada yoxdur — yalnız VÖEN tələb olunur.
+                {t(
+                  'Admin komandası nömrəni rəsmi reyestrdə yoxlayır. Lazım olsa zalın nömrəsinə zəng edirlər. Sənəd yükləmə və selfie yoxlaması bu versiyada yoxdur — yalnız VÖEN tələb olunur.'
+                )}
               </AppText>
             </View>
           </>
@@ -197,28 +203,29 @@ export default function GymClaim() {
 
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 13 }}>
-            TƏSDİQ NƏ DEYİR
+            {t('TƏSDİQ NƏ DEYİR')}
           </AppText>
           <View style={{ gap: 10 }}>
             {APPROVAL_MEANS.map((u) => (
               <View key={u} style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                 <Icon name="check" size={15} color="#5B7F00" />
-                <AppText style={{ fontSize: 13.5, flex: 1 }}>{u}</AppText>
+                <AppText style={{ fontSize: 13.5, flex: 1 }}>{t(u)}</AppText>
               </View>
             ))}
           </View>
           <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.tertiary, marginTop: 12 }}>
-            Panel indidən tam açıqdır: qiymət, saat və avadanlıq, zal kodu və day-pass, doluluq statistikası,
-            rəylərə rəsmi cavab — hamısı təsdiqi gözləmədən işləyir. Təsdiq bunları açmır, zalın kimə aid
-            olduğunu təsdiqləyir.
+            {t(
+              'Panel indidən tam açıqdır: qiymət, saat və avadanlıq, zal kodu və day-pass, doluluq statistikası, rəylərə rəsmi cavab — hamısı təsdiqi gözləmədən işləyir. Təsdiq bunları açmır, zalın kimə aid olduğunu təsdiqləyir.'
+            )}
           </AppText>
         </View>
 
         <View style={styles.disclaimer}>
           <Icon name="shield" size={16} color="#D14A15" />
           <AppText style={{ fontSize: 12.5, lineHeight: 18, color: '#8A4A25', flex: 1 }}>
-            Sahib rəyləri silə BİLMİR — yalnız cavab yaza bilər. Bu qayda dəyişməzdir, əks halda reytinq mənasını
-            itirir.
+            {t(
+              'Sahib rəyləri silə BİLMİR — yalnız cavab yaza bilər. Bu qayda dəyişməzdir, əks halda reytinq mənasını itirir.'
+            )}
           </AppText>
         </View>
       </ScrollView>
@@ -233,14 +240,14 @@ export default function GymClaim() {
             onPress={submit}
             style={[styles.confirmBtn, sending && { opacity: 0.5 }]}>
             <AppText style={{ color: palette.white, fontSize: 16, fontWeight: '600' }}>
-              {sending ? 'Göndərilir…' : 'Sahibliyi təsdiqlə'}
+              {sending ? t('Göndərilir…') : t('Sahibliyi təsdiqlə')}
             </AppText>
           </PressableScale>
         </KeyboardLift>
       ) : (
         <View style={{ paddingHorizontal: spacing.screen, paddingBottom: 8, paddingTop: 8 }}>
           <PressableScale activeScale={0.98} onPress={() => router.back()} style={styles.secondaryBtn}>
-            <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>Panelə qayıt</AppText>
+            <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>{t('Panelə qayıt')}</AppText>
           </PressableScale>
         </View>
       )}

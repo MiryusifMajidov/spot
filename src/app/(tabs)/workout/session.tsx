@@ -19,6 +19,7 @@ import { repRange } from '@/lib/duration';
 import { useAuthGate } from '@/lib/authGate';
 import { getMyAssignedProgram } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import {
   exerciseById,
   LibExercise,
@@ -61,6 +62,7 @@ const isBodyweight = (eq: string) => eq === 'Bədən' || eq === 'Turnik' || eq =
 
 export default function Session() {
   const router = useRouter();
+  const t = useT();
   const gate = useAuthGate();
   const params = useLocalSearchParams<{ programId?: string; dayIndex?: string; title?: string; partnerId?: string }>();
   const workouts = useDb((s) => s.workouts);
@@ -122,10 +124,10 @@ export default function Session() {
       let kg = suggestion ? String(autoApply ? suggestion.weight : suggestion.prevWeight) : last ? String(last.weight) : '';
       let hint = suggestion?.note ?? '';
       if (suggestion && hasTrainer === true) {
-        hint = `${suggestion.note}. Məşqçin var — SPOT çəkini özü dəyişmir, təklifi sən qəbul edirsən.`;
+        hint = t('{note}. Məşqçin var — SPOT çəkini özü dəyişmir, təklifi sən qəbul edirsən.', { note: suggestion.note });
       }
       if (!kg && bw && bodyweight) kg = String(bodyweight);
-      if (!hint) hint = timed ? `Hədəf ${ex.reps}` : bw ? 'Öz çəkinlə işlə — əlavə ağırlıq varsa kq-a yaz' : `Hədəf ${ex.reps} təkrar`;
+      if (!hint) hint = timed ? t('Hədəf {reps}', { reps: t(ex.reps) }) : bw ? t('Öz çəkinlə işlə — əlavə ağırlıq varsa kq-a yaz') : t('Hədəf {reps} təkrar', { reps: t(ex.reps) });
       return {
         ex,
         prev: last ? `${last.weight}×${last.reps}` : '—',
@@ -194,7 +196,7 @@ export default function Session() {
           setLogs(d.logs);
           setCi(Math.min(d.ci ?? 0, d.logs.length - 1));
           setStartedAt(d.startedAt);
-          toast('Yarımçıq məşqin bərpa olundu', 'info');
+          toast(t('Yarımçıq məşqin bərpa olundu'), 'info');
         } catch {
           AsyncStorage.removeItem(draftKey).catch(() => {});
         }
@@ -204,7 +206,7 @@ export default function Session() {
     return () => {
       alive = false;
     };
-  }, [draftKey]);
+  }, [draftKey, t]);
 
   useEffect(() => {
     // Only after the restore has run, or an empty first render would overwrite
@@ -388,13 +390,13 @@ export default function Session() {
 
   const finish = () => {
     if (doneCount === 0) {
-      confirm('Heç bir set qeyd olunmayıb', 'Bu məşq statistikana yazılmayacaq. Bağlayaq?', [
-        { label: 'Məşqə qayıt', style: 'cancel' },
-        { label: 'Qeydiyyatsız bağla', style: 'destructive', onPress: () => router.back() },
+      confirm(t('Heç bir set qeyd olunmayıb'), t('Bu məşq statistikana yazılmayacaq. Bağlayaq?'), [
+        { label: t('Məşqə qayıt'), style: 'cancel' },
+        { label: t('Qeydiyyatsız bağla'), style: 'destructive', onPress: () => router.back() },
       ]);
       return;
     }
-    gate(save, 'Məşqi yadda saxlamaq üçün');
+    gate(save, t('Məşqi yadda saxlamaq üçün'));
   };
 
   const quit = () => {
@@ -406,11 +408,11 @@ export default function Session() {
     // Leaving no longer means losing it: the draft is kept and offered back the
     // next time this workout is opened, so «Məşqə davam et» is a real option
     // even after the phone kills the app.
-    confirm('Məşqi dayandır?', `${doneCount} set qeyd etmisən. İndi saxlamasan, məşqi növbəti dəfə açanda qaldığın yerdən davam edə bilərsən.`, [
-      { label: 'Bitir və yadda saxla', style: 'primary', onPress: () => gate(save, 'Məşqi yadda saxlamaq üçün') },
-      { label: 'Məşqə davam et', style: 'cancel' },
-      { label: 'Sonra davam edərəm', onPress: () => router.back() },
-      { label: 'Sil və çıx', style: 'destructive', onPress: () => { clearDraft(); router.back(); } },
+    confirm(t('Məşqi dayandır?'), t('{n} set qeyd etmisən. İndi saxlamasan, məşqi növbəti dəfə açanda qaldığın yerdən davam edə bilərsən.', { n: doneCount, count: doneCount }), [
+      { label: t('Bitir və yadda saxla'), style: 'primary', onPress: () => gate(save, t('Məşqi yadda saxlamaq üçün')) },
+      { label: t('Məşqə davam et'), style: 'cancel' },
+      { label: t('Sonra davam edərəm'), onPress: () => router.back() },
+      { label: t('Sil və çıx'), style: 'destructive', onPress: () => { clearDraft(); router.back(); } },
     ]);
   };
 
@@ -421,13 +423,13 @@ export default function Session() {
         <SafeAreaView edges={['top']} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 }}>
           <Icon name="dumbbell" size={26} color={dark.textTertiary} />
           <AppText style={{ color: palette.white, fontSize: 17, fontWeight: '600', marginTop: 12, textAlign: 'center' }}>
-            Bu günə hərəkət təyin olunmayıb
+            {t('Bu günə hərəkət təyin olunmayıb')}
           </AppText>
           <AppText style={{ color: dark.textSecondary, fontSize: 13.5, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
-            Proqramın bu gününə hərəkət əlavə olunmayıb. Kitabxanadan hərəkət seçib öz məşqini qura bilərsən.
+            {t('Proqramın bu gününə hərəkət əlavə olunmayıb. Kitabxanadan hərəkət seçib öz məşqini qura bilərsən.')}
           </AppText>
           <PressableScale onPress={() => router.back()} style={[styles.nextBtn, { marginTop: 20, paddingHorizontal: 24, flex: undefined }]}>
-            <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '600' }}>Geri</AppText>
+            <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '600' }}>{t('Geri')}</AppText>
           </PressableScale>
         </SafeAreaView>
       </View>
@@ -474,9 +476,9 @@ export default function Session() {
             <Icon name="x" size={22} color={palette.white} />
           </PressableScale>
           <View style={{ alignItems: 'center' }}>
-            <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>{title}</AppText>
+            <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>{t(title)}</AppText>
             <AppText style={{ color: dark.textTertiary, fontSize: 12, marginTop: 2 }}>
-              Hərəkət {ci + 1} / {logs.length}{partner ? ` · ${partner.name} ilə` : ''}
+              {t('Hərəkət {n} / {total}', { n: ci + 1, total: logs.length })}{partner ? ` · ${t('{name} ilə', { name: partner.name })}` : ''}
             </AppText>
           </View>
           <View style={styles.timer}>
@@ -518,9 +520,9 @@ export default function Session() {
               <Icon name={hasVideo ? 'play' : 'target'} size={22} color={hasDetail ? palette.volt : dark.textTertiary} />
             </PressableScale>
             <View style={{ flex: 1 }}>
-              <AppText style={{ color: palette.white, fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>{current.ex.name}</AppText>
+              <AppText style={{ color: palette.white, fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>{t(current.ex.name)}</AppText>
               <AppText style={{ color: dark.textSecondary, fontSize: 13.5, marginTop: 4 }}>
-                {[`${current.sets.length} set`, current.ex.reps, current.ex.muscle].filter(Boolean).join(' · ')}
+                {[t('{n} set', { n: current.sets.length, count: current.sets.length }), t(current.ex.reps), t(current.ex.muscle)].filter(Boolean).join(' · ')}
               </AppText>
             </View>
           </View>
@@ -530,14 +532,14 @@ export default function Session() {
             <View style={styles.hintRow}>
               <Icon name={current.suggestion?.deload ? 'shield' : 'target'} size={13} color={palette.volt} />
               <AppText style={{ color: dark.textSecondary, fontSize: 12.5, flex: 1 }}>
-                Keçən dəfə: {current.prev}. {current.hint}
+                {t('Keçən dəfə: {prev}. {hint}', { prev: current.prev, hint: current.hint })}
               </AppText>
             </View>
             {showAccept ? (
               <PressableScale activeScale={0.97} onPress={acceptSuggestion} style={styles.accept}>
                 <Icon name="check" size={14} color={palette.volt} />
                 <AppText style={{ color: palette.volt, fontSize: 12.5, fontWeight: '700' }}>
-                  Təklifi qəbul et — {current.suggestion!.weight} kq
+                  {t('Təklifi qəbul et — {kg} kq', { kg: current.suggestion!.weight })}
                 </AppText>
               </PressableScale>
             ) : null}
@@ -545,10 +547,10 @@ export default function Session() {
 
           {/* Column headers */}
           <View style={styles.cols}>
-            <AppText style={[styles.colH, { width: 34 }]}>SET</AppText>
-            <AppText style={[styles.colH, { flex: 1 }]}>ƏVVƏLKİ</AppText>
-            <AppText style={[styles.colH, { width: 64, textAlign: 'center' }]}>KQ</AppText>
-            <AppText style={[styles.colH, { width: 64, textAlign: 'center' }]}>{current.timed ? 'SANİYƏ' : 'TƏKRAR'}</AppText>
+            <AppText style={[styles.colH, { width: 34 }]}>{t('SET')}</AppText>
+            <AppText style={[styles.colH, { flex: 1 }]}>{t('ƏVVƏLKİ')}</AppText>
+            <AppText style={[styles.colH, { width: 64, textAlign: 'center' }]}>{t('KQ')}</AppText>
+            <AppText style={[styles.colH, { width: 64, textAlign: 'center' }]}>{current.timed ? t('SANİYƏ') : t('TƏKRAR')}</AppText>
             <View style={{ width: 40 }} />
           </View>
 
@@ -563,7 +565,7 @@ export default function Session() {
                   onChangeText={(v) => update(i, 'kg', v)}
                   keyboardType="numeric"
                   style={styles.input}
-                  placeholder={current.bodyweight ? 'öz' : '—'}
+                  placeholder={current.bodyweight ? t('öz') : '—'}
                   placeholderTextColor={dark.textTertiary}
                 />
                 <TextInput
@@ -581,7 +583,7 @@ export default function Session() {
             ))}
             <PressableScale activeScale={0.97} onPress={addSet} style={styles.addSet}>
               <Icon name="plus" size={16} color={dark.textSecondary} />
-              <AppText style={{ color: dark.textSecondary, fontSize: 13.5, fontWeight: '600' }}>Set əlavə et</AppText>
+              <AppText style={{ color: dark.textSecondary, fontSize: 13.5, fontWeight: '600' }}>{t('Set əlavə et')}</AppText>
             </PressableScale>
           </View>
         </ScrollView>
@@ -589,9 +591,9 @@ export default function Session() {
         {/* Rest bar */}
         {rest !== null ? (
           <View style={styles.restBar}>
-            <AppText style={{ color: palette.volt, fontSize: 14, fontWeight: '700' }}>Fasilə {fmt(rest)}</AppText>
+            <AppText style={{ color: palette.volt, fontSize: 14, fontWeight: '700' }}>{t('Fasilə {time}', { time: fmt(rest) })}</AppText>
             <PressableScale activeScale={0.94} onPress={() => setRest(null)}>
-              <AppText style={{ color: dark.textSecondary, fontSize: 14, fontWeight: '600' }}>Keç</AppText>
+              <AppText style={{ color: dark.textSecondary, fontSize: 14, fontWeight: '600' }}>{t('Keç')}</AppText>
             </PressableScale>
           </View>
         ) : null}
@@ -603,11 +605,11 @@ export default function Session() {
           </PressableScale>
           {ci < logs.length - 1 ? (
             <PressableScale onPress={() => setCi((c) => c + 1)} style={styles.nextBtn}>
-              <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '600' }}>Növbəti hərəkət</AppText>
+              <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '600' }}>{t('Növbəti hərəkət')}</AppText>
             </PressableScale>
           ) : (
             <PressableScale onPress={finish} style={[styles.nextBtn, { backgroundColor: palette.volt }]}>
-              <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '700' }}>Məşqi bitir</AppText>
+              <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '700' }}>{t('Məşqi bitir')}</AppText>
             </PressableScale>
           )}
           <PressableScale activeScale={0.94} onPress={finish} style={styles.navBtn}>

@@ -1,6 +1,7 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { useIsGuest } from '@/lib/authGate';
+import { useT } from '@/lib/useT';
 import { palette } from '@/theme';
 
 /**
@@ -30,16 +31,17 @@ import { palette } from '@/theme';
  * sign in — the three tabs simply appear.
  */
 export default function TabsLayout() {
+  const t = useT();
   const guest = useIsGuest();
   return (
     <NativeTabs backgroundColor={palette.white} tintColor={palette.ink} labelStyle={{ selected: { color: palette.ink } }}>
       <NativeTabs.Trigger name="discover">
-        <NativeTabs.Trigger.Label>Kəşf</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('Kəşf')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'magnifyingglass', selected: 'magnifyingglass' }} md="search" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="workout" hidden={guest}>
-        <NativeTabs.Trigger.Label>Məşq</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('Məşq')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'dumbbell', selected: 'dumbbell.fill' }} md="fitness_center" />
       </NativeTabs.Trigger>
 
@@ -48,17 +50,17 @@ export default function TabsLayout() {
           a guess about where it lived; it is the one action a person performs
           standing in the doorway of a gym, so it is one tap from anywhere. */}
       <NativeTabs.Trigger name="checkin" hidden={guest}>
-        <NativeTabs.Trigger.Label>Check-in</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('Check-in')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'qrcode.viewfinder', selected: 'qrcode.viewfinder' }} md="qr_code_scanner" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="feed" hidden={guest}>
-        <NativeTabs.Trigger.Label>Feed</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('Feed')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'play.rectangle', selected: 'play.rectangle.fill' }} md="play_circle" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profile" hidden={guest}>
-        <NativeTabs.Trigger.Label>Profil</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('Profil')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'person', selected: 'person.fill' }} md="person" />
       </NativeTabs.Trigger>
     </NativeTabs>

@@ -18,6 +18,7 @@ import { AppErrorBoundary } from '@/components/ui/AppErrorBoundary';
 import { UiHost } from '@/components/ui/UiHost';
 import { loadDictionaries } from '@/i18n';
 import { openPush, registerPush } from '@/lib/push';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
 
@@ -27,6 +28,7 @@ import { palette } from '@/theme';
 loadDictionaries();
 
 export default function RootLayout() {
+  const t = useT();
   const bootstrap = useAppStore((s) => s.bootstrap);
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -125,7 +127,7 @@ export default function RootLayout() {
             way out — exactly what AppErrorBoundary exists to prevent. Keeping it
             OUTSIDE the Stack's boundary is still right (a toast must be drawable
             over a failed screen); it just needs one of its own. */}
-        <AppErrorBoundary label="Bu pəncərə açılmadı">
+        <AppErrorBoundary label={t('Bu pəncərə açılmadı')}>
           <UiHost />
         </AppErrorBoundary>
         <StatusBar style="dark" />

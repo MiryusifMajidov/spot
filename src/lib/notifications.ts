@@ -13,6 +13,7 @@
 import { router } from 'expo-router';
 
 import { getMyProfile } from './api';
+import { t } from './i18n';
 import { supabase } from './supabase';
 import { openComments, toast } from '@/store/ui';
 
@@ -199,25 +200,25 @@ export async function setNotifPref(type: NotifType, on: boolean): Promise<void> 
 /** One line, in Azerbaijani, naming who did what. The actor's name is used only
  *  when we actually read it; «Kimsə» is the honest stand-in, never a guess. */
 export function notifText(n: NotifRow): string {
-  const who = n.actorName?.trim() || 'Kimsə';
+  const who = n.actorName?.trim() || t('Kimsə');
   switch (n.type) {
-    case 'comment_like': return `${who} şərhini bəyəndi`;
-    case 'comment_reply': return `${who} şərhinə cavab yazdı`;
-    case 'mention': return `${who} səni şərhdə etiketlədi`;
-    case 'match_request': return `${who} səninlə məşq etmək istəyir`;
-    case 'match_accepted': return `${who} təklifini qəbul etdi`;
-    case 'trainer_request': return `${who} şagirdin olmaq istəyir`;
-    case 'trainer_decided': return `${who} sorğuna cavab verdi`;
-    case 'review_reply': return `${who} rəyinə cavab yazdı`;
-    case 'message': return `${who} sənə mesaj yazdı`;
-    case 'video_like': return `${who} videonu bəyəndi`;
-    case 'post_like': return `${who} postunu bəyəndi`;
-    case 'follow': return `${who} səni izləməyə başladı`;
+    case 'comment_like': return t('{name} şərhini bəyəndi', { name: who });
+    case 'comment_reply': return t('{name} şərhinə cavab yazdı', { name: who });
+    case 'mention': return t('{name} səni şərhdə etiketlədi', { name: who });
+    case 'match_request': return t('{name} səninlə məşq etmək istəyir', { name: who });
+    case 'match_accepted': return t('{name} təklifini qəbul etdi', { name: who });
+    case 'trainer_request': return t('{name} şagirdin olmaq istəyir', { name: who });
+    case 'trainer_decided': return t('{name} sorğuna cavab verdi', { name: who });
+    case 'review_reply': return t('{name} rəyinə cavab yazdı', { name: who });
+    case 'message': return t('{name} sənə mesaj yazdı', { name: who });
+    case 'video_like': return t('{name} videonu bəyəndi', { name: who });
+    case 'post_like': return t('{name} postunu bəyəndi', { name: who });
+    case 'follow': return t('{name} səni izləməyə başladı', { name: who });
     default:
       // A type this build does not know about — a newer trigger against an older
       // app. It is still a real event, so it is shown plainly rather than hidden
       // or crashed on.
-      return `${who} səninlə bağlı bir hərəkət etdi`;
+      return t('{name} səninlə bağlı bir hərəkət etdi', { name: who });
   }
 }
 
@@ -293,7 +294,7 @@ function openReview(reviewId: string, knownGymId: string | null): void {
     return;
   }
   if (!reviewId) {
-    toast('Rəyin aid olduğu zal açılmadı', 'error');
+    toast(t('Rəyin aid olduğu zal açılmadı'), 'error');
     return;
   }
   void (async () => {
@@ -304,6 +305,6 @@ function openReview(reviewId: string, knownGymId: string | null): void {
        your review landed on the gym's description, with nothing on screen to
        say the answer was behind a segment two taps away. */
     if (gymId) router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: gymId, seg: 'reviews' } });
-    else toast('Rəyin aid olduğu zal açılmadı — bağlantını yoxla', 'error');
+    else toast(t('Rəyin aid olduğu zal açılmadı — bağlantını yoxla'), 'error');
   })();
 }

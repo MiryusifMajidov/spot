@@ -20,6 +20,7 @@
 import { create } from "zustand";
 
 import { Program } from "@/data/types";
+import { t } from "@/lib/i18n";
 import { exerciseLibrary } from "./db";
 
 /** Repetitions or a hold. Both end up in one `reps` string on the wire — see
@@ -69,7 +70,7 @@ export function splitReps(reps: string): { mode: ItemMode; value: string } {
 }
 
 export function newDay(index: number): DraftDay {
-  return { key: nextKey(), title: `Gün ${index + 1}`, focus: "", items: [] };
+  return { key: nextKey(), title: t("Gün {n}", { n: index + 1 }), focus: "", items: [] };
 }
 
 export function itemFromLibrary(id: string): DraftItem | null {
@@ -153,7 +154,7 @@ export const useProgramDraft = create<DraftState>((set) => ({
        days opened the editor with no day and no row to type into. */
     const days = (p.days ?? []).map((d, i) => ({
       key: nextKey(),
-      title: d.title || `Gün ${i + 1}`,
+      title: d.title || t("Gün {n}", { n: i + 1 }),
       focus: d.focus ?? "",
       items: (d.exercises ?? []).map((e) => {
         const { mode, value } = splitReps(e.reps);

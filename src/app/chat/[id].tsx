@@ -24,7 +24,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** «indi» / «5 dəq» / «Dünən», in the language the person chose. `timeAgo` takes
  *  the clock as an argument so the formatter itself stays pure; reading it stays
  *  here, exactly where the old `timeAgoAz` read it. */
-const ago = (iso: string) => timeAgo(iso, Date.now());
+const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) => string) =>
+  timeAgo(iso, Date.now(), tr);
 import { useDiscoverPrefs } from '@/store/discoverPrefs';
 import { palette, spacing } from '@/theme';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
@@ -239,7 +240,7 @@ export default function Conversation() {
                     </AppText>
                   </View>
                   <AppText variant="caption" color={palette.tertiary} style={{ marginTop: 3, marginHorizontal: 4 }}>
-                    {ago(m.createdAt)}
+                    {ago(m.createdAt, t)}
                     {m.mine && m.read ? t(' · oxundu') : ''}
                   </AppText>
                 </View>

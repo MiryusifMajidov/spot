@@ -14,6 +14,7 @@ import { saveProgramDays } from '@/lib/saveProgram';
 import { actionSheet, confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 import { searchKey } from '@/lib/az';
+import { useT } from '@/lib/useT';
 
 const MUSCLES = ['Sinə', 'Bel', 'Ayaq', 'Çiyin', 'Qol', 'Core'];
 const MUSCLE_GROUPS: Record<string, string[]> = {
@@ -49,6 +50,7 @@ const toExercise = (m: LibExercise): Exercise => ({
 
 export default function ExerciseLibrary() {
   const router = useRouter();
+  const t = useT();
   const [q, setQ] = useState('');
   const [muscle, setMuscle] = useState('Sinə');
   const homeGymId = useAppStore((s) => s.profile.homeGymId);
@@ -69,14 +71,14 @@ export default function ExerciseLibrary() {
   /** Add an exercise to a day of one of the user's own programs — a real write. */
   const addToProgram = (e: LibExercise) => {
     if (!myPrograms.length) {
-      confirm('Hələ proqramın yoxdur', 'Hərəkəti proqrama əlavə etmək üçün əvvəlcə öz proqramını yarat.', [
-        { label: 'İndi yox', style: 'cancel' },
-        { label: 'Proqram yarat', style: 'primary', onPress: () => router.push('/(tabs)/workout/create') },
+      confirm(t('Hələ proqramın yoxdur'), t('Hərəkəti proqrama əlavə etmək üçün əvvəlcə öz proqramını yarat.'), [
+        { label: t('İndi yox'), style: 'cancel' },
+        { label: t('Proqram yarat'), style: 'primary', onPress: () => router.push('/(tabs)/workout/create') },
       ]);
       return;
     }
     actionSheet({
-      title: `${e.name} — hansı proqrama?`,
+      title: t('{name} — hansı proqrama?', { name: t(e.name) }),
       actions: [
         ...myPrograms.map((p) => ({
           label: p.title,
@@ -88,15 +90,15 @@ export default function ExerciseLibrary() {
                 return;
               }
               actionSheet({
-                title: 'Hansı günə?',
+                title: t('Hansı günə?'),
                 actions: [
-                  ...days.map((d, i) => ({ label: d.title || `Gün ${i + 1}`, onPress: () => void appendTo(p.id, i, e) })),
-                  { label: 'Bağla', style: 'cancel' as const },
+                  ...days.map((d, i) => ({ label: d.title || t('Gün {n}', { n: i + 1 }), onPress: () => void appendTo(p.id, i, e) })),
+                  { label: t('Bağla'), style: 'cancel' as const },
                 ],
               });
             }, 250),
         })),
-        { label: 'Bağla', style: 'cancel' as const },
+        { label: t('Bağla'), style: 'cancel' as const },
       ],
     });
   };
@@ -116,40 +118,40 @@ export default function ExerciseLibrary() {
     const days = p.days?.length ? [...p.days] : [{ title: 'Gün 1', focus: '', exercises: [] }];
     const day = days[dayIndex] ?? days[0];
     if (day.exercises.some((x) => x.id === e.id)) {
-      toast(`${e.name} artıq bu gündədir`, 'info');
+      toast(t('{name} artıq bu gündədir', { name: t(e.name) }), 'info');
       return;
     }
     days[dayIndex] = { ...day, exercises: [...day.exercises, toExercise(e)] };
-    const where = `${p.title} · ${day.title || `Gün ${dayIndex + 1}`}`;
+    const where = `${p.title} · ${day.title || t('Gün {n}', { n: dayIndex + 1 })}`;
 
     const { result, problem } = await saveProgramDays(programId, days);
     if (result === 'failed') {
-      toast('Əlavə olunmadı. Yenidən cəhd et.', 'error');
+      toast(t('Əlavə olunmadı. Yenidən cəhd et.'), 'error');
       return;
     }
     if (result === 'refused') {
-      toast(problem ?? 'Server qəbul etmədi.', 'error');
+      toast(problem ?? t('Server qəbul etmədi.'), 'error');
       return;
     }
     if (result === 'local') {
-      toast(`${e.name} → ${where} — hələlik yalnız bu cihazda`, 'info');
+      toast(t('{name} → {where} — hələlik yalnız bu cihazda', { name: t(e.name), where }), 'info');
       return;
     }
-    toast(`${e.name} → ${where}`);
+    toast(`${t(e.name)} → ${where}`);
   };
 
   return (
     <Screen edges={['top']}>
-      <NavBar title="Hərəkətlər" />
+      <NavBar title={t('Hərəkətlər')} />
       <View style={{ paddingHorizontal: spacing.screen }}>
         <View style={styles.search}>
           <Icon name="search" size={17} color={palette.tertiary} />
-          <TextInput value={q} onChangeText={setQ} placeholder="Hərəkət və ya əzələ axtar" placeholderTextColor={palette.tertiary} style={styles.searchInput} />
+          <TextInput value={q} onChangeText={setQ} placeholder={t('Hərəkət və ya əzələ axtar')} placeholderTextColor={palette.tertiary} style={styles.searchInput} />
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7, paddingVertical: 12 }}>
           {MUSCLES.map((m) => (
             <PressableScale key={m} activeScale={0.95} onPress={() => setMuscle(m)} style={[styles.chip, muscle === m && styles.chipOn]}>
-              <AppText style={{ fontSize: 12.5, fontWeight: '600', color: muscle === m ? palette.white : palette.inkText }}>{m}</AppText>
+              <AppText style={{ fontSize: 12.5, fontWeight: '600', color: muscle === m ? palette.white : palette.inkText }}>{t(m)}</AppText>
             </PressableScale>
           ))}
         </ScrollView>
@@ -157,14 +159,16 @@ export default function ExerciseLibrary() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
         <AppText variant="caption" color={palette.tertiary} style={{ marginBottom: 12 }}>
-          {q ? `Axtarış · ${list.length} nəticə` : `${muscle} · ${list.length} hərəkət`}
-          {gym ? ` · ${gym.name}-də olanlar öndədir` : ''}
+          {q
+            ? t('Axtarış · {n} nəticə', { n: list.length, count: list.length })
+            : t('{muscle} · {n} hərəkət', { muscle: t(muscle), n: list.length, count: list.length })}
+          {gym ? ` · ${t('{gym}-də olanlar öndədir', { gym: gym.name })}` : ''}
         </AppText>
         {list.length === 0 ? (
           <View style={styles.empty}>
-            <AppText variant="headline">Nəticə tapılmadı</AppText>
+            <AppText variant="headline">{t('Nəticə tapılmadı')}</AppText>
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 6, textAlign: 'center' }}>
-              Başqa ad və ya əzələ qrupu yaz.
+              {t('Başqa ad və ya əzələ qrupu yaz.')}
             </AppText>
           </View>
         ) : null}
@@ -179,16 +183,16 @@ export default function ExerciseLibrary() {
                   </View>
                 </PressableScale>
                 <View style={{ flex: 1 }}>
-                  <AppText style={{ fontSize: 15, fontWeight: '600' }}>{e.name}</AppText>
-                  <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 5 }}>{e.muscle} · {e.equipment}</AppText>
+                  <AppText style={{ fontSize: 15, fontWeight: '600' }}>{t(e.name)}</AppText>
+                  <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 5 }}>{t(e.muscle)} · {t(e.equipment)}</AppText>
                   <View style={{ flexDirection: 'row', gap: 6, marginTop: 7 }}>
                     <View style={styles.tag}>
-                      <AppText style={styles.tagText}>{e.defaultSets}×{e.reps}</AppText>
+                      <AppText style={styles.tagText}>{e.defaultSets}×{t(e.reps)}</AppText>
                     </View>
                     {status ? (
                       <View style={[styles.tag, { backgroundColor: 'rgba(198,255,61,0.3)' }]}>
                         <AppText style={[styles.tagText, { color: '#3F5500' }]}>
-                          {status === 'own' ? 'Avadanlıq lazım deyil' : 'Zalında var'}
+                          {status === 'own' ? t('Avadanlıq lazım deyil') : t('Zalında var')}
                         </AppText>
                       </View>
                     ) : null}

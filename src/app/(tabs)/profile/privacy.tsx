@@ -9,6 +9,7 @@ import { ensureSession, updateMyProfile, deleteMyAccount } from '@/lib/api';
 import { unregisterPush } from '@/lib/push';
 import { wipeDeviceData } from '@/lib/wipe';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { useDb } from '@/store/db';
 import { emptyGymFilter, emptyPartnerFilter, useDiscoverPrefs } from '@/store/discoverPrefs';
@@ -24,6 +25,7 @@ function Toggle({ value, onValueChange }: { value: boolean; onValueChange: (v: b
 }
 
 export default function PrivacyDetails() {
+  const t = useT();
   const router = useRouter();
   const showInGymList = useAppStore((s) => s.showInGymList);
   const setPrivacy = useAppStore((s) => s.setPrivacy);
@@ -35,7 +37,7 @@ export default function PrivacyDetails() {
     if (!hasSupabaseConfig) return;
     const s = useAppStore.getState();
     updateMyProfile({ visibility: s.visibility, show_in_gym_list: s.showInGymList }).catch(() => {
-      toast('Parametr serverdə yenilənmədi — internet bağlantını yoxla', 'error');
+      toast(t('Parametr serverdə yenilənmədi — internet bağlantını yoxla'), 'error');
     });
   };
 
@@ -60,7 +62,7 @@ export default function PrivacyDetails() {
     try {
       await Share.share({ message: JSON.stringify(payload, null, 2) });
     } catch {
-      toast('Data hazırlana bilmədi', 'error');
+      toast(t('Data hazırlana bilmədi'), 'error');
     }
   };
 
@@ -132,25 +134,25 @@ export default function PrivacyDetails() {
    */
   const deleteAccount = () =>
     confirm(
-      'Hesabı tamamilə sil',
-      'Profilin, videolarını, postlarını, şərhlərini, şəkillərini, check-inlərini və məşq tarixçəni həm bu telefondan, həm də serverdən silirik. İstifadəçi adın boşalır.\n\nZala yazdığın rəylər qalır, amma adın çıxarılır — başqaları həmin rəylərə baxıb qərar verib. Yaratdığın zal və proqramlar da qalır, çünki başqa üzvlər onlardan istifadə edir.\n\nBu addım geri qaytarıla bilməz.',
+      t('Hesabı tamamilə sil'),
+      t('Profilin, videolarını, postlarını, şərhlərini, şəkillərini, check-inlərini və məşq tarixçəni həm bu telefondan, həm də serverdən silirik. İstifadəçi adın boşalır.\n\nZala yazdığın rəylər qalır, amma adın çıxarılır — başqaları həmin rəylərə baxıb qərar verib. Yaratdığın zal və proqramlar da qalır, çünki başqa üzvlər onlardan istifadə edir.\n\nBu addım geri qaytarıla bilməz.'),
       [
-        { label: 'Ləğv et', style: 'cancel' },
+        { label: t('Ləğv et'), style: 'cancel' },
         {
-          label: 'Davam et',
+          label: t('Davam et'),
           style: 'destructive',
           onPress: () =>
             confirm(
-              'Əminsən?',
-              'Son təsdiq. «Sil» düyməsindən sonra hesab geri qaytarılmır.',
+              t('Əminsən?'),
+              t('Son təsdiq. «Sil» düyməsindən sonra hesab geri qaytarılmır.'),
               [
-                { label: 'Ləğv et', style: 'cancel' },
+                { label: t('Ləğv et'), style: 'cancel' },
                 {
-                  label: 'Sil',
+                  label: t('Sil'),
                   style: 'destructive',
                   onPress: async () => {
                     if (!hasSupabaseConfig) {
-                      toast('Server bağlantısı yoxdur — hesab silinmədi', 'error');
+                      toast(t('Server bağlantısı yoxdur — hesab silinmədi'), 'error');
                       return;
                     }
                     try {
@@ -162,7 +164,7 @@ export default function PrivacyDetails() {
                     } catch {
                       // Nothing partial is reported as done: if the server refused,
                       // the account is still there and the person must know it.
-                      toast('Hesab silinmədi — internet yoxlanılsın, sonra yenidən cəhd et', 'error');
+                      toast(t('Hesab silinmədi — internet yoxlanılsın, sonra yenidən cəhd et'), 'error');
                       return;
                     }
                     /* NOT wipeDevice(): that one calls ensureSession() first, so
@@ -170,7 +172,7 @@ export default function PrivacyDetails() {
                        the server a second later — a fresh orphan profile created by
                        the act of deleting one. wipeDeviceData() touches no session. */
                     await wipeDeviceData();
-                    toast('Hesabın silindi');
+                    toast(t('Hesabın silindi'));
                     router.replace('/onboarding/welcome');
                   },
                 },
@@ -182,19 +184,19 @@ export default function PrivacyDetails() {
 
   const wipeDeviceOnly = () =>
     confirm(
-      'Bu cihazdakı nüsxəni sil',
-      'Məşq, check-in, saxlanılanlar və filtrlər bu telefondan silinir. Hesabın SİLİNMİR — serverdəki profilin, videoların və şərhlərin yerində qalır və tətbiqi yenidən açanda geri gəlir. Hesabı həmişəlik silmək üçün aşağıdakı «Hesabı tamamilə sil» düyməsindən istifadə et.',
+      t('Bu cihazdakı nüsxəni sil'),
+      t('Məşq, check-in, saxlanılanlar və filtrlər bu telefondan silinir. Hesabın SİLİNMİR — serverdəki profilin, videoların və şərhlərin yerində qalır və tətbiqi yenidən açanda geri gəlir. Hesabı həmişəlik silmək üçün aşağıdakı «Hesabı tamamilə sil» düyməsindən istifadə et.'),
       [
-        { label: 'Ləğv et', style: 'cancel' },
+        { label: t('Ləğv et'), style: 'cancel' },
         {
-          label: 'Sil',
+          label: t('Sil'),
           style: 'destructive',
           onPress: async () => {
             const sessionReady = await wipeDevice();
             toast(
               sessionReady
-                ? 'Bu cihazdakı nüsxə silindi — hesabın yerindədir'
-                : 'Nüsxə silindi, amma serverə qoşula bilmədik — internetə qoşulub tətbiqi yenidən aç',
+                ? t('Bu cihazdakı nüsxə silindi — hesabın yerindədir')
+                : t('Nüsxə silindi, amma serverə qoşula bilmədik — internetə qoşulub tətbiqi yenidən aç'),
               sessionReady ? 'info' : 'error'
             );
             router.replace('/onboarding/welcome');
@@ -205,7 +207,7 @@ export default function PrivacyDetails() {
 
   return (
     <Screen>
-      <NavBar title="Məxfilik" />
+      <NavBar title={t('Məxfilik')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {/* This used to be a «Yalnız match olanlar» switch. It wrote `profiles.visibility`
             and NOTHING read it back — neither position changed who could message you — and
@@ -214,35 +216,35 @@ export default function PrivacyDetails() {
             so the section now states the rule that IS enforced and nothing more. Put the
             toggle back only when a send path actually reads `visibility`. */}
         <ListGroup
-          header="Kim yaza bilər"
-          footer="Bu, bütün hesablar üçün eynidir və hazırda ayarlanmır. Mesajlar hələ yalnız bu cihazda saxlanılır.">
+          header={t('Kim yaza bilər')}
+          footer={t('Bu, bütün hesablar üçün eynidir və hazırda ayarlanmır. Mesajlar hələ yalnız bu cihazda saxlanılır.')}>
           <ListRow
-            title="Yalnız qarşılıqlı qəbuldan sonra"
-            subtitle="Söhbət yalnız hər iki tərəf məşq təklifini qəbul edəndə açılır"
-            value="Aktiv"
+            title={t('Yalnız qarşılıqlı qəbuldan sonra')}
+            subtitle={t('Söhbət yalnız hər iki tərəf məşq təklifini qəbul edəndə açılır')}
+            value={t('Aktiv')}
             chevron={false}
           />
         </ListGroup>
 
-        <ListGroup header="Görünürlük" footer="Yalnız check-in etdiyin müddətdə 'indi zalda' siyahısında görünürsən — daimi lokasiya izləmə yoxdur. Söndürsən, zalın siyahısında heç görünmürsən.">
-          <ListRow title="Zalda göründüyümü göstər" chevron={false} right={<Toggle value={showInGymList} onValueChange={(v) => apply({ showInGymList: v })} />} />
+        <ListGroup header={t('Görünürlük')} footer={t("Yalnız check-in etdiyin müddətdə 'indi zalda' siyahısında görünürsən — daimi lokasiya izləmə yoxdur. Söndürsən, zalın siyahısında heç görünmürsən.")}>
+          <ListRow title={t('Zalda göründüyümü göstər')} chevron={false} right={<Toggle value={showInGymList} onValueChange={(v) => apply({ showInGymList: v })} />} />
         </ListGroup>
 
         <ListGroup
-          header="Sənin datan"
-          footer="«Bu cihazdan sil» yalnız telefonundakı nüsxəni təmizləyir — hesabın serverdə qalır. Hesabı tamamilə silmək üçün aşağıdakı sonuncu sətri işlət. Silməzdən əvvəl datanı özünə göndərməyi məsləhət görürük.">
+          header={t('Sənin datan')}
+          footer={t('«Bu cihazdan sil» yalnız telefonundakı nüsxəni təmizləyir — hesabın serverdə qalır. Hesabı tamamilə silmək üçün aşağıdakı sonuncu sətri işlət. Silməzdən əvvəl datanı özünə göndərməyi məsləhət görürük.')}>
           <ListRow
             icon="arrowU"
             iconBg={palette.blue}
-            title="Datanı yüklə"
-            subtitle="Profil, məşq, check-in və qeydlərin JSON kimi"
+            title={t('Datanı yüklə')}
+            subtitle={t('Profil, məşq, check-in və qeydlərin JSON kimi')}
             onPress={exportData}
           />
           <ListRow
             icon="x"
             iconBg={palette.red}
-            title="Bu cihazdakı nüsxəni sil"
-            subtitle="Hesabın silinmir — serverdəki profilin qalır"
+            title={t('Bu cihazdakı nüsxəni sil')}
+            subtitle={t('Hesabın silinmir — serverdəki profilin qalır')}
             danger
             chevron={false}
             onPress={wipeDeviceOnly}
@@ -250,8 +252,8 @@ export default function PrivacyDetails() {
           <ListRow
             icon="x"
             iconBg={palette.red}
-            title="Hesabı tamamilə sil"
-            subtitle="Profil, videolar, şərhlər, şəkillər — geri qaytarmaq olmur"
+            title={t('Hesabı tamamilə sil')}
+            subtitle={t('Profil, videolar, şərhlər, şəkillər — geri qaytarmaq olmur')}
             danger
             chevron={false}
             onPress={deleteAccount}

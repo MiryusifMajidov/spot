@@ -9,6 +9,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { createReport } from '@/lib/api';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 
@@ -53,6 +54,7 @@ const MIN_CHARS = 15;
 const MAX_CHARS = 1000;
 
 export default function Support() {
+  const t = useT();
   const router = useRouter();
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>(CATEGORIES[0]);
   const [note, setNote] = useState('');
@@ -65,7 +67,7 @@ export default function Support() {
   const send = async () => {
     if (!canSend) return;
     if (!hasSupabaseConfig) {
-      toast('Göndərilə bilmədi — server bağlantısı yoxdur', 'error');
+      toast(t('Göndərilə bilmədi — server bağlantısı yoxdur'), 'error');
       return;
     }
     setSending(true);
@@ -82,22 +84,22 @@ export default function Support() {
       setSending(false);
       // Never «göndərildi» over a write the server refused — the person would
       // wait for an answer to a message nobody received.
-      toast('Göndərilə bilmədi. Yenidən cəhd et.', 'error');
+      toast(t('Göndərilə bilmədi. Yenidən cəhd et.'), 'error');
       return;
     }
-    toast('Göndərildi — komanda baxacaq');
+    toast(t('Göndərildi — komanda baxacaq'));
     router.back();
   };
 
   return (
     <Screen edges={['top', 'bottom']}>
       <NavBar
-        title="Kömək və dəstək"
-        right={<Button title="Göndər" variant="volt" disabled={!canSend} onPress={send} />}
+        title={t('Kömək və dəstək')}
+        right={<Button title={t('Göndər')} variant="volt" disabled={!canSend} onPress={send} />}
       />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
         <AppText variant="overline" color={palette.caption}>
-          MÖVZU
+          {t('MÖVZU')}
         </AppText>
         <View style={styles.cats}>
           {CATEGORIES.map((c) => {
@@ -108,19 +110,19 @@ export default function Support() {
                 activeScale={0.97}
                 onPress={() => setCat(c)}
                 style={[styles.cat, on && styles.catOn]}>
-                <AppText style={[styles.catLabel, on && styles.catLabelOn]}>{c.label}</AppText>
+                <AppText style={[styles.catLabel, on && styles.catLabelOn]}>{t(c.label)}</AppText>
               </PressableScale>
             );
           })}
         </View>
 
         <AppText variant="overline" color={palette.caption} style={{ marginTop: 22 }}>
-          NƏ BAŞ VERDİ?
+          {t('NƏ BAŞ VERDİ?')}
         </AppText>
         <TextInput
           value={note}
           onChangeText={(t) => setNote(t.slice(0, MAX_CHARS))}
-          placeholder={cat.hint}
+          placeholder={t(cat.hint)}
           placeholderTextColor={palette.caption}
           multiline
           style={styles.input}
@@ -128,14 +130,13 @@ export default function Support() {
         <View style={styles.meter}>
           <AppText variant="caption" color={tooShort ? palette.red : palette.caption}>
             {tooShort
-              ? `Ən azı ${MIN_CHARS} simvol — komanda nə baş verdiyini bilməlidir`
+              ? t('Ən azı {n} simvol — komanda nə baş verdiyini bilməlidir', { n: MIN_CHARS, count: MIN_CHARS })
               : `${text.length}/${MAX_CHARS}`}
           </AppText>
         </View>
 
         <AppText variant="caption" color={palette.caption} style={{ marginTop: 18, lineHeight: 19 }}>
-          Mesajın SPOT komandasına gedir. Məşq tarixçən, çəkin və söhbətlərin göndərilmir —
-          yalnız burada yazdıqların.
+          {t('Mesajın SPOT komandasına gedir. Məşq tarixçən, çəkin və söhbətlərin göndərilmir — yalnız burada yazdıqların.')}
         </AppText>
       </ScrollView>
     </Screen>

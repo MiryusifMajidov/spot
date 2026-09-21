@@ -8,10 +8,15 @@ import { LargeHeader } from '@/components/ui/LargeHeader';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { getMyThreads, type ThreadSummary } from '@/lib/chat';
+import { timeAgo } from '@/lib/format';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { timeAgoAz } from '@/store/db';
+import { useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
 import { useMyStudents } from './students';
+
+/** Reads the clock here, exactly where the old `timeAgoAz` read it. */
+const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) => string) =>
+  timeAgo(iso, Date.now(), tr);
 
 /**
  * The trainer's inbox — only the people who are actually their students.
@@ -19,6 +24,7 @@ import { useMyStudents } from './students';
  * yet simply shows "Hələ mesaj yoxdur".
  */
 export default function TrainerChat() {
+  const t = useT();
   const router = useRouter();
   const { active, loading, offline, failed, reload } = useMyStudents();
 
@@ -65,27 +71,27 @@ export default function TrainerChat() {
 
   return (
     <Screen edges={['top']}>
-      <LargeHeader title="Söhbət" subtitle="Şagirdlərinlə yazışma" />
+      <LargeHeader title={t('Söhbət')} subtitle={t('Şagirdlərinlə yazışma')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 28 }}>
         {offline ? (
-          <Notice title="Server bağlantısı yoxdur" body="Şagird siyahın serverdən gəlir. Bağlantı qurulanda söhbətlər burada görünəcək." />
+          <Notice title={t('Server bağlantısı yoxdur')} body={t('Şagird siyahın serverdən gəlir. Bağlantı qurulanda söhbətlər burada görünəcək.')} />
         ) : loading && rows.length === 0 ? (
           <View style={{ paddingVertical: 40 }}>
             <ActivityIndicator color={palette.tertiary} />
           </View>
         ) : failed ? (
-          <Notice title="Yüklənmədi" body="Şagird siyahısını gətirmək alınmadı." action={{ label: 'Yenidən cəhd et', onPress: reload }} />
+          <Notice title={t('Yüklənmədi')} body={t('Şagird siyahısını gətirmək alınmadı.')} action={{ label: t('Yenidən cəhd et'), onPress: reload }} />
         ) : threadsFailed ? (
           <Notice
-            title="Mesajlar yüklənmədi"
-            body="Şagirdlərin siyahısı gəldi, amma yazışmalar gəlmədi — bu, mesaj olmadığı demək deyil."
-            action={{ label: 'Yenidən cəhd et', onPress: reload }}
+            title={t('Mesajlar yüklənmədi')}
+            body={t('Şagirdlərin siyahısı gəldi, amma yazışmalar gəlmədi — bu, mesaj olmadığı demək deyil.')}
+            action={{ label: t('Yenidən cəhd et'), onPress: reload }}
           />
         ) : rows.length === 0 ? (
           <Notice
-            title="Hələ söhbət yoxdur"
-            body="Sorğu göndərən bir istifadəçini qəbul edəndən sonra onunla söhbət burada açılır."
-            action={{ label: 'Şagirdlərə bax', onPress: () => router.push('/trainer/students') }}
+            title={t('Hələ söhbət yoxdur')}
+            body={t('Sorğu göndərən bir istifadəçini qəbul edəndən sonra onunla söhbət burada açılır.')}
+            action={{ label: t('Şagirdlərə bax'), onPress: () => router.push('/trainer/students') }}
           />
         ) : (
           <View style={{ gap: 10 }}>
@@ -94,7 +100,7 @@ export default function TrainerChat() {
                 key={r.id}
                 activeScale={0.99}
                 accessibilityRole="button"
-                accessibilityLabel={`${r.name} ilə söhbət`}
+                accessibilityLabel={t('{name} ilə söhbət', { name: r.name })}
                 onPress={() => router.push({ pathname: '/chat/[id]', params: { id: r.id } })}
                 style={styles.row}>
                 <Avatar name={r.name} size={52} />
@@ -110,7 +116,7 @@ export default function TrainerChat() {
                     ) : null}
                     {r.at ? (
                       <AppText variant="caption" color={palette.tertiary}>
-                        {timeAgoAz(r.at)}
+                        {ago(r.at, t)}
                       </AppText>
                     ) : null}
                   </View>
@@ -119,7 +125,7 @@ export default function TrainerChat() {
                     color={r.unread > 0 ? palette.inkText : r.last ? palette.textSecondary : palette.tertiary}
                     numberOfLines={1}
                     style={{ marginTop: 3, fontWeight: r.unread > 0 ? '600' : '400' }}>
-                    {r.last ?? 'Hələ mesaj yoxdur — ilk mesajı yaz'}
+                    {r.last ?? t('Hələ mesaj yoxdur — ilk mesajı yaz')}
                   </AppText>
                 </View>
               </PressableScale>

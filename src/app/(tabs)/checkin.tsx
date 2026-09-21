@@ -10,7 +10,9 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { useAuthGate } from '@/lib/authGate';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
+import { t } from '@/lib/i18n';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useDb } from '@/store/db';
 import { palette, spacing } from '@/theme';
 
@@ -42,16 +44,17 @@ type Phase =
 /** The server speaks in codes so the app can say it in Azerbaijani. */
 function messageFor(raw: string): string {
   const m = raw.toLowerCase();
-  if (m.includes('checkin_bad_code')) return 'Bu QR SPOT-a aid deyil və ya zal artıq kodu dəyişib. Resepsiyadan soruş.';
-  if (m.includes('checkin_already_today')) return 'Bu gün artıq check-in etmisən. Gündə bir dəfə sayılır.';
-  if (m.includes('checkin_closed')) return 'Zal indi bağlıdır — check-in yalnız iş saatlarında sayılır.';
-  if (m.includes('checkin_sanctioned')) return 'Hesabına məhdudiyyət qoyulub. Dəstəyə yaz.';
-  if (m.includes('checkin_not_signed_in')) return 'Check-in üçün hesab lazımdır.';
-  return 'Check-in alınmadı — bağlantını yoxla və yenidən cəhd et.';
+  if (m.includes('checkin_bad_code')) return t('Bu QR SPOT-a aid deyil və ya zal artıq kodu dəyişib. Resepsiyadan soruş.');
+  if (m.includes('checkin_already_today')) return t('Bu gün artıq check-in etmisən. Gündə bir dəfə sayılır.');
+  if (m.includes('checkin_closed')) return t('Zal indi bağlıdır — check-in yalnız iş saatlarında sayılır.');
+  if (m.includes('checkin_sanctioned')) return t('Hesabına məhdudiyyət qoyulub. Dəstəyə yaz.');
+  if (m.includes('checkin_not_signed_in')) return t('Check-in üçün hesab lazımdır.');
+  return t('Check-in alınmadı — bağlantını yoxla və yenidən cəhd et.');
 }
 
 export default function CheckIn() {
   const router = useRouter();
+  const t = useT();
   const gate = useAuthGate();
   const [permission, requestPermission] = useCameraPermissions();
   const [phase, setPhase] = useState<Phase>({ k: 'scanning' });
@@ -71,7 +74,7 @@ export default function CheckIn() {
       gate(() => {
         void (async () => {
           if (!hasSupabaseConfig) {
-            setPhase({ k: 'failed', message: 'Server bağlantısı yoxdur.' });
+            setPhase({ k: 'failed', message: t('Server bağlantısı yoxdur.') });
             return;
           }
           setPhase({ k: 'sending' });
@@ -86,11 +89,11 @@ export default function CheckIn() {
           // streak can never count a check-in the server refused.
           if (row.gym_id) checkInLocal(row.gym_id);
           successFeedback();
-          setPhase({ k: 'done', gym: row.gym_name || 'Zal' });
+          setPhase({ k: 'done', gym: row.gym_name || t('Zal') });
         })();
-      }, 'Check-in etmək üçün');
+      }, t('Check-in etmək üçün'));
     },
-    [gate, checkInLocal]
+    [gate, checkInLocal, t]
   );
 
   const again = () => {
@@ -105,7 +108,7 @@ export default function CheckIn() {
       <Screen>
         <View style={styles.center}>
           <AppText variant="body" color={palette.textSecondary}>
-            Kamera hazırlanır…
+            {t('Kamera hazırlanır…')}
           </AppText>
         </View>
       </Screen>
@@ -118,13 +121,13 @@ export default function CheckIn() {
         <View style={styles.center}>
           <Icon name="qr" size={34} color={palette.tertiary} />
           <AppText variant="title3" center style={{ marginTop: 14 }}>
-            Check-in üçün kamera lazımdır
+            {t('Check-in üçün kamera lazımdır')}
           </AppText>
           <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, maxWidth: 290, lineHeight: 21 }}>
-            Zalın resepsiyasındakı QR kodu oxuyuruq. Kamera yalnız bu ekranda işləyir, şəkil saxlanılmır.
+            {t('Zalın resepsiyasındakı QR kodu oxuyuruq. Kamera yalnız bu ekranda işləyir, şəkil saxlanılmır.')}
           </AppText>
           <Button
-            title={permission.canAskAgain ? 'Kameraya icazə ver' : 'Ayarları aç'}
+            title={permission.canAskAgain ? t('Kameraya icazə ver') : t('Ayarları aç')}
             onPress={() => void requestPermission()}
             style={{ marginTop: 18 }}
           />
@@ -143,16 +146,16 @@ export default function CheckIn() {
             <Icon name={ok ? 'check' : 'x'} size={30} color={ok ? palette.ink : palette.red} />
           </View>
           <AppText variant="title2" center style={{ marginTop: 16 }}>
-            {ok ? 'Check-in edildi' : 'Alınmadı'}
+            {ok ? t('Check-in edildi') : t('Alınmadı')}
           </AppText>
           <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, maxWidth: 300, lineHeight: 21 }}>
             {ok ? phase.gym : phase.message}
           </AppText>
-          <Button title={ok ? 'Bağla' : 'Yenidən oxut'} onPress={ok ? () => router.back() : again} style={{ marginTop: 20 }} />
+          <Button title={ok ? t('Bağla') : t('Yenidən oxut')} onPress={ok ? () => router.back() : again} style={{ marginTop: 20 }} />
           {ok ? (
             <PressableScale haptic={false} onPress={again} style={{ marginTop: 12 }}>
               <AppText variant="subhead" color={palette.blue}>
-                Başqa kod oxut
+                {t('Başqa kod oxut')}
               </AppText>
             </PressableScale>
           ) : null}
@@ -174,7 +177,7 @@ export default function CheckIn() {
         <View style={styles.frame} pointerEvents="none" />
         <View style={styles.hint} pointerEvents="none">
           <AppText variant="body" center style={{ color: palette.white, lineHeight: 21 }}>
-            {phase.k === 'sending' ? 'Yoxlanılır…' : 'Resepsiyadakı QR kodu çərçivəyə tut'}
+            {phase.k === 'sending' ? t('Yoxlanılır…') : t('Resepsiyadakı QR kodu çərçivəyə tut')}
           </AppText>
         </View>
       </View>
@@ -198,7 +201,7 @@ export default function CheckIn() {
             style={styles.manualInput}
           />
           <Button
-            title="Göndər"
+            title={t('Göndər')}
             disabled={manual.length < 10 || phase.k === 'sending'}
             onPress={() => onScan(manual)}
           />
@@ -206,7 +209,7 @@ export default function CheckIn() {
       ) : (
         <PressableScale haptic={false} onPress={() => setTyping(true)} style={styles.noQr}>
           <AppText variant="subhead" color={palette.blue}>
-            QR oxunmur? Kodu əl ilə yaz
+            {t('QR oxunmur? Kodu əl ilə yaz')}
           </AppText>
         </PressableScale>
       )}

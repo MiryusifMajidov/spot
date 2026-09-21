@@ -16,6 +16,7 @@ import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { useGyms } from '@/lib/hooks';
 import { imageTooLargeMessage, isNotSavedError, pickImage, setMyAvatar, shootImage } from '@/lib/images';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
@@ -28,6 +29,7 @@ function avatarOf(row: unknown): string | null {
 
 
 export default function EditProfile() {
+  const t = useT();
   const router = useRouter();
   const profile = useAppStore((s) => s.profile);
   const setProfile = useAppStore((s) => s.setProfile);
@@ -78,7 +80,7 @@ export default function EditProfile() {
     }
     if (!local) return; // cancelled or permission denied — nothing to say
     if (!hasSupabaseConfig) {
-      toast('Şəkil üçün server bağlantısı lazımdır', 'error');
+      toast(t('Şəkil üçün server bağlantısı lazımdır'), 'error');
       return;
     }
     const previous = avatar;
@@ -88,7 +90,7 @@ export default function EditProfile() {
       const url = await setMyAvatar(local);
       setAvatar(url);
       successFeedback();
-      toast('Profil şəklin yeniləndi');
+      toast(t('Profil şəklin yeniləndi'));
     } catch (e) {
       setAvatar(previous); // never leave a photo on screen that was not saved
       errorFeedback();
@@ -102,8 +104,8 @@ export default function EditProfile() {
       toast(
         imageTooLargeMessage(e) ??
           (isNotSavedError(e)
-            ? 'Şəkil serverdə saxlanılmadı — profilə yazmaq alınmadı'
-            : 'Şəkil yüklənmədi — yenidən cəhd et'),
+            ? t('Şəkil serverdə saxlanılmadı — profilə yazmaq alınmadı')
+            : t('Şəkil yüklənmədi — yenidən cəhd et')),
         'error'
       );
     } finally {
@@ -113,27 +115,27 @@ export default function EditProfile() {
 
   const changePhoto = () =>
     actionSheet({
-      title: 'Profil şəkli',
-      message: 'Şəklin profilində görünür.',
+      title: t('Profil şəkli'),
+      message: t('Şəklin profilində görünür.'),
       actions: [
-        { label: 'Kamera', onPress: () => upload('camera') },
-        { label: 'Qalereya', onPress: () => upload('library') },
-        { label: 'Ləğv et', style: 'cancel' as const },
+        { label: t('Kamera'), onPress: () => upload('camera') },
+        { label: t('Qalereya'), onPress: () => upload('library') },
+        { label: t('Ləğv et'), style: 'cancel' as const },
       ],
     });
 
-  const gymName = gyms.find((g) => g.id === profile.homeGymId)?.name ?? 'Seçilməyib';
+  const gymName = gyms.find((g) => g.id === profile.homeGymId)?.name ?? t('Seçilməyib');
 
   const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
   const pickGym = () =>
     actionSheet({
-      title: 'Əsas zalın',
-      message: 'Yoldaş uyğunluğu buna görə hesablanır.',
+      title: t('Əsas zalın'),
+      message: t('Yoldaş uyğunluğu buna görə hesablanır.'),
       actions: [
         ...gyms.slice(0, 12).map((g) => ({ label: g.name, onPress: () => setProfile({ homeGymId: g.id }) })),
-        { label: 'Zalım yoxdur', onPress: () => setProfile({ homeGymId: null }) },
-        { label: 'Ləğv et', style: 'cancel' as const },
+        { label: t('Zalım yoxdur'), onPress: () => setProfile({ homeGymId: null }) },
+        { label: t('Ləğv et'), style: 'cancel' as const },
       ],
     });
 
@@ -141,12 +143,12 @@ export default function EditProfile() {
     if (saving) return;
     const nameErr = displayNameError(profile.name);
     if (nameErr) {
-      toast(nameErr, 'error');
+      toast(t(nameErr), 'error');
       return;
     }
     const handleErr = usernameError(handle);
     if (handleErr) {
-      toast(handleErr, 'error');
+      toast(t(handleErr), 'error');
       return;
     }
 
@@ -158,7 +160,7 @@ export default function EditProfile() {
       if (await isUsernameTaken(handle)) {
         setTaken(handle.trim().toLowerCase());
         setSaving(false);
-        toast(USERNAME_TAKEN_MSG, 'error');
+        toast(t(USERNAME_TAKEN_MSG), 'error');
         return;
       }
     } catch {
@@ -176,13 +178,13 @@ export default function EditProfile() {
       setProfile({ username: previousHandle });
       if (useAppStore.getState().lastSaveError === 'username-taken') {
         setTaken(handle.trim().toLowerCase());
-        toast(USERNAME_TAKEN_MSG, 'error');
+        toast(t(USERNAME_TAKEN_MSG), 'error');
       } else {
-        toast('Serverdə saxlanılmadı — internet bağlantını yoxla və yenidən cəhd et', 'error');
+        toast(t('Serverdə saxlanılmadı — internet bağlantını yoxla və yenidən cəhd et'), 'error');
       }
       return;
     }
-    toast(result === 'local' ? 'Yadda saxlanıldı — hələlik yalnız bu cihazda' : 'Profilin yadda saxlanıldı');
+    toast(result === 'local' ? t('Yadda saxlanıldı — hələlik yalnız bu cihazda') : t('Profilin yadda saxlanıldı'));
     router.back();
   };
 
@@ -191,11 +193,11 @@ export default function EditProfile() {
   return (
     <Screen>
       <NavBar
-        title="Profili redaktə et"
+        title={t('Profili redaktə et')}
         right={
           <PressableScale onPress={save} disabled={saving} haptic={false} activeScale={0.94}>
             <AppText variant="headline" color={saving ? palette.tertiary : palette.blue}>
-              {saving ? 'Saxlanılır…' : 'Yadda saxla'}
+              {saving ? t('Saxlanılır…') : t('Yadda saxla')}
             </AppText>
           </PressableScale>
         }
@@ -215,10 +217,10 @@ export default function EditProfile() {
             activeScale={0.96}
             disabled={uploading}
             accessibilityRole="button"
-            accessibilityLabel="Profil şəklini dəyiş"
+            accessibilityLabel={t('Profil şəklini dəyiş')}
             onPress={changePhoto}
             style={[styles.avatarWrap, uploading && { opacity: 0.6 }]}>
-            <Avatar name={profile.name || 'Sən'} size={88} uri={avatar} />
+            <Avatar name={profile.name || t('Sən')} size={88} uri={avatar} />
             <View style={styles.camBadge}>
               <Icon name="cam" size={14} color={palette.white} />
             </View>
@@ -228,23 +230,23 @@ export default function EditProfile() {
               activeScale={0.97}
               disabled={uploading}
               accessibilityRole="button"
-              accessibilityLabel="Şəkli dəyiş"
+              accessibilityLabel={t('Şəkli dəyiş')}
               onPress={changePhoto}
               style={[styles.photoBtn, uploading && { opacity: 0.5 }]}>
               <AppText variant="subhead" color={palette.inkText} style={{ fontWeight: '600' }}>
-                {uploading ? 'Yüklənir…' : avatar ? 'Şəkli dəyiş' : 'Şəkil əlavə et'}
+                {uploading ? t('Yüklənir…') : avatar ? t('Şəkli dəyiş') : t('Şəkil əlavə et')}
               </AppText>
             </PressableScale>
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 8, lineHeight: 17 }}>
-              Şəklin profilində görünür.
+              {t('Şəklin profilində görünür.')}
             </AppText>
           </View>
         </View>
 
-        <Label text="Ad" />
-        <TextInput value={profile.name} onChangeText={(name) => setProfile({ name })} placeholder="Adın" placeholderTextColor={palette.caption} style={styles.input} />
+        <Label text={t('Ad')} />
+        <TextInput value={profile.name} onChangeText={(name) => setProfile({ name })} placeholder={t('Adın')} placeholderTextColor={palette.caption} style={styles.input} />
 
-        <Label text="İstifadəçi adı" />
+        <Label text={t('İstifadəçi adı')} />
         <View style={[styles.handleRow, shownHandleErr ? styles.handleRowBad : null]}>
           <AppText variant="body" color={palette.caption}>
             @
@@ -255,7 +257,7 @@ export default function EditProfile() {
               setTaken(null);
               setHandle(v.trim());
             }}
-            placeholder="istifadeci_adi"
+            placeholder={t('istifadeci_adi')}
             placeholderTextColor={palette.caption}
             autoCapitalize="none"
             autoCorrect={false}
@@ -264,27 +266,27 @@ export default function EditProfile() {
           />
         </View>
         <AppText variant="footnote" color={shownHandleErr ? palette.red : palette.caption} style={{ marginTop: 8, lineHeight: 18 }}>
-          {shownHandleErr ?? 'Səni bu adla tapacaqlar.'}
+          {shownHandleErr ? t(shownHandleErr) : t('Səni bu adla tapacaqlar.')}
         </AppText>
 
-        <Label text="Cins" />
-        <Segmented options={['Kişi', 'Qadın']} value={profile.gender === 'qadın' ? 1 : profile.gender === 'kişi' ? 0 : -1} onChange={(i) => setProfile({ gender: i === 0 ? 'kişi' : 'qadın' })} />
+        <Label text={t('Cins')} />
+        <Segmented options={[t('Kişi'), t('Qadın')]} value={profile.gender === 'qadın' ? 1 : profile.gender === 'kişi' ? 0 : -1} onChange={(i) => setProfile({ gender: i === 0 ? 'kişi' : 'qadın' })} />
 
-        <Label text="Səviyyə" />
+        <Label text={t('Səviyyə')} />
         {/* `Math.max(0, indexOf)` painted «Başlanğıc» as chosen for somebody who
             never picked a level. The control now says so instead. */}
         <Segmented
-          options={[...LEVELS]}
+          options={LEVELS.map((l) => t(l))}
           value={LEVELS.indexOf(profile.level as (typeof LEVELS)[number])}
           onChange={(i) => setProfile({ level: LEVELS[i] })}
         />
         {!profile.level ? (
           <AppText variant="caption" color={palette.caption} style={{ marginTop: 6 }}>
-            Səviyyə hələ seçilməyib — yoldaş uyğunluğunda «Səviyyə göstərilməyib» kimi görünürsən.
+            {t('Səviyyə hələ seçilməyib — yoldaş uyğunluğunda «Səviyyə göstərilməyib» kimi görünürsən.')}
           </AppText>
         ) : null}
 
-        <Label text="Əsas zal" />
+        <Label text={t('Əsas zal')} />
         <PressableScale activeScale={0.98} onPress={pickGym} style={styles.pickRow}>
           <View style={styles.pickIcon}>
             <Icon name="dumbbell" size={18} color={palette.textSecondary} />
@@ -295,26 +297,26 @@ export default function EditProfile() {
           <Icon name="chevR" size={18} color={palette.tertiary} />
         </PressableScale>
 
-        <Label text="Məqsəd" />
+        <Label text={t('Məqsəd')} />
         <View style={styles.chips}>
           {GOALS.map((g) => (
-            <Chip key={g} label={g} tone="card" selected={profile.goals.includes(g)} onPress={() => setProfile({ goals: toggle(profile.goals, g) })} />
+            <Chip key={g} label={t(g)} tone="card" selected={profile.goals.includes(g)} onPress={() => setProfile({ goals: toggle(profile.goals, g) })} />
           ))}
         </View>
 
-        <Label text="Məşq növü" />
+        <Label text={t('Məşq növü')} />
         <View style={styles.chips}>
-          {WORKOUT_TYPES.map((t) => (
-            <Chip key={t} label={t} tone="card" selected={profile.types.includes(t)} onPress={() => setProfile({ types: toggle(profile.types, t) })} />
+          {WORKOUT_TYPES.map((w) => (
+            <Chip key={w} label={t(w)} tone="card" selected={profile.types.includes(w)} onPress={() => setProfile({ types: toggle(profile.types, w) })} />
           ))}
         </View>
 
-        <Label text="Həftənin günləri" />
+        <Label text={t('Həftənin günləri')} />
         <View style={styles.chips}>
           {DAYS.map((d, i) => (
             <Chip
               key={d}
-              label={d}
+              label={t(d)}
               tone="card"
               selected={profile.days.includes(i)}
               onPress={() => setProfile({ days: profile.days.includes(i) ? profile.days.filter((x) => x !== i) : [...profile.days, i].sort((a, b) => a - b) })}
@@ -322,25 +324,25 @@ export default function EditProfile() {
           ))}
         </View>
 
-        <Label text="Vaxt" />
+        <Label text={t('Vaxt')} />
         <View style={styles.chips}>
-          {TIME_SLOTS.map((t) => (
-            <Chip key={t} label={t} tone="card" selected={profile.timeSlot === t} onPress={() => setProfile({ timeSlot: t })} />
+          {TIME_SLOTS.map((slot) => (
+            <Chip key={slot} label={t(slot)} tone="card" selected={profile.timeSlot === slot} onPress={() => setProfile({ timeSlot: slot })} />
           ))}
         </View>
 
-        <Label text="Bio" />
+        <Label text={t('Bio')} />
         <TextInput
           value={profile.bio}
           onChangeText={(bio) => setProfile({ bio })}
-          placeholder="Özün haqqında bir neçə söz"
+          placeholder={t('Özün haqqında bir neçə söz')}
           placeholderTextColor={palette.caption}
           multiline
           style={[styles.input, { height: 92, paddingTop: 12, textAlignVertical: 'top' }]}
         />
 
         <AppText variant="footnote" color={palette.caption} style={{ marginTop: 14, lineHeight: 18 }}>
-          Zal, məqsəd, növ, gün və vaxt yoldaş uyğunluğunu hesablayan sahələrdir — dəyişsən, təkliflər də dəyişir.
+          {t('Zal, məqsəd, növ, gün və vaxt yoldaş uyğunluğunu hesablayan sahələrdir — dəyişsən, təkliflər də dəyişir.')}
         </AppText>
       </ScrollView>
     </Screen>

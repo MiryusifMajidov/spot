@@ -23,7 +23,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** «indi» / «5 dəq» / «Dünən», in the language the person chose. `timeAgo` takes
  *  the clock as an argument so the formatter itself stays pure; reading it stays
  *  here, exactly where the old `timeAgoAz` read it. */
-const ago = (iso: string) => timeAgo(iso, Date.now());
+const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) => string) =>
+  timeAgo(iso, Date.now(), tr);
 
 /** A real pending `match_requests` row addressed to me. `name` stays null when the
  *  sender's profile could not be read — we say so instead of inventing one. */
@@ -345,7 +346,7 @@ export default function Requests() {
         <View style={{ flex: 1 }}>
           <AppText variant="headline">{m.name ?? t('Adı göstərilmir')}</AppText>
           <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>
-            {ago(m.at)}
+            {ago(m.at, t)}
           </AppText>
         </View>
       </View>
@@ -472,7 +473,7 @@ export default function Requests() {
                     <View style={{ flex: 1 }}>
                       <AppText variant="headline">{name}</AppText>
                       <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>
-                        {t('Göndərildi · {time}', { time: ago(m.at) })}
+                        {t('Göndərildi · {time}', { time: ago(m.at, t) })}
                       </AppText>
                     </View>
                     <View style={styles.pending}>

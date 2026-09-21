@@ -1,5 +1,6 @@
 import type { useRouter } from 'expo-router';
 
+import { t } from '@/lib/i18n';
 import { useAppStore } from '@/store/appStore';
 import { useUi } from '@/store/ui';
 
@@ -20,13 +21,13 @@ const ROUTES: Record<Mode, string> = {
 export function showAccountSwitcher(router: Router) {
   const { profile, activeMode, ownsGym, setMode } = useAppStore.getState();
 
-  const accounts: { mode: Mode; label: string }[] = [{ mode: 'user', label: 'Şəxsi hesab' }];
-  if (profile.role === 'trainer') accounts.push({ mode: 'trainer', label: 'Müəllim hesabı' });
-  if (ownsGym) accounts.push({ mode: 'gym_admin', label: 'Zal hesabı' });
+  const accounts: { mode: Mode; label: string }[] = [{ mode: 'user', label: t('Şəxsi hesab') }];
+  if (profile.role === 'trainer') accounts.push({ mode: 'trainer', label: t('Müəllim hesabı') });
+  if (ownsGym) accounts.push({ mode: 'gym_admin', label: t('Zal hesabı') });
 
   useUi.getState().showSheet({
-    title: 'Hesabını seç',
-    message: profile.name ? `${profile.name} · ${accounts.length} hesab` : undefined,
+    title: t('Hesabını seç'),
+    message: profile.name ? t('{name} · {n} hesab', { name: profile.name, n: accounts.length, count: accounts.length }) : undefined,
     actions: [
       ...accounts.map((a) => ({
         label: activeMode === a.mode ? `${a.label} ✓` : a.label,
@@ -35,7 +36,7 @@ export function showAccountSwitcher(router: Router) {
           (router.replace as (r: string) => void)(ROUTES[a.mode]);
         },
       })),
-      { label: 'Bağla', style: 'cancel' as const },
+      { label: t('Bağla'), style: 'cancel' as const },
     ],
   });
 }

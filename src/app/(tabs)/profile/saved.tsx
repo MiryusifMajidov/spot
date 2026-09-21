@@ -15,6 +15,7 @@ import { useFeedVideos, useGyms } from '@/lib/hooks';
 import { displayAuthor } from '@/lib/authorName';
 import { allMyVideoSaves } from '@/lib/social';
 import { hasSupabaseConfig } from '@/lib/supabase';
+import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
 
@@ -22,6 +23,7 @@ import { palette, spacing } from '@/theme';
  *  both wrote here; until now nothing displayed them. No placeholders: an empty list
  *  says so and points at where saving happens. */
 export default function Saved() {
+  const t = useT();
   const router = useRouter();
   const [seg, setSeg] = useState(0);
   const savedVideos = useAppStore((s) => s.savedVideos);
@@ -52,24 +54,24 @@ export default function Saved() {
 
   return (
     <Screen edges={['top']}>
-      <NavBar title="Saxlanılanlar" />
+      <NavBar title={t('Saxlanılanlar')} />
       <View style={{ paddingHorizontal: spacing.screen, paddingBottom: 12 }}>
-        <Segmented options={['Videolar', 'Zallar']} value={seg} onChange={setSeg} />
+        <Segmented options={[t('Videolar'), t('Zallar')]} value={seg} onChange={setSeg} />
       </View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {seg === 0 ? (
           savesFailed ? (
             <Empty
               icon="bookmark"
-              title="Saxlanılanlar yüklənmədi"
-              text="Siyahı serverdən gəlmədi. Bu, siyahının boş olduğu demək deyil — bağlantını yoxlayıb yenidən aç."
+              title={t('Saxlanılanlar yüklənmədi')}
+              text={t('Siyahı serverdən gəlmədi. Bu, siyahının boş olduğu demək deyil — bağlantını yoxlayıb yenidən aç.')}
             />
           ) : videos.length === 0 ? (
             <Empty
               icon="bookmark"
-              title="Saxlanılmış video yoxdur"
-              text="Feed-də videonun yanındakı 'Saxla' düyməsinə toxun — burada toplanacaq."
-              action={<Button title="Feed-ə keç" onPress={() => router.push('/(tabs)/feed')} style={{ marginTop: 18 }} />}
+              title={t('Saxlanılmış video yoxdur')}
+              text={t("Feed-də videonun yanındakı 'Saxla' düyməsinə toxun — burada toplanacaq.")}
+              action={<Button title={t('Feed-ə keç')} onPress={() => router.push('/(tabs)/feed')} style={{ marginTop: 18 }} />}
             />
           ) : (
             <View style={styles.grid}>
@@ -101,9 +103,9 @@ export default function Saved() {
              icon in the header. Point at where that icon is instead. */
           <Empty
             icon="dumbbell"
-            title="Saxlanılmış zal yoxdur"
-            text="Zal səhifəsinin yuxarısındakı əlfəcin nişanına toxun — zal burada toplanacaq."
-            action={<Button title="Zallara bax" onPress={() => router.push('/(tabs)/discover')} style={{ marginTop: 18 }} />}
+            title={t('Saxlanılmış zal yoxdur')}
+            text={t('Zal səhifəsinin yuxarısındakı əlfəcin nişanına toxun — zal burada toplanacaq.')}
+            action={<Button title={t('Zallara bax')} onPress={() => router.push('/(tabs)/discover')} style={{ marginTop: 18 }} />}
           />
         ) : (
           <View style={{ gap: 12 }}>

@@ -11,6 +11,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { DAYS } from '@/data/mock';
 import { useAuthGate } from '@/lib/authGate';
+import { dayShort } from '@/lib/format';
 import { useTrainer, useTrainerPhase } from '@/lib/hooks';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { getMyRequestTo, requestTrainer, type TrainerRequestRow } from '@/lib/roles';
@@ -118,6 +119,9 @@ export default function Reserve() {
 
   const chosen = days[day];
   const preferred = chosen && slot ? `${chosen.label} ${chosen.num} · ${slot}` : '';
+  // `label` stays Azerbaijani: it is what `preferred` writes into the request row.
+  const dayLabel = (i: number) => (i === 0 ? t('Bu gün') : dayShort(days[i].date.getDay()));
+  const preferredShown = chosen && slot ? `${dayLabel(day)} ${chosen.num} · ${slot}` : '';
 
   const submit = () => {
     if (!slot || !chosen) return;
@@ -228,7 +232,7 @@ export default function Reserve() {
                 style={{ marginHorizontal: -spacing.screen, paddingHorizontal: spacing.screen }}>
                 {days.map((dd, i) => (
                   <PressableScale key={dd.date.toISOString()} activeScale={0.94} onPress={() => setDay(i)} style={[styles.day, day === i && styles.dayOn]}>
-                    <AppText style={{ fontSize: 12, fontWeight: '600', color: day === i ? palette.white : palette.caption }}>{t(dd.label)}</AppText>
+                    <AppText style={{ fontSize: 12, fontWeight: '600', color: day === i ? palette.white : palette.caption }}>{dayLabel(i)}</AppText>
                     <AppText style={{ fontSize: 18, fontWeight: '700', color: day === i ? palette.white : palette.inkText, marginTop: 4 }}>{dd.num}</AppText>
                   </PressableScale>
                 ))}
@@ -279,7 +283,7 @@ export default function Reserve() {
             <>
               <View style={styles.footerInfo}>
                 <AppText variant="footnote" color={palette.caption}>
-                  {preferred || t('Vaxt seç')}
+                  {preferredShown || t('Vaxt seç')}
                 </AppText>
               </View>
               <Button
