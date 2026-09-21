@@ -6,6 +6,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
+import { LanguagePicker } from '@/components/LanguagePicker';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { AuthSetupError, signInWithApple, signInWithGoogle, SOCIAL_FIRST } from '@/lib/auth';
@@ -91,6 +92,13 @@ export default function Welcome() {
         end={{ x: 0.5, y: 0.6 }}
       />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        {/* The language picker belongs HERE, not only in Settings. Settings sits
+            behind an account, and the account is created on a form written in a
+            language this person may not read — so putting the only switch there
+            locks out exactly the people it exists for. */}
+        <View style={styles.langRow}>
+          <LanguagePicker compact tone="dark" />
+        </View>
         <View style={styles.center}>
           <View style={styles.logoBox}>
             <View style={styles.ring}>
@@ -170,6 +178,7 @@ const styles = StyleSheet.create({
   ring: { width: 38, height: 38, borderRadius: 19, borderWidth: 6, borderColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
   ringDot: { position: 'absolute', top: 9, left: 9, right: 9, bottom: 9, borderRadius: 10, backgroundColor: palette.volt },
   title: { fontSize: 34, fontWeight: '700', color: palette.white, letterSpacing: -1 },
+  langRow: { flexDirection: 'row', justifyContent: 'center', paddingTop: 6 },
   subtitle: { fontSize: 16, lineHeight: 24, color: dark.textSecondary, textAlign: 'center', maxWidth: 290, marginTop: 12 },
   actions: { gap: 10, paddingBottom: 8 },
   btn: { height: 52, borderRadius: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },

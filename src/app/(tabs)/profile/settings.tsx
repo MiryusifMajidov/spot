@@ -5,6 +5,7 @@ import { confirm, toast } from '@/store/ui';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
+import { LanguagePicker } from '@/components/LanguagePicker';
 import { ListGroup, ListRow } from '@/components/ui/ListGroup';
 import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
@@ -209,6 +210,15 @@ export default function Settings() {
           <ListRow icon="lock" iconBg="#8A8A93" title="Məxfilik" subtitle="Görünürlük və data" onPress={() => router.push('/(tabs)/profile/privacy')} />
           <ListRow icon="bookmark" iconBg={palette.voltDeep} title="Saxlanılanlar" subtitle="Videolar və zallar" onPress={() => router.push('/(tabs)/profile/saved')} />
           <ListRow icon="bell" iconBg={palette.streak} title="Bildirişlər" subtitle="Hansı bildirişləri alacağını seç" onPress={() => router.push('/(tabs)/profile/notifications')} />
+        </ListGroup>
+
+        {/* Inline, not a row that pushes a screen: there are three options and
+            they fit. A language switch hidden one tap deeper is a language
+            switch a confused person does not find. */}
+        <ListGroup header="Dil / Язык / Language">
+          <View style={{ padding: 12 }}>
+            <LanguagePicker />
+          </View>
         </ListGroup>
 
         {/* «Kəşf-də», not «Kəşfdə»: the hyphen before a case suffix belongs to

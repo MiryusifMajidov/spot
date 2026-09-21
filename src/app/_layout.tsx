@@ -17,12 +17,18 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppErrorBoundary } from '@/components/ui/AppErrorBoundary';
 import { UiHost } from '@/components/ui/UiHost';
+import { loadDictionaries } from '@/i18n';
 import { handleAuthDeepLink } from '@/lib/auth';
 import { successFeedback } from '@/lib/feedback';
 import { openPush, registerPush } from '@/lib/push';
 import { toast } from '@/store/ui';
 import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
+
+/* At module scope, not in an effect: the dictionaries must be in place before
+   the first render, or a Russian speaker sees a frame of Azerbaijani on every
+   cold start. It is a plain object merge — nothing async, nothing to await. */
+loadDictionaries();
 
 export default function RootLayout() {
   const bootstrap = useAppStore((s) => s.bootstrap);

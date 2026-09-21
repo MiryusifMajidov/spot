@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 
 import { SessionRestoreError, ensureSession, getMatchRequestsSafe, getMyProfile, getUserId, isUsernameConflict, touchLastActive, updateMyProfile, sanctionOf } from '@/lib/api';
+import { applyLang, deviceLang, Lang } from '@/lib/i18n';
 import { getMyGymId } from '@/lib/roles';
 import { useDb } from '@/store/db';
 import { hasSupabaseConfig } from '@/lib/supabase';
@@ -37,6 +38,11 @@ interface AppState {
    *  uses it so a returning user is never shown a login screen while the answer
    *  «you already have an account» is still in flight. */
   profileChecked: boolean;
+  /** Which of the three languages the app speaks. Persisted, because it is a
+   *  decision about the person, not about this launch — and because a Russian
+   *  speaker should not have to find the picker again on every cold start. */
+  lang: Lang;
+  setLang: (lang: Lang) => void;
   onboarded: boolean;
   guest: boolean; // browsing without an account (read-only catalog)
   profile: Profile;
@@ -197,6 +203,15 @@ export const useAppStore = create<AppState>()(
       hydrated: false,
       ready: false,
       profileChecked: false,
+  /* The device's language on a first launch, when SPOT speaks it — a Russian
+     phone should not have to go hunting through an Azerbaijani settings screen
+     to be understood. Anything else lands on Azerbaijani, which is the app's
+     first language, not a fallback nobody chose. */
+  lang: deviceLang(),
+  setLang: (lang) => {
+    applyLang(lang);
+    set({ lang });
+  },
       onboarded: false,
       profileId: null,
       sanction: null,
@@ -440,6 +455,7 @@ export const useAppStore = create<AppState>()(
         return { ...current, ...p, profile: { ...current.profile, ...(p.profile ?? {}) } };
       },
       partialize: (s) => ({
+        lang: s.lang,
         onboarded: s.onboarded,
         profileId: s.profileId,
         guest: s.guest,
@@ -456,7 +472,15 @@ export const useAppStore = create<AppState>()(
         haptics: s.haptics,
         sounds: s.sounds,
       }),
-      onRehydrateStorage: () => (state) => state?.setHydrated(),
+      onRehydrateStorage: () => (state) => {
+        /* `t()` reads a module-level variable, not the store, so that a toast
+           fired from an API error handler can translate without a component
+           around it. Rehydration has to push the saved choice into it — without
+           this the app starts in the device language and switches to the saved
+           one only after something calls setLang. */
+        if (state?.lang) applyLang(state.lang);
+        state?.setHydrated();
+      },
     }
   )
 );
