@@ -861,6 +861,21 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema74. The check-in code must never sit on public.gyms: that table carries a TABLE-level SELECT grant, and a table grant defeats any column-level revoke, so a code there would be readable by every signed-in person — who could then check in from home forever. Its own table, owner-only policy, and check_in_with_code() resolves a scan with row security off.'
   union all
+  select 'policy', 'profiles_read requires a registered caller for the gym-list branch',
+         case when exists (select 1 from pg_policies where schemaname='public' and tablename='profiles'
+                             and policyname='profiles_read' and qual like '%is_registered()%')
+               and exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='username_taken')
+              then 'OK' else 'MISSING' end,
+         'schema78. profiles_read was granted to role public and passed any row with show_in_gym_list=true, so the bare publishable key — no sign-in — listed every visible member''s name, age, gender, bio and avatar. The gym-list branch now needs is_registered() (an @ad on the caller''s own profile). The registration handle check moved to username_taken(), which sees hidden profiles too. Proved: bare key 0, unregistered 0 others + own row, registered unchanged.'
+  union all
+  select 'function', 'suggested_trainers falls back to verified trainers only',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='suggested_trainers'
+                             and pg_get_functiondef(p.oid) like '%t.verified = true%')
+              then 'OK' else 'MISSING' end,
+         'schema77. The fallback shuffled every listed trainer, and listed is the trainer''s own switch — so an unchecked stranger could put themselves on the first screen every new member sees. Featured-by-admin OR verified only.'
+  union all
   select 'trigger', 'programs_validate_days bounds a day and pins its video',
          case when exists (select 1 from pg_trigger t join pg_class c on c.oid = t.tgrelid
                             join pg_namespace n on n.oid = c.relnamespace

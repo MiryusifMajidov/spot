@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gym, GymScheduleItem, Partner, toLevel } from '@/data/types';
 import { supabase } from './supabase';
+import { t } from './i18n';
 import { invalidateFocusCache, invalidateFocusPrefix } from './focusFetch';
 import { cacheGyms } from './gymCache';
 import { isPlaceholderName } from './authorName';
@@ -194,10 +195,10 @@ export function suggestUsername(name: string): string {
 /** Live validation message for a handle, or null when it is acceptable. */
 export function usernameError(value: string): string | null {
   const v = value.trim();
-  if (!v) return 'İstifadəçi adını yaz';
-  if (v.length < 3) return 'Ən azı 3 simvol olmalıdır';
-  if (v.length > 20) return 'Ən çoxu 20 simvol ola bilər';
-  if (!USERNAME_RE.test(v)) return 'Yalnız ingilis hərfləri, rəqəm və alt xətt (_) işlədə bilərsən';
+  if (!v) return t('İstifadəçi adını yaz');
+  if (v.length < 3) return t('Ən azı 3 simvol olmalıdır');
+  if (v.length > 20) return t('Ən çoxu 20 simvol ola bilər');
+  if (!USERNAME_RE.test(v)) return t('Yalnız ingilis hərfləri, rəqəm və alt xətt (_) işlədə bilərsən');
   return null;
 }
 
@@ -211,10 +212,10 @@ const HAS_LETTER = /[a-zçəğıiöşüA-ZÇƏĞIİÖŞÜ]/;
 /** Validation message for the public display name, or null when it is a real name. */
 export function displayNameError(value: string): string | null {
   const v = value.trim();
-  if (!v) return 'Adını yaz — profilin onsuz görünmür';
-  if (v.length < 2) return 'Ad ən azı 2 simvol olmalıdır';
-  if (!HAS_LETTER.test(v)) return 'Adda ən azı bir hərf olmalıdır';
-  if (isPlaceholderName(v)) return 'Əsl adını yaz — bunu başqaları görəcək';
+  if (!v) return t('Adını yaz — profilin onsuz görünmür');
+  if (v.length < 2) return t('Ad ən azı 2 simvol olmalıdır');
+  if (!HAS_LETTER.test(v)) return t('Adda ən azı bir hərf olmalıdır');
+  if (isPlaceholderName(v)) return t('Əsl adını yaz — bunu başqaları görəcək');
   return null;
 }
 
@@ -222,18 +223,24 @@ export function displayNameError(value: string): string | null {
  *  `_` is a LIKE wildcard and a legal handle character, so `ilike` can only ever
  *  over-match; the exact comparison afterwards drops those false hits. The DB's
  *  unique index stays the real guarantee — this only lets us say so before saving. */
+/**
+ * Is this @ad somebody else's? Asked of the server, not of `profiles`.
+ *
+ * It used to read `profiles` directly — from the registration screen, as a
+ * person who has not registered yet. That only ever saw profiles visible to
+ * the caller, so a member who had switched off «zal siyahısında görün» had a
+ * handle that looked free here and was then refused at save. And since
+ * schema78 an unregistered caller may not browse other members at all, which
+ * would have made every handle look free. `username_taken` checks every
+ * profile, hidden ones included, and leaves the caller's own row out (a person
+ * keeping their own @ad is not a collision).
+ */
 export async function isUsernameTaken(username: string): Promise<boolean> {
   const v = username.trim();
   if (!v) return false;
-  const { data, error } = await supabase.from('profiles').select('id,username').ilike('username', v);
+  const { data, error } = await supabase.rpc('username_taken', { p_username: v });
   if (error) throw error;
-  const hits = (data ?? []).filter(
-    (r: { username: string | null }) => (r.username ?? '').toLowerCase() === v.toLowerCase()
-  );
-  if (!hits.length) return false;
-  // My own row holding my own handle is not a collision.
-  const me = await getMyProfile();
-  return hits.some((r: { id: string }) => r.id !== me?.id);
+  return data === true;
 }
 
 /** Postgres 23505 = unique violation. Lets the caller say «tutulub» instead of
