@@ -1,4 +1,7 @@
+import { router } from 'expo-router';
+
 import { createReport, getMyProfile } from '@/lib/api';
+import { t } from '@/lib/i18n';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, confirm, toast } from '@/store/ui';
@@ -39,7 +42,7 @@ export function showReportReasons(opts: {
 
   const submit = async (category: ReportCategory) => {
     if (!hasSupabaseConfig) {
-      toast('Şikayət göndərilmədi — bağlantı yoxdur', 'error');
+      toast(t('Şikayət göndərilmədi — bağlantı yoxdur'), 'error');
       return;
     }
     const context = [TARGET_LABEL[target.type], opts.note].filter(Boolean).join(' · ');
@@ -52,24 +55,24 @@ export function showReportReasons(opts: {
       });
       toast(
         category === 'safety'
-          ? 'Təhlükəsizlik şikayəti göndərildi — təcili baxılır'
-          : 'Şikayət göndərildi — komanda baxacaq'
+          ? t('Təhlükəsizlik şikayəti göndərildi — təcili baxılır')
+          : t('Şikayət göndərildi — komanda baxacaq')
       );
     } catch {
-      toast('Şikayət göndərilmədi — yenidən cəhd et', 'error');
+      toast(t('Şikayət göndərilmədi — yenidən cəhd et'), 'error');
     }
   };
 
   actionSheet({
-    title: opts.title ?? 'Şikayət et',
-    message: 'Səbəbi seç — moderatorun nə qədər tez baxacağını bu müəyyən edir.',
+    title: opts.title ?? t('Şikayət et'),
+    message: t('Səbəbi seç — moderatorun nə qədər tez baxacağını bu müəyyən edir.'),
     actions: [
-      { label: 'Təhlükəsizlik / təhdid', style: 'destructive', onPress: () => submit('safety') },
-      { label: 'Təqib / təhqir', onPress: () => submit('harassment') },
-      { label: 'Spam / reklam', onPress: () => submit('spam') },
-      { label: 'Saxta profil və ya məlumat', onPress: () => submit('fake') },
-      { label: 'Digər qayda pozuntusu', onPress: () => submit('other') },
-      { label: 'Ləğv et', style: 'cancel' },
+      { label: t('Təhlükəsizlik / təhdid'), style: 'destructive', onPress: () => submit('safety') },
+      { label: t('Təqib / təhqir'), onPress: () => submit('harassment') },
+      { label: t('Spam / reklam'), onPress: () => submit('spam') },
+      { label: t('Saxta profil və ya məlumat'), onPress: () => submit('fake') },
+      { label: t('Digər qayda pozuntusu'), onPress: () => submit('other') },
+      { label: t('Ləğv et'), style: 'cancel' },
     ],
   });
 }
@@ -82,10 +85,22 @@ export function showModerationSheet(name: string, target?: Target) {
 
   const report = () => {
     if (!target) {
-      toast('Şikayət göndərilmədi — bağlantı yoxdur', 'error');
+      toast(t('Şikayət göndərilmədi — bağlantı yoxdur'), 'error');
       return;
     }
-    showReportReasons({ title: `${name} — şikayət`, target, note: name });
+    /* Guest mode is for looking. A report is a write into the moderators' queue,
+       and one from somebody who has not registered could not be followed up —
+       the queue only filled with rows nobody could answer. Same door every
+       other write goes through. */
+    const { guest, onboarded } = useAppStore.getState();
+    if (guest || !onboarded) {
+      confirm(t('Hesab lazımdır'), t('Şikayət göndərmək üçün daxil ol və ya hesab aç. Qonaq rejimi yalnız baxış üçündür.'), [
+        { label: t('İndi yox'), style: 'cancel' },
+        { label: t('Daxil ol'), style: 'primary', onPress: () => router.push('/onboarding/welcome') },
+      ]);
+      return;
+    }
+    showReportReasons({ title: t('{name} — şikayət', { name }), target, note: name });
   };
 
   const toggleBlock = () => {
@@ -96,16 +111,16 @@ export function showModerationSheet(name: string, target?: Target) {
       if (hasSupabaseConfig && UUID.test(target.id)) {
         unblockProfile(target.id).catch(() => {
           toggleBlocked(target.id);
-          toast('Blokdan çıxarmaq alınmadı — yenidən cəhd et', 'error');
+          toast(t('Blokdan çıxarmaq alınmadı — yenidən cəhd et'), 'error');
         });
       }
-      toast(`${name} blokdan çıxarıldı`);
+      toast(t('{name} blokdan çıxarıldı', { name }));
       return;
     }
-    confirm('Blok et', `${name} kəşfdə və söhbətlərdə sənə görünməyəcək. İstədiyin vaxt geri qaytara bilərsən.`, [
-      { label: 'Ləğv et', style: 'cancel' },
+    confirm(t('Blok et'), t('{name} kəşfdə və söhbətlərdə sənə görünməyəcək. İstədiyin vaxt geri qaytara bilərsən.', { name }), [
+      { label: t('Ləğv et'), style: 'cancel' },
       {
-        label: 'Blok et',
+        label: t('Blok et'),
         style: 'destructive',
         onPress: () => {
           // The device list is updated first so the UI reacts at once, then the
@@ -115,14 +130,14 @@ export function showModerationSheet(name: string, target?: Target) {
           // worse than saying it did not.
           toggleBlocked(target.id);
           if (!hasSupabaseConfig || !UUID.test(target.id)) {
-            toast(`${name} yalnız bu cihazda bloklandı — serverə çatmadı`, 'info');
+            toast(t('{name} yalnız bu cihazda bloklandı — serverə çatmadı', { name }), 'info');
             return;
           }
           blockProfile(target.id)
-            .then(() => toast(`${name} bloklandı`))
+            .then(() => toast(t('{name} bloklandı', { name })))
             .catch(() => {
               toggleBlocked(target.id);
-              toast('Bloklamaq alınmadı — yenidən cəhd et', 'error');
+              toast(t('Bloklamaq alınmadı — yenidən cəhd et'), 'error');
             });
         },
       },
@@ -131,11 +146,11 @@ export function showModerationSheet(name: string, target?: Target) {
 
   actionSheet({
     title: name,
-    message: 'Nə etmək istəyirsən?',
+    message: t('Nə etmək istəyirsən?'),
     actions: [
-      { label: 'Şikayət et', style: 'destructive', onPress: report },
-      ...(target ? [{ label: blocked ? 'Blokdan çıxar' : 'Blok et', style: 'destructive' as const, onPress: toggleBlock }] : []),
-      { label: 'Ləğv et', style: 'cancel' },
+      { label: t('Şikayət et'), style: 'destructive', onPress: report },
+      ...(target ? [{ label: blocked ? t('Blokdan çıxar') : t('Blok et'), style: 'destructive' as const, onPress: toggleBlock }] : []),
+      { label: t('Ləğv et'), style: 'cancel' },
     ],
   });
 }
