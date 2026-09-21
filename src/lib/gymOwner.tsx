@@ -108,38 +108,40 @@ export function useMyGym(): MyGymState {
   const [gym, setGym] = useState<OwnedGym | null>(null);
   const [loading, setLoading] = useState(hasSupabaseConfig);
   const [error, setError] = useState(false);
-  const [nonce, setNonce] = useState(0);
+  /* One loader, run on focus AND by `reload`. `reload` used to bump a counter
+     listed in the effect's deps but never read in its body — the compiler may
+     drop such a dependency, and then «Yenidən cəhd et» under «Zal yüklənmədi»
+     does nothing. Calling the loader is not a hint; it is the fetch. */
+  const load = useCallback(() => {
+    if (!hasSupabaseConfig) {
+      setLoading(false);
+      return;
+    }
+    let alive = true;
+    setLoading(true);
+    fetchMyGym()
+      .then((g) => {
+        if (!alive) return;
+        setGym(g);
+        setError(false);
+      })
+      .catch((e) => {
+        if (!alive) return;
+        console.warn('[useMyGym]', e);
+        // Keep whatever we already showed; just stop claiming there is no gym.
+        setError(true);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!hasSupabaseConfig) {
-        setLoading(false);
-        return;
-      }
-      let alive = true;
-      setLoading(true);
-      fetchMyGym()
-        .then((g) => {
-          if (!alive) return;
-          setGym(g);
-          setError(false);
-        })
-        .catch((e) => {
-          if (!alive) return;
-          console.warn('[useMyGym]', e);
-          // Keep whatever we already showed; just stop claiming there is no gym.
-          setError(true);
-        })
-        .finally(() => {
-          if (alive) setLoading(false);
-        });
-      return () => {
-        alive = false;
-      };
-    }, [nonce])
-  );
+  useFocusEffect(load);
 
-  return { gym, loading, offline: !hasSupabaseConfig, error, reload: () => setNonce((n) => n + 1) };
+  return { gym, loading, offline: !hasSupabaseConfig, error, reload: () => void load() };
 }
 
 // ------------------------------------------------------------------ edit ----
