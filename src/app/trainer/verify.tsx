@@ -96,18 +96,23 @@ export default function Verify() {
           .limit(1)
           .maybeSingle();
         if (error) throw error;
-        const { data: t } = await supabase.from('trainers').select('id,verified').eq('id', me.id).maybeSingle();
-        // cert_urls arrives with schema8; on an older database it is simply absent.
-        let list: string[] = [];
-        try {
-          const cr = await supabase.from('trainers').select('cert_urls').eq('id', me.id).maybeSingle();
-          list = (cr.data as { cert_urls?: string[] | null } | null)?.cert_urls ?? [];
-        } catch {
-          list = [];
-        }
+        /* Both reads now REPORT failure. The error used to be destructured away
+           (supabase-js resolves, it does not throw), so a dropped connection
+           came back as «no trainer row»: a verified coach was told «Nişan aktiv
+           deyil — elanında mavi nişan yoxdur» and invited to re-apply, which
+           filed a duplicate request. And a failed certificate read drew
+           «Hələ yüklənməyib» over certificates that were there.
+           By owner_id, the same key roles.ts uses: rows whose id is not the
+           profile id exist in the live database, and `.eq('id', me.id)` could
+           never find them. */
+        const tr = await supabase.from('trainers').select('id,verified,cert_urls').eq('owner_id', me.id).maybeSingle();
+        if (tr.error) throw tr.error;
+        const trow = tr.data as { id: string; verified?: boolean | null; cert_urls?: string[] | null } | null;
+        const list: string[] = trow?.cert_urls ?? [];
+        const t = trow;
         return {
           row: (data as VerificationRow | null) ?? null,
-          tid: t ? me.id : null,
+          tid: t ? t.id : null,
           certs: list,
           badge: !!(t as { verified?: boolean } | null)?.verified,
         };
