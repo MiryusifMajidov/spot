@@ -38,25 +38,24 @@ export default function TrainerChat() {
   const [threads, setThreads] = useState<ThreadSummary[] | null>(null);
   const [threadsFailed, setThreadsFailed] = useState(false);
 
-  /* Bumped by the retry below. The thread fetch used to depend on nothing, so
-     it ran only on focus — and «Yenidən cəhd et» under «Mesajlar yüklənmədi»
-     called the STUDENT list's reload, which never touched the threads: the
-     button did nothing, however many times it was pressed. */
-  const [threadsTick, setThreadsTick] = useState(0);
-  useFocusEffect(
-    useCallback(() => {
-      if (!hasSupabaseConfig) return;
-      let alive = true;
-      getMyThreads()
-        .then((t) => alive && (setThreads(t), setThreadsFailed(false)))
-        // A failed read must not paint every student as «no messages» — it is
-        // reported instead, the same rule the student list already follows.
-        .catch(() => alive && setThreadsFailed(true));
-      return () => {
-        alive = false;
-      };
-    }, [threadsTick])
-  );
+  /* One loader, called from focus AND from the retry. The retry under
+     «Mesajlar yüklənmədi» used to call the STUDENT list's reload, which never
+     touched the threads — the button did nothing, however often it was pressed.
+     A counter in the effect's deps was the first fix; the compiler is free to
+     drop a dependency the body does not read, so the retry calls the loader. */
+  const loadThreads = useCallback(() => {
+    if (!hasSupabaseConfig) return;
+    let alive = true;
+    getMyThreads()
+      .then((t) => alive && (setThreads(t), setThreadsFailed(false)))
+      // A failed read must not paint every student as «no messages» — it is
+      // reported instead, the same rule the student list already follows.
+      .catch(() => alive && setThreadsFailed(true));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  useFocusEffect(loadThreads);
 
   const rows = useMemo(() => {
     const byProfile = new Map((threads ?? []).map((t) => [t.otherProfileId, t]));
@@ -90,7 +89,7 @@ export default function TrainerChat() {
           <Notice
             title={t('Mesajlar yüklənmədi')}
             body={t('Şagirdlərin siyahısı gəldi, amma yazışmalar gəlmədi — bu, mesaj olmadığı demək deyil.')}
-            action={{ label: t('Yenidən cəhd et'), onPress: () => setThreadsTick((n) => n + 1) }}
+            action={{ label: t('Yenidən cəhd et'), onPress: () => void loadThreads() }}
           />
         ) : rows.length === 0 ? (
           <Notice
