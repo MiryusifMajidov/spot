@@ -147,7 +147,8 @@ export default function Students() {
 
   // A count is a claim about the server. Print it only when the server answered
   // (`failed` also covers a missing listing, where nothing was asked).
-  const counted = !loading && !failed && !offline;
+  // During a pull the last real numbers stay; the first load has none to show.
+  const counted = (!loading || pulling) && !failed && !offline;
 
   const openStudent = (s: StudentRow) =>
     router.push({ pathname: '/trainer/student/[id]', params: { id: s.profileId, name: s.name } });
@@ -181,7 +182,7 @@ export default function Students() {
             title={t('Server bağlantısı yoxdur')}
             body={t('Şagird sorğuları serverdən gəlir. Bağlantı qurulanda sorğular və şagirdlərin burada görünəcək.')}
           />
-        ) : loading ? (
+        ) : loading && !pulling ? (
           <View style={{ paddingVertical: 40 }}>
             <ActivityIndicator color={palette.tertiary} />
           </View>

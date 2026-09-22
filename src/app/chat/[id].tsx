@@ -104,6 +104,30 @@ export default function Conversation() {
     }, [id])
   );
 
+  /* No thread yet: this screen does not create one (above), so it had nothing to
+     subscribe to — and when the OTHER person wrote first, their message appeared
+     only after leaving and reopening the chat (found on a real phone). While the
+     chat is open and still threadless, look for the thread every few seconds;
+     once it exists the live subscription below takes over, and its ready
+     re-read brings the first message in. */
+  useFocusEffect(
+    useCallback(() => {
+      if (threadId || chatState !== 'ready' || !UUID.test(id ?? '')) return;
+      let alive = true;
+      const timer = setInterval(() => {
+        findThread(id)
+          .then((t) => {
+            if (alive && t) setThreadId(t);
+          })
+          .catch(() => {});
+      }, 4000);
+      return () => {
+        alive = false;
+        clearInterval(timer);
+      };
+    }, [id, threadId, chatState])
+  );
+
   // Live: without this the other side only appears on a reopen, which is exactly
   // how the old device-only chat felt.
   useEffect(() => {
@@ -112,13 +136,15 @@ export default function Conversation() {
     // Merge by id: a re-read must not drop a bubble that arrived live meanwhile.
     const reread = () => {
       getMessages(threadId)
-        .then((ms) =>
+        .then((ms) => {
           setServerMsgs((prev) => {
             const byId = new Map(prev.map((x) => [x.id, x]));
             for (const m of ms) byId.set(m.id, m);
             return [...byId.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-          })
-        )
+          });
+          // The person is looking at them — the same rule as an incoming live row.
+          if (ms.some((m) => !m.mine && !m.read)) void markThreadRead(threadId).catch(() => {});
+        })
         .catch(() => {});
     };
     const unsubscribe = subscribeToThread(
@@ -131,6 +157,8 @@ export default function Conversation() {
       () => {
         // The gap between reading the thread and the feed starting (see chat.ts).
         reread();
+        // SUBSCRIBED fires again on every rejoin; keep one pending re-read.
+        if (timer) clearTimeout(timer);
         timer = setTimeout(reread, 1500);
       }
     );

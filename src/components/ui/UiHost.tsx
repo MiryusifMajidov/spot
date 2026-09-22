@@ -126,12 +126,7 @@ export function UiHost() {
                       dialog.actions.length === 2 ? { flex: 1 } : null,
                       { backgroundColor: c.bg, borderColor: c.border, borderWidth: c.border === 'transparent' ? 0 : 1 },
                     ]}>
-                    <AppText
-                      center
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.75}
-                      style={{ fontSize: 15.5, fontWeight: '600', color: c.text }}>
+                    <AppText center numberOfLines={2} style={{ fontSize: 15.5, fontWeight: '600', color: c.text }}>
                       {a.label}
                     </AppText>
                   </PressableScale>

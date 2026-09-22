@@ -19,6 +19,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 
 import { getMyProfile } from './api';
 import { t } from './i18n';
+import { useAppStore } from '@/store/appStore';
 import { supabase } from './supabase';
 
 export interface ChatMessageRow {
@@ -54,11 +55,14 @@ function refusalOf(message: string): ChatRefusal {
   if (m.includes('blocked')) return 'blocked';
   if (m.includes('wait_for_reply')) return 'wait_for_reply';
   if (m.includes('not_signed_in')) return 'not_signed_in';
-  /* Only a row-level-security refusal can mean a sanction (messages_send checks
-     is_sanctioned). «violates» alone also matched the unique violation two
-     people get when they both write first at the same instant, and told a
-     person in good standing «Hesabına məhdudiyyət qoyulub». */
-  if (m.includes('row-level security')) return 'sanctioned';
+  /* messages_send refuses for two reasons the error does not tell apart: a
+     sanction on this account (is_sanctioned) or a block between the two people
+     (thread_blocked). Say «sanction» only when the account really has one — the
+     store mirrors it from the profile — and «you cannot write to this person»
+     otherwise. «violates» alone used to match the unique violation of two
+     simultaneous first messages as well, and told a person in good standing
+     «Hesabına məhdudiyyət qoyulub». */
+  if (m.includes('row-level security')) return useAppStore.getState().sanction ? 'sanctioned' : 'blocked';
   return 'unknown';
 }
 
