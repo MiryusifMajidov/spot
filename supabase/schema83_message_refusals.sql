@@ -1,3 +1,5 @@
+-- APPLIED 2026-09-22 with the owner's approval. Proved (rolled back): a second message
+-- before a reply -> wait_for_reply; after a block -> 'blocked'; while muted -> 'sanctioned'.
 -- schema83: a refused message says WHY, and «one message until a reply» holds
 -- under concurrency.
 --

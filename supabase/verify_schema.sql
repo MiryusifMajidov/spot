@@ -925,6 +925,15 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema82. update ... set n = (select count ...) counted a snapshot taken before the row-lock wait: three simultaneous accepts showed «2 şagird» (live run cmw5xa).'
   union all
+  select 'function', 'messages_gate names a block / a sanction and serialises per thread',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='messages_gate'
+                             and pg_get_functiondef(p.oid) like '%raise exception ''blocked''%'
+                             and pg_get_functiondef(p.oid) like '%raise exception ''sanctioned''%'
+                             and pg_get_functiondef(p.oid) like '%for no key update%')
+              then 'OK' else 'MISSING' end,
+         'schema83. A block and a sanction both came back as one anonymous RLS refusal, and the app told blocked people they were sanctioned; two simultaneous first messages both passed the one-until-reply count.'
+  union all
   select 'function', 'suggested_trainers falls back to verified trainers only',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
                            where n.nspname='public' and p.proname='suggested_trainers'
