@@ -76,6 +76,7 @@ export const discover: Dict = {
   'FƏRQLƏR': 'DIFFERENCES',
   'Fərq: {list}': 'Differences: {list}',
   'Geri': 'Back',
+  'Gizli · Kəşfdə yalnız sən görürsən — SPOT yoxlayandan sonra hamı görəcək': 'Hidden · only you can see it in Discover — everyone will once SPOT has checked it',
   'Göndərilir…': 'Sending…',
   'Gözləyən təklif · {n}': { one: 'Pending invite · {n}', other: 'Pending invites · {n}' },
   'Gündə ən çox {n} kart — az, ona görə hər birinə diqqətlə baxılır. Sabah səhər yenidən açılır.': { one: 'At most {n} card a day — that\'s few, so each one gets a careful look. They open again tomorrow morning.', other: 'At most {n} cards a day — that\'s few, so each one gets a careful look. They open again tomorrow morning.' },

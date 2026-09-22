@@ -9999,5 +9999,10 @@
   "key": "Burada yazdıqların Kəşfdəki müəllim profilində görünür. Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir.",
   "ru": "То, что ты пишешь здесь, видно в твоём профиле тренера в Обзоре. Цена указана только для информации — SPOT не принимает оплату.",
   "en": "What you write here shows on your trainer profile in Discover. The price is for information only — SPOT takes no payments."
+ },
+ {
+  "key": "Gizli · Kəşfdə yalnız sən görürsən — SPOT yoxlayandan sonra hamı görəcək",
+  "ru": "Скрыт · в Обзоре его видишь только ты — после проверки SPOT увидят все",
+  "en": "Hidden · only you can see it in Discover — everyone will once SPOT has checked it"
  }
 ]

@@ -324,6 +324,7 @@ function mapGym(g: DbGym, distanceKm = 0, liveCount = 0): Gym {
     lat: (g as unknown as { lat?: number }).lat ?? null,
     lng: (g as unknown as { lng?: number }).lng ?? null,
     schedule: gymSchedule(g),
+    listed: (g as unknown as { listed?: boolean | null }).listed !== false,
   };
 }
 

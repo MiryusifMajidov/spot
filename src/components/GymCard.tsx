@@ -35,6 +35,12 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
           <AppText variant="footnote" color={palette.caption} style={{ marginTop: 5 }}>
             {[gym.district, gym.distanceKm > 0 ? t('{n} km', { n: gym.distanceKm }) : null, gym.hours].filter(Boolean).join(" · ")}
           </AppText>
+          {gym.listed === false ? (
+            // Only its owner can see an unlisted gym at all (gyms_read).
+            <AppText variant="footnote" color={palette.streak} style={{ marginTop: 4, fontWeight: '600' }}>
+              {t('Gizli · Kəşfdə yalnız sən görürsən — SPOT yoxlayandan sonra hamı görəcək')}
+            </AppText>
+          ) : null}
         </View>
       </PressableScale>
     );
@@ -85,6 +91,12 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
             .filter(Boolean)
             .join(" · ")}
         </AppText>
+        {gym.listed === false ? (
+          // Only its owner can see an unlisted gym at all (gyms_read).
+          <AppText variant="footnote" color={palette.streak} style={{ marginTop: 4, fontWeight: '600' }}>
+            {t('Gizli · Kəşfdə yalnız sən görürsən — SPOT yoxlayandan sonra hamı görəcək')}
+          </AppText>
+        ) : null}
         <View style={styles.tags}>
           {gym.tags.map((t) => (
             <Tag key={t} label={t} />

@@ -14628,6 +14628,15 @@
   "placeholders": []
  },
  {
+  "key": "Gizli · Kəşfdə yalnız sən görürsən — SPOT yoxlayandan sonra hamı görəcək",
+  "counted": false,
+  "files": [
+   "src/components/GymCard.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "{n} km",
   "counted": false,
   "files": [

@@ -63,6 +63,10 @@ export interface Gym {
    *  Empty means «the owner has not filled one in» — mapGym drops entries that
    *  do not carry a time and a name rather than rendering a half-row. */
   schedule?: GymScheduleItem[];
+  /** `gyms.listed`. Only the OWNER can read an unlisted gym (gyms_read), so in a
+   *  list it is always their own — and it must say so, or the owner reads it as
+   *  published. Undefined for rows that did not come from the server. */
+  listed?: boolean;
 }
 
 export interface Trainer {

@@ -29,7 +29,7 @@ create or replace function public.refresh_trainer_clients(t text)
 as $function$
 declare n int;
 begin
-  perform 1 from public.trainers where id = t for update;
+  perform 1 from public.trainers where id = t for no key update;
   select count(*) into n from public.trainer_requests r where r.trainer_id = t and r.status = 'accepted';
   update public.trainers set clients = n where id = t;
 end $function$;
@@ -39,7 +39,7 @@ create or replace function public.refresh_gym_trainers(g text)
 as $function$
 declare n int;
 begin
-  perform 1 from public.gyms where id = g for update;
+  perform 1 from public.gyms where id = g for no key update;
   select count(*) into n from public.trainers t where t.gym_id = g and coalesce(t.listed, false);
   update public.gyms set trainers = n where id = g;
 end $function$;
@@ -49,7 +49,7 @@ create or replace function public.refresh_gym_members(g_id text)
 as $function$
 declare n int;
 begin
-  perform 1 from public.gyms where id = g_id for update;
+  perform 1 from public.gyms where id = g_id for no key update;
   select count(*) into n from public.profiles p where p.home_gym_id = g_id;
   update public.gyms set members = n where id = g_id;
 end $function$;
@@ -59,7 +59,7 @@ create or replace function public.refresh_gym_rating(g_id text)
 as $function$
 declare avg_r numeric; n int;
 begin
-  perform 1 from public.gyms where id = g_id for update;
+  perform 1 from public.gyms where id = g_id for no key update;
   select round(avg(r.rating)::numeric, 1), count(*) into avg_r, n from public.reviews r where r.gym_id = g_id;
   update public.gyms set rating = coalesce(avg_r, 0), review_count = n where id = g_id;
 end $function$;
@@ -69,7 +69,7 @@ create or replace function public.refresh_video_likes(v text)
 as $function$
 declare n int;
 begin
-  perform 1 from public.feed_videos where id = v for update;
+  perform 1 from public.feed_videos where id = v for no key update;
   select count(*) into n from public.video_likes l where l.video_id = v;
   update public.feed_videos set likes = n where id = v;
 end $function$;
@@ -80,7 +80,7 @@ as $function$
 declare cid text; n int;
 begin
   cid := case when tg_op = 'DELETE' then old.challenge_id else new.challenge_id end;
-  perform 1 from public.challenges where id = cid for update;
+  perform 1 from public.challenges where id = cid for no key update;
   select count(*) into n from public.challenge_members m where m.challenge_id = cid;
   update public.challenges set participants = n where id = cid;
   return case when tg_op = 'DELETE' then old else new end;
@@ -92,7 +92,7 @@ as $function$
 declare pid uuid; n int;
 begin
   pid := case when tg_op = 'DELETE' then old.post_id else new.post_id end;
-  perform 1 from public.community_posts where id = pid for update;
+  perform 1 from public.community_posts where id = pid for no key update;
   select count(*) into n from public.post_likes l where l.post_id = pid;
   update public.community_posts set likes = n where id = pid;
   if tg_op = 'INSERT' then
@@ -109,7 +109,7 @@ as $function$
 declare v text; n int;
 begin
   v := case when tg_op = 'DELETE' then old.video_id else new.video_id end;
-  perform 1 from public.feed_videos where id = v for update;
+  perform 1 from public.feed_videos where id = v for no key update;
   select count(*) into n from public.video_saves s where s.video_id = v;
   update public.feed_videos set saves = n where id = v;
   return case when tg_op = 'DELETE' then old else new end;
