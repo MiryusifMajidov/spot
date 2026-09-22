@@ -1,3 +1,6 @@
+-- APPLIED 2026-09-22. Proved (rolled back): a verification request for another
+-- trainer's listing -> 42501, for the caller's own -> allowed; create_day_pass on a
+-- gym with allow_day_pass=false -> 'day_pass_off', with it on -> a pass is issued.
 -- schema79: two server-side holes found while fixing the trainer and gym panels.
 --
 -- 1. tv_insert only checked `auth.uid() = user_id`, so any signed-in person could

@@ -1,3 +1,8 @@
+-- APPLIED 2026-09-22. Proved (rolled back): an insert forging name, tenure
+-- «500 check-in edib», a gym reply and a 2020 date came back with the profile's
+-- name, «3 check-in edib» (the real count), no reply and now(); an author edit kept
+-- name/tenure and changed the body; the gym owner's reply still saved; a member's
+-- reply was refused (only_the_gym_may_reply).
 -- schema80: a review's facts are stamped by the server, not written by the author.
 --
 -- reviews_guard (BEFORE UPDATE) already keeps the gym's reply to the gym and the
