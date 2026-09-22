@@ -62,7 +62,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "i18n:test": "bash scripts/i18n-test/run.sh",
-    "i18n:check": "python scripts/check_i18n.py"
+    "i18n:check": "python scripts/check_i18n.py",
+    "sim:dry": "node scripts/sim/run.mjs --dry"
   },
   "private": true
 }

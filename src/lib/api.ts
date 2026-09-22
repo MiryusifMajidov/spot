@@ -5,6 +5,7 @@ import { t } from './i18n';
 import { invalidateFocusCache } from './focusFetch';
 import { cacheGyms } from './gymCache';
 import { isPlaceholderName } from './authorName';
+import { uniqueTail } from './ids';
 
 /** Raw DB row shapes (snake_case, as stored in Postgres). */
 export interface DbGym {
@@ -739,7 +740,7 @@ export async function createGym(input: { name: string; district: string; hours: 
     .maybeSingle();
   if (ownedErr) throw ownedErr;
   if ((owned as { id: string } | null)?.id) throw new Error('gym-exists');
-  const id = `usr-${Date.now().toString(36)}`;
+  const id = `usr-${uniqueTail()}`;
   // `verified`, `claim_status` and the four derived counters are NOT written
   // here — schema27 withholds them from every client. Their real values come from
   // the column defaults (false / 'unclaimed' / 0), the sync triggers
@@ -857,7 +858,7 @@ export async function uploadFeedVideo(input: {
   // this the file would be pushed to storage and the row rejected afterwards —
   // leaving an orphaned upload and an error that says nothing useful.
   if (!me?.id) throw new Error('no profile');
-  const id = `uv-${Date.now().toString(36)}`;
+  const id = `uv-${uniqueTail()}`;
   const path = `${id}.mp4`;
 
   const res = await fetch(input.uri);

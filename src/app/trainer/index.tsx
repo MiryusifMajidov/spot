@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
@@ -75,22 +75,36 @@ export default function TrainerPanel() {
      switch greyed out as «Vəziyyət oxunmadı» until the app was killed — the
      trainer could not make themselves findable — and a rename made on the
      profile screen would not show up here until a restart. */
-  useFocusEffect(
-    useCallback(() => {
-      let alive = true;
-      void (async () => {
-        try {
-          const r = await readMyListing();
-          if (alive) setListing(r);
-        } catch {
-          if (alive) setListing(null);
-        }
-      })();
-      return () => {
-        alive = false;
-      };
-    }, [])
-  );
+  /* One loader for focus AND pull-to-refresh (the refresh calls it directly —
+     see the React Compiler note on retries in students.tsx). */
+  const loadListing = useCallback(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const r = await readMyListing();
+        if (alive) setListing(r);
+      } catch {
+        if (alive) setListing(null);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+  useFocusEffect(loadListing);
+  /* Pull to refresh. A request sent while this screen is open does not appear
+     by itself (the panel reads on focus), and the trainer had to leave the tab
+     and come back to see «YENİ SORĞU 1» — found in a live two-device test. The
+     spinner stays until the student read settles. */
+  const [pulling, setPulling] = useState(false);
+  const pullRefresh = () => {
+    setPulling(true);
+    reload();
+    loadListing();
+  };
+  // Adjusted during render (React's pattern for state that follows other state),
+  // not in an effect: the spinner ends when the student read settles.
+  if (pulling && !loading) setPulling(false);
   /* The latch is queued, not written straight from the effect body: it records
      something that has already happened rather than anything this pass renders
      from, and writing it here would put a second render pass on top of the one
@@ -119,7 +133,10 @@ export default function TrainerPanel() {
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.grouped }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: spacing.screen, paddingBottom: 28 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={pulling} onRefresh={pullRefresh} tintColor={palette.tertiary} progressViewOffset={insets.top} />}
+        contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: spacing.screen, paddingBottom: 28 }}>
         {/* Header */}
         <View style={styles.header}>
           <View style={{ flex: 1 }}>

@@ -15,7 +15,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { programs as seedPrograms } from '@/data/mock';
 import { cachedGym } from '@/lib/gymCache';
 import { Gym, Level, Partner, Program } from '@/data/types';
-import { newId } from '@/lib/ids';
+import { newId, uniqueTail } from '@/lib/ids';
 
 export const LEVEL_ORDER: Level[] = ['Başlanğıc', 'Orta', 'İrəli'];
 
@@ -393,7 +393,7 @@ export const useDb = create<DbState>()(
       myPrograms: [],
 
       createProgram: (p) => {
-        const id = p.id ?? `mine-${Date.now().toString(36)}`;
+        const id = p.id ?? `mine-${uniqueTail()}`;
         set((s) => ({ myPrograms: [{ ...(p as Program), id }, ...s.myPrograms] }));
         return id;
       },

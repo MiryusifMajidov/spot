@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -116,6 +116,11 @@ export default function Students() {
   const { pending, active, loading, failed, noListing, offline, reload } = useMyStudents();
   const [tab, setTab] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  // Pull to refresh: new requests do not arrive by themselves (see trainer/index.tsx).
+  const [pulling, setPulling] = useState(false);
+  // Adjusted during render (React's pattern for state that follows other state),
+  // not in an effect: the spinner ends when the student read settles.
+  if (pulling && !loading) setPulling(false);
 
   const decide = (s: StudentRow, accept: boolean) => {
     const run = async () => {
@@ -150,7 +155,19 @@ export default function Students() {
   return (
     <Screen edges={['top']}>
       <LargeHeader title={t('Şagirdlər')} subtitle={t('Sənə müraciət edən və qəbul etdiyin insanlar')} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 28 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={pulling}
+            onRefresh={() => {
+              setPulling(true);
+              reload();
+            }}
+            tintColor={palette.tertiary}
+          />
+        }
+        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 28 }}>
         <View style={{ marginBottom: 14 }}>
           <Segmented
             options={[counted ? t('Şagirdlər {n}', { n: active.length, count: active.length }) : t('Şagirdlər'), counted ? t('Sorğular {n}', { n: pending.length, count: pending.length }) : t('Sorğular')]}

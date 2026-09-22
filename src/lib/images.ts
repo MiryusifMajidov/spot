@@ -17,6 +17,7 @@ import { decimal } from './format';
 import { t } from './i18n';
 import { supabase } from './supabase';
 import { invalidateFocusCache, invalidateFocusPrefix } from './focusFetch';
+import { uniqueTail } from './ids';
 
 /** `certs` holds verification evidence (diplomas, ID photos). It is PRIVATE —
  *  see the storage migration — and is never read through getPublicUrl. */
@@ -190,7 +191,7 @@ export async function shootImage(opts?: { square?: boolean; maxBytes?: number })
 async function uploadToBucket(bucket: UploadBucket, localUri: string, prefix: string): Promise<string> {
   const ext = (localUri.split('.').pop() || 'jpg').split('?')[0].toLowerCase();
   const type = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-  const path = `${prefix}-${Date.now().toString(36)}.${ext === 'png' || ext === 'webp' ? ext : 'jpg'}`;
+  const path = `${prefix}-${uniqueTail()}.${ext === 'png' || ext === 'webp' ? ext : 'jpg'}`;
   const bytes = await (await fetch(localUri)).arrayBuffer();
   /* Second line of defence, and the exact per-bucket ceiling: the picker does not
      always report `fileSize`, the downscale can fail, and a file that got past the

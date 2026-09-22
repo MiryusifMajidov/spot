@@ -54,7 +54,11 @@ function refusalOf(message: string): ChatRefusal {
   if (m.includes('blocked')) return 'blocked';
   if (m.includes('wait_for_reply')) return 'wait_for_reply';
   if (m.includes('not_signed_in')) return 'not_signed_in';
-  if (m.includes('row-level security') || m.includes('violates')) return 'sanctioned';
+  /* Only a row-level-security refusal can mean a sanction (messages_send checks
+     is_sanctioned). «violates» alone also matched the unique violation two
+     people get when they both write first at the same instant, and told a
+     person in good standing «Hesabına məhdudiyyət qoyulub». */
+  if (m.includes('row-level security')) return 'sanctioned';
   return 'unknown';
 }
 
@@ -77,7 +81,14 @@ export function chatRefusalText(code: ChatRefusal): string {
 
 /** Open (or find) the thread with someone. Throws a `ChatError` on refusal. */
 export async function openThread(otherProfileId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('open_thread', { other: otherProfileId });
+  let { data, error } = await supabase.rpc('open_thread', { other: otherProfileId });
+  /* Both people writing first at the same instant: open_thread looks the pair
+     up, finds nothing, and both insert — the loser gets the unique violation on
+     chat_threads_pair. The thread exists by then, so asking once more finds it.
+     Found by the live multi-user run (the server now also resolves it itself). */
+  if (error && /duplicate key|chat_threads_pair|23505/i.test(`${error.message ?? ''} ${error.code ?? ''}`)) {
+    ({ data, error } = await supabase.rpc('open_thread', { other: otherProfileId }));
+  }
   if (error) throw new ChatError(refusalOf(String(error.message ?? '')), String(error.message ?? ''));
   if (!data) throw new ChatError('unknown', 'no thread id');
   return data as string;

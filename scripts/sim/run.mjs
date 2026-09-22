@@ -1,0 +1,1785 @@
+#!/usr/bin/env node
+// SPOT concurrency harness: 10 virtual actors (5 users, 3 trainers, 2 gym
+// owners) use the LIVE backend at the same instant, each sending exactly the
+// requests the app sends, to find what breaks only when people act together.
+// The owner's real phone can join as an 11th participant (optional flags).
+//
+//   node scripts/sim/run.mjs --dry                 plan + wiring check, zero network
+//   node scripts/sim/run.mjs                       full live run, cleans up after itself
+//   node scripts/sim/run.mjs --only daypass        setup + that phase (+ its deps) + cleanup
+//   node scripts/sim/run.mjs --phone-trainer <id> --phone-gym <gymId> --phone-code <code> --phone-wait 60
+//
+// Safety rules (scripts/sim/README.md): public key only; every actor is an
+// anonymous session named «TEST …» / @sim_<runId>_…; nothing of a real person
+// is read or written, except the owner's own test account (@yghh) through its
+// public trainer listing and its gym's check-in code; every actor deletes
+// itself through delete_my_account() at the end, on error and on Ctrl+C.
+
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import * as act from './actions.mjs';
+import {
+  ROOT,
+  SIM_DIR,
+  Recorder,
+  USERNAME_RE,
+  abortState,
+  bakuMinutes,
+  errInfo,
+  expect,
+  info,
+  loadEnv,
+  makeActor,
+  round,
+  setRecorder,
+  sleep,
+  together,
+  unreachable,
+  validateAnchors,
+  writeReport,
+} from './lib.mjs';
+
+const REPORT_PATH = resolve(SIM_DIR, 'last-report.json');
+const ALL_ACTORS = ['u1', 'u2', 'u3', 'u4', 'u5', 't1', 't2', 't3', 'g1', 'g2'];
+const ROLE_OF = { u: 'user', t: 'trainer', g: 'gym' };
+// Central Baku: Fountain Square and the Nizami metro area.
+const COORDS = { g1: { lat: 40.3717, lng: 49.8379 }, g2: { lat: 40.3794, lng: 49.8303 } };
+
+// ------------------------------------------------------------------ CLI ----
+
+function usage(msg) {
+  if (msg) console.error(`error: ${msg}\n`);
+  console.error(
+    [
+      'usage: node scripts/sim/run.mjs [--dry] [--keep] [--only <phase>]',
+      '                                [--phone-trainer <trainerId>] [--phone-gym <gymId> --phone-code <gymCheckinCode>]',
+      '                                [--phone-username <handle>] [--phone-owner-profile <profileUuid>] [--phone-wait <seconds>]',
+      '',
+      `phases: ${PHASES.map((p) => p.name).join(', ')}`,
+    ].join('\n')
+  );
+  process.exit(2);
+}
+
+function parseArgs(argv) {
+  const o = { dry: false, keep: false, only: null, phoneTrainer: null, phoneGym: null, phoneCode: null, phoneUsername: 'yghh', phoneOwnerProfile: null, phoneWait: 0 };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const val = () => {
+      const v = argv[++i];
+      if (v === undefined || v.startsWith('--')) usage(`${a} needs a value`);
+      return v;
+    };
+    if (a === '--dry') o.dry = true;
+    else if (a === '--keep') o.keep = true;
+    else if (a === '--only') o.only = val();
+    else if (a === '--phone-trainer') o.phoneTrainer = val();
+    else if (a === '--phone-gym') o.phoneGym = val();
+    else if (a === '--phone-code') o.phoneCode = val();
+    else if (a === '--phone-username') o.phoneUsername = val().replace(/^@/, '');
+    else if (a === '--phone-owner-profile') o.phoneOwnerProfile = val().toLowerCase();
+    else if (a === '--phone-wait') o.phoneWait = Number(val());
+    else if (a === '--help' || a === '-h') usage();
+    else usage(`unknown flag ${a}`);
+  }
+  if (o.only && !PHASE_BY_NAME[o.only]) usage(`unknown phase «${o.only}»`);
+  if (o.phoneTrainer && !/^[A-Za-z0-9_-]{3,64}$/.test(o.phoneTrainer)) usage('--phone-trainer must be a trainer id');
+  if (o.phoneCode && !/^[A-Za-z0-9]{4,32}$/.test(o.phoneCode)) usage('--phone-code must be the gym check-in code (letters/digits)');
+  // A door code cannot be checked before it is used (only the gym's owner can
+  // read gym_checkin_codes), so the gym it must open is required: its owner is
+  // proven first, and the first check-in's gym_id is compared with it.
+  if (o.phoneCode && !o.phoneGym) usage('--phone-code needs --phone-gym <gymId>: the gym the code must open, so its owner can be checked first');
+  if (o.phoneGym && !o.phoneCode) usage('--phone-gym is only used together with --phone-code');
+  if (o.phoneGym && !/^[A-Za-z0-9_-]{2,64}$/.test(o.phoneGym)) usage('--phone-gym must be a gym id');
+  if (o.phoneOwnerProfile && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(o.phoneOwnerProfile)) usage('--phone-owner-profile must be a profile uuid');
+  if (!Number.isFinite(o.phoneWait) || o.phoneWait < 0 || o.phoneWait > 600) usage('--phone-wait must be 0…600 seconds');
+  return o;
+}
+
+// --------------------------------------------------------------- helpers ----
+
+const short = (id) => (id ? String(id).slice(0, 8) : '—');
+const msgOf = (r) => r?.error?.message ?? 'unknown error';
+const withTimeout = (p, ms) => Promise.race([p, sleep(ms).then(() => null)]);
+
+async function waitFor(cond, ms) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) {
+    if (cond()) return true;
+    await sleep(100);
+  }
+  return cond();
+}
+
+/** Actors a phase needs, checked before it starts. A phase whose actors did
+ *  not survive setup is reported UNREACHABLE rather than half-run. */
+function need(ctx, phase, keys, extra = {}) {
+  const missing = keys.filter((k) => {
+    const a = ctx.actors.get(k);
+    if (!a?.ready) return true;
+    if (a.role === 'trainer' && extra.trainer !== false && !a.trainerId) return true;
+    // A gym actor always needs its gym; the door code only where the phase
+    // scans it (`gym: false` — e.g. day passes never touch gym_checkin_codes).
+    if (a.role === 'gym' && !a.gymId) return true;
+    if (a.role === 'gym' && extra.gym !== false && !ctx.state.gyms[k]?.code) return true;
+    return false;
+  });
+  if (missing.length) {
+    unreachable(`${phase}.actors`, `phase skipped: ${missing.join(', ')} did not finish setup`);
+    return false;
+  }
+  return true;
+}
+
+const A = (ctx, k) => ctx.actors.get(k);
+
+/**
+ * Is this listing the owner's own test account? Checked by @handle when the
+ * owner's profile is readable, and by profile uuid when one is known
+ * (--phone-owner-profile, or the owner id a verified trainer listing gave).
+ * Every known signal must agree and at least one must be known — a hidden
+ * profile alone is never taken as a yes.
+ */
+function ownerMatches(ctx, probe, knownOwnerId = null) {
+  const want = ctx.opts.phoneUsername.toLowerCase();
+  const byName = probe.ownerUsername != null ? probe.ownerUsername.toLowerCase() === want : null;
+  const refId = ctx.opts.phoneOwnerProfile ?? knownOwnerId;
+  const byId = refId ? probe.ownerProfileId === refId : null;
+  return byName !== false && byId !== false && (byName === true || byId === true);
+}
+
+function ownerProblem(ctx, probe) {
+  if (!probe.ok) return msgOf(probe);
+  if (!probe.ownerProfileId) return 'it has no owner';
+  if (probe.ownerUnreadable) {
+    return `owner profile not visible to members (show_in_gym_list off?)${ctx.opts.phoneOwnerProfile ? ' and its owner id is not --phone-owner-profile' : ' — pass --phone-owner-profile <uuid> to check it by owner id'}`;
+  }
+  if (String(probe.ownerUsername).toLowerCase() === ctx.opts.phoneUsername.toLowerCase()) {
+    return `the handle matches, but its owner id ${probe.ownerProfileId} is not the expected profile`;
+  }
+  return `it belongs to @${probe.ownerUsername}`;
+}
+
+/** The TEST coaches switch «Kəşfdə görün» off (idempotent). A public TEST
+ *  listing is a trap for a real person: whatever they send it is
+ *  cascade-deleted when the TEST account deletes itself. */
+async function unlistTrainers(ctx, label, keys = null) {
+  const coaches = [...ctx.actors.values()].filter((a) => a.trainerId && !a.deleted && a.userId && (!keys || keys.includes(a.key)));
+  if (!coaches.length) return [];
+  const s = await together(label, coaches.map((a) => ({ actor: a, fn: () => act.unlistMe(a) })));
+  return s.results;
+}
+
+// ============================================================== phases ====
+
+async function phaseSetup(ctx) {
+  const all = [...ctx.actors.values()];
+
+  // 1 — ten phones open SPOT for the first time at the same instant.
+  const s1 = await together(
+    'first launch: anonymous session + bootstrap reads',
+    all.map((a) => ({ actor: a, fn: () => act.bootstrap(a) }))
+  );
+  for (const r of s1.results) {
+    const a = A(ctx, r.actor);
+    if (a.profileId) ctx.simIds.add(a.profileId);
+    expect(r.ok && !!a.userId, `setup.session.${a.key}`, r.ok ? `anonymous session ${short(a.userId)}` : `no session: ${msgOf(r)}`, r.ok ? { triggerProfile: r.triggerProfileName } : r.error);
+  }
+  const uids = all.map((a) => a.userId).filter(Boolean);
+  expect(new Set(uids).size === uids.length, 'setup.sessions-distinct', `${uids.length} sessions, ${new Set(uids).size} distinct auth users`);
+
+  // 2 — everybody registers (name + @ad + age) at the same instant.
+  const withSession = all.filter((a) => a.userId);
+  const s2 = await together(
+    'registration: name + @username + age (onboarding/profile.tsx)',
+    withSession.map((a) => ({ actor: a, fn: () => act.register(a, { name: a.name, username: a.username, age: 20 + a.idx }) }))
+  );
+  for (const r of s2.results) {
+    const a = A(ctx, r.actor);
+    if (a.profileId) ctx.simIds.add(a.profileId);
+    a.ready = !!(r.ok && a.profileId);
+    expect(a.ready, `setup.register.${a.key}`, a.ready ? `@${a.username} saved (profile ${short(a.profileId)})` : `registration failed (${r.path ?? 'error'}): ${msgOf(r)}`, r.ok ? null : r.error);
+  }
+  const ready = all.filter((a) => a.ready);
+  const back = await together(
+    'registration read-back (what the next launch loads)',
+    ready.map((a) => ({ actor: a, fn: () => act.getMyProfile(a) }))
+  );
+  for (const r of back.results) {
+    const a = A(ctx, r.actor);
+    const p = r.profile;
+    expect(!!p && p.username === a.username && p.name === a.name, `setup.readback.${a.key}`, p ? `server holds «${p.name}» @${p.username}` : `profile not readable: ${msgOf(r)}`);
+  }
+
+  // 3 — the owner's phone, if involved: prove the listing is theirs BEFORE any request goes to it.
+  const guard = ready.find((a) => a.role === 'user');
+  const noGuard = { ok: false, error: { message: 'no registered user to check with' } };
+  if (ctx.opts.phoneTrainer) {
+    const g = guard ? await act.probePhoneTrainer(guard, ctx.opts.phoneTrainer) : noGuard;
+    const okOwner = g.ok && g.listed && ownerMatches(ctx, g);
+    ctx.phone.trainerOk = okOwner;
+    ctx.phone.ownerProfileId = okOwner ? g.ownerProfileId : null;
+    expect(
+      okOwner,
+      'setup.phone-trainer-guard',
+      okOwner
+        ? `phone trainer ${short(ctx.opts.phoneTrainer)} is the public listing of @${ctx.opts.phoneUsername} — requests may go to it`
+        : `phone trainer NOT used: ${g.ok && !g.listed ? 'the listing is not public' : ownerProblem(ctx, g)}; expected @${ctx.opts.phoneUsername}`
+    );
+  }
+  // The phone's gym: its owner is proven before the code is ever used.
+  if (ctx.opts.phoneCode) {
+    const g = guard ? await act.probePhoneGym(guard, ctx.opts.phoneGym) : noGuard;
+    const okOwner = g.ok && ownerMatches(ctx, g, ctx.phone.ownerProfileId);
+    ctx.phone.gymOk = okOwner;
+    expect(
+      okOwner,
+      'setup.phone-gym-guard',
+      okOwner
+        ? `phone gym ${ctx.opts.phoneGym} belongs to @${ctx.opts.phoneUsername} — its code may be used (one check-in first, then its gym is compared)`
+        : `phone gym NOT used, no check-in sent with the code: ${ownerProblem(ctx, g)}; expected @${ctx.opts.phoneUsername}`
+    );
+  }
+
+  // 4 — three coaches publish their listing at the same instant.
+  const trainers = ready.filter((a) => a.role === 'trainer');
+  if (trainers.length) {
+    const s3 = await together(
+      'become trainer (become-trainer.tsx publishTrainer)',
+      trainers.map((a) => ({
+        actor: a,
+        fn: () => act.becomeTrainer(a, { specialty: 'TEST ixtisas', bio: `TEST — simulyasiya müəllimi (run ${ctx.runId}), sonda silinir`, priceFrom: 10 }),
+      }))
+    );
+    for (const r of s3.results) {
+      const a = A(ctx, r.actor);
+      expect(r.ok && !!a.trainerId, `setup.trainer.${a.key}`, r.ok ? `listing ${short(a.trainerId)} written, verification ${r.verificationQueued ? 'queued' : 'already queued'}` : `publishTrainer failed: ${msgOf(r)}`, r.ok ? null : r.error);
+      if (r.ok) expect(r.listedLanded === true, `setup.trainer-listed-write.${a.key}`, r.listedLanded ? 'the listed:true update after the insert came back with its row' : 'the listed:true update returned no row — the listing stays hidden while the screen says «yaradıldı»');
+    }
+    const s3b = await together(
+      'trainer listing read-back (panel switch + public page)',
+      trainers.filter((a) => a.trainerId).map((a) => ({
+        actor: a,
+        fn: async () => {
+          const l = await act.getMyListing(a);
+          const p = await act.openTrainerPage(a, a.trainerId);
+          return { ok: l.ok && p.ok, error: l.error ?? p.error, listing: l.listing, page: p.trainer };
+        },
+      }))
+    );
+    for (const r of s3b.results) {
+      const a = A(ctx, r.actor);
+      expect(r.listing?.listed === true, `setup.trainer-public.${a.key}`, r.listing?.listed ? 'the app\'s publish landed (listed=true)' : `listing not public: ${JSON.stringify(r.listing)}`);
+      expect(r.page?.verify_status === 'pending', `setup.trainer-verification.${a.key}`, `verify_status = ${r.page?.verify_status ?? '—'} (the verification row should move it to pending)`);
+    }
+    // Publishing is proven — now take the TEST coaches out of Kəşf at once, so no
+    // real person can find one and lose what they send it to the cascade.
+    const off = await unlistTrainers(ctx, 'TEST coaches switch «Kəşfdə görün» off (setMyListed(false))');
+    for (const r of off) {
+      expect(r.ok && r.listed === false, `setup.trainer-unlisted.${r.actor}`, r.ok ? 'listing hidden again (listed=false came back): public for a few seconds only' : `could NOT unlist: ${msgOf(r)} — the TEST listing stays in Kəşf until cleanup`);
+    }
+  }
+
+  // 5 — two owners register their gyms at the same instant.
+  const owners = ready.filter((a) => a.role === 'gym');
+  if (owners.length) {
+    const gymInput = (a) => ({
+      name: `TEST ${a.key} zal ${ctx.runId}`,
+      district: 'TEST Səbail',
+      hours: '24 saat',
+      priceMonth: 0,
+      dayPass: 0,
+      amenities: [],
+      ...COORDS[a.key],
+    });
+    const s4 = await together(
+      'create gym (create-gym.tsx: createGym + pin)',
+      owners.map((a) => ({ actor: a, fn: () => act.createGym(a, gymInput(a)) }))
+    );
+    const collided = s4.results.filter((r) => r.idCollision);
+    expect(
+      collided.length === 0,
+      'setup.gym-id-unique',
+      collided.length
+        ? `${collided.length} owner(s) got «duplicate key gyms_pkey»: gym ids are usr-<Date.now() in base36>, so two owners pressing «yarat» in the same millisecond collide and the app says «bağlantını yoxla»`
+        : `ids ${s4.results.map((r) => r.gymId).join(', ')} distinct`,
+      collided.length ? collided.map((r) => ({ actor: r.actor, id: r.gymId, error: r.error })) : null
+    );
+    for (const r of s4.results) {
+      const a = A(ctx, r.actor);
+      let res = r;
+      if (!r.ok && r.idCollision) {
+        // What the person would do: read the toast and press the button again —
+        // a human beat later, so the millisecond clock has moved on.
+        await sleep(400);
+        res = await act.createGym(a, gymInput(a));
+        expect(res.ok, `setup.gym-retry.${a.key}`, res.ok ? `second press created ${res.gymId}` : `second press failed too: ${msgOf(res)}`);
+      }
+      expect(res.ok && !!a.gymId, `setup.gym.${a.key}`, res.ok ? `gym ${a.gymId} created, pin ${res.locSaved ? 'saved' : 'NOT saved'}` : `createGym failed: ${msgOf(res)}`, res.ok ? null : res.error);
+      if (res.ok) expect(res.locSaved, `setup.gym-pin.${a.key}`, res.locSaved ? 'lat/lng update returned its row' : `pin not saved: ${res.locError?.message ?? 'zero rows'}`);
+    }
+    const panel = await together(
+      'gym panel opens (useMyGym → fetchMyGym)',
+      owners.filter((a) => a.gymId).map((a) => ({ actor: a, fn: () => act.fetchMyGym(a) }))
+    );
+    for (const r of panel.results) {
+      const a = A(ctx, r.actor);
+      expect(r.gym?.id === a.gymId, `setup.gym-panel.${a.key}`, r.gym ? `panel resolves ${r.gym.id}` : `panel finds no gym: ${msgOf(r)}`);
+      if (r.gym) info(`setup.gym-unlisted.${a.key}`, `listed=${r.gym.listed}: an app-created gym is hidden from everyone but its owner until an admin publishes it`);
+    }
+    const qr = await together(
+      'check-in code: open «Zal kodu», press «Kod yarat»',
+      owners.filter((a) => a.gymId).map((a) => ({
+        actor: a,
+        prep: () => act.openQrScreen(a, a.gymId),
+        fn: async (prep) => {
+          const r = await act.rotateCheckinCode(a, a.gymId);
+          return { ...r, before: prep?.state ?? null };
+        },
+      }))
+    );
+    for (const r of qr.results) {
+      const a = A(ctx, r.actor);
+      if (r.ok) ctx.state.gyms[a.key] = { id: a.gymId, code: r.code };
+      expect(r.ok && !!r.code, `setup.gym-code.${a.key}`, r.ok ? `QR screen was «${r.before}», code created` : `no code: ${msgOf(r)}`);
+    }
+  }
+}
+
+async function phaseRaceUsername(ctx) {
+  if (!need(ctx, 'race-username', ['u4', 'u5'])) return;
+  const u4 = A(ctx, 'u4');
+  const u5 = A(ctx, 'u5');
+  const handle = `sim_${ctx.runId}_race`;
+  if (!USERNAME_RE.test(handle)) throw new Error(`bad race handle ${handle}`);
+  const olds = { u4: u4.username, u5: u5.username };
+
+  const race = await together(
+    `u4 and u5 save @${handle} at the same instant (Profil → Redaktə)`,
+    [u4, u5].map((a) => ({ actor: a, fn: () => act.changeUsername(a, handle) }))
+  );
+  // saveProfile() answers 'local' when the request never reached the server
+  // (timeout / failed to fetch — including the harness's own 20 s abort). That
+  // is not a win: the handle is only on that phone. Counted apart, so an unsent
+  // save can neither fake a second winner nor pass as a told-taken loser.
+  const winners = race.results.filter((r) => r.ok && r.result === 'saved');
+  const unsent = race.results.filter((r) => r.ok && r.result !== 'saved');
+  const losers = race.results.filter((r) => !r.ok);
+  const detail = race.results.map((r) => ({ actor: r.actor, ok: r.ok, result: r.result ?? null, path: r.path ?? null, error: r.error }));
+  for (const u of unsent) {
+    info(`race-username.not-sent.${u.actor}`, `save never reached the server (${u.result}) — the phone keeps @${handle} and says «Yadda saxlanıldı — hələlik yalnız bu cihazda»`);
+  }
+  if (unsent.length) {
+    expect(winners.length <= 1, 'race-username.exactly-one-wins', `${winners.length} saved, ${unsent.length} not sent (unreachable) — the race is inconclusive, but there must never be two winners`, detail);
+  } else {
+    expect(winners.length === 1, 'race-username.exactly-one-wins', `${winners.length} of 2 saved the handle`, detail);
+  }
+  for (const l of losers) {
+    expect(
+      l.taken || l.conflict,
+      `race-username.loser-told-taken.${l.actor}`,
+      l.taken
+        ? 'loser was stopped by the username_taken pre-check → «Bu istifadəçi adı tutulub»'
+        : l.conflict
+          ? 'loser got the unique violation (23505) → isUsernameConflict → «Bu istifadəçi adı tutulub»'
+          : `loser got something else — the app would say «internet bağlantını yoxla»: ${msgOf(l)}`,
+      { path: l.path, error: l.error }
+    );
+  }
+  if (winners.length === 1) {
+    info('race-username.path', `the race was decided by the ${losers[0]?.path === 'precheck' ? 'pre-check (the winner had already committed)' : 'unique index (both pre-checks said «free»)'}`);
+  }
+  const reads = await together(
+    'both re-read their profile',
+    [u4, u5].map((a) => ({ actor: a, fn: () => act.getMyProfile(a) }))
+  );
+  for (const r of reads.results) {
+    const a = A(ctx, r.actor);
+    const won = winners.some((w) => w.actor === a.key);
+    if (unsent.some((u) => u.actor === a.key)) {
+      // Whether an unsent save landed after all (a response lost, not the
+      // request) is unknown — report what the server holds, judge nothing.
+      info(`race-username.server-state.${a.key}`, `save was not confirmed; server holds @${r.profile?.username ?? '—'}`);
+      expect(a.store.profile.username === handle, `race-username.phone-state.${a.key}`, `phone shows @${a.store.profile.username} (an unsent save stays on the phone)`);
+      if (r.profile?.username === handle) a.username = handle;
+      continue;
+    }
+    const want = won ? handle : olds[a.key];
+    expect(r.profile?.username === want, `race-username.server-state.${a.key}`, `server @${r.profile?.username ?? '—'} (expected @${want})`);
+    expect(a.store.profile.username === want, `race-username.phone-state.${a.key}`, `phone shows @${a.store.profile.username} (the screen puts the old handle back on refusal)`);
+    if (won) a.username = handle;
+  }
+  // username_taken() leaves the caller's own row out, so ask as somebody who does not hold it.
+  const asker = A(ctx, 'u1')?.ready ? A(ctx, 'u1') : A(ctx, losers[0]?.actor) ?? u4;
+  const check = await act.usernameTaken(asker, handle);
+  if (winners.length) expect(check.ok && check.taken === true, 'race-username.now-taken', `username_taken(@${handle}) answers ${check.taken}`);
+  else info('race-username.now-taken', `no confirmed winner; username_taken(@${handle}) answers ${check.taken ?? msgOf(check)}`);
+}
+
+async function phaseRaceRequests(ctx) {
+  const userKeys = ['u1', 'u2', 'u3', 'u4', 'u5'];
+  if (!need(ctx, 'race-requests', [...userKeys, 't1'])) return;
+  const t1 = A(ctx, 't1');
+  const users = userKeys.map((k) => A(ctx, k));
+  const note = `TEST sorğu ${ctx.runId}`;
+  const preferred = `Bu gün ${new Date().getDate()} · 19:00`;
+  const phoneId = ctx.phone.trainerOk ? ctx.opts.phoneTrainer : null;
+
+  const tasks = users.map((u) => ({
+    actor: u,
+    label: `${u.key}→t1`,
+    prep: () => act.openReserveScreen(u, t1.trainerId),
+    fn: () => act.requestTrainer(u, t1.trainerId, note, preferred),
+  }));
+  tasks.push({ actor: users[0], label: 'u1→t1 (double tap)', fn: () => act.requestTrainer(users[0], t1.trainerId, note, preferred) });
+  if (phoneId) {
+    for (const u of users) {
+      tasks.push({ actor: u, label: `${u.key}→phone`, fn: () => act.requestTrainer(u, phoneId, `TEST SPOT simulyasiya ${ctx.runId} — avtomatik silinəcək`, preferred) });
+    }
+  }
+  const race = await together(`5 users send t1 a request at the same instant${phoneId ? ' (and the phone trainer)' : ''}`, tasks);
+  const byLabel = new Map(race.results.map((r) => [r.label, r]));
+  for (const u of users) {
+    const r = byLabel.get(`${u.key}→t1`);
+    expect(r.ok, `race-requests.sent.${u.key}`, r.ok ? `request ${short(r.requestId)} written` : `refused: ${msgOf(r)}`, r.ok ? null : r.error);
+  }
+  const dbl = byLabel.get('u1→t1 (double tap)');
+  const first = byLabel.get('u1→t1');
+  expect(dbl.ok && first.ok && dbl.requestId === first.requestId, 'race-requests.double-tap-one-row', dbl.ok ? `double tap landed on the same row (${short(dbl.requestId)} / ${short(first.requestId)})` : `double tap refused: ${msgOf(dbl)}`);
+  if (phoneId) {
+    for (const u of users) {
+      const r = byLabel.get(`${u.key}→phone`);
+      ctx.phone.requests += r.ok ? 1 : 0;
+      expect(r.ok, `race-requests.phone.${u.key}`, r.ok ? 'request reached the phone trainer' : `refused: ${msgOf(r)}`);
+    }
+  }
+
+  const reads = await together(
+    'each user re-reads their request (reserve screen)',
+    users.map((u) => ({ actor: u, fn: () => act.getMyRequestTo(u, t1.trainerId) }))
+  );
+  for (const r of reads.results) {
+    expect(r.request?.status === 'pending', `race-requests.user-sees-pending.${r.actor}`, `status ${r.request?.status ?? '—'}`);
+  }
+
+  const s = await act.getMyStudents(t1, ctx.simIds);
+  const pendingIds = (s.pending ?? []).map((p) => p.profileId);
+  const dupes = pendingIds.length - new Set(pendingIds).size;
+  const lost = users.filter((u) => !pendingIds.includes(u.profileId)).map((u) => u.key);
+  expect(
+    s.ok && dupes === 0 && lost.length === 0 && pendingIds.length === users.length,
+    'race-requests.t1-sees-exactly',
+    s.ok ? `t1's «Şagirdlər» shows ${pendingIds.length} pending (expected ${users.length}), ${dupes} duplicate(s), lost: ${lost.join(', ') || 'none'}` : `t1 could not load students: ${msgOf(s)}`
+  );
+  expect((s.active ?? []).length === 0, 'race-requests.none-active-yet', `${(s.active ?? []).length} active`);
+  if (s.foreign) info('race-requests.foreign', `${s.foreign} request(s) from real people to TEST t1 were counted and ignored (never read)`);
+  ctx.state.requestIds = Object.fromEntries((s.pending ?? []).map((p) => [p.profileId, p.requestId]));
+
+  const page = await act.openTrainerPage(users[0], t1.trainerId);
+  expect(page.trainer?.clients === 0, 'race-requests.public-clients-0', `public listing says clients=${page.trainer?.clients ?? '—'}`);
+
+  for (const k of ['t2', 't3']) {
+    const t = A(ctx, k);
+    if (!t?.trainerId) continue;
+    const other = await act.getMyStudents(t, ctx.simIds);
+    expect(other.ok && !(other.pending ?? []).length && !(other.active ?? []).length, `race-requests.no-cross-trainer-leak.${k}`, `${k} sees ${(other.pending ?? []).length} pending / ${(other.active ?? []).length} active (t1's requests must not appear)`);
+  }
+
+  if (phoneId) {
+    const pr = await together('each user re-reads the request to the phone trainer', users.map((u) => ({ actor: u, fn: () => act.getMyRequestTo(u, phoneId) })));
+    for (const r of pr.results) info(`race-requests.phone-status.${r.actor}`, `request to the phone trainer: ${r.request?.status ?? msgOf(r)}`);
+  }
+}
+
+async function phaseDecide(ctx) {
+  const userKeys = ['u1', 'u2', 'u3', 'u4', 'u5'];
+  if (!need(ctx, 'decide-concurrently', [...userKeys, 't1'])) return;
+  const t1 = A(ctx, 't1');
+  const [u1, u2, u3, u4, u5] = userKeys.map((k) => A(ctx, k));
+
+  // The trainer opens «Şagirdlər»; the ids on screen are what the buttons send.
+  const panel = await act.getMyStudents(t1, ctx.simIds);
+  const idOf = (u) => (panel.pending ?? []).find((p) => p.profileId === u.profileId)?.requestId ?? null;
+  const decisions = [
+    [u1, true],
+    [u2, true],
+    [u3, true],
+    [u4, false],
+  ];
+  const missing = decisions.filter(([u]) => !idOf(u)).map(([u]) => u.key);
+  if (missing.length) {
+    expect(false, 'decide-concurrently.requests-visible', `t1's panel has no pending request from ${missing.join(', ')}`);
+    return;
+  }
+  const step = await together(
+    't1 accepts u1, u2, u3 and declines u4 at the same instant',
+    decisions.map(([u, acc]) => ({ actor: t1, label: `${acc ? 'accept' : 'decline'} ${u.key}`, fn: () => act.decideTrainerRequest(t1, idOf(u), acc) }))
+  );
+  for (const r of step.results) expect(r.ok, `decide-concurrently.${r.label.replace(' ', '-')}`, r.ok ? 'row came back (decision landed)' : `refused: ${msgOf(r)}`);
+
+  const want = { u1: 'accepted', u2: 'accepted', u3: 'accepted', u4: 'declined', u5: 'pending' };
+  const reads = await together(
+    'every user re-reads their own request',
+    [u1, u2, u3, u4, u5].map((u) => ({ actor: u, fn: () => act.getMyRequestTo(u, t1.trainerId) }))
+  );
+  for (const r of reads.results) {
+    const st = r.request?.status;
+    const decided = want[r.actor] !== 'pending';
+    expect(st === want[r.actor] && (!decided || !!r.request?.decided_at), `decide-concurrently.user-state.${r.actor}`, `${r.actor} sees «${st ?? '—'}» (expected «${want[r.actor]}»)${decided ? `, decided_at ${r.request?.decided_at ? 'stamped' : 'MISSING'}` : ''}`);
+  }
+
+  const after = await act.getMyStudents(t1, ctx.simIds);
+  const pend = (after.pending ?? []).map((p) => p.profileId);
+  const actv = (after.active ?? []).map((p) => p.profileId);
+  expect(pend.length === 1 && pend[0] === u5.profileId, 'decide-concurrently.t1-pending', `t1 pending: ${pend.length} (expected 1: u5)`);
+  expect(actv.length === 3 && [u1, u2, u3].every((u) => actv.includes(u.profileId)), 'decide-concurrently.t1-active', `t1 active: ${actv.length} (expected 3: u1, u2, u3)`);
+  ctx.state.active = Object.fromEntries((after.active ?? []).map((s) => [s.profileId, s.requestId]));
+
+  const page = await act.openTrainerPage(u5, t1.trainerId);
+  const clients = page.trainer?.clients;
+  expect(
+    clients === actv.length,
+    'decide-concurrently.public-clients',
+    clients === actv.length
+      ? `public listing says clients=${clients}, matching the ${actv.length} accepted`
+      : `public listing says clients=${clients} but ${actv.length} are accepted — refresh_trainer_clients() recounts inside each concurrent transaction and one recount overwrote another`,
+    { clients, accepted: actv.length }
+  );
+
+  // A declined student tries to overturn the decision herself.
+  const self = await act.probeWrite(u4, (c) => c.from('trainer_requests').update({ status: 'accepted' }).eq('id', idOf(u4)).select('id'));
+  expect(self.count === 0, 'decide-concurrently.student-cannot-self-accept', self.count === 0 ? `refused (${self.error?.message ?? 'zero rows'})` : 'u4 ACCEPTED HER OWN declined request');
+
+  // An ACCEPTED student sends the request again through the app's own
+  // requestTrainer. The reserve screen hides the form once a request is
+  // accepted — but when its request read failed it shows the form over an
+  // accepted row (reserve/[id].tsx:58-64), and the upsert lands on that row.
+  // trainer_requests_guard lets the student set 'pending' from ANY status.
+  const again = await act.requestTrainer(u3, t1.trainerId, `TEST sorğu ${ctx.runId}`, `Bu gün ${new Date().getDate()} · 19:00`);
+  const u3now = await act.getMyRequestTo(u3, t1.trainerId);
+  const reset = await act.getMyStudents(t1, ctx.simIds);
+  const actNow = (reset.active ?? []).length;
+  const wasReset = u3now.request?.status === 'pending';
+  expect(
+    !wasReset,
+    'decide-concurrently.accepted-cannot-reset',
+    wasReset
+      ? `u3's ACCEPTED request went back to «pending» through requestTrainer's upsert (the guard allows pending from any status): decided_at ${u3now.request?.decided_at ? 'kept' : 'cleared'}, t1's active ${actv.length} → ${actNow}, and t1 is not told`
+      : `the re-send did not reopen it (${again.ok ? `status stays «${u3now.request?.status ?? '—'}»` : msgOf(again)})`,
+    { sendOk: again.ok, status: u3now.request?.status ?? null, activeBefore: actv.length, activeAfter: actNow }
+  );
+  if (wasReset) {
+    // Put the arrangement back so the later phases start from the state they expect.
+    const re = await act.decideTrainerRequest(t1, idOf(u3), true);
+    expect(re.ok, 'decide-concurrently.re-accept-u3', re.ok ? 't1 accepted u3 again' : `re-accept failed: ${msgOf(re)}`);
+  }
+  const final = await act.getMyStudents(t1, ctx.simIds);
+  ctx.state.active = Object.fromEntries((final.active ?? []).map((s) => [s.profileId, s.requestId]));
+}
+
+async function phaseProgramChat(ctx) {
+  if (!need(ctx, 'program-chat', ['t1', 'u1', 'u2'])) return;
+  const t1 = A(ctx, 't1');
+  const u1 = A(ctx, 'u1');
+  const u2 = A(ctx, 'u2');
+
+  // 1 — the program: the app only lets a trainer assign one of THEIR programs,
+  //     so the coaches write one with the builder first (workout/create.tsx).
+  //     All three press «Yadda saxla» at once: the device mints the id from a
+  //     millisecond clock (mine-<Date.now() base36>, synchronously, before any
+  //     await), the same bug class as the gym ids in setup.
+  const programInput = (t) => ({
+    title: `TEST proqram ${t.key} ${ctx.runId}`,
+    desc: 'TEST — simulyasiya, sonda silinir',
+    days: [
+      {
+        key: 'd1',
+        title: 'Gün 1',
+        focus: '',
+        items: [{ key: 'i1', exerciseId: 'bench', name: 'Ştanqla bench press', muscle: 'Sinə', sets: 3, mode: 'reps', value: '8-10', videoUrl: null }],
+      },
+    ],
+  });
+  const coaches = ['t1', 't2', 't3'].map((k) => A(ctx, k)).filter((t) => t?.ready && t.trainerId);
+  const saves = await together(
+    `${coaches.map((t) => t.key).join(', ')} save a program at the same instant (builder «Yadda saxla»)`,
+    coaches.map((t) => ({ actor: t, fn: () => act.createProgram(t, programInput(t)) }))
+  );
+  for (const r of saves.results) if (r.id) ctx.state.programs.push({ actor: r.actor, id: r.id, result: r.result ?? null });
+  const byActor = new Map(saves.results.map((r) => [r.actor, r]));
+  const ids = saves.results.map((r) => r.id).filter(Boolean);
+  const collided = saves.results.filter((r) => !r.ok && r.error?.code === '23505');
+  expect(
+    collided.length === 0 && new Set(ids).size === ids.length && saves.results.every((r) => r.ok && r.result === 'saved'),
+    'program-chat.program-ids-unique',
+    collided.length
+      ? `${collided.map((r) => `${r.actor}'s ${r.id}`).join(', ')} hit «duplicate key» (23505): saveProgram keeps it «local» under an id whose SERVER row is another coach's — assigning it links the student to that other program, and openProgram(id) opens a program this coach does not own`
+      : `ids ${ids.join(', ')} distinct, all saved`,
+    saves.results.map((r) => ({ actor: r.actor, id: r.id ?? null, result: r.result ?? null, error: r.error }))
+  );
+
+  const t1Save = byActor.get('t1');
+  const t1Title = programInput(t1).title;
+  // The id t1's phone holds: saved, or kept «local» after a 23505 — the app still
+  // lists it in myPrograms and the assign screen offers it (student/[id].tsx:103-108).
+  const t1ProgId = t1Save && (t1Save.ok || (t1Save.result === 'local' && t1Save.error?.code === '23505')) ? t1Save.id : null;
+  expect(t1Save?.ok && t1Save.result === 'saved', 'program-chat.program-saved', t1Save?.ok ? `t1's program ${t1Save.id} on the server` : `t1's builder save ended «${t1Save?.result ?? '—'}»: ${msgOf(t1Save)}`);
+  if (t1ProgId) {
+    ctx.state.programId = t1ProgId;
+    const panel = await act.getMyStudents(t1, ctx.simIds);
+    const student = (panel.active ?? []).find((s) => s.profileId === u1.profileId);
+    expect(!!student, 'program-chat.u1-in-active-list', student ? 'u1 is in t1\'s active students' : 'u1 is not an active student — the assign screen cannot open');
+    if (student) {
+      const asg = await act.assignStudentProgram(t1, { studentId: u1.profileId, programId: t1ProgId, title: t1Title, note: 'TEST qeyd' });
+      expect(asg.ok, 'program-chat.assigned', asg.ok ? 'student_programs row came back' : `refused: ${msgOf(asg)}`);
+      const [mine, other] = await Promise.all([act.getMyAssignedProgram(u1), act.getMyAssignedProgram(u2)]);
+      const m = mine.assigned;
+      expect(
+        !!m && m.programId === t1ProgId && m.title === t1Title && m.trainerId === t1.trainerId && m.trainerName === t1.name,
+        'program-chat.u1-reads-assignment',
+        m ? `u1's Məşq card: «${m.title}» by «${m.trainerName}», program ${m.programId}` : `u1 sees no assignment: ${msgOf(mine)}`
+      );
+      expect(other.ok && !other.assigned, 'program-chat.u2-has-none', other.assigned ? `u2 sees an assignment: «${other.assigned.title}»` : 'u2 sees no assignment');
+      const page = await act.openProgram(u1, t1ProgId);
+      const owner = page.program?.owner_id ?? null;
+      const ownerKey = [...ctx.actors.values()].find((a) => a.profileId && a.profileId === owner)?.key ?? (owner ? 'someone outside this run' : 'nobody');
+      expect(
+        page.program?.id === t1ProgId && owner === t1.profileId,
+        'program-chat.u1-opens-t1s-program',
+        !page.program
+          ? `program not readable: ${msgOf(page)}`
+          : owner === t1.profileId
+            ? 'the program page opens for the student, and it is t1\'s'
+            : `u1 opened program ${t1ProgId}, but its author is ${ownerKey}, not t1 — the id collision linked the student to another coach's program`
+      );
+    }
+  } else {
+    unreachable('program-chat.assign', `t1 holds no program id the app would assign (save ended «${t1Save?.result ?? '—'}» without a 23505): a program that never reached the server cannot be opened by the student`);
+  }
+
+  // 2 — both sides send their FIRST message at the same instant.
+  const texts = { t1: `TEST salam, u1 (${ctx.runId})`, u1: `TEST salam, müəllim (${ctx.runId})` };
+  const chat = await together('first message from both sides at the same instant (chat/[id].tsx)', [
+    { actor: t1, label: 't1→u1', prep: () => act.openChatScreen(t1, u1.profileId), fn: (p) => act.sendChatMessage(t1, u1.profileId, p?.threadId ?? null, texts.t1) },
+    { actor: u1, label: 'u1→t1', prep: () => act.openChatScreen(u1, t1.profileId), fn: (p) => act.sendChatMessage(u1, t1.profileId, p?.threadId ?? null, texts.u1) },
+  ]);
+  const failed = chat.results.filter((r) => !r.ok);
+  // What the person reads, not the internal code. open_thread does
+  // SELECT-then-INSERT with no ON CONFLICT, so the loser of two simultaneous
+  // opens gets 23505 on chat_threads_pair — and refusalOf() maps any
+  // «violates» to 'sanctioned'.
+  const seen = (f) => {
+    const text = act.chatRefusalText(f.refusal);
+    const lostOpen = f.error?.code === '23505' && /chat_threads_pair/.test(f.error?.message ?? '');
+    return lostOpen
+      ? `${f.label}: concurrent open_thread lost the unique race (23505 chat_threads_pair); the app mislabels it as a sanction and shows «${text}»`
+      : `${f.label}: ${msgOf(f)} — the screen shows «${text}»`;
+  };
+  expect(
+    failed.length === 0,
+    'program-chat.first-message-race',
+    failed.length ? failed.map(seen).join('; ') : 'both first messages were delivered',
+    failed.length ? failed.map((f) => ({ label: f.label, refusal: f.refusal, shown: act.chatRefusalText(f.refusal), error: f.error })) : null
+  );
+  let sent = chat.results.filter((r) => r.ok).length;
+  const side = Object.fromEntries(chat.results.map((r) => [r.actor, r.ok ? r.threadId : null]));
+  for (const f of failed) {
+    // The screen still holds no thread id, so pressing «Göndər» again opens it again.
+    const a = A(ctx, f.actor);
+    const other = a.key === 't1' ? u1.profileId : t1.profileId;
+    const retry = await act.sendChatMessage(a, other, null, texts[a.key]);
+    expect(retry.ok, `program-chat.retry.${a.key}`, retry.ok ? 'pressing «Göndər» again worked' : `second press failed too: ${seen({ ...retry, label: a.key })}`);
+    if (retry.ok) {
+      sent += 1;
+      side[a.key] = retry.threadId;
+    }
+  }
+  // Also when one side needed the retry: both must end up in the same thread.
+  if (side.t1 && side.u1) expect(side.t1 === side.u1, 'program-chat.one-thread', side.t1 === side.u1 ? 'one thread for the pair' : `TWO threads: ${side.t1} / ${side.u1}`);
+  const threadId = side.t1 ?? side.u1 ?? chat.results.map((r) => r.threadId).find(Boolean) ?? null;
+  if (!threadId) {
+    unreachable('program-chat.thread', 'no thread was opened — the rest of the chat checks cannot run');
+    return;
+  }
+  ctx.state.threadId = threadId;
+
+  // 3 — live delivery: u1 has the chat open; u2 subscribes to the same thread id as an eavesdropper.
+  const got = { u1: [], u2: [] };
+  const subU1 = act.subscribeToThread(u1, threadId, (m) => got.u1.push(m));
+  const subU2 = act.subscribeToThread(u2, threadId, (m) => got.u2.push(m));
+  const [st1, st2] = await Promise.all([withTimeout(subU1.subscribed, 10000), withTimeout(subU2.subscribed, 10000)]);
+  const second = await act.sendChatMessage(t1, u1.profileId, threadId, `TEST ikinci mesaj (${ctx.runId})`);
+  expect(second.ok, 'program-chat.second-message', second.ok ? 't1\'s second message passed the one-until-reply gate (u1 had answered)' : `refused: ${msgOf(second)}`);
+  if (second.ok) sent += 1;
+  if (st1?.status === 'SUBSCRIBED' && second.ok) {
+    const arrived = await waitFor(() => got.u1.some((m) => m.id === second.message.id), 8000);
+    expect(arrived, 'program-chat.realtime-delivers', arrived ? 'u1\'s open chat received the message live' : 'u1\'s open chat never received it within 8 s');
+  } else {
+    unreachable('program-chat.realtime-delivers', `u1's realtime channel ended as «${st1?.status ?? 'no answer in 10 s'}»${st1?.error ? `: ${st1.error.message}` : ''}`);
+  }
+  if (st2?.status === 'SUBSCRIBED') {
+    await sleep(1500);
+    expect(got.u2.length === 0, 'program-chat.realtime-private', got.u2.length ? `u2 RECEIVED ${got.u2.length} message(s) of the t1–u1 thread live` : 'u2 subscribed to the thread id and received nothing');
+  } else {
+    info('program-chat.realtime-private', `u2's channel ended as «${st2?.status ?? 'no answer'}» — nothing could be delivered to it`);
+  }
+  await Promise.all([subU1.unsubscribe(), subU2.unsubscribe()]);
+
+  // 4 — u1 reads the whole thread and marks it read.
+  const msgs = await act.getMessages(u1, threadId);
+  const senders = new Set((msgs.rows ?? []).map((m) => m.senderId));
+  expect(
+    msgs.ok && msgs.rows.length === sent && senders.has(t1.profileId) && senders.has(u1.profileId),
+    'program-chat.u1-reads-all',
+    msgs.ok ? `u1 reads ${msgs.rows.length} message(s) (${sent} were delivered), from ${senders.size} sender(s)` : `read failed: ${msgOf(msgs)}`
+  );
+  const rd = await act.markThreadRead(u1, threadId);
+  expect(rd.ok, 'program-chat.mark-read', rd.ok ? 'marked read' : `failed: ${msgOf(rd)}`);
+
+  // 5 — u2 (another student of the same trainer) must see none of it.
+  const p1 = await act.getMessages(u2, threadId);
+  expect(!p1.ok || p1.rows.length === 0, 'program-chat.u2-cannot-read-messages', p1.ok ? `${p1.rows.length} row(s) visible` : `refused (${msgOf(p1)})`);
+  const p2 = await act.probeRead(u2, (c) => c.from('chat_threads').select('id').eq('id', threadId));
+  expect(p2.count === 0, 'program-chat.u2-cannot-see-thread', `${p2.count} row(s) visible`);
+  const p3 = await act.sendMessage(u2, threadId, 'TEST intrusion');
+  expect(!p3.ok, 'program-chat.u2-cannot-post', p3.ok ? 'u2 WROTE INTO the t1–u1 thread' : `refused (${msgOf(p3)}; the chat screen would label it «${p3.refusal}»)`);
+  const p4 = await act.getMyThreads(u2, ctx.simIds);
+  expect(p4.ok && !(p4.threads ?? []).some((t) => t.threadId === threadId), 'program-chat.u2-inbox-clean', p4.ok ? `u2's inbox has ${(p4.threads ?? []).length} thread(s), none of them t1–u1` : `inbox failed: ${msgOf(p4)}`);
+  const p5 = await act.openThread(u2, u1.profileId);
+  expect(!p5.ok && p5.refusal === 'no_relationship', 'program-chat.u2-cannot-open-u1', p5.ok ? 'u2 OPENED a thread with u1 (no relationship)' : `refused: ${p5.refusal}`);
+
+  // 6 — «one message until the other side replies» under a race. messages_gate
+  //     counts the sender's earlier rows without a lock, so two first messages
+  //     sent at the same instant can both see 0. On the phone only the chat
+  //     screen's local `sending` flag stands in the way — a second device or a
+  //     direct call does not have it.
+  const u3 = A(ctx, 'u3');
+  if (u3?.ready && ctx.state.active?.[u3.profileId]) {
+    const open = await act.openThread(u3, t1.profileId);
+    if (!open.ok) {
+      expect(false, 'program-chat.gate-thread', `u3 (accepted) could not open a thread with t1: ${seen({ ...open, label: 'u3→t1' })}`);
+    } else {
+      const two = await together(
+        'u3 sends two first messages to t1 at the same instant (one-until-reply gate)',
+        [1, 2].map((i) => ({ actor: u3, label: `u3 message #${i}`, fn: () => act.sendMessage(u3, open.threadId, `TEST ilk mesaj ${i} (${ctx.runId})`) }))
+      );
+      const landed = two.results.filter((r) => r.ok).length;
+      const gated = two.results.filter((r) => !r.ok && r.refusal === 'wait_for_reply').length;
+      expect(
+        landed === 1 && gated === 1,
+        'program-chat.one-until-reply-under-race',
+        landed === 2
+          ? 'BOTH first messages landed: messages_gate counts earlier rows without a lock, so simultaneous sends each see none — the anti-spam rule holds only one tap at a time'
+          : `${landed} landed, ${gated} refused with wait_for_reply${two.results.some((r) => !r.ok && r.refusal !== 'wait_for_reply') ? ` (other: ${two.results.filter((r) => !r.ok && r.refusal !== 'wait_for_reply').map((r) => msgOf(r)).join('; ')})` : ''}`,
+        two.results.map((r) => ({ label: r.label, ok: r.ok, refusal: r.refusal ?? null, error: r.error?.message ?? null }))
+      );
+    }
+  } else {
+    unreachable('program-chat.one-until-reply-under-race', 'needs u3 as an accepted student of t1 (decide-concurrently did not leave it so)');
+  }
+}
+
+async function phaseCheckins(ctx) {
+  const userKeys = ['u1', 'u2', 'u3', 'u4', 'u5'];
+  if (!need(ctx, 'checkins-vs-rotate', [...userKeys, 'g1'])) return;
+  // The gym-day turns at 04:00 Baku (check_ins.gym_day) and the owner panel's
+  // «bu gün» at 00:00 Baku (getGymOccupancy). A run straddling either edge
+  // would flake the daily cap or the occupancy count, so it is not run there.
+  const m = bakuMinutes();
+  const edge = [0, 240].find((e) => Math.min(Math.abs(m - e), 1440 - Math.abs(m - e)) < 5);
+  if (edge !== undefined) {
+    const hhmm = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    unreachable('checkins-vs-rotate.clock', `Baku time is ${hhmm}, within 5 minutes of ${edge ? '04:00 (the gym-day turns)' : '00:00 (the panel\'s «bu gün» turns)'} — the counts would flake; phase not run, re-run a few minutes later`);
+    return;
+  }
+  const g1 = A(ctx, 'g1');
+  const users = userKeys.map((k) => A(ctx, k));
+  const gymId = g1.gymId;
+  const code0 = ctx.state.gyms.g1.code;
+  const phoneCode = ctx.phone.gymOk ? ctx.opts.phoneCode : null;
+  // One check-in per person per gym-day at ANY gym (check_ins_one_per_gym_day),
+  // so the people who go to the phone's gym cannot also check in at g1.
+  const atG1 = phoneCode ? users.slice(0, 3) : users;
+  const atPhone = phoneCode ? users.slice(3) : [];
+
+  const tasks = [
+    ...atG1.map((u) => ({ actor: u, label: `${u.key} scans g1`, fn: () => act.checkInWithCode(u, code0) })),
+    { actor: g1, label: 'g1 rotates', prep: () => act.openQrScreen(g1, gymId), fn: () => act.rotateCheckinCode(g1, gymId) },
+  ];
+  const race = await together(`${atG1.length} check-ins at g1 while g1 rotates its code`, tasks);
+  const rot = race.results.find((r) => r.label === 'g1 rotates');
+  expect(rot.ok && !!rot.code && rot.code !== code0, 'checkins-vs-rotate.rotated', rot.ok ? 'new code issued' : `rotation failed: ${msgOf(rot)}`);
+  const code1 = rot.ok ? rot.code : code0;
+
+  const g1Results = race.results.filter((r) => r.label.endsWith('scans g1'));
+  const landed = new Set(g1Results.filter((r) => r.ok).map((r) => r.actor));
+  const odd = g1Results.filter((r) => !r.ok && r.refusal !== 'checkin_bad_code');
+  expect(odd.length === 0, 'checkins-vs-rotate.two-outcomes-only', odd.length ? `unexpected refusal(s): ${odd.map((r) => `${r.actor}: ${r.refusal} ${msgOf(r)}`).join('; ')}` : 'every scan either landed or met the new code (checkin_bad_code)');
+  const wrongGym = g1Results.filter((r) => r.ok && r.gymId !== gymId);
+  expect(wrongGym.length === 0, 'checkins-vs-rotate.right-gym', wrongGym.length ? `${wrongGym.length} check-in(s) landed at another gym` : 'every success names g1');
+  info('checkins-vs-rotate.race-outcome', `${landed.size} scan(s) landed before the rotation, ${g1Results.length - landed.size} met the new code`);
+
+  if (rot.ok) {
+    const dead = await act.checkInWithCode(users[0], code0);
+    expect(!dead.ok && dead.refusal === 'checkin_bad_code', 'checkins-vs-rotate.old-code-dead', dead.ok ? 'the OLD code still checked somebody in' : `old code refused: ${dead.refusal}`);
+  }
+  const bounced = atG1.filter((u) => !landed.has(u.key));
+  if (bounced.length) {
+    const retry = await together('the bounced ones scan the new sign', bounced.map((u) => ({ actor: u, fn: () => act.checkInWithCode(u, code1) })));
+    for (const r of retry.results) {
+      expect(r.ok, `checkins-vs-rotate.new-code-works.${r.actor}`, r.ok ? 'checked in with the new code' : `refused: ${r.refusal} ${msgOf(r)}`);
+      if (r.ok) landed.add(r.actor);
+    }
+  }
+  const someoneIn = atG1.find((u) => landed.has(u.key));
+  if (someoneIn) {
+    const again = await act.checkInWithCode(someoneIn, code1);
+    expect(!again.ok && again.refusal === 'checkin_already_today', 'checkins-vs-rotate.daily-cap', again.ok ? 'a SECOND check-in the same gym-day was accepted (the day turns at 04:00 Baku)' : `second scan refused: ${again.refusal}`);
+  }
+  const qr = await act.openQrScreen(g1, gymId);
+  expect(qr.code === code1, 'checkins-vs-rotate.qr-shows-new-code', qr.code === code1 ? '«Zal kodu» shows the new code' : `QR screen shows ${qr.code ?? qr.state}`);
+  ctx.state.gyms.g1.code = code1;
+  ctx.state.landedAtG1 = [...landed];
+
+  const dash = await act.gymDashboard(g1, gymId);
+  const occ = dash.occupancy;
+  expect(
+    !!occ && occ.today === landed.size && occ.now === landed.size,
+    'checkins-vs-rotate.occupancy-matches',
+    occ ? `panel: İNDİ ZALDA ${occ.now}, bu gün ${occ.today} — ${landed.size} check-in(s) really landed` : `occupancy failed: ${dash.error?.message}`
+  );
+  expect(Array.isArray(dash.roster) && dash.roster.length === 0, 'checkins-vs-rotate.roster-home-members', `roster (home-gym members) = ${dash.roster?.length ?? dash.error?.message}; nobody's home gym is g1`);
+  unreachable(
+    'checkins-vs-rotate.roster-here-now',
+    "the roster lists people whose HOME gym is g1; Profil → Redaktə offers listed gyms only and an app-created gym is unlisted (schema41), so no virtual user can pick g1 — the roster's «indi zalda» flag cannot be exercised honestly"
+  );
+
+  // The phone's gym: outside the g1 race, one person at a time. The first
+  // check-in's gym_id is compared with the verified --phone-gym BEFORE the
+  // second is sent — a wrong code puts at most one TEST check-in into somebody
+  // else's gym (and it goes with that actor's account at cleanup).
+  if (atPhone.length) {
+    const [first, ...rest] = atPhone;
+    const r1 = await act.checkInWithCode(first, phoneCode);
+    const right = r1.ok && r1.gymId === ctx.opts.phoneGym;
+    expect(
+      !r1.ok || right,
+      'checkins-vs-rotate.phone-gym-guard',
+      !r1.ok
+        ? `${first.key}'s check-in with the phone code was refused (${r1.refusal}) — the others are not sent`
+        : right
+          ? `${first.key} checked in at «${r1.gymName}», the verified phone gym`
+          : `the phone code opened ANOTHER gym than --phone-gym — nobody else is sent; ${first.key}'s check-in goes with its account at cleanup`
+    );
+    if (r1.ok && right) ctx.phone.checkins += 1;
+    if (!r1.ok) info(`checkins-vs-rotate.phone.${first.key}`, `refused: ${r1.refusal} ${msgOf(r1)}`);
+    if (right) {
+      for (const u of rest) {
+        const r = await act.checkInWithCode(u, phoneCode);
+        const same = r.ok && r.gymId === ctx.opts.phoneGym;
+        if (same) ctx.phone.checkins += 1;
+        info(`checkins-vs-rotate.phone.${u.key}`, r.ok ? (same ? `checked in at «${r.gymName}»` : 'landed at a different gym than the first one') : `refused: ${r.refusal} ${msgOf(r)}`);
+        if (r.ok && !same) break;
+      }
+    }
+  }
+}
+
+async function phaseDaypass(ctx) {
+  // No door code needed: the day-pass flow never touches gym_checkin_codes.
+  if (!need(ctx, 'daypass', ['g2', 'u2', 'u3', 'u4'], { gym: false })) return;
+  const g2 = A(ctx, 'g2');
+  const [u2, u3, u4] = ['u2', 'u3', 'u4'].map((k) => A(ctx, k));
+  const gymId = g2.gymId;
+
+  // 1 — the owner sets a day-pass price on «Zal profili».
+  const loaded = await act.fetchMyGym(g2);
+  if (!loaded.gym) {
+    expect(false, 'daypass.panel', `g2's panel does not load: ${msgOf(loaded)}`);
+    return;
+  }
+  const e1 = await act.editGym(g2, loaded.gym, { dayPass: 7 });
+  expect(e1.ok && e1.extrasSaved, 'daypass.price-saved', e1.ok ? 'day_pass = 7 saved (row came back)' : `save failed: ${msgOf(e1)}`);
+
+  // 2 — a member opens the gym page and takes a pass.
+  const page = await act.openGymPage(u2, gymId);
+  if (!page.gym) {
+    unreachable(
+      'daypass.ui-path',
+      'u2 cannot open the TEST gym page: an app-created gym is unlisted (gyms_read), so «Day-pass al» is unreachable in the UI. The checks below call create_day_pass — the exact RPC that button sends — directly.'
+    );
+  }
+  const before = await act.getMyDayPass(u2, gymId);
+  expect(before.ok && !before.pass, 'daypass.none-before', before.ok ? 'no live pass yet' : `read failed: ${msgOf(before)}`);
+  const p2 = await act.createDayPass(u2, gymId);
+  expect(p2.ok && p2.pass.price === 7 && !p2.pass.reused, 'daypass.u2-created', p2.ok ? `pass ${p2.pass.code}, price ${p2.pass.price}, reused=${p2.pass.reused}` : `refused: ${msgOf(p2)}`);
+  if (p2.ok) {
+    ctx.state.dayPassCode = p2.pass.code;
+    ctx.state.dayPasses += 1;
+    if (!page.gym) info('daypass.unlisted-gym-issues-passes', 'create_day_pass issued a pass for an UNLISTED gym — the RPC does not look at gyms.listed');
+  }
+
+  // 3 — the owner switches day passes (and the member tab) off while u4 presses «Day-pass al».
+  const fresh = (await act.fetchMyGym(g2)).gym ?? loaded.gym;
+  const race = await together('g2 switches day-pass off while u4 asks for one', [
+    { actor: g2, label: 'g2 switches off', fn: () => act.editGym(g2, fresh, { allowDayPass: false, showMembers: false }) },
+    { actor: u4, label: 'u4 create_day_pass', fn: () => act.createDayPass(u4, gymId) },
+  ]);
+  const [off, u4r] = race.results;
+  expect(off.ok && off.extrasSaved, 'daypass.switches-saved', off.ok ? (off.extrasSaved ? 'allow_day_pass=false, show_members=false saved' : `core saved but the switches were NOT (${off.extrasError?.message ?? 'zero rows'})`) : `save failed: ${msgOf(off)}`);
+  expect(u4r.ok || u4r.error?.message === 'day_pass_off', 'daypass.race-consistent', u4r.ok ? `u4 got pass ${u4r.pass.code} (the request won the race)` : u4r.error?.message === 'day_pass_off' ? 'u4 was refused with day_pass_off (the switch won the race)' : `u4 got neither: ${msgOf(u4r)}`);
+  if (u4r.ok) ctx.state.dayPasses += 1;
+
+  // 4 — strictly after the switch.
+  const u3r = await act.createDayPass(u3, gymId);
+  expect(!u3r.ok && u3r.error?.message === 'day_pass_off', 'daypass.off-refuses-new', u3r.ok ? `u3 GOT a pass (${u3r.pass.code}) after the owner switched passes off` : `u3 refused: ${msgOf(u3r)}`);
+  if (u3r.ok) ctx.state.dayPasses += 1;
+  if (p2.ok) {
+    const still = await act.getMyDayPass(u2, gymId);
+    expect(still.pass?.code === p2.pass.code, 'daypass.existing-pass-kept', still.pass ? `u2 still holds ${still.pass.code}` : `u2's pass is gone: ${msgOf(still)}`);
+    const again = await act.createDayPass(u2, gymId);
+    expect(again.ok && again.pass.reused && again.pass.code === p2.pass.code, 'daypass.reused-while-off', again.ok ? `pressing again returns the same pass (reused=${again.pass.reused})` : `refused: ${msgOf(again)}`);
+    const chk = await act.checkDayPass(g2, p2.pass.code);
+    expect(chk.check?.state === 'valid', 'daypass.reception-valid', `reception «Yoxla»: ${chk.check?.state ?? msgOf(chk)}`);
+    const g1 = A(ctx, 'g1');
+    if (g1?.ready && g1.gymId) {
+      const x = await act.checkDayPass(g1, p2.pass.code);
+      expect(x.check?.state === 'not_found', 'daypass.other-gym-cannot-lookup', `g1 looking up g2's pass: ${x.check?.state ?? msgOf(x)}`);
+    }
+  }
+  if (u4r.ok) {
+    const chk4 = await act.checkDayPass(g2, u4r.pass.code);
+    expect(chk4.check?.state === 'valid', 'daypass.race-pass-valid', `u4's race pass at reception: ${chk4.check?.state ?? msgOf(chk4)}`);
+  }
+
+  // 5 — what the owner's panel shows now.
+  const after = await act.fetchMyGym(g2);
+  expect(after.gym?.allowDayPass === false && after.gym?.showMembers === false, 'daypass.switches-read-back', `panel reads allow_day_pass=${after.gym?.allowDayPass}, show_members=${after.gym?.showMembers}`);
+  const dash = await act.gymDashboard(g2, gymId);
+  const issued = ctx.state.dayPasses;
+  expect(dash.dayPasses?.live === issued, 'daypass.panel-live-count', `panel: ${dash.dayPasses?.live ?? dash.error?.message} live pass(es), ${issued} issued`);
+}
+
+async function phasePrivacy(ctx) {
+  if (!need(ctx, 'privacy', ['g1', 'u1', 'u5', 't1'])) return;
+  const g1 = A(ctx, 'g1');
+  const u1 = A(ctx, 'u1');
+  const u5 = A(ctx, 'u5');
+  const t1 = A(ctx, 't1');
+  const u2 = A(ctx, 'u2');
+
+  // u1's private training data, written the way a finished session writes it.
+  const w = await act.finishWorkout(u1, { title: 'TEST məşq', durationSec: 1800, volumeKg: 2400, setsDone: 12, prs: [{ lift: 'Bench', value: 60 }] });
+  expect(w.ok, 'privacy.u1-workout-logged', w.ok ? 'workout + PR written' : `failed: ${msgOf(w)}`);
+  const control = await act.probeRead(u1, (c) => c.from('workouts').select('id').eq('profile_id', u1.profileId));
+  expect(control.count >= 1, 'privacy.control-owner-reads', `u1 reads ${control.count} own workout row(s) — so a 0 below is RLS, not an empty table`);
+
+  const threadId = ctx.state.threadId;
+  const probes = [
+    ['workouts', (c) => c.from('workouts').select('id').eq('profile_id', u1.profileId)],
+    ['prs', (c) => c.from('prs').select('id').eq('profile_id', u1.profileId)],
+    ['progress', (c) => c.from('progress').select('id').eq('profile_id', u1.profileId)],
+    ['chat-threads', (c) => c.from('chat_threads').select('id').or(`a_profile.eq.${u1.profileId},b_profile.eq.${u1.profileId}`)],
+    ...(threadId ? [['messages', (c) => c.from('messages').select('id').eq('thread_id', threadId)]] : []),
+    ['student-programs', (c) => c.from('student_programs').select('id').eq('student_id', u1.profileId)],
+    ['trainer-requests', (c) => c.from('trainer_requests').select('id').eq('from_profile', u1.profileId)],
+    ['notifications', (c) => c.from('notifications').select('id').eq('profile_id', u1.profileId)],
+    ['push-tokens', (c) => c.from('push_tokens').select('profile_id').eq('profile_id', u1.profileId)],
+    ...(u2?.userId ? [['day-passes-of-u2', (c) => c.from('day_passes').select('id').eq('user_id', u2.userId)]] : []),
+  ];
+  const results = await together(
+    'g1 (the gym u1 checked in at) reads u1\'s private data',
+    probes.map(([label, build]) => ({ actor: g1, label, fn: () => act.probeRead(g1, build) }))
+  );
+  for (const r of results.results) {
+    expect(r.count === 0, `privacy.g1-${r.label}`, r.refused ? `refused (${msgOf(r)})` : `${r.count} row(s) visible`);
+  }
+  info('privacy.progress-photos', 'the schema has no progress-photo table; `progress` holds bodyweight and has no app writer left, so its probe proves the policy on an empty set only');
+  const byDesign = await act.probeRead(g1, (c) => c.from('check_ins').select('id').eq('profile_id', u1.profileId));
+  info('privacy.g1-sees-checkins-at-own-gym', `g1 sees ${byDesign.count} check-in(s) of u1 — by design (check_ins_read: the owner sees check-ins at their gym)`);
+
+  const r5 = await act.probeRead(u5, (c) => c.from('trainer_requests').select('id,from_profile').eq('trainer_id', t1.trainerId));
+  const others = (r5.rows ?? []).filter((r) => r.from_profile !== u5.profileId);
+  expect(others.length === 0, 'privacy.u5-cannot-read-others-requests', `u5 sees ${others.length} request(s) of other students to t1 (own: ${(r5.rows ?? []).length - others.length})`);
+  const r5b = await act.probeRead(u5, (c) => c.from('student_programs').select('id').eq('trainer_id', t1.trainerId));
+  expect(r5b.count === 0, 'privacy.u5-cannot-read-assignments', `u5 sees ${r5b.count} of t1's program assignments`);
+
+  // u1 tries the owner's «Zal profili → Yadda saxla» on somebody else's gym.
+  const fakeForm = { id: g1.gymId, name: 'TEST HACKED', district: '', hours: '24 saat', about: '', priceMonth: 0, dayPass: 0, amenities: [], allowDayPass: true, showMembers: true };
+  const hack = await act.editGym(u1, fakeForm, {});
+  expect(!hack.ok && hack.error?.message === 'gym-not-saved', 'privacy.u1-cannot-edit-g1', hack.ok ? 'u1 EDITED g1' : `refused (${msgOf(hack)})`);
+  // listed:false on purpose: t1 is already unlisted, so even a broken policy
+  // could not make a TEST listing public through this probe.
+  const unlist = await act.probeWrite(u1, (c) => c.from('trainers').update({ listed: false }).eq('id', t1.trainerId).select('id'));
+  expect(unlist.count === 0, 'privacy.u1-cannot-write-t1-listing', unlist.count ? 'u1 WROTE to t1\'s listing' : `refused (${unlist.error?.message ?? 'zero rows'})`);
+  const rot = await act.rotateCheckinCode(u1, g1.gymId);
+  expect(!rot.ok, 'privacy.u1-cannot-rotate-g1-code', rot.ok ? 'u1 ROTATED g1\'s door code' : `refused (${msgOf(rot)})`);
+  const code = await act.probeRead(u5, (c) => c.from('gym_checkin_codes').select('code').eq('gym_id', g1.gymId));
+  expect(code.count === 0, 'privacy.u5-cannot-read-door-code', `u5 sees ${code.count} code row(s) of g1`);
+  if (ctx.state.dayPassCode) {
+    const x = await act.checkDayPass(u1, ctx.state.dayPassCode);
+    expect(x.check?.state === 'not_found' || !x.ok, 'privacy.u1-cannot-lookup-pass', `u1 (no gym) looking up u2's pass: ${x.check?.state ?? msgOf(x)}`);
+  }
+
+  // Reviews. The UI never sends one below 3 check-ins — the composer renders only
+  // at myCheckins >= 3 (discover/gym/[id].tsx:925), below that it shows «Rəy
+  // yazmaq üçün {n} check-in qalıb». So these are SERVER-RULE probes with the
+  // app's own payload: what a direct API call gets, not a path a user can take.
+  const checkinsAtG1 = (ctx.state.landedAtG1 ?? []).includes('u1') ? 1 : 0;
+  const isRls = (r) => r.error?.code === '42501' || /row-level security/i.test(r.error?.message ?? '');
+  const rv = await act.submitReview(u1, g1.gymId, { rating: 5, body: 'TEST rəy', myCheckins: checkinsAtG1 });
+  if (rv.ok) ctx.state.reviewsWritten.push({ key: u1.key, gymId: g1.gymId });
+  expect(
+    !rv.ok && isRls(rv),
+    'privacy.server-refuses-review-below-3',
+    rv.ok
+      ? `a review was ACCEPTED with ${checkinsAtG1} check-in(s)`
+      : isRls(rv)
+        ? `refused by reviews_insert / can_review_gym (${checkinsAtG1} of 3 check-ins); the UI hides the composer below 3, so no real user can send this`
+        : `refused, but not by the 3-check-in rule: ${msgOf(rv)}`
+  );
+  // A forged official reply. The server does NOT refuse one: reviews_stamp
+  // (BEFORE INSERT) blanks reply/reply_at and restamps name and tenure. Below 3
+  // check-ins the insert is refused by reviews_insert first, so the stripping is
+  // never reached here; «refused» must not be read as «forged reply blocked».
+  const forged = await act.probeForgedReview(u1, g1.gymId);
+  if (forged.ok) {
+    ctx.state.reviewsWritten.push({ key: u1.key, gymId: g1.gymId });
+    expect(false, 'privacy.forged-review-below-3', `the forged review was ACCEPTED with ${checkinsAtG1} check-in(s) — the 3-check-in rule did not hold`);
+    // Accepted after all, so judge what was stored: reply blank, tenure real.
+    const back = await act.probeRead(u1, (c) => c.from('reviews').select('id,reply,reply_at,tenure').eq('gym_id', g1.gymId).eq('author_id', u1.profileId));
+    const row = (back.rows ?? []).find((r) => r.reply != null) ?? back.rows?.[0];
+    expect(
+      !!row && row.reply == null && row.reply_at == null && row.tenure === `${checkinsAtG1} check-in edib`,
+      'privacy.forged-reply-stripped',
+      row ? `stored reply ${row.reply == null ? 'NULL' : 'KEPT (forged official answer is public)'}, tenure «${row.tenure}» (real count ${checkinsAtG1})` : `row not readable: ${msgOf(back)}`
+    );
+  } else {
+    expect(isRls(forged), 'privacy.forged-review-below-3', isRls(forged) ? 'refused by the 3-check-in rule (reviews_insert) — before the forged reply is ever judged' : `refused, but not by the 3-check-in rule: ${msgOf(forged)}`);
+    unreachable(
+      'privacy.forged-reply-stripped',
+      'refused by the 3-check-in rule; forged-reply stripping not exercised. reviews_stamp blanks reply/reply_at and restamps name/tenure (it does not refuse); reaching it live needs 3 gym-days of check-ins — supabase/schema80_reviews_stamp.sql records the rolled-back proof'
+    );
+  }
+  unreachable('privacy.review-happy-path', 'a review needs 3 check-ins at the gym, and check_ins_one_per_gym_day allows ONE check-in per person per gym-day at any gym (the day turns at 04:00 Baku) — three gym-days; faking check-ins with privileged SQL is forbidden');
+  unreachable('privacy.owner-reply', 'the owner reply (gym/reviews.tsx → replyToReview) needs a real review first — see review-happy-path');
+}
+
+async function phaseEndStudent(ctx) {
+  if (!need(ctx, 'end-student', ['t1', 'u2'])) return;
+  const t1 = A(ctx, 't1');
+  const u2 = A(ctx, 'u2');
+  const before = await act.getMyStudents(t1, ctx.simIds);
+  const s = (before.active ?? []).find((x) => x.profileId === u2.profileId);
+  if (!s) {
+    expect(false, 'end-student.u2-active', `u2 is not an active student of t1 (${msgOf(before)})`);
+    return;
+  }
+  // The confirm dialog promises the assigned program stays on the student's
+  // «Məşq» tab after an end (endStudent leaves student_programs alone) — give u2
+  // one first so that promise is checked too.
+  const asgTitle = `TEST proqram u2 ${ctx.runId}`;
+  const asg = await act.assignStudentProgram(t1, { studentId: u2.profileId, programId: ctx.state.programId ?? null, title: asgTitle, note: 'TEST qeyd' });
+  expect(asg.ok, 'end-student.assigned-before-end', asg.ok ? 'u2 has an assignment before the end' : `assign refused: ${msgOf(asg)}`);
+
+  // One phone cannot do this: the end sits behind a confirm dialog and an
+  // `ending` guard (trainer/student/[id].tsx:127, :136). Two devices of the same
+  // coach — or a stale screen — can, and the .eq('status','accepted') guard is
+  // what must let exactly one through.
+  const ends = await together('two devices end u2 at once', [0, 1].map((i) => ({ actor: t1, label: `device ${i + 1} ends`, fn: () => act.endStudent(t1, s.requestId) })));
+  const oks = ends.results.filter((r) => r.ok).length;
+  expect(oks === 1, 'end-student.exactly-one-end', `${oks} of 2 ends came back with the row (the .eq('status','accepted') guard should let exactly one through)`, ends.results.map((r) => ({ label: r.label, ok: r.ok, error: r.error?.message })));
+  const mine = await act.getMyRequestTo(u2, t1.trainerId);
+  expect(
+    mine.request?.status === 'ended' && !!mine.request?.decided_at,
+    'end-student.u2-sees-ended',
+    `u2 sees «${mine.request?.status ?? msgOf(mine)}», decided_at ${mine.request?.decided_at ? 'stamped' : 'MISSING'}`
+  );
+  const after = await act.getMyStudents(t1, ctx.simIds);
+  const n0 = (before.active ?? []).length;
+  const n1 = (after.active ?? []).length;
+  expect(n1 === n0 - 1 && !(after.active ?? []).some((x) => x.profileId === u2.profileId), 'end-student.active-drops', `t1 active ${n0} → ${n1}`);
+  const page = await act.openTrainerPage(u2, t1.trainerId);
+  expect(page.trainer?.clients === n1, 'end-student.public-clients', `public listing clients=${page.trainer?.clients ?? '—'}, active=${n1}`);
+
+  // What 'ended' means (roles.ts endStudent): the coach can no longer START a
+  // thread with this person, and the assignment stays.
+  const open = await act.openThread(t1, u2.profileId);
+  expect(!open.ok && open.refusal === 'no_relationship', 'end-student.no-new-thread', open.ok ? 't1 OPENED a thread with an ended student' : `refused: ${open.refusal} → «${act.chatRefusalText(open.refusal)}»`);
+  if (asg.ok) {
+    const kept = await act.getMyAssignedProgram(u2);
+    expect(kept.assigned?.title === asgTitle, 'end-student.assignment-stays', kept.assigned ? `u2's Məşq card still shows «${kept.assigned.title}» (as the dialog says)` : `u2's assignment is gone: ${msgOf(kept)}`);
+  }
+}
+
+// Rows delete_my_account() does NOT take with it (read from the live schema on
+// 2026-09-22: FK actions and the function body). Everything else cascades from
+// profiles / auth.users.
+const SURVIVES = {
+  gyms:
+    'delete_my_account() keeps the gym row and detaches the owner (gyms.owner_id ON DELETE SET NULL). It stays USABLE: check_in_with_code and create_day_pass look at neither owner nor listed. Before deleting, the owner switched day passes off and rotated the door code to one nobody has seen — but the row needs admin removal',
+  gym_checkin_codes: 'lives as long as its gym row; rotated before deletion and unreadable now (gym_checkin_codes is owner-only)',
+  day_passes:
+    'day_passes.user_id AND day_passes.gym_id are ON DELETE SET NULL: delete these pass ids BEFORE the gyms, or they are left with neither a user nor a gym and can never be found again',
+  programs: 'programs.owner_id ON DELETE SET NULL — a deleted author\'s program would stay PUBLIC in the library; the harness deletes its own first',
+  reviews: 'reviews.author_id ON DELETE SET NULL — the review stays on the (surviving) TEST gym',
+};
+
+async function phaseCleanup(ctx) {
+  // First, before any wait: no TEST coach may sit in Kəşf — not during the
+  // phone wait, and not with --keep either.
+  const off = await unlistTrainers(ctx, 'TEST coaches hidden from Kəşf before anything else');
+  for (const r of off) expect(r.ok && r.listed === false, `cleanup.unlisted.${r.actor}`, r.ok ? 'listing hidden (listed=false came back)' : `could NOT unlist: ${msgOf(r)}`);
+  ctx.unlistedForCleanup = true;
+
+  const phoneId = ctx.phone.trainerOk ? ctx.opts.phoneTrainer : null;
+  if (phoneId && ctx.opts.phoneWait > 0) {
+    console.log(`   … waiting ${ctx.opts.phoneWait} s — accept or decline the TEST requests on the phone now`);
+    // Interruptible: a Ctrl+C during the wait goes straight to the signal path's cleanup.
+    await waitFor(() => ctx.aborted, ctx.opts.phoneWait * 1000);
+    if (ctx.aborted) return;
+    const users = ['u1', 'u2', 'u3', 'u4', 'u5'].map((k) => A(ctx, k)).filter((u) => u?.ready);
+    const pr = await together('users re-read the phone trainer\'s answer', users.map((u) => ({ actor: u, fn: () => act.getMyRequestTo(u, phoneId) })));
+    for (const r of pr.results) {
+      if (['accepted', 'declined'].includes(r.request?.status)) ctx.phone.decisions += 1;
+      info(`cleanup.phone-answer.${r.actor}`, `phone trainer's answer: ${r.request?.status ?? msgOf(r)}`);
+    }
+  }
+  if (ctx.opts.keep) {
+    for (const a of ctx.actors.values()) {
+      if (a.userId) ctx.rec.leftover('kept-actor', { actor: a.key, userId: a.userId, profileId: a.profileId, username: a.username });
+    }
+    info('cleanup.kept', '--keep: nothing was deleted (TEST coaches were unlisted); every actor above is still in the live database');
+    return;
+  }
+  await cleanupAll(ctx, 'end of run');
+}
+
+/** Delete every actor (idempotent; also the Ctrl+C / crash path). */
+function cleanupAll(ctx, reason) {
+  if (ctx.cleanupPromise) return ctx.cleanupPromise;
+  ctx.cleanupPromise = (async () => {
+    // Cleanup must be able to run concurrent steps after an abort.
+    abortState.cleaning = true;
+    const actors = [...ctx.actors.values()].filter((a) => a.userId && !a.deleted);
+    if (!actors.length) return;
+    console.log(`   · cleanup (${reason}): ${actors.length} actor(s) delete themselves`);
+    await Promise.all(actors.map((a) => a.client.removeAllChannels().catch(() => null)));
+
+    // 0 — the Ctrl+C path arrives here directly: hide the TEST coaches first.
+    if (!ctx.unlistedForCleanup) {
+      for (const r of await unlistTrainers(ctx, 'TEST coaches hidden from Kəşf (idempotent)')) {
+        if (!r.ok) expect(false, `cleanup.unlisted.${r.actor}`, `could NOT unlist: ${msgOf(r)}`);
+      }
+    }
+
+    // 1 — what each actor holds, read as itself.
+    const inv = await together('inventory before deletion (as each actor)', actors.map((a) => ({ actor: a, fn: async () => ({ ok: true, inventory: await act.inventory(a, ctx.simIds) }) })));
+    ctx.inventory = Object.fromEntries(inv.results.map((r) => [r.actor, r.inventory]));
+
+    // Rows REAL people addressed to a TEST actor go with it (CASCADE). Counted,
+    // never read — and a run that takes any with it is not a clean run.
+    let foreignTotal = 0;
+    for (const [k, i] of Object.entries(ctx.inventory)) {
+      for (const [table, n] of Object.entries(i?.foreign ?? {})) {
+        if (typeof n === 'number' && n > 0) {
+          foreignTotal += n;
+          ctx.rec.leftover('real-user rows removed by cascade', { actor: k, table, count: n });
+        } else if (n && typeof n === 'object' && n.error) {
+          info(`cleanup.foreign-count.${k}.${table}`, `could not count real people's ${table} addressed to ${k}: ${n.error}`);
+        }
+      }
+    }
+    expect(
+      foreignTotal === 0,
+      'cleanup.no-real-user-rows',
+      foreignTotal
+        ? `${foreignTotal} row(s) that real people addressed to TEST actors are cascade-deleted with them (counts only, in leftovers)`
+        : 'no real person had sent anything to a TEST actor'
+    );
+
+    // 2 — programs would outlive their author, public and ownerless. Every actor
+    //     deletes every program it OWNS per the inventory — so an insert whose
+    //     response timed out is found too. If a delete fails, that actor is kept
+    //     (unlisted) so the program stays removable by its author.
+    const keep = new Set();
+    for (const a of actors) {
+      const listed = ctx.inventory[a.key]?.programs;
+      const own = Array.isArray(listed) ? listed : ctx.state.programs.filter((p) => p.actor === a.key && p.result === 'saved').map((p) => p.id);
+      for (const id of own) {
+        const del = await act.deleteMyProgram(a, id);
+        expect(del.ok, `cleanup.program-removed.${a.key}`, del.ok ? `program ${id}: ${del.result} (the library's own delete)` : `could not delete program ${id}: ${msgOf(del)} — ${a.key} is KEPT so its program stays removable`);
+        if (!del.ok) {
+          keep.add(a.key);
+          ctx.rec.leftover('actor-kept-to-own-program', { actor: a.key, userId: a.userId, profileId: a.profileId, programId: id });
+        }
+      }
+    }
+    if (ctx.state.programs.length) {
+      info('cleanup.programs-outlive-accounts', 'delete_my_account() does not delete a person\'s programs (owner_id SET NULL): a real user who deletes the account leaves their programs public and ownerless');
+    }
+
+    // 3 — reviews that should never have been accepted (reviews.author_id SET NULL).
+    const seenReview = new Set();
+    for (const w of ctx.state.reviewsWritten) {
+      const tag = `${w.key}|${w.gymId}`;
+      const a = A(ctx, w.key);
+      if (seenReview.has(tag) || !a || a.deleted) continue;
+      seenReview.add(tag);
+      const del = await act.probeWrite(a, (c) => c.from('reviews').delete().eq('author_id', a.profileId).eq('gym_id', w.gymId).select('id'));
+      const gone = del.ok && del.count >= 1;
+      expect(gone, `cleanup.review-removed.${w.key}`, gone ? `deleted ${del.count} review(s) that should never have been accepted` : `review NOT deleted (${del.error?.message ?? 'zero rows came back'})`);
+      if (!gone) ctx.rec.leftover('reviews', { gym_id: w.gymId, author: w.key, why: SURVIVES.reviews });
+    }
+
+    // 4 — the TEST gyms outlive their owners and stay usable (check_in_with_code
+    //     and create_day_pass ignore owner and listed). Through the owner's own
+    //     screens: day passes off (gym/edit.tsx), and «Yeni kod» once more so no
+    //     code seen during the run opens anything. The new code is not recorded.
+    const owners = actors.filter((a) => a.role === 'gym' && a.gymId && !keep.has(a.key));
+    if (owners.length) {
+      const seal = await together(
+        'TEST gyms: day passes off + a door code nobody has seen',
+        owners.map((a) => ({
+          actor: a,
+          fn: async () => {
+            const g = await act.fetchMyGym(a);
+            if (!g.gym) return { ok: false, error: g.error ?? { message: 'panel finds no gym' } };
+            const off = g.gym.allowDayPass ? await act.editGym(a, g.gym, { allowDayPass: false }) : { ok: true, extrasSaved: true, already: true };
+            const rot = await act.rotateCheckinCode(a, a.gymId);
+            const passesOff = !!(off.ok && off.extrasSaved);
+            return { ok: passesOff && rot.ok, error: off.error ?? off.extrasError ?? rot.error ?? null, passesOff, already: !!off.already, rotated: rot.ok };
+          },
+        }))
+      );
+      for (const r of seal.results) {
+        expect(r.ok, `cleanup.gym-sealed.${r.actor}`, r.ok ? `day passes ${r.already ? 'were already off' : 'switched off'}, door code rotated (not recorded)` : `not sealed: ${msgOf(r)} (passes off: ${r.passesOff ?? '—'}, rotated: ${r.rotated ?? '—'})`);
+      }
+    }
+
+    // 5 — everybody deletes itself at once (itself a concurrency test: the
+    //     cascades of trainers and students touch the same rows).
+    const doomed = actors.filter((a) => !keep.has(a.key));
+    const tokens = new Map();
+    for (const a of doomed) {
+      const { data } = await a.client.auth.getSession().catch(() => ({ data: null }));
+      if (data?.session?.access_token) tokens.set(a.key, data.session.access_token);
+    }
+    const del = await together('every actor deletes itself (delete_my_account)', doomed.map((a) => ({ actor: a, fn: () => act.deleteMyAccount(a) })));
+    for (const r of del.results.filter((x) => !x.ok)) {
+      const a = A(ctx, r.actor);
+      info(`cleanup.concurrent-delete-failed.${a.key}`, `first delete failed (${r.step ?? ''}): ${msgOf(r)} — retrying alone`);
+      let again = null;
+      for (let i = 1; i <= 3 && !a.deleted; i++) {
+        await sleep(300 * i);
+        again = await act.deleteMyAccount(a);
+      }
+      expect(a.deleted, `cleanup.delete-retry.${a.key}`, a.deleted ? 'deleted on retry' : `STILL NOT DELETED after 3 retries: ${msgOf(again)}`, again?.error ?? null);
+    }
+    for (const a of doomed) {
+      const tok = tokens.get(a.key);
+      if (!a.deleted && tok) {
+        // A delete whose RESPONSE was lost looks like a failure; the JWT tells.
+        const gone = await act.probeAuthUserGone(a, tok);
+        if (gone.gone) {
+          a.deleted = true;
+          info(`cleanup.deleted-despite-error.${a.key}`, 'delete_my_account reported an error, but the auth user no longer exists');
+        }
+      }
+      expect(a.deleted, `cleanup.deleted.${a.key}`, a.deleted ? 'delete_my_account() returned' : 'account still exists');
+      if (!a.deleted) {
+        ctx.rec.leftover('actor-not-deleted', { actor: a.key, userId: a.userId, profileId: a.profileId, username: a.username, trainerId: a.trainerId ?? null, gymId: a.gymId ?? null });
+      } else if (tok) {
+        const gone = await act.probeAuthUserGone(a, tok);
+        expect(gone.gone, `cleanup.auth-user-gone.${a.key}`, gone.gone ? `its JWT no longer resolves (${gone.error?.message ?? 'no user'})` : 'the auth user STILL resolves');
+      }
+    }
+    for (const k of keep) info(`cleanup.kept.${k}`, 'kept on purpose (its program could not be deleted) and unlisted — delete the program as this account, then the account');
+
+    // 6 — after: the public listings and every handle, read with the bare key.
+    const trainerIds = [...ctx.actors.values()].map((a) => a.trainerId).filter(Boolean);
+    const gymIds = [...ctx.actors.values()].map((a) => a.gymId).filter(Boolean);
+    const programIds = [...new Set(ctx.state.programs.map((p) => p.id))];
+    const handles = [...ctx.actors.values()].filter((a) => a.userId).map((a) => a.username).concat(`sim_${ctx.runId}_race`);
+    const pub = await act.publicLeftovers(ctx.env, { runId: ctx.runId, trainerIds, programIds, gymIds, handles });
+    for (const p of pub) {
+      const id = `cleanup.public.${p.label.replace(/\s*\(.*\)$/, '').replace(/\s+/g, '-')}`;
+      if (!p.label.startsWith('gyms')) {
+        const what = p.kind === 'username' ? (p.rows.length ? 'handle is STILL taken (username_taken = true)' : 'handle is free again') : `${p.rows.length} row(s) of this run still public`;
+        expect(!p.error && p.rows.length === 0, id, p.error ? `read failed: ${p.error.message}` : what, p.rows.length ? p.rows : null);
+      } else {
+        info(id, `${p.rows.length} row(s) visible to the bare key — not verifiable with the public key: an unlisted gym is hidden from it${p.error ? ` (read failed: ${p.error.message})` : ''}`);
+      }
+      for (const row of p.rows) ctx.rec.leftover(`public:${p.label}`, { row });
+    }
+
+    // 7 — known leftovers the public key cannot see.
+    for (const id of gymIds) {
+      ctx.rec.leftover('gyms', { id, why: SURVIVES.gyms });
+      ctx.rec.leftover('gym_checkin_codes', { gym_id: id, why: SURVIVES.gym_checkin_codes });
+    }
+    const passIds = Object.values(ctx.inventory ?? {}).flatMap((i) => (Array.isArray(i?.day_passes) ? i.day_passes : []));
+    if (passIds.length) ctx.rec.leftover('day_passes', { ids: passIds, gym_ids: gymIds, why: SURVIVES.day_passes });
+    if (ctx.phone.requests) {
+      ctx.rec.leftover('notifications (owner account)', {
+        count: ctx.phone.requests,
+        why: 'each request to the phone trainer wrote a trainer_request notification for @' + ctx.opts.phoneUsername + '; notifications.actor_id is SET NULL on delete, so they stay in Bildirişlər without a sender',
+      });
+    }
+    if (gymIds.length || passIds.length) {
+      info(
+        'cleanup.known-leftovers',
+        `${gymIds.length} ownerless TEST gym(s) with their door codes and ${passIds.length} day-pass row(s) remain: the app has no path that deletes them. Admin: delete the day_passes by id FIRST, then the gyms (codes cascade) — see report.leftovers. Root fix (a DB change, needs the owner's approval): delete_my_account() should also delete the caller's never-listed gyms that no profile or trainer references, their day_passes first.`
+      );
+    }
+  })();
+  return ctx.cleanupPromise;
+}
+
+// Phase order is the run order. `needs` makes --only pull in what a phase builds on.
+const PHASES = [
+  {
+    name: 'setup',
+    title: '10 anonymous sessions, registration, 3 trainers, 2 gyms + door codes',
+    needs: [],
+    actors: [],
+    run: phaseSetup,
+    plan: [
+      'all actors: first launch (getSession → signInAnonymously → touch_last_active → own profile → own gym) together',
+      'all actors: username_taken → profiles upsert (name, @sim_<run>_<key>, age) together; read back',
+      't1..t3: publishTrainer (profiles role → trainers insert → listed:true → trainer_verifications) together; read back; then setMyListed(false) at once — public for seconds only',
+      'g1..g2: createGym (owned? → gyms insert usr-<ms> → lat/lng) together; panel read; QR «Kod yarat» (gym_rotate_checkin_code)',
+      'phone guards: the trainer listing and the --phone-gym must belong to @yghh before any request or check-in is sent',
+    ],
+  },
+  {
+    name: 'race-username',
+    title: 'u4 and u5 claim the same @username at the same instant',
+    needs: [],
+    actors: ['u4', 'u5'],
+    run: phaseRaceUsername,
+    plan: ['u4 + u5: profile edit → username_taken → profiles upsert with the SAME handle, together', 'exactly one wins; loser told «Bu istifadəçi adı tutulub»; server + phone state re-read'],
+  },
+  {
+    name: 'race-requests',
+    title: 'all 5 users send t1 a trainer request at the same instant',
+    needs: [],
+    actors: ['u1', 'u2', 'u3', 'u4', 'u5', 't1', 't2', 't3'],
+    run: phaseRaceRequests,
+    plan: ['u1..u5 (+u1 double tap, +phone trainer): trainers owner_id → trainer_requests upsert, together', 't1 getMyStudents: exactly 5 pending, no duplicates; t2/t3 see nothing; public clients=0'],
+  },
+  {
+    name: 'decide-concurrently',
+    title: 't1 accepts u1–u3 and declines u4 at the same instant',
+    needs: ['race-requests'],
+    actors: ['u1', 'u2', 'u3', 'u4', 'u5', 't1'],
+    run: phaseDecide,
+    plan: [
+      't1: 4 decideTrainerRequest updates together',
+      'users re-read; t1 pending=[u5] active=[u1,u2,u3]; public clients=3; u4 cannot self-accept',
+      'u3 (accepted) re-sends through requestTrainer: must not reopen to pending (t1 re-accepts if it does)',
+    ],
+  },
+  {
+    name: 'program-chat',
+    title: 'assigned program + first messages from both sides at once',
+    needs: ['race-requests', 'decide-concurrently'],
+    actors: ['t1', 't2', 't3', 'u1', 'u2', 'u3'],
+    run: phaseProgramChat,
+    plan: [
+      't1..t3: programs insert (builder payload) together — ids are mine-<ms>, so they must not collide',
+      't1: student_programs upsert for u1; u1 reads it and opens t1\'s program, u2 sees none',
+      't1 + u1: open_thread + first message together; realtime delivery to u1, none to eavesdropping u2',
+      'u2: cannot read/post/list/open the t1–u1 thread',
+      'u3: two first messages to t1 together — the one-until-reply gate must let exactly one through',
+    ],
+  },
+  {
+    name: 'checkins-vs-rotate',
+    title: '5 check-ins while the gym rotates its door code',
+    needs: [],
+    actors: ['u1', 'u2', 'u3', 'u4', 'u5', 'g1'],
+    run: phaseCheckins,
+    plan: [
+      'skipped within 5 min of 00:00 / 04:00 Baku (the panel\'s day and the gym-day turn there)',
+      'u1..u5 check_in_with_code(old) + g1 gym_rotate_checkin_code, together',
+      'old code dead; bounced users retry new code; daily cap; panel occupancy = real successes',
+      'with a verified --phone-gym: u4 then u5 at the phone gym, one at a time, gym_id compared before the second',
+    ],
+  },
+  {
+    name: 'daypass',
+    title: 'day-pass price, issue, switch-off race, reception check',
+    needs: [],
+    actors: ['g1', 'g2', 'u2', 'u3', 'u4'],
+    run: phaseDaypass,
+    plan: ['g2 edits day_pass=7; u2 create_day_pass', 'g2 switches allow_day_pass off WHILE u4 asks, together', 'u3 refused day_pass_off; u2 pass still returned; g2 check_day_pass valid; g1 not_found'],
+  },
+  {
+    name: 'privacy',
+    title: 'what other roles can read or change',
+    needs: ['race-requests', 'decide-concurrently', 'program-chat', 'checkins-vs-rotate'],
+    actors: ['g1', 'u1', 'u2', 'u5', 't1'],
+    run: phasePrivacy,
+    plan: [
+      'u1 logs a workout + PR; g1 reads u1 workouts/prs/progress/threads/messages/…: 0 rows',
+      'u5 vs t1\'s requests; u1 edits g1 / writes t1\'s listing / rotates g1 code: refused',
+      'server-rule probes: a review below 3 check-ins refused by reviews_insert; forged-reply stripping UNREACHABLE (needs 3 gym-days)',
+    ],
+  },
+  {
+    name: 'end-student',
+    title: 'two devices of t1 end u2 at once',
+    needs: ['race-requests', 'decide-concurrently'],
+    actors: ['t1', 'u2'],
+    run: phaseEndStudent,
+    plan: [
+      't1 assigns u2 a program; two endStudent updates together → exactly one lands',
+      'u2 sees ended (decided_at stamped); t1 active −1; public clients recounted',
+      't1 can no longer open a thread with u2 (no_relationship); u2 keeps the assignment',
+    ],
+  },
+  {
+    name: 'cleanup',
+    title: 'every actor deletes itself; public listings re-read',
+    needs: [],
+    actors: [],
+    run: phaseCleanup,
+    plan: [
+      'TEST coaches unlisted first (before any phone wait); inventory as each actor, real people\'s rows COUNTED',
+      'every actor deletes every program it owns; accepted reviews removed; gyms: day passes off + door code rotated',
+      'all actors delete_my_account() together (3 retries on failure); JWTs must stop resolving',
+      'bare key re-reads trainers/programs/reviews of this run and every @handle (username_taken); known leftovers listed',
+    ],
+  },
+];
+const PHASE_BY_NAME = Object.fromEntries(PHASES.map((p) => [p.name, p]));
+
+function selectPhases(only) {
+  if (!only) return PHASES.map((p) => p.name);
+  const want = new Set(['setup', 'cleanup']);
+  const add = (n) => {
+    for (const d of PHASE_BY_NAME[n].needs) add(d);
+    want.add(n);
+  };
+  add(only);
+  return PHASES.map((p) => p.name).filter((n) => want.has(n));
+}
+
+/** A full run brings all ten. `--only` brings just the actors its phases use,
+ *  so a focused re-run spends fewer anonymous sign-ins (they are rate-limited
+ *  per IP); `--only setup` / `--only cleanup` still means all ten. */
+function actorsFor(phases) {
+  if (phases.length === PHASES.length) return ALL_ACTORS;
+  const keys = new Set();
+  for (const n of phases) for (const k of PHASE_BY_NAME[n].actors) keys.add(k);
+  return keys.size ? ALL_ACTORS.filter((k) => keys.has(k)) : ALL_ACTORS;
+}
+
+// ------------------------------------------------------------- dry run ----
+
+async function dryRun(opts) {
+  let attempts = 0;
+  const blocked = (what) => {
+    attempts += 1;
+    throw new Error(`[dry] network blocked: ${what}`);
+  };
+  globalThis.fetch = () => blocked('fetch');
+  globalThis.WebSocket = class {
+    constructor() {
+      blocked('WebSocket');
+    }
+  };
+
+  const runId = Date.now().toString(36).slice(-6);
+  const phases = selectPhases(opts.only);
+  const keys = actorsFor(phases);
+  const problems = [];
+  console.log('SPOT sim — DRY RUN. Nothing below is sent anywhere.\n');
+
+  try {
+    const env = loadEnv();
+    console.log(`key: publishable (${env.anonKey.slice(0, 15)}…) for ${new URL(env.url).host} — read from .env, not from the shell`);
+  } catch (e) {
+    problems.push(`env: ${e.message}`);
+  }
+
+  console.log(`run id (example): ${runId}`);
+  console.log(`phases: ${phases.join(' → ')}${opts.keep ? '   [--keep: cleanup skipped]' : ''}`);
+  for (const n of phases) {
+    const p = PHASE_BY_NAME[n];
+    if (typeof p.run !== 'function') problems.push(`phase ${n} has no runner`);
+    console.log(`\n  ${n} — ${p.title}${p.needs.length ? `   (needs: ${p.needs.join(', ')})` : ''}`);
+    for (const line of p.plan) console.log(`     · ${line}`);
+  }
+
+  console.log(`\nactors (${keys.length}):`);
+  for (const k of keys) {
+    try {
+      const a = makeActor(ROLE_OF[k[0]], Number(k.slice(1)), runId, { dry: true });
+      if (!a.name.startsWith('TEST ')) problems.push(`${k}: display name does not start with «TEST »`);
+      if (!a.username.startsWith(`sim_${runId}_`)) problems.push(`${k}: @username does not start with sim_${runId}_`);
+      console.log(`  ${k.padEnd(3)} ${a.role.padEnd(8)} «${a.name}»  @${a.username}`);
+    } catch (e) {
+      problems.push(`${k}: ${e.message}`);
+    }
+  }
+  const race = `sim_${runId}_race`;
+  if (!USERNAME_RE.test(race)) problems.push(`race handle @${race} breaks the username rule`);
+
+  console.log('\nphone (11th participant, optional):');
+  console.log(`  trainer: ${opts.phoneTrainer ? `${opts.phoneTrainer} — used only if its public listing belongs to @${opts.phoneUsername}` : 'not involved'}`);
+  console.log(`  gym: ${opts.phoneCode ? `${opts.phoneGym} with code ${opts.phoneCode.slice(0, 3)}… — used only if that gym belongs to @${opts.phoneUsername}; u4, then u5, check in there one at a time (gym_id compared after the first)` : 'not involved'}`);
+  if (opts.phoneOwnerProfile) console.log(`  owner profile: ${opts.phoneOwnerProfile} (checked against owner_id when the handle is not readable)`);
+  if (opts.phoneWait) console.log(`  wait before cleanup: ${opts.phoneWait} s (accept/decline on the phone)`);
+
+  // Wiring: every export used exists, every app call carries a valid anchor.
+  const files = [resolve(SIM_DIR, 'lib.mjs'), resolve(SIM_DIR, 'actions.mjs')];
+  const anchors = validateAnchors(files);
+  problems.push(...anchors.errors);
+  const src = readFileSync(resolve(SIM_DIR, 'actions.mjs'), 'utf8');
+  const exempt = /^(probe|inventory|public)|^(isUsernameConflict|newId|chatRefusalText)$/;
+  const chunks = src.split(/^export (?:async )?function /m).slice(1);
+  let checkedFns = 0;
+  for (const chunk of chunks) {
+    const name = chunk.match(/^(\w+)/)?.[1];
+    if (!name || exempt.test(name)) continue;
+    checkedFns += 1;
+    const body = chunk.split(/^}/m)[0];
+    if (!body.includes('// app:')) problems.push(`actions.mjs: ${name}() has no «// app:» anchor`);
+    if (typeof act[name] !== 'function') problems.push(`actions.mjs: ${name} is not exported as a function`);
+  }
+  if (typeof act.deleteMyAccount !== 'function') problems.push('deleteMyAccount is not wired to lib.cleanup');
+  console.log(`\nwiring: ${checkedFns} app actions, ${anchors.anchors} «// app:» anchors (${anchors.verified} verified against the app line, ${anchors.structural} structural), ${anchors.mirrors} «// mirrors:» references`);
+
+  const gyms = keys.filter((k) => k.startsWith('g')).length;
+  const coaches = keys.filter((k) => k.startsWith('t')).length;
+  const passes = phases.includes('daypass');
+  const requests = opts.phoneTrainer && phases.includes('race-requests');
+  console.log('\nthis LIVE run would leave behind (the app has no delete path for these):');
+  if (gyms) console.log(`  · ${gyms} unlisted, ownerless TEST gym(s) + door code(s) (delete_my_account keeps gym rows); day passes switched off and the code rotated first`);
+  if (passes) console.log('  · 1–2 TEST day-pass rows (user_id set to NULL) — ids in the report; delete them BEFORE the gyms');
+  if (requests) console.log(`  · 5 trainer_request notifications in @${opts.phoneUsername}'s Bildirişlər, sender removed`);
+  if (!gyms && !passes && !requests) console.log('  · nothing');
+  const program = phases.includes('program-chat');
+  if (coaches) console.log(`  while it runs: ${coaches} «TEST t…» trainer listing(s) are public for a few seconds in setup, then unlisted`);
+  if (program) console.log(`  while it runs: up to ${coaches || 3} «TEST proqram …» row(s) are readable in the library (programs_read is public), deleted at cleanup`);
+
+  console.log(`\nnetwork calls attempted: ${attempts}`);
+  if (attempts) problems.push(`${attempts} network call(s) were attempted in --dry`);
+  if (problems.length) {
+    console.log(`\nDRY RUN FAILED — ${problems.length} problem(s):`);
+    for (const p of problems) console.log(`  ✗ ${p}`);
+    process.exit(1);
+  }
+  console.log('\nDRY RUN OK — wiring valid, no network touched. Run without --dry to go live.');
+  process.exit(0);
+}
+
+// ---------------------------------------------------------------- live ----
+
+function printSummary(ctx) {
+  const t = ctx.rec.totals();
+  console.log(`\n==== SPOT sim ${ctx.runId}: ${t.PASS} PASS · ${t.FAIL} FAIL · ${t.UNREACHABLE} UNREACHABLE · ${t.INFO} INFO   (${round((Date.now() - ctx.t0) / 1000)} s)`);
+  for (const p of ctx.rec.phases) {
+    const c = { PASS: 0, FAIL: 0, UNREACHABLE: 0, INFO: 0 };
+    for (const x of p.checks) c[x.status] += 1;
+    console.log(`  ${p.name.padEnd(20)} ${String(p.ms ?? '—').padStart(8)} ms   ${c.PASS} pass, ${c.FAIL} fail, ${c.UNREACHABLE} unreachable`);
+  }
+  const fails = ctx.rec.checks.filter((c) => c.status === 'FAIL');
+  if (fails.length) {
+    console.log('\nFAIL:');
+    for (const f of fails) console.log(`  ✗ ${f.id} — ${f.message}`);
+  }
+  const unr = ctx.rec.checks.filter((c) => c.status === 'UNREACHABLE');
+  if (unr.length) {
+    console.log('\nUNREACHABLE (not faked):');
+    for (const u of unr) console.log(`  – ${u.id} — ${u.message}`);
+  }
+  if (ctx.rec.leftovers.length) {
+    console.log('\nLEFT OVER in the live database:');
+    for (const l of ctx.rec.leftovers) console.log(`  • ${l.kind}: ${JSON.stringify({ ...l, kind: undefined })}`);
+  }
+  console.log(`\nreport: ${REPORT_PATH.replace(ROOT, '').replace(/^[\\/]/, '')}`);
+}
+
+function finish(ctx, code) {
+  if (ctx.finished) return;
+  ctx.finished = true;
+  const actors = [...ctx.actors.values()].map((a) => ({
+    key: a.key,
+    role: a.role,
+    name: a.name,
+    username: a.username,
+    userId: a.userId,
+    profileId: a.profileId,
+    trainerId: a.trainerId ?? null,
+    gymId: a.gymId ?? null,
+    deleted: a.deleted,
+  }));
+  try {
+    writeReport(REPORT_PATH, ctx.rec, { actors, inventoryBeforeDeletion: ctx.inventory ?? null, phone: ctx.phone });
+  } catch (e) {
+    console.error(`could not write the report: ${e.message}`);
+  }
+  printSummary(ctx);
+  const fails = ctx.rec.totals().FAIL;
+  process.exit(code ?? (fails ? 1 : 0));
+}
+
+/** argv as it goes into the report. The phone's door code is a key to a real
+ *  gym — check_in_with_code checks only the code and the opening hours, not
+ *  where the phone is — so it never lands in last-report.json in clear text. */
+function redactArgv(argv) {
+  return argv.map((v, i) => (argv[i - 1] === '--phone-code' ? `${v.slice(0, 3)}…` : v));
+}
+
+async function main() {
+  const opts = parseArgs(process.argv.slice(2));
+  if (opts.dry) return dryRun(opts);
+
+  const env = loadEnv();
+  const runId = Date.now().toString(36).slice(-6);
+  const phases = selectPhases(opts.only);
+  const keys = actorsFor(phases);
+  const rec = new Recorder({
+    runId,
+    argv: redactArgv(process.argv.slice(2)),
+    phases,
+    actors: keys,
+    supabaseHost: new URL(env.url).host,
+    schemaFactsReadOn: '2026-09-22',
+  });
+  setRecorder(rec);
+
+  const ctx = {
+    runId,
+    opts,
+    env,
+    rec,
+    t0: Date.now(),
+    actors: new Map(),
+    simIds: new Set(),
+    // programs: every id a coach's phone minted ({ actor, id, result });
+    // reviewsWritten: { key, gymId } of reviews the server should have refused.
+    state: { gyms: {}, requestIds: {}, active: {}, programId: null, programs: [], threadId: null, dayPasses: 0, dayPassCode: null, landedAtG1: [], reviewsWritten: [] },
+    phone: { trainerOk: false, gymOk: false, ownerProfileId: null, requests: 0, decisions: 0, checkins: 0 },
+    aborted: false,
+    sigint: false,
+    running: null,
+    cleanupPromise: null,
+    unlistedForCleanup: false,
+    finished: false,
+  };
+  for (const k of keys) ctx.actors.set(k, makeActor(ROLE_OF[k[0]], Number(k.slice(1)), runId, { env, recorder: rec }));
+
+  console.log(`SPOT sim ${runId} — ${keys.length} virtual actors against ${new URL(env.url).host}`);
+  console.log(`phases: ${phases.join(' → ')}`);
+
+  // Ctrl+C, a closed terminal (SIGHUP, SIGBREAK on Windows), SIGTERM and a
+  // crash all take the same road: no new step starts (together() refuses once
+  // aborted), the step in flight settles — every request is capped at 20 s, so
+  // this is bounded — and only then does every actor delete itself. Deleting
+  // under a write still in flight could let that write land AFTER the
+  // inventory, e.g. a program row that then outlives its author.
+  const stop = (why) => {
+    if (ctx.sigint) {
+      // Second time: stop waiting, but never leave without naming who is still there.
+      const left = [...ctx.actors.values()].filter((a) => a.userId && !a.deleted);
+      console.log(`\n${why} again — leaving now; ${left.length} actor(s) NOT deleted${left.length ? ':' : ''}`);
+      for (const a of left) {
+        console.log(`  ${a.key}  user ${a.userId}  profile ${a.profileId ?? '—'}  @${a.username}${a.trainerId ? `  trainer ${a.trainerId}` : ''}${a.gymId ? `  gym ${a.gymId}` : ''}`);
+        rec.leftover('actor-not-deleted', { actor: a.key, userId: a.userId, profileId: a.profileId, username: a.username, trainerId: a.trainerId ?? null, gymId: a.gymId ?? null, why: `left on a second ${why}` });
+      }
+      finish(ctx, 130);
+      process.exit(130);
+    }
+    ctx.sigint = true;
+    ctx.aborted = true;
+    abortState.aborted = true;
+    console.log(
+      opts.keep
+        ? `\n${why} — --keep is set: TEST coaches are unlisted, nothing is deleted`
+        : `\n${why} — no new step starts; waiting for the one in flight, then every virtual actor deletes itself… (again to leave at once)`
+    );
+    (ctx.running ?? Promise.resolve())
+      .then(async () => {
+        if (rec.cur?.name !== 'cleanup') {
+          rec.endPhase();
+          rec.startPhase('cleanup', `${why} — every actor deletes itself`);
+        }
+        if (opts.keep) {
+          abortState.cleaning = true;
+          await unlistTrainers(ctx, 'TEST coaches hidden from Kəşf (--keep)');
+          for (const a of ctx.actors.values()) {
+            if (a.userId) rec.leftover('kept-actor', { actor: a.key, userId: a.userId, profileId: a.profileId, username: a.username });
+          }
+          return null;
+        }
+        return cleanupAll(ctx, why);
+      })
+      .catch((e) => console.error(`cleanup error: ${e.message}`))
+      .finally(() => {
+        rec.endPhase('cleanup');
+        finish(ctx, 130);
+      });
+  };
+  process.on('SIGINT', () => stop('Ctrl+C'));
+  process.on('SIGTERM', () => stop('SIGTERM'));
+  process.on('SIGHUP', () => stop('terminal closed (SIGHUP)'));
+  if (process.platform === 'win32') process.on('SIGBREAK', () => stop('Ctrl+Break / console closed (SIGBREAK)'));
+  process.on('uncaughtException', (e) => {
+    console.error(e);
+    stop(`uncaught exception: ${e?.message ?? e}`);
+  });
+  process.on('unhandledRejection', (e) => {
+    console.error(e);
+    stop(`unhandled rejection: ${e?.message ?? e}`);
+  });
+
+  try {
+    for (const name of phases) {
+      if (name === 'cleanup' || ctx.aborted) continue;
+      const phase = PHASE_BY_NAME[name];
+      rec.startPhase(name, phase.title);
+      ctx.running = (async () => {
+        try {
+          await phase.run(ctx);
+        } catch (e) {
+          if (e?.name === 'SimAbort') info(`${name}.aborted`, `phase stopped: ${e.message}`);
+          else expect(false, `${name}.harness-error`, `the harness itself threw: ${e.message}`, errInfo(e));
+        }
+      })();
+      await ctx.running;
+      rec.endPhase(name);
+    }
+  } finally {
+    if (!ctx.sigint) {
+      rec.startPhase('cleanup', PHASE_BY_NAME.cleanup.title);
+      try {
+        await phaseCleanup(ctx);
+      } catch (e) {
+        if (e?.name !== 'SimAbort') expect(false, 'cleanup.harness-error', `cleanup threw: ${e.message}`, errInfo(e));
+      }
+      // A signal that arrived during cleanup owns the finish (it waits for the
+      // same cleanup promise, then writes the report).
+      if (!ctx.sigint) {
+        rec.endPhase();
+        finish(ctx);
+      }
+    }
+  }
+}
+
+// Exported so the phase logic can be exercised without the CLI; the run only
+// starts when this file is the program being executed.
+export { PHASES, PHASE_BY_NAME, cleanupAll, selectPhases, actorsFor, finish };
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}

@@ -31,3 +31,17 @@ export function newId(): string {
  *  cannot store. They are pushed up under a fresh uuid instead of being lost. */
 export const isUuid = (v: string): boolean =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
+/**
+ * The tail of a client-minted TEXT id (`mine-…`, `usr-…`, `uv-…`, storage
+ * paths): time first, so ids still sort roughly by age, then randomness.
+ *
+ * `Date.now()` alone is not unique across devices. In a live run with several
+ * accounts at once, three trainers who saved a program in the same millisecond
+ * all got `mine-<same>`; the second and third saves hit the primary key, stayed
+ * on the phone only, and assigning one to a student linked the student to the
+ * OTHER coach's program.
+ */
+export function uniqueTail(): string {
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
