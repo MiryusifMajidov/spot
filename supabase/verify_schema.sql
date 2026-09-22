@@ -921,7 +921,7 @@ results(check_kind, object, status, detail) as (
                      where n.nspname='public'
                        and p.proname in ('refresh_trainer_clients','refresh_gym_trainers','refresh_gym_members','refresh_gym_rating',
                                          'refresh_video_likes','tg_challenge_members','tg_post_likes','tg_video_saves')
-                       and pg_get_functiondef(p.oid) like '%for update%') = 8
+                       and pg_get_functiondef(p.oid) like '%for no key update%') = 8
               then 'OK' else 'MISSING' end,
          'schema82. update ... set n = (select count ...) counted a snapshot taken before the row-lock wait: three simultaneous accepts showed «2 şagird» (live run cmw5xa).'
   union all
