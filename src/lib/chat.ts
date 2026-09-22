@@ -165,7 +165,11 @@ export async function markThreadRead(threadId: string): Promise<void> {
  * Without this the recipient only sees a message when they reopen the screen —
  * which is how the old local-only chat felt even when it «worked».
  */
-export function subscribeToThread(threadId: string, onInsert: (m: ChatMessageRow) => void): () => void {
+export function subscribeToThread(
+  threadId: string,
+  onInsert: (m: ChatMessageRow) => void,
+  onReady?: () => void
+): () => void {
   /* Knowing who I am is needed only to set `mine` on an incoming row, so it must
      not GATE the subscription.
 
@@ -205,7 +209,14 @@ export function subscribeToThread(threadId: string, onInsert: (m: ChatMessageRow
         });
       }
     )
-    .subscribe();
+    /* SUBSCRIBED is not the same moment the feed starts: a message inserted in
+       the second after the screen read the thread and before the server began
+       streaming changes reached neither — it showed only on a reopen (seen in
+       the live multi-user run). The caller re-reads the thread when the channel
+       is up, and once more just after, to cover that gap. */
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED' && onReady) onReady();
+    });
 
   return () => {
     void supabase.removeChannel(channel);

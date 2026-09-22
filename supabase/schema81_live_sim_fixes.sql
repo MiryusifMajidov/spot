@@ -1,3 +1,7 @@
+-- APPLIED 2026-09-22 with the owner's approval. Proved live: the harness went from
+-- 202 PASS / 4 FAIL (cl9gnb) to 205/1 (clt8u9) to 206/0 (cm5l1u), and read-only SQL
+-- after both later runs found 0 TEST gyms, passes, codes, programs, profiles and 0
+-- sender-less notifications. verify_schema 531/531.
 -- schema81: defects found by the live multi-user run (scripts/sim, run cl9gnb,
 -- 2026-09-22: 10 accounts acting at once; 202 PASS, 4 FAIL).
 --

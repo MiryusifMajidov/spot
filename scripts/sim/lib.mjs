@@ -119,6 +119,8 @@ export class Recorder {
     this.checks = [];
     this.events = [];
     this.leftovers = [];
+    // Rows delete_my_account() removes but the public key cannot re-read (unlisted gyms).
+    this.expectedDeleted = null;
     this.cur = null;
     this.quiet = false;
   }
@@ -180,6 +182,7 @@ export class Recorder {
       totals: this.totals(),
       phases: this.phases,
       leftovers: this.leftovers,
+      expectedDeleted: this.expectedDeleted,
       checks: this.checks,
       events: this.events,
     };

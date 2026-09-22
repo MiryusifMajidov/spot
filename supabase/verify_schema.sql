@@ -888,6 +888,34 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema80. reviews_guard only covers UPDATE; on INSERT the author could write a fake gym reply, any display name, any «N check-in edib» and any date.'
   union all
+  select 'function', 'trainer_requests_guard: no re-pending over an accepted request',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='trainer_requests_guard'
+                             and pg_get_functiondef(p.oid) like '%old.status in (''declined'', ''ended'')%')
+              then 'OK' else 'MISSING' end,
+         'schema81. The student''s own upsert could put an ACCEPTED request back to pending — the trainer lost the student without being told (live run cl9gnb).'
+  union all
+  select 'function', 'open_thread tolerates a simultaneous first message',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='open_thread'
+                             and pg_get_functiondef(p.oid) like '%on conflict%')
+              then 'OK' else 'MISSING' end,
+         'schema81. Two people writing first at once: the loser hit chat_threads_pair and the app said «Hesabına məhdudiyyət qoyulub».'
+  union all
+  select 'constraint', 'notifications.actor_id cascades with its actor',
+         case when exists (select 1 from pg_constraint where conname='notifications_actor_id_fkey'
+                             and pg_get_constraintdef(oid) like '%ON DELETE CASCADE%')
+              then 'OK' else 'MISSING' end,
+         'schema81. A deleted account''s notifications stayed unread as «Kimsə …», pointing at deleted rows.'
+  union all
+  select 'function', 'delete_my_account removes programs and never-listed gyms',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='delete_my_account'
+                             and pg_get_functiondef(p.oid) like '%delete from public.programs%'
+                             and pg_get_functiondef(p.oid) like '%delete from public.gyms%')
+              then 'OK' else 'MISSING' end,
+         'schema81. Programs stayed public and ownerless; a never-listed gym stayed usable with nobody to switch it off.'
+  union all
   select 'function', 'suggested_trainers falls back to verified trainers only',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
                            where n.nspname='public' and p.proname='suggested_trainers'

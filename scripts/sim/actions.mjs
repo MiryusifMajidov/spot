@@ -98,20 +98,25 @@ function checkinRefusal(raw) {
   return 'unknown';
 }
 
-// mirrors: src/lib/chat.ts:51-59
+// mirrors: src/lib/ids.ts uniqueTail — the app's client-minted text ids.
+function uniqueTail() {
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// mirrors: src/lib/chat.ts refusalOf
 function chatRefusal(message) {
   const m = String(message ?? '').toLowerCase();
   if (m.includes('no_relationship')) return 'no_relationship';
   if (m.includes('blocked')) return 'blocked';
   if (m.includes('wait_for_reply')) return 'wait_for_reply';
   if (m.includes('not_signed_in')) return 'not_signed_in';
-  if (m.includes('row-level security') || m.includes('violates')) return 'sanctioned';
+  if (m.includes('row-level security')) return 'sanctioned';
   return 'unknown';
 }
 
 /** What the chat screen tells the person for a refusal code — so a report says
  *  what they SEE, not an internal code. */
-// mirrors: src/lib/chat.ts:62-75
+// mirrors: src/lib/chat.ts:66-79
 export function chatRefusalText(code) {
   switch (code) {
     case 'no_relationship':
@@ -762,7 +767,7 @@ export async function createProgram(a, { title, desc, days }) {
     };
     // The device store mints the id (useDb.createProgram).
     // mirrors: src/store/db.ts:396
-    const id = `mine-${Date.now().toString(36)}`;
+    const id = `mine-${uniqueTail()}`;
     // mirrors: src/lib/saveProgram.ts:136-156
     const base = {
       title: program.title,
@@ -891,11 +896,11 @@ export async function getMyAssignedProgram(a) {
 // ----------------------------------------------------------------- chat ----
 
 async function findThread(a, otherProfileId) {
-  // app: src/lib/chat.ts:88
+  // app: src/lib/chat.ts:99
   const me = await readMyProfile(a);
   if (!me?.id) return null;
   const [lo, hi] = me.id < otherProfileId ? [me.id, otherProfileId] : [otherProfileId, me.id];
-  // app: src/lib/chat.ts:91-96
+  // app: src/lib/chat.ts:102-107
   const { data, error } = await a.client
     .from('chat_threads')
     .select('id')
@@ -907,9 +912,9 @@ async function findThread(a, otherProfileId) {
 }
 
 async function readMessages(a, threadId) {
-  // app: src/lib/chat.ts:102
+  // app: src/lib/chat.ts:113
   const me = await readMyProfile(a);
-  // app: src/lib/chat.ts:103-107
+  // app: src/lib/chat.ts:114-118
   const { data, error } = await a.client
     .from('messages')
     .select('id,thread_id,sender_id,body,created_at,read_at')
@@ -929,7 +934,7 @@ async function readMessages(a, threadId) {
 
 export async function getMessages(a, threadId) {
   try {
-    // app: src/lib/chat.ts:101
+    // app: src/lib/chat.ts:112
     const rows = await readMessages(a, threadId);
     return ok(rows);
   } catch (e) {
@@ -938,10 +943,10 @@ export async function getMessages(a, threadId) {
 }
 
 async function markThreadReadInner(a, threadId) {
-  // app: src/lib/chat.ts:140
+  // app: src/lib/chat.ts:151
   const me = await readMyProfile(a);
   if (!me?.id) return;
-  // app: src/lib/chat.ts:142-147
+  // app: src/lib/chat.ts:153-158
   const { error } = await a.client
     .from('messages')
     .update({ read_at: new Date().toISOString() })
@@ -953,7 +958,7 @@ async function markThreadReadInner(a, threadId) {
 
 export async function markThreadRead(a, threadId) {
   try {
-    // app: src/lib/chat.ts:139
+    // app: src/lib/chat.ts:150
     await markThreadReadInner(a, threadId);
     return ok(null);
   } catch (e) {
@@ -962,8 +967,12 @@ export async function markThreadRead(a, threadId) {
 }
 
 async function openThreadInner(a, otherProfileId) {
-  // app: src/lib/chat.ts:80
-  const { data, error } = await a.client.rpc('open_thread', { other: otherProfileId });
+  // app: src/lib/chat.ts:84
+  let { data, error } = await a.client.rpc('open_thread', { other: otherProfileId });
+  // mirrors: src/lib/chat.ts openThread — one retry after a lost first-write race.
+  if (error && /duplicate key|chat_threads_pair|23505/i.test(`${error.message ?? ''} ${error.code ?? ''}`)) {
+    ({ data, error } = await a.client.rpc('open_thread', { other: otherProfileId }));
+  }
   if (error) {
     const err = new Error(String(error.message ?? ''));
     err.code = error.code;
@@ -976,7 +985,7 @@ async function openThreadInner(a, otherProfileId) {
 
 export async function openThread(a, otherProfileId) {
   try {
-    // app: src/lib/chat.ts:79
+    // app: src/lib/chat.ts:83
     return ok(null, { threadId: await openThreadInner(a, otherProfileId) });
   } catch (e) {
     return fail(e, { refusal: e.refusal ?? 'unknown' });
@@ -984,10 +993,10 @@ export async function openThread(a, otherProfileId) {
 }
 
 async function sendMessageInner(a, threadId, body) {
-  // app: src/lib/chat.ts:124
+  // app: src/lib/chat.ts:135
   const me = await readMyProfile(a);
   if (!me?.id) throw Object.assign(new Error('no profile'), { refusal: 'not_signed_in' });
-  // app: src/lib/chat.ts:126-130
+  // app: src/lib/chat.ts:137-141
   const { data, error } = await a.client
     .from('messages')
     .insert({ thread_id: threadId, sender_id: me.id, body: body.trim() })
@@ -1004,7 +1013,7 @@ async function sendMessageInner(a, threadId, body) {
 
 export async function sendMessage(a, threadId, body) {
   try {
-    // app: src/lib/chat.ts:123
+    // app: src/lib/chat.ts:134
     const m = await sendMessageInner(a, threadId, body);
     return ok([m], { message: m });
   } catch (e) {
@@ -1047,10 +1056,10 @@ export async function sendChatMessage(a, otherProfileId, knownThreadId, text) {
  *  run's own profiles — a real person who wrote to a TEST trainer stays unread. */
 export async function getMyThreads(a, simIds) {
   try {
-    // app: src/lib/chat.ts:216
+    // app: src/lib/chat.ts:238
     const me = await readMyProfile(a);
     if (!me?.id) return ok([], { threads: [] });
-    // app: src/lib/chat.ts:218-220
+    // app: src/lib/chat.ts:240-242
     const { data: threads, error } = await a.client
       .from('chat_threads')
       .select('id,a_profile,b_profile');
@@ -1060,7 +1069,7 @@ export async function getMyThreads(a, simIds) {
     const rows = simIds ? allRows.filter((t) => simIds.has(otherOf(t))) : allRows;
     const foreign = allRows.length - rows.length;
     if (!rows.length) return ok([], { threads: [], foreign });
-    // app: src/lib/chat.ts:227-234
+    // app: src/lib/chat.ts:249-256
     const [{ data: msgs, error: mErr }] = await Promise.all([
       a.client
         .from('messages')
@@ -1086,7 +1095,7 @@ export async function getMyThreads(a, simIds) {
  *  «never subscribed». */
 export function subscribeToThread(a, threadId, onInsert) {
   let myId = null;
-  // app: src/lib/chat.ts:170
+  // app: src/lib/chat.ts:185
   readMyProfile(a)
     .then((me) => {
       myId = me?.id ?? null;
@@ -1098,7 +1107,7 @@ export function subscribeToThread(a, threadId, onInsert) {
   const subscribed = new Promise((r) => {
     settle = r;
   });
-  // app: src/lib/chat.ts:181-197
+  // app: src/lib/chat.ts:196-212
   const channel = a.client
     .channel(`thread:${threadId}`)
     .on(
@@ -1116,7 +1125,7 @@ export function subscribeToThread(a, threadId, onInsert) {
     });
   return {
     subscribed,
-    // app: src/lib/chat.ts:200
+    // app: src/lib/chat.ts:222
     unsubscribe: () => a.client.removeChannel(channel).catch(() => null),
   };
 }
@@ -1139,10 +1148,8 @@ export async function createGym(a, { name, district, hours, priceMonth, dayPass,
       .maybeSingle();
     if (ownedErr) return fail(ownedErr);
     if (owned?.id) return fail(new Error('gym-exists'), { gymId: owned.id });
-    // A millisecond clock is the whole id — two owners pressing «yarat» in the
-    // same millisecond get the same id. That is the app's behaviour, so it is ours.
-    // mirrors: src/lib/api.ts:742
-    const id = `usr-${Date.now().toString(36)}`;
+    // mirrors: src/lib/api.ts:742 (time + random tail since the cl9gnb run)
+    const id = `usr-${uniqueTail()}`;
     // app: src/lib/api.ts:748-760
     const { error } = await a.client.from('gyms').insert({
       id,

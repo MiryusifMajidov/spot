@@ -710,6 +710,10 @@ async function phaseProgramChat(ctx) {
   const subU1 = act.subscribeToThread(u1, threadId, (m) => got.u1.push(m));
   const subU2 = act.subscribeToThread(u2, threadId, (m) => got.u2.push(m));
   const [st1, st2] = await Promise.all([withTimeout(subU1.subscribed, 10000), withTimeout(subU2.subscribed, 10000)]);
+  // SUBSCRIBED comes a moment before the server streams changes; a message sent
+  // in that moment is covered by the app's re-read on ready (chat.ts), not by
+  // realtime. Wait it out so this check measures the live feed itself.
+  await sleep(1500);
   const second = await act.sendChatMessage(t1, u1.profileId, threadId, `TEST ikinci mesaj (${ctx.runId})`);
   expect(second.ok, 'program-chat.second-message', second.ok ? 't1\'s second message passed the one-until-reply gate (u1 had answered)' : `refused: ${msgOf(second)}`);
   if (second.ok) sent += 1;
@@ -1114,9 +1118,16 @@ async function phaseEndStudent(ctx) {
   }
 }
 
-// Rows delete_my_account() does NOT take with it (read from the live schema on
-// 2026-09-22: FK actions and the function body). Everything else cascades from
-// profiles / auth.users.
+// What delete_my_account() takes with it beyond the profile cascade. Before
+// schema81 (applied 2026-09-22) never-listed gyms, their codes and day passes,
+// programs and the notifications a person caused all stayed behind; the first
+// live run (cl9gnb) left exactly those. schema81 deletes them, and runs clt8u9
+// and cm5l1u were checked clean with read-only SQL. The bare key cannot see an
+// unlisted gym, so the harness states this rather than claiming to have seen it.
+const DELETED_SINCE_SCHEMA81 =
+  'deleted by delete_my_account() since schema81 (never-listed gym → its day passes first, codes cascade); an unlisted gym is invisible to the public key, so confirm with read-only SQL, not from here';
+
+// Pre-schema81 notes, kept for reading old reports.
 const SURVIVES = {
   gyms:
     'delete_my_account() keeps the gym row and detaches the owner (gyms.owner_id ON DELETE SET NULL). It stays USABLE: check_in_with_code and create_day_pass look at neither owner nor listed. Before deleting, the owner switched day passes off and rotated the door code to one nobody has seen — but the row needs admin removal',
@@ -1315,24 +1326,14 @@ function cleanupAll(ctx, reason) {
       for (const row of p.rows) ctx.rec.leftover(`public:${p.label}`, { row });
     }
 
-    // 7 — known leftovers the public key cannot see.
-    for (const id of gymIds) {
-      ctx.rec.leftover('gyms', { id, why: SURVIVES.gyms });
-      ctx.rec.leftover('gym_checkin_codes', { gym_id: id, why: SURVIVES.gym_checkin_codes });
-    }
+    // 7 — what the public key cannot see: the TEST gyms and their passes.
     const passIds = Object.values(ctx.inventory ?? {}).flatMap((i) => (Array.isArray(i?.day_passes) ? i.day_passes : []));
-    if (passIds.length) ctx.rec.leftover('day_passes', { ids: passIds, gym_ids: gymIds, why: SURVIVES.day_passes });
-    if (ctx.phone.requests) {
-      ctx.rec.leftover('notifications (owner account)', {
-        count: ctx.phone.requests,
-        why: 'each request to the phone trainer wrote a trainer_request notification for @' + ctx.opts.phoneUsername + '; notifications.actor_id is SET NULL on delete, so they stay in Bildirişlər without a sender',
-      });
-    }
     if (gymIds.length || passIds.length) {
       info(
-        'cleanup.known-leftovers',
-        `${gymIds.length} ownerless TEST gym(s) with their door codes and ${passIds.length} day-pass row(s) remain: the app has no path that deletes them. Admin: delete the day_passes by id FIRST, then the gyms (codes cascade) — see report.leftovers. Root fix (a DB change, needs the owner's approval): delete_my_account() should also delete the caller's never-listed gyms that no profile or trainer references, their day_passes first.`
+        'cleanup.unverifiable-deletions',
+        `${gymIds.length} TEST gym(s) with their door codes and ${passIds.length} day-pass row(s): ${DELETED_SINCE_SCHEMA81}. Ids are in report.expectedDeleted.`
       );
+      ctx.rec.expectedDeleted = { gyms: gymIds, day_passes: passIds };
     }
   })();
   return ctx.cleanupPromise;
@@ -1558,11 +1559,10 @@ async function dryRun(opts) {
   const coaches = keys.filter((k) => k.startsWith('t')).length;
   const passes = phases.includes('daypass');
   const requests = opts.phoneTrainer && phases.includes('race-requests');
-  console.log('\nthis LIVE run would leave behind (the app has no delete path for these):');
-  if (gyms) console.log(`  · ${gyms} unlisted, ownerless TEST gym(s) + door code(s) (delete_my_account keeps gym rows); day passes switched off and the code rotated first`);
-  if (passes) console.log('  · 1–2 TEST day-pass rows (user_id set to NULL) — ids in the report; delete them BEFORE the gyms');
-  if (requests) console.log(`  · 5 trainer_request notifications in @${opts.phoneUsername}'s Bildirişlər, sender removed`);
-  if (!gyms && !passes && !requests) console.log('  · nothing');
+  console.log('\nthis LIVE run leaves behind: nothing expected (since schema81 delete_my_account() also removes');
+  console.log('  never-listed gyms, their codes and day passes, programs and the notifications an account caused).');
+  if (gyms || passes) console.log(`  · ${gyms} TEST gym(s)${passes ? ' + day passes' : ''} cannot be re-read with the public key — confirm with read-only SQL`);
+  if (requests) console.log(`  · the TEST requests to @${opts.phoneUsername} and their notifications go with the TEST accounts`);
   const program = phases.includes('program-chat');
   if (coaches) console.log(`  while it runs: ${coaches} «TEST t…» trainer listing(s) are public for a few seconds in setup, then unlisted`);
   if (program) console.log(`  while it runs: up to ${coaches || 3} «TEST proqram …» row(s) are readable in the library (programs_read is public), deleted at cleanup`);

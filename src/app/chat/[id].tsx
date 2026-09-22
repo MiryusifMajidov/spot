@@ -108,11 +108,36 @@ export default function Conversation() {
   // how the old device-only chat felt.
   useEffect(() => {
     if (!threadId) return;
-    return subscribeToThread(threadId, (m) => {
-      setServerMsgs((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
-      if (!m.mine) void markThreadRead(threadId).catch(() => {});
-      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
-    });
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    // Merge by id: a re-read must not drop a bubble that arrived live meanwhile.
+    const reread = () => {
+      getMessages(threadId)
+        .then((ms) =>
+          setServerMsgs((prev) => {
+            const byId = new Map(prev.map((x) => [x.id, x]));
+            for (const m of ms) byId.set(m.id, m);
+            return [...byId.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+          })
+        )
+        .catch(() => {});
+    };
+    const unsubscribe = subscribeToThread(
+      threadId,
+      (m) => {
+        setServerMsgs((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+        if (!m.mine) void markThreadRead(threadId).catch(() => {});
+        requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+      },
+      () => {
+        // The gap between reading the thread and the feed starting (see chat.ts).
+        reread();
+        timer = setTimeout(reread, 1500);
+      }
+    );
+    return () => {
+      if (timer) clearTimeout(timer);
+      unsubscribe();
+    };
   }, [threadId]);
 
   /* Scroll the newest message back into view when the composer rises. The lift
