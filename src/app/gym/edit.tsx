@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, BackHandler, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { PlaceholderImage } from '@/components/PlaceholderImage';
@@ -52,12 +52,21 @@ export default function GymEdit() {
   const [monthly, setMonthly] = useState('');
   const [daypass, setDaypass] = useState('');
   const [amenities, setAmenities] = useState<string[]>([]);
+  /* The owner's two gym-page switches (gyms.allow_day_pass / show_members).
+     They were on OwnedGym with no control anywhere, and the public page never
+     read them — two settings nobody could set, honoured by nobody. */
+  const [allowDayPass, setAllowDayPass] = useState(true);
+  const [showMembers, setShowMembers] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   // Media + location live on the gym row but are not part of OwnedGym, so they
   // are read straight from the table here.
   const [cover, setCover] = useState<string | null>(null);
+  /* Whether `cover` is an ANSWER. Until the read succeeds a null cover means
+     «not known», and «Əsas şəkil əlavə et» over a gym that has a photo is a
+     claim we never checked. */
+  const [coverRead, setCoverRead] = useState<'loading' | 'ok' | 'failed'>('loading');
   const [coverBusy, setCoverBusy] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -93,6 +102,8 @@ export default function GymEdit() {
     setMonthly(gym.priceMonth ? String(gym.priceMonth) : '');
     setDaypass(gym.dayPass ? String(gym.dayPass) : '');
     setAmenities(gym.amenities);
+    setAllowDayPass(gym.allowDayPass);
+    setShowMembers(gym.showMembers);
     setDirty(false);
   }, [gym]);
 
@@ -105,7 +116,12 @@ export default function GymEdit() {
     (async () => {
       const base = await supabase.from('gyms').select('image_url').eq('id', gymId).maybeSingle();
       if (!alive) return;
-      setCover(((base.data as { image_url?: string | null } | null)?.image_url as string) ?? null);
+      if (base.error) {
+        setCoverRead('failed');
+      } else {
+        setCover(((base.data as { image_url?: string | null } | null)?.image_url as string) ?? null);
+        setCoverRead('ok');
+      }
 
       const extra = await supabase.from('gyms').select('photos, lat, lng').eq('id', gymId).maybeSingle();
       if (!alive) return;
@@ -319,7 +335,10 @@ export default function GymEdit() {
     setSaving(true);
     try {
       // Only columns the app actually reads back are written — no decorative settings.
-      await updateMyGym(gym.id, {
+      // The two switches go only when they changed: updateMyGym writes them as a
+      // separate UPDATE and proves it by row count (`extrasSaved`), so an
+      // untouched switch can never turn a good save into a partial-failure toast.
+      const { extrasSaved } = await updateMyGym(gym.id, {
         name: name.trim(),
         district: district.trim(),
         hours,
@@ -327,6 +346,8 @@ export default function GymEdit() {
         price_month: Number(monthly) || 0,
         day_pass: Number(daypass) || 0,
         amenities,
+        ...(allowDayPass !== gym.allowDayPass ? { allow_day_pass: allowDayPass } : {}),
+        ...(showMembers !== gym.showMembers ? { show_members: showMembers } : {}),
       });
       // Coordinates are a separate write: they arrived with a later migration and
       // a failure here must not be reported as a successful profile save.
@@ -342,12 +363,19 @@ export default function GymEdit() {
       }
       setDirty(false);
       state.reload();
-      if (locOk) {
+      if (locOk && extrasSaved) {
         successFeedback();
         toast(t('Zal profili yeniləndi'));
       } else {
         errorFeedback();
-        toast(t('Profil yeniləndi, amma zalın yeri saxlanılmadı'), 'error');
+        toast(
+          !locOk && !extrasSaved
+            ? t('Profil yeniləndi, amma zalın yeri və zal səhifəsi seçimləri saxlanılmadı')
+            : !locOk
+              ? t('Profil yeniləndi, amma zalın yeri saxlanılmadı')
+              : t('Profil yeniləndi, amma zal səhifəsi seçimləri saxlanılmadı'),
+          'error'
+        );
       }
       router.back();
     } catch {
@@ -404,12 +432,21 @@ export default function GymEdit() {
             ) : (
               <PlaceholderImage height={160} icon="cam" style={styles.cover} />
             )}
-            <View style={styles.coverBadge}>
-              <Icon name={cover ? 'edit' : 'plus'} size={13} color={palette.white} />
-              <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>
-                {cover ? t('Əsas şəkli dəyiş') : t('Əsas şəkil əlavə et')}
-              </AppText>
-            </View>
+            {/* «əlavə et» only once the read said there is no photo. After a failed
+                read the tap still picks a new cover — that is the owner's choice —
+                but the badge does not pretend the old one is missing. */}
+            {cover || coverRead !== 'loading' ? (
+              <View style={styles.coverBadge}>
+                <Icon name={cover || coverRead === 'failed' ? 'edit' : 'plus'} size={13} color={palette.white} />
+                <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>
+                  {cover
+                    ? t('Əsas şəkli dəyiş')
+                    : coverRead === 'failed'
+                      ? t('Şəkil oxunmadı · yenisini seç')
+                      : t('Əsas şəkil əlavə et')}
+                </AppText>
+              </View>
+            ) : null}
             {coverBusy ? (
               <View style={styles.coverBusy}>
                 <ActivityIndicator color={palette.white} />
@@ -455,6 +492,16 @@ export default function GymEdit() {
         </View>
         <AppText style={styles.note}>
           {t('Qiymətlər yalnız məlumat üçündür — SPOT ödəniş qəbul etmir, komissiya tutmur, pul zalda ödənilir.')}
+        </AppText>
+
+        {/* What the public gym page shows. Saved with «Saxla», like the rest of the form. */}
+        <View style={styles.listCard}>
+          <SwitchRow label={t('Day-pass qəbul et')} value={allowDayPass} onChange={mark(setAllowDayPass)} />
+          <View style={styles.rowDiv} />
+          <SwitchRow label={t('«Üzvlər» bölməsini göstər')} value={showMembers} onChange={mark(setShowMembers)} />
+        </View>
+        <AppText style={styles.note}>
+          {t('Day-pass düyməsi zal səhifəsində yalnız bu açıq olanda və 1 günlük qiymət yazılanda görünür. «Üzvlər» bağlı olanda zal səhifəsində üzv siyahısı göstərilmir.')}
         </AppText>
 
         {/* About */}
@@ -537,11 +584,11 @@ export default function GymEdit() {
                 })}
               </AppText>
             </View>
-          ) : (
+          ) : mediaReady && extrasOk ? (
             <AppText style={[styles.hint, { marginTop: 10 }]}>
               {t('Hələ pin qoyulmayıb — koordinatı olmayan zal müştəri xəritəsində görünmür.')}
             </AppText>
-          )}
+          ) : null /* still reading, or the read failed (the warning below says so): «no pin» would be a guess */}
           {!extrasOk ? (
             <AppText style={styles.warn}>
               {t('Qalereya və xəritə koordinatları hazırda bazadan oxuna bilmir — dəyişiklik saxlanılmaya bilər.')}
@@ -550,7 +597,7 @@ export default function GymEdit() {
         </View>
 
         <AppText style={[styles.note, styles.noteLast]}>
-          {t('Üzv siyahısında kimin göründüyünü hər üzv özü Məxfilik ayarlarından idarə edir — zal bunu dəyişə bilmir.')}
+          {t('«Üzvlər» bölməsini yuxarıdakı açarla bütövlükdə gizlədə bilərsən. Siyahıda adının görünüb-görünməməsini isə hər üzv özü Məxfilik ayarlarından seçir — zal bunu dəyişə bilmir.')}
         </AppText>
       </ScrollView>
     </Screen>
@@ -578,6 +625,15 @@ function TextRow({
         placeholderTextColor={palette.caption}
         style={{ flex: 1, fontSize: 15, color: palette.inkText }}
       />
+    </View>
+  );
+}
+
+function SwitchRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <View style={styles.priceRow}>
+      <AppText style={{ flex: 1, fontSize: 15, color: palette.inkText }}>{label}</AppText>
+      <Switch value={value} onValueChange={onChange} trackColor={{ true: palette.voltDeep, false: palette.separator }} />
     </View>
   );
 }

@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, Share, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
 import { Icon } from '@/components/Icon';
@@ -154,24 +154,15 @@ export default function GymQr() {
         {code.k === 'none' ? (
           <Button title={busy ? t('Yaradılır…') : t('Kod yarat')} full disabled={busy} onPress={() => void rotate()} style={{ marginTop: 18 }} />
         ) : code.k === 'ready' ? (
-          <>
-            <Button
-              title={t('Kodu paylaş')}
-              variant="secondary"
-              full
-              onPress={() =>
-                Share.share({
-                  message: t('{gym} — SPOT check-in kodu: {code}', { gym: gym.name, code: code.code }),
-                }).catch(() => {})
-              }
-              style={{ marginTop: 18 }}
-            />
-            <PressableScale haptic={false} onPress={askRotate} disabled={busy} style={styles.rotate}>
-              <AppText variant="subhead" color={palette.red}>
-                {busy ? t('Yenilənir…') : t('Yeni kod yarat')}
-              </AppText>
-            </PressableScale>
-          </>
+          /* No «Kodu paylaş». Shared as text, the code checks anybody in from
+             anywhere — paste it into any QR generator at home — until the owner
+             happens to rotate it. The note below tells the owner not to share it;
+             the screen should not offer the one button that does. */
+          <PressableScale haptic={false} onPress={askRotate} disabled={busy} style={styles.rotate}>
+            <AppText variant="subhead" color={palette.red}>
+              {busy ? t('Yenilənir…') : t('Yeni kod yarat')}
+            </AppText>
+          </PressableScale>
         ) : null}
 
         <View style={styles.note}>
@@ -200,7 +191,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   qrBox: { padding: 14, backgroundColor: '#FFFFFF', borderRadius: 14 },
-  rotate: { alignSelf: 'center', paddingVertical: 16 },
+  rotate: { alignSelf: 'center', paddingVertical: 16, marginTop: 6 },
   note: {
     flexDirection: 'row',
     gap: 10,

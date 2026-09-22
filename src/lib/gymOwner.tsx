@@ -21,9 +21,8 @@ import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { palette } from '@/theme';
-import { getMyProfile } from './api';
+import { getMyProfile, getUserId } from './api';
 import { showAccountSwitcher } from './accounts';
-import { getUserId } from './api';
 import { invalidateFocusCache } from './focusFetch';
 import { t } from './i18n';
 import { getGymMembers, getMyGymId } from './roles';
@@ -359,41 +358,23 @@ export async function getGymRoster(gymId: string): Promise<RosterMember[]> {
   });
 }
 
-// -------------------------------------------------------------- check-in ----
-const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1
-
-/** Stable, human-readable check-in code for a gym (shown at the front desk). */
-export function gymShortCode(gymId: string): string {
-  let h1 = 0x811c9dc5;
-  let h2 = 0x01000193;
-  for (let i = 0; i < gymId.length; i++) {
-    h1 = (h1 ^ gymId.charCodeAt(i)) >>> 0;
-    h1 = (h1 * 0x01000193) >>> 0;
-    h2 = (h2 + gymId.charCodeAt(i) * (i + 7)) >>> 0;
-  }
-  let out = '';
-  let n = h1;
-  for (let i = 0; i < 4; i++) {
-    out += CODE_ALPHABET[n % CODE_ALPHABET.length];
-    n = Math.floor(n / CODE_ALPHABET.length);
-  }
-  out += '-';
-  n = h2;
-  for (let i = 0; i < 4; i++) {
-    out += CODE_ALPHABET[n % CODE_ALPHABET.length];
-    n = Math.floor(n / CODE_ALPHABET.length);
-  }
-  return out;
-}
+/* `gymShortCode` used to hash the gym id into a front-desk code on the phone.
+   The code a member scans is the server's (`gym_checkin_codes`, schema74), so
+   nothing called it — and a second, different "code" for the same gym could
+   only ever be shown by mistake. */
 
 // ----------------------------------------------------------- announcement ---
-/** Post an announcement from the gym into the community feed (a real channel). */
+/** Post the owner's announcement into the community feed (a real channel).
+ *
+ *  It appears under the OWNER'S OWN NAME, not as the gym: `author` is sent but
+ *  `community_posts_stamp_author` (schema47) overwrites it with the profile's
+ *  name, and the gym is only the small grey line every member post carries.
+ *  The panel's sheet says exactly that — there is no «post as the gym». */
 export async function postGymAnnouncement(gymName: string, body: string): Promise<void> {
-  // The announcement is LABELLED with the gym's name but AUTHORED by the owner's
-  // profile. Without `author_id` the row was unattributable, and schema29's
-  // policy — which is what stops anyone posting «Iron Bay: zalımız bağlanır» —
-  // refuses it outright. It also makes the post reportable, hideable and
-  // recognisable as the owner's own.
+  // Without `author_id` the row was unattributable, and schema29's policy —
+  // which is what stops anyone posting «Iron Bay: zalımız bağlanır» — refuses
+  // it outright. It also makes the post reportable, hideable and recognisable
+  // as the owner's own.
   const me = await getMyProfile();
   if (!me?.id) throw new Error('no profile');
   const { data, error } = await supabase

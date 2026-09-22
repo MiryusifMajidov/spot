@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { createReport } from '@/lib/api';
+import { tenureLabel } from '@/lib/format';
 import { EmptyNote, GymGate, getGymReviews, replyToReview, useMyGym, type GymReviewRow } from '@/lib/gymOwner';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useT } from '@/lib/useT';
@@ -142,7 +143,9 @@ export default function GymReviews() {
           </View>
         ) : null}
 
-        {failed && !reviews.length ? null : (
+        {/* Not before the read returns: «— · 0 rəy» beside «Yüklənir…» was a count
+            of reviews we had not fetched yet. */}
+        {!loaded || (failed && !reviews.length) ? null : (
           <View style={styles.summary}>
             <AppText style={{ fontSize: 34, fontWeight: '700', letterSpacing: -1 }}>
               {summary.count ? summary.avg.toFixed(1) : '—'}
@@ -164,9 +167,15 @@ export default function GymReviews() {
         )}
 
         {!reviews.length ? (
-          failed ? null : (
+          failed ? null : !loaded ? (
+            // The empty-state copy («Rəy gələndə burada görünəcək») reads as «none
+            // yet» — not something to say about a list still on its way.
+            <View style={[styles.card, { marginTop: 10 }]}>
+              <AppText style={{ fontSize: 14.5, color: palette.textSecondary }}>{t('Yüklənir…')}</AppText>
+            </View>
+          ) : (
             <EmptyNote
-              title={loaded ? t('Hələ rəy yoxdur') : t('Yüklənir…')}
+              title={t('Hələ rəy yoxdur')}
               body={t(
                 'Üzvlər zalında check-in etdikdən sonra rəy yaza bilir. Rəy gələndə burada real olaraq görünəcək — biz nümunə rəy göstərmirik.'
               )}
@@ -180,9 +189,9 @@ export default function GymReviews() {
                   <Avatar name={r.name} size={40} />
                   <View style={{ flex: 1 }}>
                     <AppText variant="headline">{r.name}</AppText>
-                    {r.tenure ? (
+                    {tenureLabel(r.tenure, t) ? (
                       <AppText variant="caption" color={palette.tertiary} style={{ marginTop: 2 }}>
-                        {r.tenure}
+                        {tenureLabel(r.tenure, t)}
                       </AppText>
                     ) : null}
                   </View>

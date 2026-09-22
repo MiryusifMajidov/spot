@@ -14,7 +14,7 @@ import { dayAndMonth } from '@/lib/format';
 import { addTrainerCert, imageTooLargeMessage, pickImage, shootImage, signedCertUrl } from '@/lib/images';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
-import { actionSheet, toast } from '@/store/ui';
+import { actionSheet, confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
 interface VerificationRow {
@@ -44,16 +44,16 @@ function fmt(iso: string | null) {
  * Müəllim doğrulanması — the REAL state of this trainer's verification row.
  * Nothing is assumed: if no row exists the screen says so and offers to create
  * one (that row is what the admin queue sees). Certificate photos are really
- * uploaded into trainers.cert_urls; a failed upload is reported as a failure,
- * never drawn as a finished document.
+ * uploaded into the private `certs` bucket and listed in trainers.cert_urls; a
+ * failed upload is reported as a failure, never drawn as a finished document.
  *
- * Attaching a photo to an ALREADY OPEN request is a separate, weaker promise:
- * trainer_verifications has only an admin UPDATE policy (tv_admin_update), so
- * the trainer's update is filtered out by RLS — zero rows, no error. The screen
- * therefore verifies the write with `.select('id')` and, when nothing came back,
- * says plainly that the document is stored but is NOT on the request the
- * reviewer reads. The reliable path is to upload before sending the request:
- * the INSERT carries the newest certificate and a trainer is allowed to insert.
+ * Which request a new certificate reaches is decided by the database, not by
+ * this screen: tv_own_evidence (schema55) lets a trainer point their OWN request
+ * at new evidence only while it is `pending`. A decided request — rejected, or
+ * approved without a badge — is frozen, so the photo goes into the NEW request
+ * that «Yenidən müraciət et» inserts (the INSERT carries the newest certificate).
+ * Every write is verified with `.select('id')`: an RLS-filtered UPDATE is
+ * `error: null` with zero rows, and that must never read as «attached».
  */
 export default function Verify() {
   const t = useT();
@@ -61,84 +61,166 @@ export default function Verify() {
   const [loading, setLoading] = useState(hasSupabaseConfig);
   const [failed, setFailed] = useState(false);
   const [sending, setSending] = useState(false);
-  const [tick, setTick] = useState(0);
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [certs, setCerts] = useState<string[]>([]);
   const [certBusy, setCertBusy] = useState(false);
+  const [attaching, setAttaching] = useState(false);
   // trainers.verified is the ONLY thing that puts a badge on the public listing.
   // The verification row's status is a request state, not the badge.
   const [badge, setBadge] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!hasSupabaseConfig) {
-        setLoading(false);
-        return;
-      }
-      let alive = true;
-      setLoading(true);
-      (async () => {
-        const me = await getMyProfile();
-        if (!me?.user_id) return { row: null, tid: null as string | null, certs: [] as string[], badge: false };
-        const { data, error } = await supabase
-          .from('trainer_verifications')
-          /* Named columns, not `*`. schema70 took `internal_note` out of the
-             column grant — it is the moderator's working note, and
-             `tv_admin_read` lets the applicant read their own row, so a grant
-             meant the trainer being judged read every word about themselves. A
-             `select('*')` that touches an ungranted column is refused outright,
-             which would have made this screen say the request does not exist. */
-          .select(
-            'id,trainer_id,user_id,status,doc_id_url,doc_cert_url,gym_confirm,intro_video_url,reject_reason,sla_due_at,created_at'
-          )
-          .eq('user_id', me.user_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (error) throw error;
-        /* Both reads now REPORT failure. The error used to be destructured away
-           (supabase-js resolves, it does not throw), so a dropped connection
-           came back as «no trainer row»: a verified coach was told «Nişan aktiv
-           deyil — elanında mavi nişan yoxdur» and invited to re-apply, which
-           filed a duplicate request. And a failed certificate read drew
-           «Hələ yüklənməyib» over certificates that were there.
-           By owner_id, the same key roles.ts uses: rows whose id is not the
-           profile id exist in the live database, and `.eq('id', me.id)` could
-           never find them. */
-        const tr = await supabase.from('trainers').select('id,verified,cert_urls').eq('owner_id', me.id).maybeSingle();
-        if (tr.error) throw tr.error;
-        const trow = tr.data as { id: string; verified?: boolean | null; cert_urls?: string[] | null } | null;
-        const list: string[] = trow?.cert_urls ?? [];
-        const t = trow;
-        return {
-          row: (data as VerificationRow | null) ?? null,
-          tid: t ? t.id : null,
-          certs: list,
-          badge: !!(t as { verified?: boolean } | null)?.verified,
-        };
-      })()
-        .then((r) => {
-          if (!alive) return;
-          setRow(r.row);
-          setTrainerId(r.tid);
-          setCerts(r.certs);
-          setBadge(r.badge);
-          setFailed(false);
-        })
-        .catch(() => alive && setFailed(true))
-        .finally(() => alive && setLoading(false));
-      return () => {
-        alive = false;
+  /* One loader, run on focus AND called directly by «Yenidən cəhd et» and after
+     a new request is sent. Both used to bump a `tick` the effect listed but never
+     read — the compiler may drop such a dependency, and then the retry did
+     nothing and a request sent a second ago still showed «Rədd edildi». */
+  const load = useCallback(() => {
+    if (!hasSupabaseConfig) {
+      setLoading(false);
+      return;
+    }
+    let alive = true;
+    setLoading(true);
+    (async () => {
+      const me = await getMyProfile();
+      if (!me?.user_id) return { row: null, tid: null as string | null, certs: [] as string[], badge: false };
+      const { data, error } = await supabase
+        .from('trainer_verifications')
+        /* Named columns, not `*`. schema70 took `internal_note` out of the
+           column grant — it is the moderator's working note, and
+           `tv_admin_read` lets the applicant read their own row, so a grant
+           meant the trainer being judged read every word about themselves. A
+           `select('*')` that touches an ungranted column is refused outright,
+           which would have made this screen say the request does not exist. */
+        .select(
+          'id,trainer_id,user_id,status,doc_id_url,doc_cert_url,gym_confirm,intro_video_url,reject_reason,sla_due_at,created_at'
+        )
+        .eq('user_id', me.user_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      /* Both reads now REPORT failure. The error used to be destructured away
+         (supabase-js resolves, it does not throw), so a dropped connection
+         came back as «no trainer row»: a verified coach was told «Nişan aktiv
+         deyil — elanında mavi nişan yoxdur» and invited to re-apply, which
+         filed a duplicate request. And a failed certificate read drew
+         «Hələ yüklənməyib» over certificates that were there.
+         By owner_id, the same key roles.ts uses: rows whose id is not the
+         profile id exist in the live database, and `.eq('id', me.id)` could
+         never find them. */
+      const tr = await supabase.from('trainers').select('id,verified,cert_urls').eq('owner_id', me.id).maybeSingle();
+      if (tr.error) throw tr.error;
+      const trow = tr.data as { id: string; verified?: boolean | null; cert_urls?: string[] | null } | null;
+      return {
+        row: (data as VerificationRow | null) ?? null,
+        tid: trow ? trow.id : null,
+        certs: trow?.cert_urls ?? [],
+        badge: !!trow?.verified,
       };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tick])
-  );
+    })()
+      .then((r) => {
+        if (!alive) return;
+        setRow(r.row);
+        setTrainerId(r.tid);
+        setCerts(r.certs);
+        setBadge(r.badge);
+        setFailed(false);
+      })
+      .catch(() => alive && setFailed(true))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  /** Really upload a certificate photo and attach it to the open request. */
+  useFocusEffect(load);
+
+  const status = row?.status ?? null;
+  // Approved on paper but the listing carries no badge — a real, reachable state
+  // that used to be shown as «Təsdiqləndi · Profilin mavi nişanla görünür».
+  const approvedNoBadge = status === 'approved' && !badge;
+  const canApply = status === null || status === 'rejected' || approvedNoBadge;
+
+  /** Point the open request at `path`. True only when the database hands the row
+   *  back — a request decided in the meantime is filtered out by RLS with no error. */
+  const attach = async (req: VerificationRow, path: string) => {
+    try {
+      const { data: hit, error } = await supabase
+        .from('trainer_verifications')
+        .update({ doc_cert_url: path })
+        .eq('id', req.id)
+        .select('id');
+      if (error || !(hit as { id: string }[] | null)?.length) return false;
+    } catch {
+      return false;
+    }
+    setRow({ ...req, doc_cert_url: path });
+    return true;
+  };
+
+  // The file IS stored; only the link to the request failed. Zero rows means the
+  // request is no longer what this screen drew (most likely decided meanwhile), so
+  // re-read it rather than send anyone to support: a rejected request then shows
+  // «Yenidən müraciət et», and that new request carries this certificate.
+  const notAttached = () => {
+    errorFeedback();
+    toast(t('Sertifikat saxlanıldı, amma sorğuna əlavə olunmadı — sorğunun vəziyyəti yenidən yoxlanılır'), 'error');
+    load();
+  };
+
+  /** File a new request carrying `cert` — by default the newest upload
+   *  (addTrainerCert appends, so certs[0] is the oldest photo, not the evidence
+   *  the reviewer should be looking at). */
+  const submit = async (cert?: string) => {
+    if (sending) return;
+    if (!hasSupabaseConfig) {
+      toast(t('Doğrulama üçün server bağlantısı lazımdır'), 'error');
+      return;
+    }
+    // The listing the loader found by owner_id. trainer_verifications.trainer_id
+    // references trainers(id); the old re-read by profile id told a trainer whose
+    // listing id differs to «create a profile» they already had.
+    if (!trainerId) {
+      toast(t('Əvvəlcə müəllim profilini yarat'), 'error');
+      return;
+    }
+    const doc = cert ?? (certs.length ? certs[certs.length - 1] : null);
+    setSending(true);
+    try {
+      const me = await getMyProfile();
+      if (!me?.user_id) throw new Error('no profile');
+      const { error } = await supabase
+        .from('trainer_verifications')
+        // The INSERT is the one write a trainer may make once a request is
+        // decided, so the evidence travels with it.
+        .insert({
+          trainer_id: trainerId,
+          user_id: me.user_id,
+          status: 'pending',
+          gym_confirm: false,
+          doc_cert_url: doc,
+        });
+      if (error) throw error;
+      toast(doc ? t('Doğrulama sorğusu göndərildi — sertifikatın da əlavə olundu') : t('Doğrulama sorğusu göndərildi — sertifikat əlavə etməmisən'), doc ? 'success' : 'info');
+      load();
+    } catch {
+      toast(t('Sorğunu göndərmək alınmadı — internetini yoxla'), 'error');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  /** Really upload a certificate photo, then put it where a reviewer will see it. */
   const addCert = async (source: 'camera' | 'library') => {
     if (certBusy) return;
     if (!hasSupabaseConfig) {
       toast(t('Sənəd yükləmək üçün server bağlantısı lazımdır'), 'error');
+      return;
+    }
+    // After a failed read trainerId is simply unknown, not absent — «create your
+    // trainer profile first» would be a claim about a listing nobody has read.
+    if (failed) {
+      toast(t('Doğrulama statusunu gətirmək alınmadı.'), 'error');
       return;
     }
     if (!trainerId) {
@@ -157,34 +239,27 @@ export default function Verify() {
       const next = await addTrainerCert(trainerId, local);
       setCerts(next);
       // addTrainerCert APPENDS, so the newest evidence is the last element.
-      const newest = next.length ? next[next.length - 1] : null;
-      // Keep an open request pointing at the newest evidence — if the database
-      // lets us. trainer_verifications currently has only an admin UPDATE policy
-      // (tv_admin_update), so a trainer's write is filtered out by RLS: zero rows
-      // changed and NO error. Checking `error` alone would report a success that
-      // never happened, so ask for the row back and believe only that.
-      if (row && row.status !== 'approved') {
-        const { data: hit, error } = await supabase
-          .from('trainer_verifications')
-          .update({ doc_cert_url: newest })
-          .eq('id', row.id)
-          .select('id');
-        const attached = !error && !!(hit as { id: string }[] | null)?.length;
-        if (!attached) {
-          // The file IS uploaded — it is in the private certs bucket under this
-          // trainer. What failed is attaching it to the open request, and the
-          // reviewer's queue row still shows no document. Say exactly that.
-          errorFeedback();
-          toast(t('Sertifikat saxlancda saxlanıldı, amma açıq sorğuna əlavə olunmadı — dəstəyə yaz'), 'error');
+      const newest = next[next.length - 1];
+      if (row?.status === 'pending') {
+        if (!(await attach(row, newest))) {
+          notAttached();
           return;
         }
-        setRow({ ...row, doc_cert_url: newest });
+        successFeedback();
+        toast(t('Sertifikat yükləndi və sorğuna əlavə olundu'));
+        return;
       }
       successFeedback();
-      // Without an open request the file is stored but nothing is queued — say so.
-      if (!row) toast(t('Sertifikat yükləndi — yoxlanması üçün doğrulama sorğusu göndər'), 'info');
-      else if (row.status === 'approved') toast(t('Sertifikat saxlanıldı — açıq sorğun yoxdur, ona görə növbəyə düşmür'), 'info');
-      else toast(t('Sertifikat yükləndi və sorğuna əlavə olundu'));
+      if (row && canApply) {
+        // A decided request is frozen, so the photo cannot join it — it joins the
+        // new one. Offer that step right here instead of leaving the trainer to
+        // work out that the button at the top is the way.
+        confirm(t('Sertifikat yükləndi'), t('Köhnə sorğuna artıq baxılıb — ona sənəd əlavə olunmur. Bu sertifikatla yeni sorğu göndərilsin?'), [
+          { label: t('Sonra'), style: 'cancel' },
+          { label: t('Yenidən müraciət et'), style: 'primary', onPress: () => void submit(newest) },
+        ]);
+      } else if (!row) toast(t('Sertifikat yükləndi — yoxlanması üçün doğrulama sorğusu göndər'), 'info');
+      else toast(t('Sertifikat saxlanıldı — açıq sorğun yoxdur, ona görə növbəyə düşmür'), 'info');
     } catch (e) {
       errorFeedback();
       /* A diploma photographed at full resolution is routinely over the 10 MB
@@ -196,10 +271,24 @@ export default function Verify() {
     }
   };
 
+  /** A pending request whose document link is empty: fixable from here. */
+  const attachNewest = async () => {
+    if (attaching || row?.status !== 'pending' || !certs.length) return;
+    setAttaching(true);
+    try {
+      if (await attach(row, certs[certs.length - 1])) {
+        successFeedback();
+        toast(t('Sertifikat sorğuna əlavə olundu'));
+      } else notAttached();
+    } finally {
+      setAttaching(false);
+    }
+  };
+
   const pickCert = () =>
     actionSheet({
       title: t('Sertifikat əlavə et'),
-      message: t('Məşqçi sertifikatının şəklini yüklə. Sənəd qapalı saxlancda saxlanılır — yalnız SPOT komandası açır.'),
+      message: t('Məşqçi sertifikatının şəklini yüklə. Sənəd qapalı saxlancda saxlanılır — onu yalnız sən və SPOT komandası görür.'),
       actions: [
         { label: t('Kamera'), onPress: () => addCert('camera') },
         { label: t('Qalereya'), onPress: () => addCert('library') },
@@ -207,48 +296,6 @@ export default function Verify() {
       ],
     });
 
-  const submit = async () => {
-    if (sending) return;
-    if (!hasSupabaseConfig) {
-      toast(t('Doğrulama üçün server bağlantısı lazımdır'), 'error');
-      return;
-    }
-    setSending(true);
-    try {
-      const me = await getMyProfile();
-      if (!me?.user_id) throw new Error('no profile');
-      const { data: tr } = await supabase.from('trainers').select('id').eq('id', me.id).maybeSingle();
-      if (!tr) {
-        toast(t('Əvvəlcə müəllim profilini yarat'), 'error');
-        return;
-      }
-      const { error } = await supabase
-        .from('trainer_verifications')
-        // The INSERT is the one write on this table a trainer is allowed, so it must
-        // carry the newest certificate (addTrainerCert appends — certs[0] is the
-        // oldest photo, not the evidence the reviewer should be looking at).
-        .insert({
-          trainer_id: me.id,
-          user_id: me.user_id,
-          status: 'pending',
-          gym_confirm: false,
-          doc_cert_url: certs.length ? certs[certs.length - 1] : null,
-        });
-      if (error) throw error;
-      toast(certs.length ? t('Doğrulama sorğusu göndərildi — sertifikatın da əlavə olundu') : t('Doğrulama sorğusu göndərildi — sertifikat əlavə etməmisən'), certs.length ? 'success' : 'info');
-      setTick((n) => n + 1);
-    } catch {
-      toast(t('Sorğunu göndərmək alınmadı — internetini yoxla'), 'error');
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const status = row?.status ?? null;
-  // Approved on paper but the listing carries no badge — a real, reachable state
-  // that used to be shown as «Təsdiqləndi · Profilin mavi nişanla görünür».
-  const approvedNoBadge = status === 'approved' && !badge;
-  const canApply = status === null || status === 'rejected' || approvedNoBadge;
   const statusTone =
     approvedNoBadge
       ? { bg: 'rgba(255,149,0,0.16)', fg: '#8A5A00', icon: 'shield' as IconName, label: t('Nişan aktiv deyil') }
@@ -304,7 +351,7 @@ export default function Verify() {
                 activeScale={0.97}
                 accessibilityRole="button"
                 accessibilityLabel={t('Yenidən cəhd et')}
-                onPress={() => setTick((n) => n + 1)}
+                onPress={() => void load()}
                 style={styles.primaryBtn}>
                 <AppText style={{ color: palette.white, fontSize: 13.5, fontWeight: '600' }}>{t('Yenidən cəhd et')}</AppText>
               </PressableScale>
@@ -314,7 +361,7 @@ export default function Verify() {
                 disabled={sending}
                 accessibilityRole="button"
                 accessibilityLabel={t('Doğrulama sorğusu göndər')}
-                onPress={submit}
+                onPress={() => void submit()}
                 style={[styles.primaryBtn, sending && { opacity: 0.5 }]}>
                 <AppText style={{ color: palette.white, fontSize: 13.5, fontWeight: '600' }}>
                   {sending ? t('Göndərilir…') : status === null ? t('Doğrulamaya başla') : t('Yenidən müraciət et')}
@@ -355,8 +402,19 @@ export default function Verify() {
               </View>
               <View style={{ flex: 1 }}>
                 <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{t('Məşqçi sertifikatı')}</AppText>
+                {/* «Hələ yüklənməyib» is a claim about trainers.cert_urls, so it waits
+                    for a read that came back — while loading, or after a failed
+                    read, the empty list is only the initial state. */}
                 <AppText style={{ fontSize: 12, marginTop: 4, color: certs.length ? palette.voltDeep : palette.tertiary }}>
-                  {certs.length ? t('{n} şəkil yükləndi', { n: certs.length, count: certs.length }) : t('Hələ yüklənməyib')}
+                  {certs.length
+                    ? t('{n} şəkil yükləndi', { n: certs.length, count: certs.length })
+                    : !hasSupabaseConfig
+                      ? t('Server bağlantısı yoxdur')
+                      : failed
+                        ? t('Doğrulama statusunu gətirmək alınmadı.')
+                        : loading
+                          ? t('Yüklənir…')
+                          : t('Hələ yüklənməyib')}
                 </AppText>
               </View>
             </View>
@@ -364,30 +422,59 @@ export default function Verify() {
             {certs.length > 0 ? (
               <View style={styles.thumbs}>
                 {certs.map((u, i) => (
-                  <CertThumb key={u} uri={u} index={i} />
+                  <CertThumb key={u} path={u} index={i} />
                 ))}
               </View>
             ) : null}
 
             {/* Uploaded and «in the reviewer's hands» are not the same thing. The
-                open request carries exactly one document url; if it is empty the
-                reviewer sees no document, however many photos are in the bucket. */}
-            {certs.length > 0 && row && row.status !== 'approved' && !row.doc_cert_url ? (
+                request carries exactly one document url; if it is empty the
+                reviewer sees no document, however many photos are in the bucket.
+                A pending request can still be pointed at one, so the fix is a
+                button here — not a message telling the trainer to write to support. */}
+            {certs.length > 0 && row?.status === 'pending' && !row.doc_cert_url ? (
               <View style={styles.warnRow}>
                 <Icon name="shield" size={14} color="#8A5A00" />
-                <AppText style={{ fontSize: 12, lineHeight: 17, color: '#8A5A00', flex: 1 }}>
-                  {t('Şəkillər saxlancdadır, amma açıq doğrulama sorğuna bağlanmayıb — yoxlayan onları görmür. Dəstəyə yaz ki, sorğuna əlavə etsinlər.')}
+                <View style={{ flex: 1 }}>
+                  <AppText style={{ fontSize: 12, lineHeight: 17, color: '#8A5A00' }}>
+                    {t('Şəkillər saxlancdadır, amma açıq doğrulama sorğuna bağlanmayıb — yoxlayan onları görmür.')}
+                  </AppText>
+                  <PressableScale
+                    activeScale={0.97}
+                    disabled={attaching}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('Ən son şəkli sorğuna əlavə et')}
+                    onPress={() => void attachNewest()}
+                    style={[styles.warnBtn, attaching && { opacity: 0.5 }]}>
+                    <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.inkText }}>
+                      {attaching ? t('Əlavə olunur…') : t('Ən son şəkli sorğuna əlavə et')}
+                    </AppText>
+                  </PressableScale>
+                </View>
+              </View>
+            ) : null}
+
+            {/* A decided request is frozen (tv_own_evidence covers `pending` only).
+                Say where a new photo goes instead of letting an upload look like
+                it reached the old request. */}
+            {row && canApply ? (
+              <View style={styles.noteRow}>
+                <Icon name="shield" size={14} color={palette.textSecondary} />
+                <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.textSecondary, flex: 1 }}>
+                  {t('Baxılmış sorğuya sənəd əlavə olunmur. Ən son yüklədiyin şəkil «Yenidən müraciət et» ilə göndərilən yeni sorğuya əlavə olunur.')}
                 </AppText>
               </View>
             ) : null}
 
+            {/* Not while the first read is in flight: trainerId is still empty then,
+                and addCert would answer «Əvvəlcə müəllim profilini yarat». */}
             <PressableScale
               activeScale={0.97}
-              disabled={certBusy}
+              disabled={certBusy || loading}
               accessibilityRole="button"
               accessibilityLabel={t('Sertifikat şəkli əlavə et')}
               onPress={pickCert}
-              style={[styles.addBtn, certBusy && { opacity: 0.5 }]}>
+              style={[styles.addBtn, (certBusy || loading) && { opacity: 0.5 }]}>
               <Icon name={certBusy ? 'clock' : 'plus'} size={15} color={palette.inkText} />
               <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>
                 {certBusy ? t('Yüklənir…') : certs.length ? t('Daha bir şəkil') : t('Sertifikat şəkli əlavə et')}
@@ -395,7 +482,7 @@ export default function Verify() {
             </PressableScale>
 
             <AppText style={{ fontSize: 11.5, lineHeight: 16, color: palette.caption, marginTop: 10 }}>
-              {t('Sənədlər qapalı saxlancdadır — yalnız SPOT komandası yoxlayır, profilində göstərilmir. Ona görə burada şəkil əvəzinə sənəd nişanı görə bilərsən.')}
+              {t('Sənədlər qapalı saxlancdadır — onları yalnız sən və SPOT komandası görür, profilində göstərilmir.')}
             </AppText>
           </View>
 
@@ -415,7 +502,7 @@ export default function Verify() {
         <View style={styles.disclaimer}>
           <Icon name="shield" size={16} color={palette.textSecondary} />
           <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, flex: 1 }}>
-            {t('Yüklədiyin sertifikatlar qapalı saxlancda saxlanılır. Yoxlayana yalnız doğrulama sorğusuna bağlanmış sənəd çatır — ona görə sertifikatı sorğunu göndərməzdən əvvəl yüklə. Doğrulanma olmadan da profil yarada və pulsuz proqram paylaşa bilərsən; sadəcə nişansız görünürsən.')}
+            {t('Yüklədiyin sertifikatlar qapalı saxlancda saxlanılır. Yoxlayan sorğuna bağlanmış ən son sertifikatı görür — açıq sorğun varsa, yeni yüklədiyin şəkil ona özü əlavə olunur. Doğrulanma olmadan da profil yarada və pulsuz proqram paylaşa bilərsən; sadəcə nişansız görünürsən.')}
           </AppText>
         </View>
       </ScrollView>
@@ -424,22 +511,71 @@ export default function Verify() {
 }
 
 /**
- * Certificates live in a PRIVATE bucket, so their url is not necessarily
- * viewable from the app. Rather than draw an empty box that looks like a broken
- * photo, fall back to an honest "document uploaded" tile.
+ * One uploaded certificate, drawn from the PRIVATE `certs` bucket. cert_urls
+ * holds storage paths, so the picture needs a short-lived signed link — the
+ * bucket's read policy lets the uploader sign their own objects. When no link can
+ * be made (offline, object gone) or the image will not load, the tile says just
+ * that: the document IS uploaded, only its preview did not open, and a tap asks
+ * again. An empty box would look like a broken upload; a blank, like none at all.
  */
-function CertThumb({ uri, index }: { uri: string; index: number }) {
+function CertThumb({ path, index }: { path: string; index: number }) {
   const t = useT();
-  const [broken, setBroken] = useState(!/^https?:\/\//i.test(uri));
-  if (broken) {
+  // undefined while signing, null when no link could be made.
+  const [src, setSrc] = useState<string | null | undefined>(undefined);
+  const [broken, setBroken] = useState(false);
+
+  const sign = useCallback(() => {
+    let alive = true;
+    signedCertUrl(path).then((u) => {
+      if (alive) setSrc(u);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [path]);
+
+  useEffect(() => sign(), [sign]);
+
+  // Calls the signer itself — not a counter the effect would have to notice.
+  const retry = () => {
+    setSrc(undefined);
+    setBroken(false);
+    sign();
+  };
+
+  if (src === undefined) {
     return (
       <View style={[styles.thumb, styles.thumbFallback]}>
-        <Icon name="shield" size={18} color={palette.tertiary} />
-        <AppText style={{ fontSize: 10.5, color: palette.tertiary, marginTop: 4 }}>{t('{n}. sənəd', { n: index + 1 })}</AppText>
+        <ActivityIndicator size="small" color={palette.tertiary} />
       </View>
     );
   }
-  return <Image source={{ uri }} style={styles.thumb} contentFit="cover" transition={150} onError={() => setBroken(true)} />;
+  if (src === null || broken) {
+    return (
+      <PressableScale
+        activeScale={0.95}
+        accessibilityRole="button"
+        accessibilityLabel={t('{n}. sənədin önizləməsi açılmadı — yenidən cəhd et', { n: index + 1 })}
+        onPress={retry}
+        style={[styles.thumb, styles.thumbFallback]}>
+        <Icon name="shield" size={18} color={palette.tertiary} />
+        <AppText style={{ fontSize: 10.5, color: palette.tertiary, marginTop: 4 }}>{t('{n}. sənəd', { n: index + 1 })}</AppText>
+        <AppText style={{ fontSize: 9.5, color: palette.caption, marginTop: 1 }}>{t('Açılmadı')}</AppText>
+      </PressableScale>
+    );
+  }
+  return (
+    <Image
+      // Cached by the object path, not the link: every signing mints a new token,
+      // and keying by it would download the same diploma again on every visit.
+      source={{ uri: src, cacheKey: `cert:${path}` }}
+      accessibilityLabel={t('{n}. sənəd', { n: index + 1 })}
+      style={styles.thumb}
+      contentFit="cover"
+      transition={150}
+      onError={() => setBroken(true)}
+    />
+  );
 }
 
 function DocRow({ title, done, pendingText }: { title: string; done: boolean; pendingText?: string }) {
@@ -474,4 +610,6 @@ const styles = StyleSheet.create({
   docIcon: { width: 40, height: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   disclaimer: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: palette.element, borderRadius: 14, padding: 14, marginTop: 16 },
   warnRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: 'rgba(255,149,0,0.16)', borderRadius: 12, padding: 11, marginTop: 12 },
+  warnBtn: { alignSelf: 'flex-start', height: 32, paddingHorizontal: 12, borderRadius: 10, backgroundColor: palette.white, justifyContent: 'center', marginTop: 9 },
+  noteRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: palette.element, borderRadius: 12, padding: 11, marginTop: 12 },
 });

@@ -58,9 +58,10 @@ interface PanelErrors {
   occupancy: boolean;
   passes: boolean;
   location: boolean;
+  cover: boolean;
 }
 
-const NO_ERRORS: PanelErrors = { roster: false, occupancy: false, passes: false, location: false };
+const NO_ERRORS: PanelErrors = { roster: false, occupancy: false, passes: false, location: false, cover: false };
 
 /** Resolve a promise into a result we can tell apart from an empty answer. */
 async function settle<T>(p: Promise<T>): Promise<{ ok: true; value: T } | { ok: false }> {
@@ -117,12 +118,20 @@ export default function GymPanel() {
     const base = await supabase.from('gyms').select('image_url').eq('id', gymId).maybeSingle();
     const geo = await supabase.from('gyms').select('lat, lng').eq('id', gymId).maybeSingle();
     const g = (geo.error ? null : (geo.data as { lat?: number | null; lng?: number | null } | null)) ?? null;
-    setMedia({
-      cover: ((base.data as { image_url?: string | null } | null)?.image_url as string) ?? null,
+    // A failed cover read keeps the photo we already had: a pull-to-refresh on a
+    // bad connection used to swap the gym's real photo for «Zalın şəklini əlavə et».
+    setMedia((m) => ({
+      cover: base.error ? m.cover : (((base.data as { image_url?: string | null } | null)?.image_url as string) ?? null),
       lat: g?.lat != null ? Number(g.lat) : null,
       lng: g?.lng != null ? Number(g.lng) : null,
+    }));
+    setErrors({
+      roster: !roster.ok,
+      occupancy: !occ.ok,
+      passes: !passes.ok,
+      location: !!geo.error,
+      cover: !!base.error,
     });
-    setErrors({ roster: !roster.ok, occupancy: !occ.ok, passes: !passes.ok, location: !!geo.error });
     setLoaded(true);
   }, []);
 
@@ -187,17 +196,25 @@ export default function GymPanel() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.tertiary} />}
         contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: spacing.screen, paddingBottom: 24 }}>
-        {/* The gym's own cover photo — a placeholder until the owner uploads one. */}
+        {/* The gym's own cover photo — a placeholder until the owner uploads one.
+            «Zalın şəklini əlavə et» says the gym HAS no photo, so it is drawn only
+            after a read that succeeded — not while loading, not after a failure. */}
         <PressableScale activeScale={0.98} onPress={() => router.push('/gym/edit')} style={styles.coverWrap}>
           {media.cover ? (
             <Image source={{ uri: media.cover }} style={styles.cover} contentFit="cover" transition={140} />
           ) : (
             <>
               <PlaceholderImage height={148} icon="cam" style={styles.cover} />
-              <View style={styles.coverBadge}>
-                <Icon name="plus" size={13} color={palette.white} />
-                <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>{t('Zalın şəklini əlavə et')}</AppText>
-              </View>
+              {errors.cover ? (
+                <View style={styles.coverBadge}>
+                  <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>{t('Zalın şəkli oxunmadı')}</AppText>
+                </View>
+              ) : loaded ? (
+                <View style={styles.coverBadge}>
+                  <Icon name="plus" size={13} color={palette.white} />
+                  <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>{t('Zalın şəklini əlavə et')}</AppText>
+                </View>
+              ) : null}
             </>
           )}
         </PressableScale>
@@ -350,13 +367,28 @@ export default function GymPanel() {
               </AppText>
             </View>
           ) : (
+            /* «…seçəndə burada görünəcək» promises passes that cannot come when
+               the gym page shows no day-pass button at all — which it does not
+               while the owner has day passes switched off, or has no price. */
             <EmptyNote
               inset
-              title={loaded ? t('Bu gün day-pass qeydə alınmayıb') : t('Yüklənir…')}
+              title={
+                !loaded
+                  ? t('Yüklənir…')
+                  : !gym.allowDayPass
+                    ? t('Day-pass bağlıdır')
+                    : gym.dayPass <= 0
+                      ? t('Day-pass qiyməti yazılmayıb')
+                      : t('Bu gün day-pass qeydə alınmayıb')
+              }
               body={
-                loaded
-                  ? t('Üzv olmayan biri zalını day-pass ilə seçəndə burada görünəcək. SPOT ödəniş qəbul etmir — pul zalda ödənilir.')
-                  : t('Day-pass qeydiyyatı oxunur.')
+                !loaded
+                  ? t('Day-pass qeydiyyatı oxunur.')
+                  : !gym.allowDayPass
+                    ? t('Zal səhifəsində day-pass düyməsi göstərilmir. «Profil» bölməsində yenidən aça bilərsən.')
+                    : gym.dayPass <= 0
+                      ? t('Qiymət olmadan zal səhifəsində day-pass düyməsi görünmür. «Profil» bölməsində 1 günlük qiyməti yaz.')
+                      : t('Üzv olmayan biri zalını day-pass ilə seçəndə burada görünəcək. SPOT ödəniş qəbul etmir — pul zalda ödənilir.')
               }
             />
           )}
@@ -452,8 +484,12 @@ export default function GymPanel() {
         <View style={styles.modalBg}>
           <View style={[styles.sheet, { paddingBottom: (kb > 0 ? kb : insets.bottom) + 16 }]}>
             <AppText variant="headline">{t('Elan yaz')}</AppText>
+            {/* Not «{gym} adından»: the database stamps the post with the owner's
+                own profile name (schema47), and the gym is only the grey line
+                under it. Promising a gym-branded post the feed never draws is
+                how an owner ends up surprised to see their personal name. */}
             <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 6 }}>
-              {t('Elan SPOT icma lentinə {gym} adından yerləşdirilir. Push bildiriş göndərilmir.', { gym: gym.name })}
+              {t('Elan icma lentində sənin öz adınla paylaşılır — {gym} adı yalnız adının altındakı kiçik sətirdə görünür. Push bildiriş göndərilmir.', { gym: gym.name })}
             </AppText>
             <TextInput
               value={announceText}

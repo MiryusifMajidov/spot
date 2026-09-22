@@ -110,3 +110,15 @@ export function timeAgo(iso: string, now: number, tr: typeof t = t): string {
   if (days === 1) return tr('Dünən');
   return tr('{n} gün', { n: days, count: days });
 }
+
+/** A review's «N check-in edib» line. The reviewer's phone writes it once, in
+ *  Azerbaijani, when the review is posted (discover/gym/[id].tsx), so shown as
+ *  stored it stayed Azerbaijani in ru/en and read like a live count. The number
+ *  is re-rendered through t() and dated to the review. Any other text is not
+ *  something the app wrote, so it is not shown. */
+export function tenureLabel(raw: string | null | undefined, tr: typeof t = t): string | null {
+  const m = /^\s*(\d{1,5}) check-in edib\s*$/.exec(raw ?? '');
+  if (!m) return null;
+  const n = Number(m[1]);
+  return tr('Rəy yazanda {n} check-in etmişdi', { n, count: n });
+}

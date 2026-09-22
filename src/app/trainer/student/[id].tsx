@@ -8,20 +8,13 @@ import { Avatar } from '@/components/ui/Avatar';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
-import { timeAgo } from '@/lib/format';
-import { assignStudentProgram } from '@/lib/roles';
+import { assignStudentProgram, endStudent } from '@/lib/roles';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { useDb } from '@/store/db';
-import { toast } from '@/store/ui';
+import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
-import { useMyStudents } from '../students';
-
-/** «5 dəq» / «Dünən», in the language the person chose. `timeAgo` takes the
- *  clock as an argument so the formatter itself stays pure; reading it stays
- *  here, exactly where the old `timeAgoAz` read it. */
-const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) => string) =>
-  timeAgo(iso, Date.now(), tr);
+import { studentDateLine, useMyStudents } from '../students';
 
 /**
  * One student, seen by their trainer.
@@ -38,10 +31,22 @@ const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) =
  * must say so before the trainer types something they would not say out loud.
  */
 export default function StudentDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  /* This is a hidden TAB (trainer/_layout.tsx), so it stays mounted and only its
+     params change when another student is opened. The draft below — the
+     program picked, the note typed — used to outlive the student it was
+     written for: pick and type for A, go back, open B, and B's screen showed
+     A's choice and note, and «Proqramı təyin et» sent them to B's «Məşq» tab.
+     A key per student starts every student from their own server values. */
+  return <StudentDetailBody key={id} />;
+}
+
+function StudentDetailBody() {
   const t = useT();
+  const fmt = useFormat();
   const { id, name: nameParam } = useLocalSearchParams<{ id: string; name?: string }>();
   const router = useRouter();
-  const { active, loading, offline, failed, reload } = useMyStudents();
+  const { active, loading, offline, failed, noListing, reload } = useMyStudents();
   const myPrograms = useDb((s) => s.myPrograms);
 
   const student = useMemo(() => active.find((s) => s.profileId === id) ?? null, [active, id]);
@@ -70,6 +75,7 @@ export default function StudentDetail() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [ending, setEnding] = useState(false);
 
   /* Android edge-to-edge does not resize the window when the IME opens, so the
      note field and the «Proqramı təyin et» button below it end up under the
@@ -89,7 +95,7 @@ export default function StudentDetail() {
   const noteValue = note ?? student?.programNote ?? '';
 
   const save = async () => {
-    if (!student || !title || saving) return;
+    if (!student || !title || saving || ending) return;
     setSaving(true);
     try {
       // Keep the link the server already has when nothing on this phone was
@@ -104,12 +110,55 @@ export default function StudentDetail() {
       // student_programs on every focus. Say what happened, not less.
       toast(t('{name} üçün proqram təyin edildi — «Məşq» səhifəsində ona görünür', { name }));
       reload();
-      router.back();
+      // Not router.back(): in these Tabs it lands on the Panel (see end()).
+      router.navigate('/trainer/students');
     } catch {
       toast(t('Yadda saxlamaq alınmadı — internetini yoxla'), 'error');
     } finally {
       setSaving(false);
     }
+  };
+
+  /* Every sentence in this dialog is what `ended` really does on the server —
+     see endStudent in src/lib/roles.ts. Not «ona bildiriləcək»: no notification
+     fires for `ended`, so the advice is to write BEFORE ending, while opening a
+     thread is still allowed. */
+  const end = () => {
+    if (!student || ending || saving) return;
+    const s = student;
+    const body = [
+      t('{name} «Şagirdlər» və «Söhbət» siyahılarından çıxacaq. Ona bildiriş getməyəcək — deməyə sözün varsa, əvvəlcə ona yaz.', { name }),
+      s.programTitle ? t('Təyin etdiyin proqram və qeydin onun «Məşq» səhifəsində qalacaq.') : null,
+      t('Əvvəlki yazışmanız silinmir. O, sənə yenidən sorğu göndərə bilər.'),
+    ]
+      .filter(Boolean)
+      .join(' ');
+    confirm(t('{name} şagirdlikdən çıxarılsın?', { name }), body, [
+      { label: t('Ləğv et'), style: 'cancel' },
+      {
+        label: t('Şagirdlikdən çıxar'),
+        style: 'destructive',
+        onPress: async () => {
+          setEnding(true);
+          try {
+            await endStudent(s.requestId);
+            toast(t('{name} artıq şagirdin deyil', { name }));
+            // To the list itself, not router.back(): in these Tabs «back» goes
+            // to the FIRST tab (backBehavior 'firstRoute'), i.e. the Panel, so
+            // the trainer never saw the list the student left. Focusing the
+            // Şagirdlər tab is the reload — useMyStudents fetches on focus.
+            router.navigate('/trainer/students');
+          } catch {
+            // Zero rows can also mean the row changed under this screen; re-read
+            // so what stays on screen is the server's current answer.
+            toast(t('Şagirdlikdən çıxarmaq alınmadı — yenidən cəhd et'), 'error');
+            reload();
+          } finally {
+            setEnding(false);
+          }
+        },
+      },
+    ]);
   };
 
   if (loading && !student) {
@@ -129,21 +178,32 @@ export default function StudentDetail() {
         <NavBar title={name} />
         <View style={{ paddingHorizontal: spacing.screen }}>
           <View style={styles.card}>
+            {/* `noListing` before `failed`, which is also true then. */}
             <AppText style={{ fontSize: 15, fontWeight: '600', marginBottom: 6 }}>
-              {offline ? t('Server bağlantısı yoxdur') : failed ? t('Yüklənmədi') : t('Şagird tapılmadı')}
+              {offline
+                ? t('Server bağlantısı yoxdur')
+                : noListing
+                  ? t('Müəllim elanın serverdə tapılmadı')
+                  : failed
+                    ? t('Yüklənmədi')
+                    : t('Şagird tapılmadı')}
             </AppText>
             <AppText style={{ fontSize: 13.5, lineHeight: 19, color: palette.textSecondary }}>
               {offline
                 ? t('Şagird məlumatları serverdən gəlir. Bağlantı qurulanda bu səhifə açılacaq.')
-                : failed
-                  ? t('Məlumatı gətirmək alınmadı. Yenidən cəhd et.')
-                  : t('Bu şagird artıq siyahında deyil — sorğu ləğv edilmiş və ya bitmiş ola bilər.')}
+                : noListing
+                  ? t('Şagird sorğuları müəllim elanına gəlir, amma bu hesaba bağlı elan serverdə yoxdur — ona görə sorğuları və şagirdləri göstərə bilmirik. «Müəllim hesabım» səhifəsində profilini yadda saxla, elan yaradılsın.')
+                  : failed
+                    ? t('Məlumatı gətirmək alınmadı. Yenidən cəhd et.')
+                    : t('Bu şagird artıq siyahında deyil — sorğu ləğv edilmiş və ya bitmiş ola bilər.')}
             </AppText>
             <PressableScale
               activeScale={0.97}
               accessibilityRole="button"
               accessibilityLabel={t('Şagirdlərə qayıt')}
-              onPress={() => router.back()}
+              // The label promises the list; router.back() here lands on the
+              // Panel (first tab), so go to the list by name.
+              onPress={() => router.navigate('/trainer/students')}
               style={[styles.primaryBtn, { marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 }]}>
               <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Şagirdlərə qayıt')}</AppText>
             </PressableScale>
@@ -183,7 +243,7 @@ export default function StudentDetail() {
                 {student.age ? `, ${student.age}` : ''}
               </AppText>
               <AppText style={{ fontSize: 12.5, color: palette.tertiary, marginTop: 4 }}>
-                {[student.level ? t(student.level) : null, t('{ago} əvvəldən şagirdin', { ago: ago(student.since, t) })].filter(Boolean).join(' · ')}
+                {[student.level ? t(student.level) : null, studentDateLine(student, fmt, t)].filter(Boolean).join(' · ')}
               </AppText>
             </View>
           </View>
@@ -306,11 +366,11 @@ export default function StudentDetail() {
 
         <PressableScale
           activeScale={0.98}
-          disabled={!title || saving}
+          disabled={!title || saving || ending}
           accessibilityRole="button"
           accessibilityLabel={t('Proqramı şagirdə təyin et')}
           onPress={save}
-          style={[styles.saveBtn, (!title || saving) && { opacity: 0.4 }]}>
+          style={[styles.saveBtn, (!title || saving || ending) && { opacity: 0.4 }]}>
           <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '600' }}>
             {saving ? t('Yadda saxlanılır…') : t('Proqramı təyin et')}
           </AppText>
@@ -330,6 +390,15 @@ export default function StudentDetail() {
           <Icon name="msg" size={15} color={palette.inkText} />
           <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.inkText }}>{t('Söhbəti aç')}</AppText>
         </PressableScale>
+        <PressableScale
+          activeScale={0.97}
+          disabled={ending || saving}
+          accessibilityRole="button"
+          accessibilityLabel={t('Şagirdlikdən çıxar')}
+          onPress={end}
+          style={[styles.endBtn, (ending || saving) && { opacity: 0.5 }]}>
+          <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.red }}>{t('Şagirdlikdən çıxar')}</AppText>
+        </PressableScale>
       </ScrollView>
     </Screen>
   );
@@ -346,5 +415,6 @@ const styles = StyleSheet.create({
   input: { backgroundColor: palette.white, borderRadius: 14, padding: 14, fontSize: 15, minHeight: 96, textAlignVertical: 'top', color: palette.inkText, borderWidth: 1, borderColor: palette.separator },
   primaryBtn: { height: 38, borderRadius: 11, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
   chatBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 13, backgroundColor: palette.element, marginTop: 12 },
+  endBtn: { height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
   saveBtn: { height: 50, borderRadius: 14, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center', marginTop: 16 },
 });

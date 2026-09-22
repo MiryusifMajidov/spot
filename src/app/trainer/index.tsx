@@ -8,13 +8,36 @@ import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { showAccountSwitcher } from '@/lib/accounts';
-import { decideTrainerRequest, getMyListing, setMyListed, type StudentRow } from '@/lib/roles';
+import { getMyProfile } from '@/lib/api';
+import { isPlaceholderName } from '@/lib/authorName';
+import { decideTrainerRequest, setMyListed, type StudentRow } from '@/lib/roles';
+import { supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { gymById } from '@/store/db';
 import { toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 import { useMyStudents } from './students';
+
+type Listing = { listed: boolean; name: string };
+
+/**
+ * `getMyListing()` plus the listing's own name. Being findable takes both: the
+ * switch, and a name — Kəşf drops a placeholder-named row (isRealTrainer in
+ * hooks.ts) whatever `listed` says. It is the row's name that counts, not the
+ * profile's: the two drift apart when a rename never reached the listing.
+ *
+ * 'none' is a successful read that found no row; a read that could not run
+ * throws, so the two are never drawn as the same thing.
+ */
+async function readMyListing(): Promise<Listing | 'none'> {
+  const me = await getMyProfile();
+  if (!me?.id) throw new Error('no-profile');
+  const { data, error } = await supabase.from('trainers').select('listed,name').eq('id', me.id).maybeSingle();
+  if (error) throw error;
+  const row = data as { listed: boolean | null; name: string | null } | null;
+  return row ? { listed: !!row.listed, name: row.name ?? '' } : 'none';
+}
 
 /** The trainer panel shows only REAL data. SPOT takes no payments, so there is
  *  no income dashboard — a trainer's value here is the students who asked for
@@ -28,31 +51,38 @@ export default function TrainerPanel() {
 
   // One source of truth for the student list — the same hook the Şagirdlər
   // screen uses, so a failed fetch is a failure here too and never a "0".
-  const { pending, active, loading, failed, offline, reload } = useMyStudents();
+  const { pending, active, loading, failed, noListing, offline, reload } = useMyStudents();
   const [busy, setBusy] = useState<string | null>(null);
 
   // Counts may only be printed when they really came back from the server. A
   // refresh on re-focus keeps the last numbers we actually obtained; a failure
   // or a missing server takes them away again.
   const [everLoaded, setEverLoaded] = useState(false);
-  /* null = we could not read it. Never drawn as «gizli», which would tell a
-     visible coach they are hidden. */
-  const [listed, setListed] = useState<boolean | null>(null);
+  /* 'loading' = the first read has not answered yet; «oxunmadı» then would
+     report a failure that has not happened. null = we could not read it. Never
+     drawn as «gizli», which would tell a visible coach they are hidden. 'none' =
+     the read worked and there is no listing row on the server at all. */
+  const [listing, setListing] = useState<Listing | 'none' | 'loading' | null>('loading');
   const [listedBusy, setListedBusy] = useState(false);
+  const row = typeof listing === 'object' ? listing : null;
+  const listed = row ? row.listed : null;
+  // Only a name we actually read can be called missing.
+  const nameless = !!row && isPlaceholderName(row.name);
+  // «Şagirdlər səni tapa bilər» needs both halves of the Kəşf filter.
+  const findable = listed === true && !nameless;
   /* Re-read on every focus, not once. Read once, a failed first read left the
      switch greyed out as «Vəziyyət oxunmadı» until the app was killed — the
-     trainer could not make themselves findable — and a trainer who hid, then
-     saved their trainer profile (which republishes it), kept seeing «gizlidir»
-     while students could already find and request them. */
+     trainer could not make themselves findable — and a rename made on the
+     profile screen would not show up here until a restart. */
   useFocusEffect(
     useCallback(() => {
       let alive = true;
       void (async () => {
         try {
-          const r = await getMyListing();
-          if (alive) setListed(r ? r.listed : null);
+          const r = await readMyListing();
+          if (alive) setListing(r);
         } catch {
-          if (alive) setListed(null);
+          if (alive) setListing(null);
         }
       })();
       return () => {
@@ -132,7 +162,10 @@ export default function TrainerPanel() {
             title={t('Server bağlantısı yoxdur')}
             body={t('Şagird sorğuları serverdən gəlir. Bağlantı qurulanda sorğuların və şagirdlərin burada görünəcək.')}
           />
-        ) : failed ? (
+        ) : failed && !noListing ? (
+          /* No listing is not a failed read, and «Yenidən cəhd et» cannot fix
+             it: the «Kəşfdə görün» card above already says the listing is
+             missing and links to the screen that creates it. */
           <PanelNotice
             title={hasRows ? t('Siyahı yenilənmədi') : t('Yüklənmədi')}
             body={
@@ -219,7 +252,11 @@ export default function TrainerPanel() {
             </View>
             <AppText variant="headline" style={{ marginTop: 14 }}>{t('Hələ şagirdin yoxdur')}</AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, lineHeight: 21, maxWidth: 290 }}>
-              {t('Profilin Kəşf → Müəllimlər bölməsində görünür. İstifadəçi səni tapıb sorğu göndərəndə burada görəcəksən.')}
+              {/* «Kəşfdə görünür» used to be told to every new trainer, the hidden
+                  and the nameless too. «Kəşfdə görün» below says which case it is. */}
+              {findable
+                ? t('Profilin Kəşf → Müəllimlər bölməsində görünür. İstifadəçi səni tapıb sorğu göndərəndə burada görəcəksən.')
+                : t('Şagird sorğu göndərəndə burada görəcəksən.')}
             </AppText>
             <PressableScale
               activeScale={0.97}
@@ -240,11 +277,18 @@ export default function TrainerPanel() {
             <View style={{ flex: 1 }}>
               <AppText variant="headline">{t('Kəşfdə görün')}</AppText>
               <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 4, lineHeight: 18 }}>
-                {listed === null
-                  ? t('Vəziyyət oxunmadı — bağlantını yoxla və səhifəni yenidən aç.')
-                  : listed
-                    ? t('Profilin Kəşf → Müəllimlər siyahısındadır. Şagirdlər səni tapa bilər.')
-                    : t('Profilin hazırda gizlidir — Kəşfdə görünmürsən və heç kim sənə sorğu göndərə bilmir.')}
+                {listing === 'loading'
+                  ? t('Yoxlanılır…')
+                  : listing === null
+                    ? t('Vəziyyət oxunmadı — bağlantını yoxla və səhifəni yenidən aç.')
+                    : listing === 'none'
+                      ? t('Elanın serverdə yoxdur, ona görə istifadəçilər səni tapa bilmir. Yenidən sinxronla.')
+                      : nameless
+                        // Switch on or off, a nameless listing is not shown in Kəşf.
+                        ? t('Elanında ad yoxdur — adsız müəllim Kəşf → Müəllimlər siyahısında göstərilmir, şagirdlər səni tapa bilmir. Əvvəlcə adını yaz.')
+                        : listed
+                          ? t('Profilin Kəşf → Müəllimlər siyahısındadır. Şagirdlər səni tapa bilər.')
+                          : t('Profilin hazırda gizlidir — Kəşfdə görünmürsən və heç kim sənə sorğu göndərə bilmir.')}
               </AppText>
             </View>
             <Switch
@@ -254,8 +298,11 @@ export default function TrainerPanel() {
                 setListedBusy(true);
                 setMyListed(v)
                   .then((got) => {
-                    setListed(got);
-                    toast(got ? t('Profilin Kəşfdə göründü') : t('Profilin Kəşfdən gizləndi'));
+                    setListing((prev) => (prev && typeof prev === 'object' ? { ...prev, listed: got } : prev));
+                    // The flag landed, but «göründü» would be a lie while Kəşf
+                    // still drops the row for its name.
+                    if (got && nameless) toast(t('Görünmə açıldı, amma elanında ad yoxdur — adsız müəllim Kəşfdə göstərilmir'), 'info');
+                    else toast(got ? t('Profilin Kəşfdə göründü') : t('Profilin Kəşfdən gizləndi'));
                   })
                   .catch(() => toast(t('Dəyişiklik saxlanılmadı — yenidən cəhd et'), 'error'))
                   .finally(() => setListedBusy(false));
@@ -263,6 +310,26 @@ export default function TrainerPanel() {
               trackColor={{ true: palette.voltDeep, false: palette.separator }}
             />
           </View>
+          {/* Each of these has its fix on another screen — lead there. */}
+          {listing === 'none' ? (
+            <PressableScale
+              activeScale={0.97}
+              accessibilityRole="button"
+              accessibilityLabel={t('Müəllim profili')}
+              onPress={() => router.push('/(tabs)/profile/become-trainer')}
+              style={styles.noticeBtn}>
+              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Müəllim profili')}</AppText>
+            </PressableScale>
+          ) : nameless ? (
+            <PressableScale
+              activeScale={0.97}
+              accessibilityRole="button"
+              accessibilityLabel={t('Adını yaz')}
+              onPress={() => router.push('/(tabs)/profile/edit')}
+              style={styles.noticeBtn}>
+              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Adını yaz')}</AppText>
+            </PressableScale>
+          ) : null}
         </View>
 
         {/* Only what is NOT already a tab on this same screen.

@@ -869,6 +869,19 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema78. profiles_read was granted to role public and passed any row with show_in_gym_list=true, so the bare publishable key — no sign-in — listed every visible member''s name, age, gender, bio and avatar. The gym-list branch now needs is_registered() (an @ad on the caller''s own profile). The registration handle check moved to username_taken(), which sees hidden profiles too. Proved: bare key 0, unregistered 0 others + own row, registered unchanged.'
   union all
+  select 'policy', 'tv_insert only for a listing the caller owns',
+         case when exists (select 1 from pg_policies where schemaname='public' and tablename='trainer_verifications'
+                             and policyname='tv_insert' and coalesce(with_check,'') like '%owns_trainer%')
+              then 'OK' else 'MISSING' end,
+         'schema79. tv_insert checked only auth.uid() = user_id, so anyone could file a verification request against ANY trainer_id; admin_decide_verification then moves the VICTIM''s listing with the decision — a rejected junk request strips a real trainer''s badge and unverifies their feed videos.'
+  union all
+  select 'function', 'create_day_pass honours gyms.allow_day_pass',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='create_day_pass'
+                             and pg_get_functiondef(p.oid) like '%day_pass_off%')
+              then 'OK' else 'MISSING' end,
+         'schema79. The owner''s «Day-pass qəbul et» switch only hid the button; a direct RPC call still registered a new pass at a gym that turned day passes off, and the owner''s panel counted it.'
+  union all
   select 'function', 'suggested_trainers falls back to verified trainers only',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
                            where n.nspname='public' and p.proname='suggested_trainers'

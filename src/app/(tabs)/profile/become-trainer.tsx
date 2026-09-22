@@ -12,6 +12,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { getMyProfile } from '@/lib/api';
 import { useAuthGate } from '@/lib/authGate';
+import { isPlaceholderName } from '@/lib/authorName';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { invalidateFocusCache } from '@/lib/focusFetch';
 import { imageTooLargeMessage, pickImage, setTrainerPhoto, shootImage } from '@/lib/images';
@@ -21,7 +22,10 @@ import { useAppStore } from '@/store/appStore';
 import { actionSheet, confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
-type Sync = 'unknown' | 'checking' | 'synced' | 'unsynced';
+/* 'unsynced' = the read worked and there is no listing row. 'unsaved' = the last
+   save did not reach the server; the row may well exist with older data, so it
+   must not be described as missing. 'failed' = the status read itself failed. */
+type Sync = 'unknown' | 'checking' | 'synced' | 'unsynced' | 'unsaved' | 'failed';
 
 /**
  * Publish / update the trainer listing with real error handling.
@@ -32,8 +36,16 @@ type Sync = 'unknown' | 'checking' | 'synced' | 'unsynced';
  * one (that used to flood the admin queue with a row per save).
  */
 async function publishTrainer(input: { specialty: string; bio: string; priceFrom: number; name: string; homeGymId: string | null }): Promise<string> {
+  // Kəşf drops a placeholder-named row (isRealTrainer in hooks.ts), so writing
+  // one would publish a listing nobody can ever see. Callers stop this earlier
+  // with an inline message; this is the backstop.
+  if (isPlaceholderName(input.name)) throw new Error('no-name');
   const me = await getMyProfile();
   if (!me?.id) throw new Error('no profile');
+  // Read BEFORE the role write below. The server's role, not the phone's, says
+  // whether this save makes somebody a trainer or edits an existing trainer —
+  // the phone flips to «trainer» locally before the server has agreed.
+  const becoming = me.role !== 'trainer';
 
   /* `.select('id')`, because an RLS refusal is not an error: the statement runs,
      matches nothing, and returns `error: null`. Without the row count a profile
@@ -55,21 +67,23 @@ async function publishTrainer(input: { specialty: string; bio: string; priceFrom
   if (exErr) throw exErr;
 
   if (existingT) {
-    const { error: tErr } = await supabase
+    const { data: tRow, error: tErr } = await supabase
       .from('trainers')
       .update({
-        name: input.name || me.name || 'Müəllim',
+        name: input.name,
         gym_id: input.homeGymId,
         specialty: input.specialty,
         price_from: input.priceFrom,
         bio: input.bio,
-        // Closing the account sets `listed` false. Re-publishing must put the
-        // listing back, otherwise the screen says «yayımlandı» about a row that
-        // useTrainers() still filters out of Kəşf → Müəllimlər.
-        listed: true,
+        // Closing the account sets `listed` false, and becoming a trainer again
+        // puts the listing back. An EDIT leaves it alone: a coach who switched
+        // «Kəşfdə görün» off must not be re-listed by fixing a typo in their bio.
+        ...(becoming ? { listed: true } : {}),
       })
-      .eq('id', me.id);
+      .eq('id', me.id)
+      .select('id');
     if (tErr) throw tErr;
+    if (!tRow?.length) throw new Error('listing-not-saved');
   } else {
     // `verified` and `verify_status` are withheld from clients by schema27 —
     // otherwise this insert is the one place a person could hand themselves an
@@ -78,7 +92,7 @@ async function publishTrainer(input: { specialty: string; bio: string; priceFrom
     // created, so the status always reflects a real queue entry.
     const { error: tErr } = await supabase.from('trainers').insert({
       id: me.id,
-      name: input.name || me.name || 'Müəllim',
+      name: input.name,
       gym_id: input.homeGymId,
       specialty: input.specialty,
       price_from: input.priceFrom,
@@ -88,13 +102,15 @@ async function publishTrainer(input: { specialty: string; bio: string; priceFrom
     if (tErr) throw tErr;
   }
 
-  // Queue for admin verification only if this trainer has no row yet.
-  const { data: existing } = await supabase
+  // Queue for admin verification only if this trainer has no row yet. A failed
+  // read is not «no row» — taken as one, it queued a duplicate on every save.
+  const { data: existing, error: exVErr } = await supabase
     .from('trainer_verifications')
     .select('id')
     .eq('user_id', me.user_id)
     .limit(1)
     .maybeSingle();
+  if (exVErr) throw exVErr;
   if (!existing) {
     const { error: vErr } = await supabase
       .from('trainer_verifications')
@@ -116,6 +132,10 @@ export default function BecomeTrainer() {
   const setProfile = useAppStore((s) => s.setProfile);
   const setMode = useAppStore((s) => s.setMode);
   const alreadyTrainer = profile.role === 'trainer';
+  // The same test Kəşf applies to the listing. Publishing without a real name
+  // used to write «Müəllim», which the list then hides while the toast said
+  // the profile was out there.
+  const nameMissing = isPlaceholderName(profile.name);
 
   const [specialty, setSpecialty] = useState(profile.specialty ?? '');
   const [price, setPrice] = useState(profile.priceFrom ? String(profile.priceFrom) : '');
@@ -160,7 +180,7 @@ export default function BecomeTrainer() {
         } catch {
           photo = null;
         }
-        const [{ data: t }, { data: v }] = await Promise.all([
+        const [{ data: t, error: tErr }, { data: v, error: vErr }] = await Promise.all([
           supabase.from('trainers').select('id,verified').eq('id', me.id).maybeSingle(),
           supabase
             .from('trainer_verifications')
@@ -170,6 +190,10 @@ export default function BecomeTrainer() {
             .limit(1)
             .maybeSingle(),
         ]);
+        // An unanswered read is not «no listing» / «not started»: both would send
+        // the trainer to fix a listing that may be perfectly fine.
+        if (tErr) throw tErr;
+        if (vErr) throw vErr;
         return {
           listed: !!t,
           st: ((v as { status: 'pending' | 'approved' | 'rejected' } | null)?.status ?? null),
@@ -185,7 +209,7 @@ export default function BecomeTrainer() {
           setPhotoUrl(r.photo);
           setBadge(r.badge);
         })
-        .catch(() => alive && setSync('unsynced'));
+        .catch(() => alive && setSync('failed'));
       return () => {
         alive = false;
       };
@@ -252,9 +276,13 @@ export default function BecomeTrainer() {
   const save = () =>
     gate(async () => {
       if (!specialty.trim() || saving) return;
+      if (nameMissing) {
+        toast(t('Əvvəlcə adını yaz'), 'error');
+        return;
+      }
       setSaving(true);
       const priceFrom = Number(price) || 0;
-      const payload = { specialty: specialty.trim(), bio: bio.trim(), priceFrom, name: profile.name || 'Müəllim', homeGymId: profile.homeGymId };
+      const payload = { specialty: specialty.trim(), bio: bio.trim(), priceFrom, name: profile.name.trim(), homeGymId: profile.homeGymId };
 
       // Local-first: the panel works on this device no matter what the server says.
       setProfile({ role: 'trainer', specialty: payload.specialty, priceFrom, bio: payload.bio });
@@ -283,7 +311,7 @@ export default function BecomeTrainer() {
             }
           }
         } catch {
-          setSync('unsynced');
+          setSync('unsaved');
         }
       }
       setSaving(false);
@@ -310,9 +338,13 @@ export default function BecomeTrainer() {
 
   const resync = async () => {
     if (saving) return;
+    if (nameMissing) {
+      toast(t('Əvvəlcə adını yaz'), 'error');
+      return;
+    }
     setSaving(true);
     try {
-      const trainerId = await publishTrainer({ specialty: specialty.trim(), bio: bio.trim(), priceFrom: Number(price) || 0, name: profile.name || 'Müəllim', homeGymId: profile.homeGymId });
+      const trainerId = await publishTrainer({ specialty: specialty.trim(), bio: bio.trim(), priceFrom: Number(price) || 0, name: profile.name.trim(), homeGymId: profile.homeGymId });
       setSync('synced');
       // A photo picked while the first save was failing is still only on this device.
       if (photoLocal) {
@@ -332,7 +364,7 @@ export default function BecomeTrainer() {
       }
       toast(t('Serverlə sinxronlaşdırıldı'));
     } catch {
-      setSync('unsynced');
+      setSync('unsaved');
       toast(t('Sinxronlaşma alınmadı — internetini yoxla'), 'error');
     } finally {
       setSaving(false);
@@ -419,6 +451,8 @@ export default function BecomeTrainer() {
       ]
     );
 
+  const syncBad = sync === 'unsynced' || sync === 'unsaved' || sync === 'failed';
+
   return (
     <Screen edges={['top', 'bottom']}>
       <NavBar title={alreadyTrainer ? t('Müəllim profili') : t('Müəllim ol')} />
@@ -435,43 +469,72 @@ export default function BecomeTrainer() {
           {t('Öz təlim xidmətini yarat. İstifadəçilər səni Kəşf bölməsində tapıb məşq sorğusu göndərə biləcək. Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir.')}
         </AppText>
 
+        {/* Why the save button is off. The name is edited on the profile, not
+            here, so the card leads straight there — saving it there also renames
+            an existing listing. */}
+        {nameMissing ? (
+          <View style={styles.statusCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Icon name="user" size={17} color={palette.red} />
+              <AppText style={{ fontSize: 14, fontWeight: '600', flex: 1 }}>{t('Əvvəlcə adını yaz')}</AppText>
+            </View>
+            <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 8 }}>
+              {t('Adı olmayan müəllim Kəşf → Müəllimlər siyahısında göstərilmir — şagirdlər səni tapa bilməz. Adını profilində yaz, sonra buraya qayıt.')}
+            </AppText>
+            <PressableScale
+              activeScale={0.97}
+              accessibilityRole="button"
+              accessibilityLabel={t('Adını yaz')}
+              onPress={() => router.push('/(tabs)/profile/edit')}
+              style={[styles.smallBtn, { backgroundColor: palette.ink, alignSelf: 'flex-start', marginTop: 12 }]}>
+              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Adını yaz')}</AppText>
+            </PressableScale>
+          </View>
+        ) : null}
+
         {alreadyTrainer ? (
           <View style={styles.statusCard}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Icon
-                name={sync === 'unsynced' ? 'shield' : status === 'approved' && badge ? 'verified' : 'clock'}
+                name={syncBad ? 'shield' : status === 'approved' && badge ? 'verified' : 'clock'}
                 size={17}
-                color={sync === 'unsynced' ? palette.red : status === 'approved' && badge ? palette.blue : '#FF9500'}
+                color={syncBad ? palette.red : status === 'approved' && badge ? palette.blue : '#FF9500'}
               />
               <AppText style={{ fontSize: 14, fontWeight: '600', flex: 1 }}>
                 {!hasSupabaseConfig
                   ? t('Yalnız bu cihazda')
                   : sync === 'checking'
                     ? t('Yoxlanılır…')
-                    : sync === 'unsynced'
-                      ? t('Serverlə sinxronlaşdırılmayıb')
-                      : status === 'approved'
-                        ? badge
-                          ? t('Doğrulanmış müəllim')
-                          : t('Nişan profilində görünmür')
-                        : status === 'rejected'
-                          ? t('Doğrulama rədd edilib')
-                          : status === 'pending'
-                            ? t('Doğrulama yoxlanılır')
-                            : t('Doğrulama başlanmayıb')}
+                    : sync === 'failed'
+                      ? t('Yüklənmədi')
+                      : sync === 'unsynced' || sync === 'unsaved'
+                        ? t('Serverlə sinxronlaşdırılmayıb')
+                        : status === 'approved'
+                          ? badge
+                            ? t('Doğrulanmış müəllim')
+                            : t('Nişan profilində görünmür')
+                          : status === 'rejected'
+                            ? t('Doğrulama rədd edilib')
+                            : status === 'pending'
+                              ? t('Doğrulama yoxlanılır')
+                              : t('Doğrulama başlanmayıb')}
               </AppText>
             </View>
             <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 8 }}>
               {!hasSupabaseConfig
                 ? t('Server bağlantısı yoxdur — müəllim elanın hələ başqalarına görünmür.')
-                : sync === 'unsynced'
-                  ? t('Elanın serverdə yoxdur, ona görə istifadəçilər səni tapa bilmir. Yenidən sinxronla.')
-                  : status === 'approved' && !badge
-                    ? t('Doğrulama sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.')
-                    : t('Doğrulama statusunu və sənədləri Müəllim doğrulanması səhifəsində görə bilərsən.')}
+                : sync === 'failed'
+                  ? t('Vəziyyət oxunmadı — bağlantını yoxla və səhifəni yenidən aç.')
+                  : sync === 'unsaved'
+                    ? t('Serverə yazmaq alınmadı — cihazda saxlanıldı, sonra «Yenidən sinxronla» ilə cəhd et')
+                    : sync === 'unsynced'
+                      ? t('Elanın serverdə yoxdur, ona görə istifadəçilər səni tapa bilmir. Yenidən sinxronla.')
+                      : status === 'approved' && !badge
+                        ? t('Doğrulama sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.')
+                        : t('Doğrulama statusunu və sənədləri Müəllim doğrulanması səhifəsində görə bilərsən.')}
             </AppText>
             <View style={{ flexDirection: 'row', gap: 9, marginTop: 12 }}>
-              {sync === 'unsynced' && hasSupabaseConfig ? (
+              {(sync === 'unsynced' || sync === 'unsaved') && hasSupabaseConfig ? (
                 <PressableScale
                   activeScale={0.97}
                   accessibilityRole="button"
@@ -552,7 +615,7 @@ export default function BecomeTrainer() {
           title={alreadyTrainer ? t('Yadda saxla') : t('Müəllim profilini yarat')}
           variant="volt"
           full
-          disabled={!specialty.trim() || saving}
+          disabled={!specialty.trim() || saving || nameMissing}
           onPress={save}
         />
       </View>

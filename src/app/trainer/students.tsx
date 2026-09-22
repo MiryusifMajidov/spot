@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -9,22 +9,49 @@ import { LargeHeader } from '@/components/ui/LargeHeader';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
-import { timeAgo } from '@/lib/format';
+import { getLang } from '@/lib/i18n';
 import { decideTrainerRequest, getMyStudents, type StudentRow } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { useT } from '@/lib/useT';
+import { useFormat, useT, type Fmt } from '@/lib/useT';
 import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
-/** Reads the clock here, exactly where the old `timeAgoAz` read it. */
-const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) => string) =>
-  timeAgo(iso, Date.now(), tr);
+/** «14 sentyabr» — a calendar date. The line used to be `timeAgo` glued to a
+ *  suffix, which printed «14:30 əvvəldən» and «Dünən əvvəldən». The year is added
+ *  when it is not this one: a bare day and month from last year reads as this
+ *  year. `null` for a missing or unreadable timestamp, so the label is left out
+ *  rather than printed empty. */
+function dateLabel(iso: string | null, fmt: Fmt): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return null;
+  const day = fmt.dayAndMonth(d);
+  const year = d.getFullYear();
+  if (year === new Date().getFullYear()) return day;
+  return getLang() === 'en' ? `${day}, ${year}` : `${day} ${year}`;
+}
+
+/** The date on a student or request card, labelled with what it really is. An
+ *  accepted student shows the day the trainer accepted them (`decided_at`); a
+ *  request shows the day it was FIRST sent — a re-sent request keeps its old
+ *  `created_at`, so «Sorğu: …» alone would misdate it. */
+export function studentDateLine(s: StudentRow, fmt: Fmt, tr: ReturnType<typeof useT>): string | null {
+  const accepted = s.status === 'accepted' ? dateLabel(s.acceptedAt, fmt) : null;
+  if (accepted) return tr('Qəbul edildi: {date}', { date: accepted });
+  const asked = dateLabel(s.requestedAt, fmt);
+  return asked ? tr('İlk sorğu: {date}', { date: asked }) : null;
+}
 
 export interface MyStudents {
   pending: StudentRow[];
   active: StudentRow[];
   loading: boolean;
+  /** True on a failed read AND when there is no listing, so a screen that does
+   *  not look at `noListing` still refuses to print a count. */
   failed: boolean;
+  /** This account owns no trainer row: nothing was asked of the server, so
+   *  there is no count to show — see getMyStudents. */
+  noListing: boolean;
   offline: boolean;
   reload: () => void;
 }
@@ -38,39 +65,55 @@ export function useMyStudents(): MyStudents {
   const [rows, setRows] = useState<{ pending: StudentRow[]; active: StudentRow[] }>({ pending: [], active: [] });
   const [loading, setLoading] = useState(hasSupabaseConfig);
   const [failed, setFailed] = useState(false);
-  const [tick, setTick] = useState(0);
-  const reload = useCallback(() => setTick((t) => t + 1), []);
+  const [noListing, setNoListing] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!hasSupabaseConfig) {
-        setLoading(false);
-        return;
-      }
-      let alive = true;
-      setLoading(true);
-      getMyStudents()
-        .then((r) => {
-          if (!alive) return;
-          setRows(r);
-          setFailed(false);
-        })
-        .catch(() => alive && setFailed(true))
-        .finally(() => alive && setLoading(false));
-      return () => {
-        alive = false;
-      };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tick])
-  );
+  /* One loader, run on focus AND by `reload`. `reload` used to bump a counter
+     listed in the effect's deps but never read in its body — the compiler may
+     drop such a dependency, and then «Yenidən cəhd et» does nothing. Calling
+     the loader is the fetch itself. */
+  /* Only the NEWEST read may write. A retry and a focus can both be in flight
+     (the retry's cleanup is not kept anywhere), and whichever answered last
+     used to win — an older read could put back a list the newer one had
+     already replaced, e.g. a student the trainer had just ended. */
+  const seq = useRef(0);
+  const load = useCallback(() => {
+    if (!hasSupabaseConfig) {
+      setLoading(false);
+      return;
+    }
+    const mine = ++seq.current;
+    const current = () => mine === seq.current;
+    setLoading(true);
+    getMyStudents()
+      .then((r) => {
+        if (!current()) return;
+        setRows({ pending: r.pending, active: r.active });
+        setNoListing(r.noListing);
+        setFailed(r.noListing);
+      })
+      .catch(() => {
+        if (!current()) return;
+        setFailed(true);
+        // This attempt says nothing about the listing; do not keep a stale verdict.
+        setNoListing(false);
+      })
+      .finally(() => current() && setLoading(false));
+    return () => {
+      // Leaving the screen retires this read; the next focus starts a new one.
+      if (current()) seq.current += 1;
+    };
+  }, []);
+  useFocusEffect(load);
+  const reload = useCallback(() => void load(), [load]);
 
-  return { ...rows, loading, failed, offline: !hasSupabaseConfig, reload };
+  return { ...rows, loading, failed, noListing, offline: !hasSupabaseConfig, reload };
 }
 
 export default function Students() {
   const t = useT();
+  const fmt = useFormat();
   const router = useRouter();
-  const { pending, active, loading, failed, offline, reload } = useMyStudents();
+  const { pending, active, loading, failed, noListing, offline, reload } = useMyStudents();
   const [tab, setTab] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -97,7 +140,8 @@ export default function Students() {
     ]);
   };
 
-  // A count is a claim about the server. Print it only when the server answered.
+  // A count is a claim about the server. Print it only when the server answered
+  // (`failed` also covers a missing listing, where nothing was asked).
   const counted = !loading && !failed && !offline;
 
   const openStudent = (s: StudentRow) =>
@@ -124,6 +168,15 @@ export default function Students() {
           <View style={{ paddingVertical: 40 }}>
             <ActivityIndicator color={palette.tertiary} />
           </View>
+        ) : noListing ? (
+          /* Checked before `failed`, which is also true here. Retrying cannot
+             help; saving the trainer profile is what creates the listing
+             (publishTrainer inserts the row when there is none). */
+          <Notice
+            title={t('Müəllim elanın serverdə tapılmadı')}
+            body={t('Şagird sorğuları müəllim elanına gəlir, amma bu hesaba bağlı elan serverdə yoxdur — ona görə sorğuları və şagirdləri göstərə bilmirik. «Müəllim hesabım» səhifəsində profilini yadda saxla, elan yaradılsın.')}
+            action={{ label: t('Müəllim hesabımı aç'), onPress: () => router.push('/(tabs)/profile/become-trainer') }}
+          />
         ) : failed ? (
           <Notice title={t('Yüklənmədi')} body={t('Şagird siyahısını gətirmək alınmadı.')} action={{ label: t('Yenidən cəhd et'), onPress: reload }} />
         ) : tab === 0 ? (
@@ -149,7 +202,7 @@ export default function Students() {
                         {s.age ? `, ${s.age}` : ''}
                       </AppText>
                       <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
-                        {[s.level && t(s.level), s.goals[0] && t(s.goals[0]), t('{ago} əvvəldən', { ago: ago(s.since, t) })].filter(Boolean).join(' · ')}
+                        {[s.level && t(s.level), s.goals[0] && t(s.goals[0]), studentDateLine(s, fmt, t)].filter(Boolean).join(' · ')}
                       </AppText>
                     </View>
                     <Icon name="chevR" size={18} color={palette.tertiary} />
@@ -204,7 +257,7 @@ export default function Students() {
                       {s.age ? `, ${s.age}` : ''}
                     </AppText>
                     <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
-                      {[s.level && t(s.level), s.goals[0] && t(s.goals[0]), ago(s.since, t)].filter(Boolean).join(' · ')}
+                      {[s.level && t(s.level), s.goals[0] && t(s.goals[0]), studentDateLine(s, fmt, t)].filter(Boolean).join(' · ')}
                     </AppText>
                   </View>
                 </View>

@@ -261,9 +261,15 @@ export async function uploadImage(bucket: Bucket, localUri: string, prefix: stri
 export async function signedCertUrl(pathOrUrl: string, ttlSec = 300): Promise<string | null> {
   // Tolerate rows written before the private bucket existed: those hold a full URL.
   if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-  const { data, error } = await supabase.storage.from(CERT_BUCKET).createSignedUrl(pathOrUrl, ttlSec);
-  if (error) return null;
-  return data?.signedUrl ?? null;
+  // Never throws: callers draw null as «the preview did not open», and a network
+  // failure that escaped as a rejection would leave that tile spinning for good.
+  try {
+    const { data, error } = await supabase.storage.from(CERT_BUCKET).createSignedUrl(pathOrUrl, ttlSec);
+    if (error) return null;
+    return data?.signedUrl ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /* ---------------- a write that touched no row is not a write ----------------

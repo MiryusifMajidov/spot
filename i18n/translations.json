@@ -9627,5 +9627,281 @@
   "key": "Əzələ qrupları balanslıdır. Belə davam et.",
   "ru": "Группы мышц сбалансированы. Так держать.",
   "en": "Your muscle groups are balanced. Keep it up."
+ },
+ {
+  "key": "Bu zal hazırda day-pass qəbul etmir",
+  "ru": "Этот зал сейчас не принимает разовые посещения",
+  "en": "This gym isn't accepting day passes right now"
+ },
+ {
+  "key": "Serverlə əlaqə alınmadı — bu, zalın silindiyi demək deyil. Bağlantını yoxla və yenidən cəhd et.",
+  "ru": "Не удалось связаться с сервером — это не значит, что зал удалён. Проверь подключение и попробуй ещё раз.",
+  "en": "Couldn't reach the server — that doesn't mean the gym was deleted. Check your connection and try again."
+ },
+ {
+  "key": "Zal yüklənmədi",
+  "ru": "Зал не загрузился",
+  "en": "Gym didn't load"
+ },
+ {
+  "key": "Adı olmayan müəllim Kəşf → Müəllimlər siyahısında göstərilmir — şagirdlər səni tapa bilməz. Adını profilində yaz, sonra buraya qayıt.",
+  "ru": "Тренер без имени не показывается в списке Обзор → Тренеры — ученики не смогут тебя найти. Укажи имя в профиле и вернись сюда.",
+  "en": "A trainer with no name isn't shown in Discover → Trainers — students won't be able to find you. Add your name in your profile, then come back here."
+ },
+ {
+  "key": "Adını yaz",
+  "ru": "Указать имя",
+  "en": "Add your name"
+ },
+ {
+  "key": "Əvvəlcə adını yaz",
+  "ru": "Сначала укажи имя",
+  "en": "Add your name first"
+ },
+ {
+  "key": "Profilin saxlanıldı, amma Kəşfdəki müəllim elanın yenilənmədi — «Yadda saxla» ilə yenidən cəhd et",
+  "ru": "Профиль сохранён, но твоё объявление тренера в Обзоре не обновилось — попробуй ещё раз кнопкой «Сохранить»",
+  "en": "Your profile was saved, but your trainer listing in Discover wasn't updated — tap \"Save\" to try again"
+ },
+ {
+  "key": "Profilin saxlanıldı, amma Kəşfdəki müəllim elanında şəkil yenilənmədi — «Yadda saxla» ilə yenidən cəhd et",
+  "ru": "Профиль сохранён, но фото в твоём объявлении тренера в Обзоре не обновилось — попробуй ещё раз кнопкой «Сохранить»",
+  "en": "Your profile was saved, but the photo on your trainer listing in Discover wasn't updated — tap \"Save\" to try again"
+ },
+ {
+  "key": "Şəklin profilində görünür; «Yadda saxla» basanda Kəşfdəki müəllim elanına da keçir.",
+  "ru": "Фото видно в твоём профиле; после нажатия «Сохранить» оно появится и в твоём объявлении тренера в Обзоре.",
+  "en": "Your photo shows on your profile; when you tap \"Save\" it also goes to your trainer listing in Discover."
+ },
+ {
+  "key": "Day-pass düyməsi zal səhifəsində yalnız bu açıq olanda və 1 günlük qiymət yazılanda görünür. «Üzvlər» bağlı olanda zal səhifəsində üzv siyahısı göstərilmir.",
+  "ru": "Кнопка разового посещения появляется на странице зала, только когда это включено и указана цена за 1 день. Когда «Участники» выключены, список участников на странице зала не показывается.",
+  "en": "The day pass button shows on the gym page only when this is on and a one-day price is set. When \"Members\" is off, the member list isn't shown on the gym page."
+ },
+ {
+  "key": "Day-pass qəbul et",
+  "ru": "Принимать разовые посещения",
+  "en": "Accept day passes"
+ },
+ {
+  "key": "Profil yeniləndi, amma zal səhifəsi seçimləri saxlanılmadı",
+  "ru": "Профиль обновлён, но настройки страницы зала не сохранены",
+  "en": "Profile updated, but the gym page settings weren't saved"
+ },
+ {
+  "key": "Profil yeniləndi, amma zalın yeri və zal səhifəsi seçimləri saxlanılmadı",
+  "ru": "Профиль обновлён, но местоположение зала и настройки страницы зала не сохранены",
+  "en": "Profile updated, but the gym's location and the gym page settings weren't saved"
+ },
+ {
+  "key": "«Üzvlər» bölməsini göstər",
+  "ru": "Показывать раздел «Участники»",
+  "en": "Show the \"Members\" section"
+ },
+ {
+  "key": "«Üzvlər» bölməsini yuxarıdakı açarla bütövlükdə gizlədə bilərsən. Siyahıda adının görünüb-görünməməsini isə hər üzv özü Məxfilik ayarlarından seçir — zal bunu dəyişə bilmir.",
+  "ru": "Раздел «Участники» можно целиком скрыть переключателем выше. А показывать ли своё имя в списке, каждый участник решает сам в настройках конфиденциальности — зал не может это изменить.",
+  "en": "You can hide the whole \"Members\" section with the switch above. Whether their name appears in the list is each member's own choice in their Privacy settings — the gym can't change that."
+ },
+ {
+  "key": "Şəkil oxunmadı · yenisini seç",
+  "ru": "Фото не загрузилось · выбери новое",
+  "en": "Photo didn't load · pick a new one"
+ },
+ {
+  "key": "Day-pass bağlıdır",
+  "ru": "Разовые посещения выключены",
+  "en": "Day passes are off"
+ },
+ {
+  "key": "Day-pass qiyməti yazılmayıb",
+  "ru": "Цена разового посещения не указана",
+  "en": "No day pass price set"
+ },
+ {
+  "key": "Elan icma lentində sənin öz adınla paylaşılır — {gym} adı yalnız adının altındakı kiçik sətirdə görünür. Push bildiriş göndərilmir.",
+  "ru": "Объявление публикуется в ленте сообщества под твоим собственным именем — название {gym} видно только в маленькой строке под ним. Push-уведомление не отправляется.",
+  "en": "The announcement is posted to the community feed under your own name — {gym} only appears in the small line under your name. No push notification is sent."
+ },
+ {
+  "key": "Qiymət olmadan zal səhifəsində day-pass düyməsi görünmür. «Profil» bölməsində 1 günlük qiyməti yaz.",
+  "ru": "Без цены кнопка разового посещения на странице зала не появляется. Укажи цену за 1 день в разделе «Профиль».",
+  "en": "Without a price, the day pass button doesn't show on the gym page. Set the one-day price in the \"Profile\" section."
+ },
+ {
+  "key": "Zal səhifəsində day-pass düyməsi göstərilmir. «Profil» bölməsində yenidən aça bilərsən.",
+  "ru": "Кнопка разового посещения на странице зала не показывается. Включить её снова можно в разделе «Профиль».",
+  "en": "The day pass button isn't shown on the gym page. You can turn it back on in the \"Profile\" section."
+ },
+ {
+  "key": "Zalın şəkli oxunmadı",
+  "ru": "Фото зала не загрузилось",
+  "en": "The gym photo didn't load"
+ },
+ {
+  "key": "Bütün rəqəmlər son 30 günün real check-in-lərindən hesablanır — uydurma statistika göstərmirik. «Sadiq» = son 30 gündə ən azı {n} check-in. Üzvün bu zalı nə vaxt seçdiyini bilmirik, ona görə «yeni» və ya «risk» kimi status göstərmirik.",
+  "ru_one": "Все цифры считаются по реальным отметкам за последние 30 дней — мы не показываем выдуманную статистику. «Постоянный» = минимум {n} отметка за последние 30 дней. Мы не знаем, когда участник выбрал этот зал, поэтому не показываем статусы вроде «новый» или «риск».",
+  "ru_few": "Все цифры считаются по реальным отметкам за последние 30 дней — мы не показываем выдуманную статистику. «Постоянный» = минимум {n} отметки за последние 30 дней. Мы не знаем, когда участник выбрал этот зал, поэтому не показываем статусы вроде «новый» или «риск».",
+  "ru_many": "Все цифры считаются по реальным отметкам за последние 30 дней — мы не показываем выдуманную статистику. «Постоянный» = минимум {n} отметок за последние 30 дней. Мы не знаем, когда участник выбрал этот зал, поэтому не показываем статусы вроде «новый» или «риск».",
+  "en_one": "All numbers come from real check-ins in the last 30 days — we don't show made-up statistics. \"Loyal\" = at least {n} check-in in the last 30 days. We don't know when a member chose this gym, so we don't show statuses like \"new\" or \"at risk\".",
+  "en_other": "All numbers come from real check-ins in the last 30 days — we don't show made-up statistics. \"Loyal\" = at least {n} check-ins in the last 30 days. We don't know when a member chose this gym, so we don't show statuses like \"new\" or \"at risk\"."
+ },
+ {
+  "key": "SPOT-da zalını seçən üzvlər burada check-in tezliyi ilə görünəcək; adını gizlədən üzv adsız göstərilir. Siyahı üzvlər zalını özləri seçdikcə dolur.",
+  "ru": "Здесь появятся участники, выбравшие твой зал в SPOT, с частотой их отметок; тот, кто скрыл имя, показывается без имени. Список пополняется по мере того, как участники сами выбирают зал.",
+  "en": "Members who pick your gym in SPOT will show up here with how often they check in; a member who hides their name is shown without one. The list fills up as members choose your gym themselves."
+ },
+ {
+  "key": "Zal admini üzvün məşq detallarını, çəkisini və söhbətlərini GÖRMÜR — yalnız bu zaldakı check-in-lərini. Üzvə birbaşa yazmaq imkanı da yoxdur.",
+  "ru": "Администратор зала НЕ ВИДИТ детали тренировок, вес и переписку участника — только его отметки в этом зале. Написать участнику напрямую тоже нельзя.",
+  "en": "The gym admin does NOT see a member's workout details, weight or chats — only their check-ins at this gym. There's no way to message a member directly either."
+ },
+ {
+  "key": "Müəllim elanın serverdə tapılmadı",
+  "ru": "Твоё объявление тренера не найдено на сервере",
+  "en": "Your trainer listing wasn't found on the server"
+ },
+ {
+  "key": "Müəllim hesabımı aç",
+  "ru": "Открыть мой аккаунт тренера",
+  "en": "Open my trainer account"
+ },
+ {
+  "key": "Şagird sorğuları müəllim elanına gəlir, amma bu hesaba bağlı elan serverdə yoxdur — ona görə sorğuları və şagirdləri göstərə bilmirik. «Müəllim hesabım» səhifəsində profilini yadda saxla, elan yaradılsın.",
+  "ru": "Запросы учеников приходят на объявление тренера, но объявления, привязанного к этому аккаунту, на сервере нет — поэтому мы не можем показать запросы и учеников. Сохрани профиль на странице «Мой аккаунт тренера», чтобы объявление создалось.",
+  "en": "Student requests arrive at your trainer listing, but there's no listing linked to this account on the server — so we can't show requests or students. Save your profile on the \"My trainer account\" page to create the listing."
+ },
+ {
+  "key": "Elanında ad yoxdur — adsız müəllim Kəşf → Müəllimlər siyahısında göstərilmir, şagirdlər səni tapa bilmir. Əvvəlcə adını yaz.",
+  "ru": "В твоём объявлении нет имени — тренер без имени не показывается в списке Обзор → Тренеры, ученики не могут тебя найти. Сначала укажи имя.",
+  "en": "Your listing has no name — a trainer without a name isn't shown in Discover → Trainers, so students can't find you. Add your name first."
+ },
+ {
+  "key": "Görünmə açıldı, amma elanında ad yoxdur — adsız müəllim Kəşfdə göstərilmir",
+  "ru": "Видимость включена, но в твоём объявлении нет имени — тренер без имени в Обзоре не показывается",
+  "en": "Visibility is on, but your listing has no name — a trainer without a name isn't shown in Discover"
+ },
+ {
+  "key": "Şagird sorğu göndərəndə burada görəcəksən.",
+  "ru": "Когда ученик отправит запрос, ты увидишь его здесь.",
+  "en": "When a student sends a request, you'll see it here."
+ },
+ {
+  "key": "Təyin etdiyin proqram və qeydin onun «Məşq» səhifəsində qalacaq.",
+  "ru": "Назначенная тобой программа и заметка останутся у ученика на странице «Тренировки».",
+  "en": "The program you assigned and your note will stay on their \"Workouts\" page."
+ },
+ {
+  "key": "{name} artıq şagirdin deyil",
+  "ru": "{name} больше не твой ученик",
+  "en": "{name} is no longer your student"
+ },
+ {
+  "key": "{name} «Şagirdlər» və «Söhbət» siyahılarından çıxacaq. Ona bildiriş getməyəcək — deməyə sözün varsa, əvvəlcə ona yaz.",
+  "ru": "{name} исчезнет из списков «Ученики» и «Чат». Уведомление не придёт — если хочешь что-то сказать, сначала напиши.",
+  "en": "{name} will be removed from your \"Students\" and \"Chat\" lists. They won't get a notification — if you have something to say, message them first."
+ },
+ {
+  "key": "{name} şagirdlikdən çıxarılsın?",
+  "ru": "Убрать {name} из учеников?",
+  "en": "Remove {name} from your students?"
+ },
+ {
+  "key": "Şagirdlikdən çıxar",
+  "ru": "Убрать из учеников",
+  "en": "Remove from students"
+ },
+ {
+  "key": "Şagirdlikdən çıxarmaq alınmadı — yenidən cəhd et",
+  "ru": "Не удалось убрать из учеников — попробуй ещё раз",
+  "en": "Couldn't remove from students — try again"
+ },
+ {
+  "key": "Əvvəlki yazışmanız silinmir. O, sənə yenidən sorğu göndərə bilər.",
+  "ru": "Ваша прежняя переписка не удаляется. Этот человек сможет снова отправить тебе запрос.",
+  "en": "Your past messages aren't deleted. They can send you a request again."
+ },
+ {
+  "key": "Qəbul edildi: {date}",
+  "ru": "Принят: {date}",
+  "en": "Accepted: {date}"
+ },
+ {
+  "key": "İlk sorğu: {date}",
+  "ru": "Первый запрос: {date}",
+  "en": "First request: {date}"
+ },
+ {
+  "key": "Açılmadı",
+  "ru": "Не открылось",
+  "en": "Couldn't open"
+ },
+ {
+  "key": "Baxılmış sorğuya sənəd əlavə olunmur. Ən son yüklədiyin şəkil «Yenidən müraciət et» ilə göndərilən yeni sorğuya əlavə olunur.",
+  "ru": "К рассмотренному запросу документы не добавляются. Последнее загруженное фото будет добавлено к новому запросу, который ты отправишь кнопкой «Подать заявку снова».",
+  "en": "Documents can't be added to a request that's already been reviewed. The last photo you uploaded is attached to the new request you send with \"Apply again\"."
+ },
+ {
+  "key": "Köhnə sorğuna artıq baxılıb — ona sənəd əlavə olunmur. Bu sertifikatla yeni sorğu göndərilsin?",
+  "ru": "Твой прежний запрос уже рассмотрен — к нему нельзя добавить документ. Отправить новый запрос с этим сертификатом?",
+  "en": "Your previous request has already been reviewed — documents can't be added to it. Send a new request with this certificate?"
+ },
+ {
+  "key": "Məşqçi sertifikatının şəklini yüklə. Sənəd qapalı saxlancda saxlanılır — onu yalnız sən və SPOT komandası görür.",
+  "ru": "Загрузи фото сертификата тренера. Документ хранится в закрытом хранилище — его видишь только ты и команда SPOT.",
+  "en": "Upload a photo of your trainer certificate. It's kept in private storage — only you and the SPOT team can see it."
+ },
+ {
+  "key": "Sertifikat saxlanıldı, amma sorğuna əlavə olunmadı — sorğunun vəziyyəti yenidən yoxlanılır",
+  "ru": "Сертификат сохранён, но не добавлен к твоему запросу — проверяем статус запроса заново",
+  "en": "Certificate saved, but it wasn't added to your request — checking your request's status again"
+ },
+ {
+  "key": "Sertifikat sorğuna əlavə olundu",
+  "ru": "Сертификат добавлен к твоему запросу",
+  "en": "Certificate added to your request"
+ },
+ {
+  "key": "Sertifikat yükləndi",
+  "ru": "Сертификат загружен",
+  "en": "Certificate uploaded"
+ },
+ {
+  "key": "Sənədlər qapalı saxlancdadır — onları yalnız sən və SPOT komandası görür, profilində göstərilmir.",
+  "ru": "Документы хранятся в закрытом хранилище — их видишь только ты и команда SPOT, в профиле они не показываются.",
+  "en": "Documents are kept in private storage — only you and the SPOT team can see them, and they aren't shown on your profile."
+ },
+ {
+  "key": "Yüklədiyin sertifikatlar qapalı saxlancda saxlanılır. Yoxlayan sorğuna bağlanmış ən son sertifikatı görür — açıq sorğun varsa, yeni yüklədiyin şəkil ona özü əlavə olunur. Doğrulanma olmadan da profil yarada və pulsuz proqram paylaşa bilərsən; sadəcə nişansız görünürsən.",
+  "ru": "Загруженные сертификаты хранятся в закрытом хранилище. Проверяющий видит последний сертификат, прикреплённый к твоему запросу, — если у тебя есть открытый запрос, новое фото добавляется к нему само. И без проверки ты можешь создать профиль и делиться бесплатными программами; просто будешь без значка.",
+  "en": "Certificates you upload are kept in private storage. The reviewer sees the latest certificate attached to your request — if you have an open request, a newly uploaded photo is added to it automatically. You can create a profile and share free programs without verification too; you'll just appear without a badge."
+ },
+ {
+  "key": "{n}. sənədin önizləməsi açılmadı — yenidən cəhd et",
+  "ru": "Не удалось открыть превью документа {n} — попробуй ещё раз",
+  "en": "Couldn't open the preview of document {n} — try again"
+ },
+ {
+  "key": "Şəkillər saxlancdadır, amma açıq doğrulama sorğuna bağlanmayıb — yoxlayan onları görmür.",
+  "ru": "Фото сохранены в хранилище, но не прикреплены к твоему открытому запросу на проверку — проверяющий их не видит.",
+  "en": "The photos are in storage, but they aren't attached to your open verification request — the reviewer can't see them."
+ },
+ {
+  "key": "Əlavə olunur…",
+  "ru": "Добавляется…",
+  "en": "Adding…"
+ },
+ {
+  "key": "Ən son şəkli sorğuna əlavə et",
+  "ru": "Добавить последнее фото к запросу",
+  "en": "Add the latest photo to your request"
+ },
+ {
+  "key": "Rəy yazanda {n} check-in etmişdi",
+  "ru_one": "На момент отзыва: {n} отметка",
+  "ru_few": "На момент отзыва: {n} отметки",
+  "ru_many": "На момент отзыва: {n} отметок",
+  "en_one": "{n} check-in when reviewing",
+  "en_other": "{n} check-ins when reviewing"
  }
 ]

@@ -18,11 +18,11 @@ import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
 import { Tag } from '@/components/ui/Tag';
 import { Gym, Partner } from '@/data/types';
-import { createDayPass, DayPass, getGym, getMyDayPass, getMyProfile, getWhoIsHere } from '@/lib/api';
+import { createDayPass, DayPass, getGym, getMyDayPass, getMyProfile, getWhoIsHere, type GymDetail as GymRow } from '@/lib/api';
 import { useAuthGate, useIsGuest } from '@/lib/authGate';
 import { usePartnersForGym, usePartnersPhase, useTrainersForGym, useTrainersForGymPhase } from '@/lib/hooks';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
-import { dayAndMonth } from '@/lib/format';
+import { dayAndMonth, tenureLabel } from '@/lib/format';
 import { showModerationSheet } from '@/lib/moderation';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
@@ -38,6 +38,7 @@ const hhmm = (iso: string) => {
 };
 
 type MyReview = { rating: number; text: string; at: string };
+type Seg = 'Haqqında' | 'Müəllimlər' | 'Üzvlər' | 'Rəylər';
 const NO_REVIEWS: MyReview[] = []; // stable ref — avoids an infinite re-render loop
 
 /** «12 sentyabr». The app writes its own Azerbaijani dates everywhere else
@@ -145,14 +146,12 @@ export default function GymDetail() {
      visitor; handing them a browsable directory of a gym's members is not what
      «baxış rejimi» means, and the spec for guest mode is the gym list and the
      trainer list. So the tab is not there for them, and neither is the route
-     into a member's profile.
-     Addressed by NAME rather than by index, because dropping one option shifts
-     every number after it — «Rəylər» was 3 and would silently become 2. */
-  const SEGS = guest
-    ? (['Haqqında', 'Müəllimlər', 'Rəylər'] as const)
-    : (['Haqqında', 'Müəllimlər', 'Üzvlər', 'Rəylər'] as const);
-  const [seg, setSeg] = useState(segParam === 'reviews' ? (guest ? 2 : 3) : 0);
-  const tab = SEGS[Math.min(seg, SEGS.length - 1)];
+     into a member's profile. The gym's owner can hide it too (`showMembers`,
+     below).
+     The chosen tab is held by NAME, not by index: the tab list changes length
+     once the gym row arrives, and an index would then point at a different
+     tab — «Rəylər» would silently become «Üzvlər». */
+  const [picked, setPicked] = useState<Seg>(segParam === 'reviews' ? 'Rəylər' : 'Haqqında');
   const checkIns = useDb((s) => s.checkIns);
   /* Android edge-to-edge never resizes the window, so the KeyboardAvoidingView below
      is inert there and the review composer's «Göndər» ended up under the IME. The
@@ -166,24 +165,53 @@ export default function GymDetail() {
   // Local-first: seed immediately, then let the real row win (gyms created in-app
   // have ids that are not in the seed catalogue at all).
   const seedGym = useMemo(() => gymById(id) ?? null, [id]);
-  const [remote, setRemote] = useState<Gym | null>(null);
+  const [remote, setRemote] = useState<GymRow | null>(null);
   const [resolved, setResolved] = useState(!hasSupabaseConfig);
-  useFocusEffect(
-    useCallback(() => {
+  /* A read that THREW is not «this gym does not exist». It used to set
+     `resolved` like an answer, and a gym created in the app (no seed copy) then
+     read «Zal tapılmadı · Bu zal silinib» over a connection problem. */
+  const [gymReadFailed, setGymReadFailed] = useState(false);
+  /* One loader for the focus effect and the retry button; the button calls it
+     directly rather than nudging a dependency the effect never reads. */
+  const loadGym = useCallback(
+    (isAlive: () => boolean = () => true) => {
       if (!hasSupabaseConfig || !id) return;
-      let alive = true;
       getGym(id)
         .then((g) => {
-          if (!alive) return;
+          if (!isAlive()) return;
           setRemote(g);
+          setGymReadFailed(false);
           setResolved(true);
         })
-        .catch(() => alive && setResolved(true));
+        .catch(() => {
+          if (!isAlive()) return;
+          setGymReadFailed(true);
+          setResolved(true);
+        });
+    },
+    [id]
+  );
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      loadGym(() => alive);
       return () => {
         alive = false;
       };
-    }, [id])
+    }, [loadGym])
   );
+
+  /* The owner's two display choices (gyms.allow_day_pass / show_members), taken
+     from the server row only. Until that row is back the choice is unknown, and
+     an unknown «hide our member list» is respected rather than overridden: the
+     tab appears once the row confirms it. With no backend there is no owner to
+     ask, so nothing is hidden. */
+  const showMembers = remote ? remote.showMembers : !hasSupabaseConfig;
+  const allowDayPass = remote ? remote.allowDayPass : !hasSupabaseConfig;
+
+  const SEGS: Seg[] =
+    guest || !showMembers ? ['Haqqında', 'Müəllimlər', 'Rəylər'] : ['Haqqında', 'Müəllimlər', 'Üzvlər', 'Rəylər'];
+  const tab: Seg = SEGS.includes(picked) ? picked : 'Haqqında';
 
   const base = remote ?? seedGym;
   /* Only the server can say how many people are in a gym. `gymLiveCount` reports
@@ -362,8 +390,16 @@ export default function GymDetail() {
         // «qeydə alındı» then would claim a second registration that did not
         // happen, so the two cases are named apart.
         toast(pass.reused ? t('Bu zal üçün day-pass artıq var — kod aşağıdadır') : t('Day-pass qeydə alındı — kod aşağıdadır'));
-      } catch {
-        toast(t('Day-pass alınmadı — yenidən cəhd et'), 'error');
+      } catch (e) {
+        // The owner switched day passes off after this page was read; the
+        // server refuses a new pass (schema79). Retrying would not help, so say
+        // why and take the button away.
+        if ((e as { message?: string } | null)?.message === 'day_pass_off') {
+          toast(t('Bu zal hazırda day-pass qəbul etmir'), 'error');
+          setRemote((r) => (r ? { ...r, allowDayPass: false } : r));
+        } else {
+          toast(t('Day-pass alınmadı — yenidən cəhd et'), 'error');
+        }
       } finally {
         setBuyingPass(false);
       }
@@ -401,12 +437,24 @@ export default function GymDetail() {
         <View style={styles.missing}>
           <Icon name="pin" size={30} color={palette.tertiary} />
           <AppText variant="headline" style={{ marginTop: 12 }}>
-            {resolved ? t('Zal tapılmadı') : t('Yüklənir…')}
+            {!resolved ? t('Yüklənir…') : gymReadFailed ? t('Zal yüklənmədi') : t('Zal tapılmadı')}
           </AppText>
           {resolved ? (
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, maxWidth: 260, lineHeight: 21 }}>
-              {t('Bu zal silinib və ya ünvan səhvdir.')}
+              {gymReadFailed
+                ? t('Serverlə əlaqə alınmadı — bu, zalın silindiyi demək deyil. Bağlantını yoxla və yenidən cəhd et.')
+                : t('Bu zal silinib və ya ünvan səhvdir.')}
             </AppText>
+          ) : null}
+          {resolved && gymReadFailed ? (
+            <Button
+              title={t('Yenidən cəhd et')}
+              onPress={() => {
+                setResolved(false);
+                loadGym();
+              }}
+              style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }}
+            />
           ) : null}
           <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }} />
         </View>
@@ -552,8 +600,10 @@ export default function GymDetail() {
               />
               {/* No day-pass price means the gym does not offer day passes — not
                   that one is free. The button read «1 günlük · 0 ₼» and, tapped,
-                  issued a pass saying «0 ₼ zalın özünə ödənilir». */}
-              {gym.dayPass > 0 || dayPass ? (
+                  issued a pass saying «0 ₼ zalın özünə ödənilir». The owner can
+                  also switch day passes off (`allowDayPass`). A pass the person
+                  already holds is shown either way: that code is real. */}
+              {(allowDayPass && gym.dayPass > 0) || dayPass ? (
                 <Button
                   title={
                     buyingPass
@@ -615,10 +665,11 @@ export default function GymDetail() {
             ) : null}
 
             {/* Live banner — only when someone is really checked in, and never
-                for a guest: it exists to open «Üzvlər», which a guest does not
-                have, so for them it was a banner leading nowhere. */}
-            {gym.liveCount > 0 && !guest ? (
-              <PressableScale activeScale={0.98} onPress={() => setSeg((SEGS as readonly string[]).indexOf('Üzvlər'))} style={styles.liveBanner}>
+                where «Üzvlər» is absent (a guest, or a gym whose owner hid it):
+                the banner exists to open that tab and shows the faces in it, so
+                without the tab it is a banner leading nowhere. */}
+            {gym.liveCount > 0 && SEGS.includes('Üzvlər') ? (
+              <PressableScale activeScale={0.98} onPress={() => setPicked('Üzvlər')} style={styles.liveBanner}>
                 {visibleHere.length > 0 ? (
                   <View style={styles.avatars}>
                     {visibleHere.slice(0, 3).map((p, i) => (
@@ -649,7 +700,7 @@ export default function GymDetail() {
             ) : null}
 
             <View style={{ marginTop: 16 }}>
-              <Segmented options={SEGS.map((s) => t(s))} value={Math.min(seg, SEGS.length - 1)} onChange={setSeg} />
+              <Segmented options={SEGS.map((s) => t(s))} value={SEGS.indexOf(tab)} onChange={(i) => setPicked(SEGS[i])} />
             </View>
 
             <View style={{ marginTop: 16 }}>
@@ -943,10 +994,10 @@ export default function GymDetail() {
                           ))}
                         </View>
                       </View>
-                      {r.tenure ? (
+                      {tenureLabel(r.tenure, t) ? (
                         <View style={styles.tenure}>
                           <Icon name="shield" size={12} color={palette.voltDeep} />
-                          <AppText style={{ fontSize: 11, fontWeight: '600', color: palette.voltDeep }}>{r.tenure}</AppText>
+                          <AppText style={{ fontSize: 11, fontWeight: '600', color: palette.voltDeep }}>{tenureLabel(r.tenure, t)}</AppText>
                         </View>
                       ) : null}
                       <AppText variant="body" color={palette.text3} style={{ marginTop: 8, lineHeight: 21 }}>

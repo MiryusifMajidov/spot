@@ -13,9 +13,10 @@ import { Segmented } from '@/components/ui/Segmented';
 import { DAYS, GOALS, LEVELS, TIME_SLOTS, WORKOUT_TYPES } from '@/data/mock';
 import { USERNAME_TAKEN_MSG, displayNameError, getMyProfile, isUsernameTaken, suggestUsername, usernameError } from '@/lib/api';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
+import { invalidateFocusCache, invalidateFocusPrefix } from '@/lib/focusFetch';
 import { useGyms } from '@/lib/hooks';
-import { imageTooLargeMessage, isNotSavedError, pickImage, setMyAvatar, shootImage } from '@/lib/images';
-import { hasSupabaseConfig } from '@/lib/supabase';
+import { imageTooLargeMessage, isNotSavedError, pickImage, setMyAvatar, setTrainerPhoto, shootImage } from '@/lib/images';
+import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, toast } from '@/store/ui';
@@ -25,6 +26,54 @@ import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 /** `avatar_url` lives on the profiles row (added by schema8) — read it defensively. */
 function avatarOf(row: unknown): string | null {
   return (row as { avatar_url?: string | null } | null)?.avatar_url ?? null;
+}
+
+/**
+ * Carry a rename — and a new avatar — over to the person's trainer listing.
+ *
+ * The listing keeps its own `name` and `photo_url`, so Kəşf → Müəllimlər went on
+ * showing the old name and face after a profile edit, until the trainer profile
+ * happened to be saved again. Every write is proven with `.select('id')`: an
+ * RLS-filtered UPDATE comes back `error: null` with zero rows.
+ *
+ * The photo is uploaded again as the listing's own file rather than pointing
+ * `photo_url` at the avatar's: each setter deletes the object it replaces, so a
+ * shared file would vanish from one row the next time the other one changed.
+ */
+async function syncTrainerListing(name: string, photoLocal: string | null): Promise<'ok' | 'failed' | 'photo-failed'> {
+  let primaryId: string;
+  try {
+    const me = await getMyProfile();
+    if (!me?.id) throw new Error('no profile');
+    const { data, error: readErr } = await supabase.from('trainers').select('id,name').eq('owner_id', me.id);
+    if (readErr) throw readErr;
+    const owned = (data ?? []) as { id: string; name: string | null }[];
+    // No row on the server: nothing public is showing the old name.
+    if (!owned.length) return 'ok';
+    if (owned.some((r) => (r.name ?? '').trim() !== name)) {
+      const { data: saved, error } = await supabase.from('trainers').update({ name }).eq('owner_id', me.id).select('id');
+      if (error) throw error;
+      if ((saved?.length ?? 0) < owned.length) throw new Error('listing-not-saved');
+    }
+    // The row whose id is the profile id is the real one (see getMyTrainerId);
+    // any other is a leftover of a profile merge.
+    primaryId = owned.find((r) => r.id === me.id)?.id ?? owned[0].id;
+  } catch {
+    return 'failed';
+  }
+  let photoOk = true;
+  if (photoLocal) {
+    try {
+      await setTrainerPhoto(primaryId, photoLocal);
+    } catch {
+      photoOk = false;
+    }
+  }
+  // Kəşf, the trainer's own page and the gym's trainer list each cache the row.
+  invalidateFocusCache('trainers');
+  invalidateFocusPrefix('trainer:');
+  invalidateFocusPrefix('gymTrainers:');
+  return photoOk ? 'ok' : 'photo-failed';
 }
 
 
@@ -38,6 +87,10 @@ export default function EditProfile() {
   const [saving, setSaving] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const isTrainer = profile.role === 'trainer';
+  // A new avatar that went up in this visit and has not reached the trainer
+  // listing yet. Kept until that write succeeds, so «Yadda saxla» retries it.
+  const listingPhoto = useRef<string | null>(null);
   // Handles live in local state until the save actually goes through, so a person
   // who backs out never leaves a handle behind that the server does not know about.
   const [handle, setHandle] = useState(() => {
@@ -71,7 +124,9 @@ export default function EditProfile() {
   }, []);
 
   const upload = async (source: 'camera' | 'library') => {
-    if (uploading) return;
+    // Not during a save: a trainer's photo reaches the listing only through that
+    // save, so one landing after it would never get there.
+    if (uploading || saving) return;
     let local: string | null = null;
     try {
       local = source === 'camera' ? await shootImage({ square: true }) : await pickImage({ square: true });
@@ -89,6 +144,7 @@ export default function EditProfile() {
     try {
       const url = await setMyAvatar(local);
       setAvatar(url);
+      listingPhoto.current = local;
       successFeedback();
       toast(t('Profil şəklin yeniləndi'));
     } catch (e) {
@@ -113,10 +169,16 @@ export default function EditProfile() {
     }
   };
 
+  // A trainer's avatar replaces the listing photo on save — said up front,
+  // because it may overwrite a photo chosen separately on «Müəllim profili».
+  const photoNote = isTrainer
+    ? t('Şəklin profilində görünür; «Yadda saxla» basanda Kəşfdəki müəllim elanına da keçir.')
+    : t('Şəklin profilində görünür.');
+
   const changePhoto = () =>
     actionSheet({
       title: t('Profil şəkli'),
-      message: t('Şəklin profilində görünür.'),
+      message: photoNote,
       actions: [
         { label: t('Kamera'), onPress: () => upload('camera') },
         { label: t('Qalereya'), onPress: () => upload('library') },
@@ -140,7 +202,9 @@ export default function EditProfile() {
     });
 
   const save = async () => {
-    if (saving) return;
+    // A save mid-upload would sync the listing before the new photo is known and
+    // close the screen — the photo note's promise would silently not happen.
+    if (saving || uploading) return;
     const nameErr = displayNameError(profile.name);
     if (nameErr) {
       toast(t(nameErr), 'error');
@@ -170,9 +234,9 @@ export default function EditProfile() {
     const previousHandle = profile.username;
     setProfile({ username: handle.trim() });
     const result = await saveProfile();
-    setSaving(false);
     // saveProfile() tells us what actually happened — we never claim more than that.
     if (result === 'failed') {
+      setSaving(false);
       // The server refused it, so the phone must not start showing it either — put
       // the old handle back and stay here: the edits are still in the form to retry.
       setProfile({ username: previousHandle });
@@ -184,6 +248,25 @@ export default function EditProfile() {
       }
       return;
     }
+    // Only after a real server save: 'local' means nothing reached the server,
+    // and the listing must not get ahead of the profile it copies.
+    if (result === 'saved' && isTrainer) {
+      const listing = await syncTrainerListing(profile.name.trim(), listingPhoto.current);
+      if (listing === 'ok') listingPhoto.current = null;
+      else {
+        setSaving(false);
+        // The profile IS saved; only the listing is behind. Stay on the screen so
+        // «Yadda saxla» retries it — the photo is still held for that.
+        toast(
+          listing === 'photo-failed'
+            ? t('Profilin saxlanıldı, amma Kəşfdəki müəllim elanında şəkil yenilənmədi — «Yadda saxla» ilə yenidən cəhd et')
+            : t('Profilin saxlanıldı, amma Kəşfdəki müəllim elanın yenilənmədi — «Yadda saxla» ilə yenidən cəhd et'),
+          'error'
+        );
+        return;
+      }
+    }
+    setSaving(false);
     toast(result === 'local' ? t('Yadda saxlanıldı — hələlik yalnız bu cihazda') : t('Profilin yadda saxlanıldı'));
     router.back();
   };
@@ -195,8 +278,8 @@ export default function EditProfile() {
       <NavBar
         title={t('Profili redaktə et')}
         right={
-          <PressableScale onPress={save} disabled={saving} haptic={false} activeScale={0.94}>
-            <AppText variant="headline" color={saving ? palette.tertiary : palette.blue}>
+          <PressableScale onPress={save} disabled={saving || uploading} haptic={false} activeScale={0.94}>
+            <AppText variant="headline" color={saving || uploading ? palette.tertiary : palette.blue}>
               {saving ? t('Saxlanılır…') : t('Yadda saxla')}
             </AppText>
           </PressableScale>
@@ -215,7 +298,7 @@ export default function EditProfile() {
         <View style={styles.avatarBlock}>
           <PressableScale
             activeScale={0.96}
-            disabled={uploading}
+            disabled={uploading || saving}
             accessibilityRole="button"
             accessibilityLabel={t('Profil şəklini dəyiş')}
             onPress={changePhoto}
@@ -228,7 +311,7 @@ export default function EditProfile() {
           <View style={{ flex: 1 }}>
             <PressableScale
               activeScale={0.97}
-              disabled={uploading}
+              disabled={uploading || saving}
               accessibilityRole="button"
               accessibilityLabel={t('Şəkli dəyiş')}
               onPress={changePhoto}
@@ -238,7 +321,7 @@ export default function EditProfile() {
               </AppText>
             </PressableScale>
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 8, lineHeight: 17 }}>
-              {t('Şəklin profilində görünür.')}
+              {photoNote}
             </AppText>
           </View>
         </View>

@@ -26,7 +26,7 @@ const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) =
 export default function TrainerChat() {
   const t = useT();
   const router = useRouter();
-  const { active, loading, offline, failed, reload } = useMyStudents();
+  const { active, loading, offline, failed, noListing, reload } = useMyStudents();
 
   /* The previews come from the SERVER, not from `useDb.threads`.
      That store is the pre-schema42 local chat engine: it only ever held
@@ -83,6 +83,14 @@ export default function TrainerChat() {
           <View style={{ paddingVertical: 40 }}>
             <ActivityIndicator color={palette.tertiary} />
           </View>
+        ) : noListing ? (
+          /* Before `failed`, which is also true here: a retry cannot create the
+             listing, saving the trainer profile does. */
+          <Notice
+            title={t('Müəllim elanın serverdə tapılmadı')}
+            body={t('Şagird sorğuları müəllim elanına gəlir, amma bu hesaba bağlı elan serverdə yoxdur — ona görə sorğuları və şagirdləri göstərə bilmirik. «Müəllim hesabım» səhifəsində profilini yadda saxla, elan yaradılsın.')}
+            action={{ label: t('Müəllim hesabımı aç'), onPress: () => router.push('/(tabs)/profile/become-trainer') }}
+          />
         ) : failed ? (
           <Notice title={t('Yüklənmədi')} body={t('Şagird siyahısını gətirmək alınmadı.')} action={{ label: t('Yenidən cəhd et'), onPress: reload }} />
         ) : threadsFailed ? (

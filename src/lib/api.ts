@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gym, GymScheduleItem, Partner, toLevel } from '@/data/types';
 import { supabase } from './supabase';
 import { t } from './i18n';
-import { invalidateFocusCache, invalidateFocusPrefix } from './focusFetch';
+import { invalidateFocusCache } from './focusFetch';
 import { cacheGyms } from './gymCache';
 import { isPlaceholderName } from './authorName';
 
@@ -26,6 +26,9 @@ export interface DbGym {
   /** The owner-written class timetable (schema7). `jsonb`, so the shape is a
    *  convention and not a guarantee — `gymSchedule` below validates it. */
   schedule?: unknown;
+  /** The owner's display switches (schema7), both `default true`. */
+  allow_day_pass?: boolean | null;
+  show_members?: boolean | null;
 }
 
 /** Every profile column the app is allowed to read.
@@ -335,6 +338,15 @@ export async function activeCountsByGym(): Promise<Record<string, number>> {
   return counts;
 }
 
+/** The gym page also needs the owner's two display choices (schema7). They
+ *  are not on `Gym` because no catalogue card reads them. */
+export type GymDetail = Gym & {
+  /** false = the owner does not take day passes: no day-pass button. */
+  allowDayPass: boolean;
+  /** false = the owner hides the «Üzvlər» tab on the gym page. */
+  showMembers: boolean;
+};
+
 export async function getGymsNear(lat: number, lng: number): Promise<Gym[]> {
   const [{ data, error }, counts] = await Promise.all([
     supabase.rpc('gyms_near', { lat, lng }),
@@ -360,67 +372,24 @@ export async function getGyms(): Promise<Gym[]> {
   return (data ?? []).map((g: DbGym) => mapGym(g, 0, counts[g.id] ?? 0));
 }
 
-export async function getGym(id: string): Promise<Gym | null> {
+export async function getGym(id: string): Promise<GymDetail | null> {
   const { data, error } = await supabase.from('gyms').select('*').eq('id', id).maybeSingle();
   if (error) throw error;
   if (!data) return null;
   const counts = await activeCountsByGym();
-  return mapGym(data as DbGym, 0, counts[id] ?? 0);
+  const row = data as DbGym;
+  return {
+    ...mapGym(row, 0, counts[id] ?? 0),
+    // NULL is a row nobody ever set: the column default (true), as in mapOwnedGym.
+    allowDayPass: row.allow_day_pass !== false,
+    showMembers: row.show_members !== false,
+  };
 }
 
-// -------------------- check-in --------------------
-/** Why the server refused a check-in. `code` is the stable part; `detail` carries
- *  the real measured value the server sent back (metres away, the opening hours
- *  it read). The screen turns this into Azerbaijani — nothing is invented here. */
-export type CheckInRefusal =
-  | 'not_signed_in'
-  | 'sanctioned'
-  | 'no_gym'
-  | 'gym_no_coords'
-  | 'no_position'
-  | 'too_far'
-  | 'closed'
-  | 'already_today'
-  | 'unknown';
-
-export class CheckInError extends Error {
-  constructor(
-    readonly code: CheckInRefusal,
-    readonly detail: string | null,
-    message: string
-  ) {
-    super(message);
-    this.name = 'CheckInError';
-  }
-}
-
-const REFUSALS: CheckInRefusal[] = [
-  'not_signed_in', 'sanctioned', 'no_gym', 'gym_no_coords',
-  'no_position', 'too_far', 'closed', 'already_today',
-];
-
-/** schema19: the row is written by `public.check_in`, never by the client.
- *  The position is an argument the server verifies and discards — it is not
- *  stored, so a gym owner reading their attendance list cannot see where a
- *  member was standing. */
-export async function checkIn(gymId: string, at: { lat: number; lng: number }): Promise<void> {
-  const { error } = await supabase.rpc('check_in', {
-    p_gym_id: gymId,
-    p_lat: at.lat,
-    p_lng: at.lng,
-  });
-  if (!error) {
-    // A check-in changes the live count on every gym card and the `hereNow`
-    // flag on the partner lists; both are cached under those keys.
-    invalidateFocusCache('gyms');
-    invalidateFocusPrefix('partner');
-    return;
-  }
-  const raw = String(error.message ?? '');
-  const hit = REFUSALS.find((c) => raw.includes(`checkin_${c}`));
-  const detail = hit ? (raw.split(`checkin_${hit}:`)[1] ?? '').split(/["\n]/)[0].trim() || null : null;
-  throw new CheckInError(hit ?? 'unknown', detail, raw);
-}
+/* `checkIn()` (the `check_in` RPC with a phone-reported position) went with
+   schema74, which revoked that RPC from every client role. Check-in is the QR
+   code now — `check_in_with_code`, called from (tabs)/checkin.tsx — so the
+   wrapper had no caller and could only ever fail with a permission error. */
 
 // -------------------- partners / matching --------------------
 /** Design §compatibility weights: 30 zal · 25 cədvəl · 15 səviyyə · 15 məqsəd ·

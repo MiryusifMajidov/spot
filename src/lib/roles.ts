@@ -20,6 +20,9 @@ export interface TrainerRequestRow {
   note: string | null;
   preferred_time: string | null;
   status: 'pending' | 'accepted' | 'declined' | 'ended';
+  /** Optional in the type only because reserve/[id].tsx builds a row locally
+   *  after sending; every row read from the server carries it. */
+  decided_at?: string | null;
   created_at: string;
 }
 
@@ -34,7 +37,16 @@ export interface StudentRow {
   note: string | null;
   preferredTime: string | null;
   status: TrainerRequestRow['status'];
-  since: string;
+  /** When the request row was FIRST created. A request sent again after a
+   *  refusal or an end upserts the same row and keeps this date, so it may only
+   *  be shown as «İlk sorğu» — it was once printed as «X əvvəldən şagirdin»,
+   *  which is neither how long they have been a student nor, after a re-send,
+   *  when they last asked. */
+  requestedAt: string;
+  /** When the trainer accepted: `decided_at`, stamped by the database on every
+   *  trainer decision (schema28), so the phone's clock plays no part. Null
+   *  unless the row is accepted. */
+  acceptedAt: string | null;
   programTitle: string | null;
   /** The assigned program's id on the server. Matching by TITLE broke on a
    *  rename and on any phone that had not written the program itself. */
@@ -152,10 +164,15 @@ export async function getMyRequestTo(trainerId: string): Promise<TrainerRequestR
   return (data as TrainerRequestRow | null) ?? null;
 }
 
-/** Everyone who asked to train with me, and everyone I accepted. */
-export async function getMyStudents(): Promise<{ pending: StudentRow[]; active: StudentRow[] }> {
+/** Everyone who asked to train with me, and everyone I accepted.
+ *
+ *  `noListing` is true when this account owns no trainer row. That is NOT «zero
+ *  students»: requests are addressed to a listing, so without one the server was
+ *  never asked, and the screens must say the listing is missing rather than
+ *  print «Şagirdlər 0 · Hələ şagirdin yoxdur» as if it had answered. */
+export async function getMyStudents(): Promise<{ pending: StudentRow[]; active: StudentRow[]; noListing: boolean }> {
   const trainerId = await getMyTrainerId();
-  if (!trainerId) return { pending: [], active: [] };
+  if (!trainerId) return { pending: [], active: [], noListing: true };
 
   const { data: reqs, error: reqErr } = await supabase
     .from('trainer_requests')
@@ -166,7 +183,7 @@ export async function getMyStudents(): Promise<{ pending: StudentRow[]; active: 
   // «Hələ şagirdin yoxdur» must mean zero rows, never a failed read.
   if (reqErr) throw reqErr;
   const rows = (reqs ?? []) as TrainerRequestRow[];
-  if (!rows.length) return { pending: [], active: [] };
+  if (!rows.length) return { pending: [], active: [], noListing: false };
 
   const ids = rows.map((r) => r.from_profile);
   const [{ data: profs, error: pErr }, { data: progs, error: progErr }] = await Promise.all([
@@ -197,7 +214,8 @@ export async function getMyStudents(): Promise<{ pending: StudentRow[]; active: 
       note: r.note,
       preferredTime: r.preferred_time,
       status: r.status,
-      since: r.created_at,
+      requestedAt: r.created_at,
+      acceptedAt: r.status === 'accepted' ? (r.decided_at ?? null) : null,
       programTitle: prog?.title ?? null,
       programId: prog?.program_id ?? null,
       programNote: prog?.note ?? null,
@@ -207,6 +225,7 @@ export async function getMyStudents(): Promise<{ pending: StudentRow[]; active: 
   return {
     pending: rows.filter((r) => r.status === 'pending').map(map),
     active: rows.filter((r) => r.status === 'accepted').map(map),
+    noListing: false,
   };
 }
 
@@ -226,6 +245,39 @@ export async function decideTrainerRequest(requestId: string, accept: boolean): 
     .select('id');
   if (error) throw error;
   if (!data?.length) throw new Error('request-not-updated');
+}
+
+/** Trainer ends a student relationship: `accepted` → `ended` (tr_update allows
+ *  it, and the schema28 guard lets the trainer set any status).
+ *
+ *  What `ended` does, read from the live database on 2026-09-22 — the confirm
+ *  dialog in trainer/student/[id].tsx states exactly this, so keep them in step:
+ *  · has_relationship_with() counts `accepted` rows only. The trainer can no
+ *    longer START a thread with this person (open_thread refuses: they are not a
+ *    listed trainer), and loses that branch of profiles_read.
+ *  · A thread that already exists is left alone: messages_send asks only
+ *    in_thread() and the block check, so earlier messages stay and both sides
+ *    can still write there. The trainer's «Söhbət» tab lists active students
+ *    only, so it drops out of that tab.
+ *  · Nobody is told: tg_notify_trainer_request fires on accepted/declined only.
+ *  · student_programs is NOT touched — the student keeps seeing the assigned
+ *    program and note on their «Məşq» tab (getMyAssignedProgram does not look
+ *    at the request's status).
+ *  · The listing's `clients` count is recounted by trainer_requests_sync_clients.
+ *  · The student may ask again: the guard lets them move the row back to pending.
+ *
+ *  `.eq('status', 'accepted')` so a row that changed under a stale screen is not
+ *  ended blindly, and the same proof rule as above: zero rows back means the
+ *  write did not land, whatever `error` says. */
+export async function endStudent(requestId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('trainer_requests')
+    .update({ status: 'ended' })
+    .eq('id', requestId)
+    .eq('status', 'accepted')
+    .select('id');
+  if (error) throw error;
+  if (!data?.length) throw new Error('student-not-ended');
 }
 
 /** Trainer assigns / updates the program for one student — the real value they add. */
@@ -329,29 +381,46 @@ export async function getMyGymId(): Promise<string | null> {
   return (data as { id: string } | null)?.id ?? null;
 }
 
+/** Every row of a read, not just the first page. PostgREST cuts a response at
+ *  1000 rows and says nothing about it, so a busy gym's month of check-ins
+ *  (50 visits a day is 1500) came back short and every count, «son gəliş» and
+ *  SADİQ tag built from it was quietly wrong. The caller orders the query by a
+ *  unique key so the pages neither overlap nor skip. */
+const PAGE = 1000;
+async function readAll<T>(page: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: unknown }>): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await page(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as T[];
+    out.push(...rows);
+    if (rows.length < PAGE) return out;
+  }
+}
+
 /** Members = profiles whose home gym this is, enriched with real check-in counts. */
 export async function getGymMembers(gymId: string): Promise<GymMemberRow[]> {
-  const { data: profs, error: pErr } = await supabase
-    .from('profiles')
-    .select('id,name,level,goals')
-    .eq('home_gym_id', gymId);
-  // «ÜZVLƏR 0» is a measurement; a failed read is not. Throw so the panel can
-  // render its «yüklənmədi» notice instead of an invented zero.
-  if (pErr) throw pErr;
   type P = { id: string; name: string | null; level: string | null; goals: string[] | null };
-  const rows = (profs ?? []) as P[];
+  // «ÜZVLƏR 0» is a measurement; a failed read is not. readAll throws so the
+  // panel can render its «yüklənmədi» notice instead of an invented zero.
+  const rows = await readAll<P>((from, to) =>
+    supabase.from('profiles').select('id,name,level,goals').eq('home_gym_id', gymId).order('id').range(from, to)
+  );
   if (!rows.length) return [];
 
   const since = new Date(Date.now() - 30 * 86400000).toISOString();
-  const { data: cis, error: ciErr } = await supabase
-    .from('check_ins')
-    .select('profile_id,created_at')
-    .eq('gym_id', gymId)
-    .gt('created_at', since);
-  if (ciErr) throw ciErr;
+  const cis = await readAll<{ profile_id: string; created_at: string }>((from, to) =>
+    supabase
+      .from('check_ins')
+      .select('profile_id,created_at')
+      .eq('gym_id', gymId)
+      .gt('created_at', since)
+      .order('id')
+      .range(from, to)
+  );
 
   const counts = new Map<string, { n: number; last: string }>();
-  for (const c of (cis ?? []) as { profile_id: string; created_at: string }[]) {
+  for (const c of cis) {
     const cur = counts.get(c.profile_id);
     if (!cur) counts.set(c.profile_id, { n: 1, last: c.created_at });
     else counts.set(c.profile_id, { n: cur.n + 1, last: c.created_at > cur.last ? c.created_at : cur.last });

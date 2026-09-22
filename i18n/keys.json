@@ -244,7 +244,8 @@
    "src/app/auth/sign-in.tsx",
    "src/app/chat/requests.tsx",
    "src/app/gym/pass.tsx",
-   "src/app/onboarding/profile.tsx"
+   "src/app/onboarding/profile.tsx",
+   "src/app/trainer/index.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -802,6 +803,15 @@
   ]
  },
  {
+  "key": "Bu zal hazırda day-pass qəbul etmir",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/gym/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Bu zal silinib və ya ünvan səhvdir.",
   "counted": false,
   "files": [
@@ -1065,6 +1075,7 @@
    "src/app/gym/qr.tsx",
    "src/app/gym/reviews.tsx",
    "src/app/trainer/programs.tsx",
+   "src/app/trainer/student/[id].tsx",
    "src/app/trainer/students.tsx",
    "src/app/trainer/verify.tsx",
    "src/components/CommentsSheet.tsx",
@@ -1240,6 +1251,15 @@
   "placeholders": []
  },
  {
+  "key": "Serverlə əlaqə alınmadı — bu, zalın silindiyi demək deyil. Bağlantını yoxla və yenidən cəhd et.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/gym/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Sən",
   "counted": false,
   "files": [
@@ -1291,6 +1311,30 @@
   "placeholders": []
  },
  {
+  "key": "Yenidən cəhd et",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/gym/[id].tsx",
+   "src/app/(tabs)/discover/partner/[id].tsx",
+   "src/app/(tabs)/profile/notifications.tsx",
+   "src/app/chat/requests.tsx",
+   "src/app/gym/claim.tsx",
+   "src/app/gym/members.tsx",
+   "src/app/gym/reviews.tsx",
+   "src/app/notifications.tsx",
+   "src/app/trainer/chat.tsx",
+   "src/app/trainer/index.tsx",
+   "src/app/trainer/students.tsx",
+   "src/app/trainer/verify.tsx",
+   "src/components/CommentsSheet.tsx",
+   "src/components/SpotMap.tsx",
+   "src/components/ui/AppErrorBoundary.tsx",
+   "src/lib/gymOwner.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Yenidən yoxla",
   "counted": false,
   "files": [
@@ -1324,6 +1368,15 @@
   "files": [
    "src/app/(tabs)/discover/gym/[id].tsx",
    "src/lib/gymOwner.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Zal yüklənmədi",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/gym/[id].tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -2148,7 +2201,8 @@
   "key": "Sonra",
   "counted": false,
   "files": [
-   "src/app/(tabs)/discover/match.tsx"
+   "src/app/(tabs)/discover/match.tsx",
+   "src/app/trainer/verify.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -2543,33 +2597,11 @@
   "placeholders": []
  },
  {
-  "key": "Yenidən cəhd et",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/discover/partner/[id].tsx",
-   "src/app/(tabs)/profile/notifications.tsx",
-   "src/app/chat/requests.tsx",
-   "src/app/gym/claim.tsx",
-   "src/app/gym/members.tsx",
-   "src/app/gym/reviews.tsx",
-   "src/app/notifications.tsx",
-   "src/app/trainer/chat.tsx",
-   "src/app/trainer/index.tsx",
-   "src/app/trainer/students.tsx",
-   "src/app/trainer/verify.tsx",
-   "src/components/CommentsSheet.tsx",
-   "src/components/SpotMap.tsx",
-   "src/components/ui/AppErrorBoundary.tsx",
-   "src/lib/gymOwner.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Yüklənmədi",
   "counted": false,
   "files": [
    "src/app/(tabs)/discover/partner/[id].tsx",
+   "src/app/(tabs)/profile/become-trainer.tsx",
    "src/app/notifications.tsx",
    "src/app/trainer/chat.tsx",
    "src/app/trainer/index.tsx",
@@ -4417,6 +4449,25 @@
   "placeholders": []
  },
  {
+  "key": "Adı olmayan müəllim Kəşf → Müəllimlər siyahısında göstərilmir — şagirdlər səni tapa bilməz. Adını profilində yaz, sonra buraya qayıt.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/become-trainer.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Adını yaz",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/become-trainer.tsx",
+   "src/app/trainer/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Cihazda saxlanıldı — server bağlantısı olmadan başqaları səni görmür",
   "counted": false,
   "files": [
@@ -4503,7 +4554,8 @@
   "key": "Elanın serverdə yoxdur, ona görə istifadəçilər səni tapa bilmir. Yenidən sinxronla.",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/become-trainer.tsx"
+   "src/app/(tabs)/profile/become-trainer.tsx",
+   "src/app/trainer/index.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -4629,7 +4681,8 @@
   "key": "Müəllim profili",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/become-trainer.tsx"
+   "src/app/(tabs)/profile/become-trainer.tsx",
+   "src/app/trainer/index.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -4833,6 +4886,16 @@
   "placeholders": []
  },
  {
+  "key": "Vəziyyət oxunmadı — bağlantını yoxla və səhifəni yenidən aç.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/become-trainer.tsx",
+   "src/app/trainer/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Yadda saxla",
   "counted": false,
   "files": [
@@ -4943,6 +5006,15 @@
  },
  {
   "key": "Şəklin Kəşf → Müəllimlər siyahısında və profilində görünür.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/become-trainer.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Əvvəlcə adını yaz",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/become-trainer.tsx"
@@ -5487,6 +5559,24 @@
   "placeholders": []
  },
  {
+  "key": "Profilin saxlanıldı, amma Kəşfdəki müəllim elanın yenilənmədi — «Yadda saxla» ilə yenidən cəhd et",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Profilin saxlanıldı, amma Kəşfdəki müəllim elanında şəkil yenilənmədi — «Yadda saxla» ilə yenidən cəhd et",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Profilin yadda saxlanıldı",
   "counted": false,
   "files": [
@@ -5653,6 +5743,15 @@
  },
  {
   "key": "Şəklin profilində görünür.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Şəklin profilində görünür; «Yadda saxla» basanda Kəşfdəki müəllim elanına da keçir.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/edit.tsx"
@@ -10629,6 +10728,24 @@
   "placeholders": []
  },
  {
+  "key": "Day-pass düyməsi zal səhifəsində yalnız bu açıq olanda və 1 günlük qiymət yazılanda görünür. «Üzvlər» bağlı olanda zal səhifəsində üzv siyahısı göstərilmir.",
+  "counted": false,
+  "files": [
+   "src/app/gym/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Day-pass qəbul et",
+  "counted": false,
+  "files": [
+   "src/app/gym/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Dəyişikliklər saxlanılmayıb",
   "counted": false,
   "files": [
@@ -10665,7 +10782,25 @@
   "placeholders": []
  },
  {
+  "key": "Profil yeniləndi, amma zal səhifəsi seçimləri saxlanılmadı",
+  "counted": false,
+  "files": [
+   "src/app/gym/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Profil yeniləndi, amma zalın yeri saxlanılmadı",
+  "counted": false,
+  "files": [
+   "src/app/gym/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Profil yeniləndi, amma zalın yeri və zal səhifəsi seçimləri saxlanılmadı",
   "counted": false,
   "files": [
    "src/app/gym/edit.tsx"
@@ -10821,7 +10956,25 @@
   ]
  },
  {
-  "key": "Üzv siyahısında kimin göründüyünü hər üzv özü Məxfilik ayarlarından idarə edir — zal bunu dəyişə bilmir.",
+  "key": "«Üzvlər» bölməsini göstər",
+  "counted": false,
+  "files": [
+   "src/app/gym/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "«Üzvlər» bölməsini yuxarıdakı açarla bütövlükdə gizlədə bilərsən. Siyahıda adının görünüb-görünməməsini isə hər üzv özü Məxfilik ayarlarından seçir — zal bunu dəyişə bilmir.",
+  "counted": false,
+  "files": [
+   "src/app/gym/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Şəkil oxunmadı · yenisini seç",
   "counted": false,
   "files": [
    "src/app/gym/edit.tsx"
@@ -10920,6 +11073,15 @@
   "placeholders": []
  },
  {
+  "key": "Day-pass bağlıdır",
+  "counted": false,
+  "files": [
+   "src/app/gym/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Day-pass məlumatı yüklənmədi",
   "counted": false,
   "files": [
@@ -10930,6 +11092,15 @@
  },
  {
   "key": "Day-pass qeydiyyatı oxunur.",
+  "counted": false,
+  "files": [
+   "src/app/gym/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Day-pass qiyməti yazılmayıb",
   "counted": false,
   "files": [
    "src/app/gym/index.tsx"
@@ -10965,7 +11136,16 @@
   "placeholders": []
  },
  {
-  "key": "Elan SPOT icma lentinə {gym} adından yerləşdirilir. Push bildiriş göndərilmir.",
+  "key": "Elan göndərilmədi — bağlantını yoxla",
+  "counted": false,
+  "files": [
+   "src/app/gym/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Elan icma lentində sənin öz adınla paylaşılır — {gym} adı yalnız adının altındakı kiçik sətirdə görünür. Push bildiriş göndərilmir.",
   "counted": false,
   "files": [
    "src/app/gym/index.tsx"
@@ -10974,15 +11154,6 @@
   "placeholders": [
    "gym"
   ]
- },
- {
-  "key": "Elan göndərilmədi — bağlantını yoxla",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
  },
  {
   "key": "Elan icmaya göndərildi",
@@ -11093,6 +11264,15 @@
   "placeholders": []
  },
  {
+  "key": "Qiymət olmadan zal səhifəsində day-pass düyməsi görünmür. «Profil» bölməsində 1 günlük qiyməti yaz.",
+  "counted": false,
+  "files": [
+   "src/app/gym/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Resepsiyada təsdiqlənən",
   "counted": false,
   "files": [
@@ -11193,6 +11373,15 @@
   "placeholders": []
  },
  {
+  "key": "Zal səhifəsində day-pass düyməsi göstərilmir. «Profil» bölməsində yenidən aça bilərsən.",
+  "counted": false,
+  "files": [
+   "src/app/gym/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Zalın idarəsi tam səndədir",
   "counted": false,
   "files": [
@@ -11230,6 +11419,15 @@
  },
  {
   "key": "Zalın yeri xəritədə qeyd olunmayıb",
+  "counted": false,
+  "files": [
+   "src/app/gym/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Zalın şəkli oxunmadı",
   "counted": false,
   "files": [
    "src/app/gym/index.tsx"
@@ -11399,15 +11597,6 @@
   "placeholders": []
  },
  {
-  "key": "Bu filtrdə üzv yoxdur",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Bu, «üzv yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və yenidən cəhd et.",
   "counted": false,
   "files": [
@@ -11417,14 +11606,14 @@
   "placeholders": []
  },
  {
-  "key": "Bütün rəqəmlər son 30 günün real check-in-lərindən hesablanır — uydurma statistika göstərmirik. «Yeni» = bu ay SPOT-a qeydiyyatdan keçib və zalın kimi bu zalı seçib. «Risk» = ən azı {days} gündür SPOT-dadır və son {days} gündə check-in etməyib. Təzə qoşulan üzv risk sayılmır — hələ gəlməyə vaxtı olmayıb.",
-  "counted": false,
+  "key": "Bütün rəqəmlər son 30 günün real check-in-lərindən hesablanır — uydurma statistika göstərmirik. «Sadiq» = son 30 gündə ən azı {n} check-in. Üzvün bu zalı nə vaxt seçdiyini bilmirik, ona görə «yeni» və ya «risk» kimi status göstərmirik.",
+  "counted": true,
   "files": [
    "src/app/gym/members.tsx"
   ],
   "kind": "ui",
   "placeholders": [
-   "days"
+   "n"
   ]
  },
  {
@@ -11435,26 +11624,6 @@
   ],
   "kind": "ui",
   "placeholders": []
- },
- {
-  "key": "Filtri dəyiş və ya bütün üzvlərə bax.",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Hamısı {n}",
-  "counted": true,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
  },
  {
   "key": "Hələ {n} üzv var — faiz hesablamaq üçün az. Rəqəmlər 5 üzvdən sonra göstərilir ki, yanıltmasın.",
@@ -11477,15 +11646,6 @@
   "placeholders": []
  },
  {
-  "key": "RİSK",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "SADİQ",
   "counted": false,
   "files": [
@@ -11495,33 +11655,13 @@
   "placeholders": []
  },
  {
-  "key": "SPOT-da zalını seçən hər kəs burada görünəcək — ad, check-in tezliyi və üzvlük statusu ilə. Siyahı üzvlər zalını özləri seçdikcə dolur.",
+  "key": "SPOT-da zalını seçən üzvlər burada check-in tezliyi ilə görünəcək; adını gizlədən üzv adsız göstərilir. Siyahı üzvlər zalını özləri seçdikcə dolur.",
   "counted": false,
   "files": [
    "src/app/gym/members.tsx"
   ],
   "kind": "ui",
   "placeholders": []
- },
- {
-  "key": "YENİ",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Yeni {n}",
-  "counted": true,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
  },
  {
   "key": "Yetərli məlumat yoxdur.",
@@ -11533,7 +11673,7 @@
   "placeholders": []
  },
  {
-  "key": "Zal admini üzvün məşq detallarını, çəkisini və söhbətlərini GÖRMÜR — yalnız check-in tezliyini və üzvlük statusunu. Üzvə birbaşa yazmaq imkanı da yoxdur.",
+  "key": "Zal admini üzvün məşq detallarını, çəkisini və söhbətlərini GÖRMÜR — yalnız bu zaldakı check-in-lərini. Üzvə birbaşa yazmaq imkanı da yoxdur.",
   "counted": false,
   "files": [
    "src/app/gym/members.tsx"
@@ -11589,17 +11729,6 @@
   ]
  },
  {
-  "key": "{n} gün gəlməyən",
-  "counted": true,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
- },
- {
   "key": "Üzv siyahısı yüklənmədi",
   "counted": false,
   "files": [
@@ -11627,17 +11756,6 @@
   ],
   "kind": "ui",
   "placeholders": []
- },
- {
-  "key": "İtirilmə riski {n}",
-  "counted": true,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
  },
  {
   "key": "Belə kod tapılmadı",
@@ -11938,15 +12056,6 @@
   "placeholders": []
  },
  {
-  "key": "Kodu paylaş",
-  "counted": false,
-  "files": [
-   "src/app/gym/qr.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "QR oxunmasa, üzv bu kodu əl ilə də yaza bilər.",
   "counted": false,
   "files": [
@@ -12008,18 +12117,6 @@
   ],
   "kind": "ui",
   "placeholders": []
- },
- {
-  "key": "{gym} — SPOT check-in kodu: {code}",
-  "counted": false,
-  "files": [
-   "src/app/gym/qr.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "code",
-   "gym"
-  ]
  },
  {
   "key": "Aşağıdakılar əvvəlki yükləmədən qalıb — yeni rəylər olmaya bilər. Bağlantını yoxla.",
@@ -12621,6 +12718,27 @@
   "placeholders": []
  },
  {
+  "key": "Müəllim elanın serverdə tapılmadı",
+  "counted": false,
+  "files": [
+   "src/app/trainer/chat.tsx",
+   "src/app/trainer/student/[id].tsx",
+   "src/app/trainer/students.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Müəllim hesabımı aç",
+  "counted": false,
+  "files": [
+   "src/app/trainer/chat.tsx",
+   "src/app/trainer/students.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Sorğu göndərən bir istifadəçini qəbul edəndən sonra onunla söhbət burada açılır.",
   "counted": false,
   "files": [
@@ -12656,6 +12774,17 @@
   "counted": false,
   "files": [
    "src/app/trainer/chat.tsx",
+   "src/app/trainer/students.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Şagird sorğuları müəllim elanına gəlir, amma bu hesaba bağlı elan serverdə yoxdur — ona görə sorğuları və şagirdləri göstərə bilmirik. «Müəllim hesabım» səhifəsində profilini yadda saxla, elan yaradılsın.",
+  "counted": false,
+  "files": [
+   "src/app/trainer/chat.tsx",
+   "src/app/trainer/student/[id].tsx",
    "src/app/trainer/students.tsx"
   ],
   "kind": "ui",
@@ -12728,6 +12857,24 @@
  },
  {
   "key": "Dəyişiklik saxlanılmadı — yenidən cəhd et",
+  "counted": false,
+  "files": [
+   "src/app/trainer/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Elanında ad yoxdur — adsız müəllim Kəşf → Müəllimlər siyahısında göstərilmir, şagirdlər səni tapa bilmir. Əvvəlcə adını yaz.",
+  "counted": false,
+  "files": [
+   "src/app/trainer/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Görünmə açıldı, amma elanında ad yoxdur — adsız müəllim Kəşfdə göstərilmir",
   "counted": false,
   "files": [
    "src/app/trainer/index.tsx"
@@ -12894,15 +13041,6 @@
   "placeholders": []
  },
  {
-  "key": "Vəziyyət oxunmadı — bağlantını yoxla və səhifəni yenidən aç.",
-  "counted": false,
-  "files": [
-   "src/app/trainer/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "YENİ SORĞU",
   "counted": false,
   "files": [
@@ -12990,6 +13128,15 @@
  },
  {
   "key": "Şagird siyahısını gətirmək alınmadı. Neçə sorğun olduğunu bilmirik.",
+  "counted": false,
+  "files": [
+   "src/app/trainer/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Şagird sorğu göndərəndə burada görəcəksən.",
   "counted": false,
   "files": [
    "src/app/trainer/index.tsx"
@@ -13269,6 +13416,15 @@
   "placeholders": []
  },
  {
+  "key": "Təyin etdiyin proqram və qeydin onun «Məşq» səhifəsində qalacaq.",
+  "counted": false,
+  "files": [
+   "src/app/trainer/student/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Uyğun vaxt: {time}",
   "counted": false,
   "files": [
@@ -13289,14 +13445,14 @@
   "placeholders": []
  },
  {
-  "key": "{ago} əvvəldən şagirdin",
+  "key": "{name} artıq şagirdin deyil",
   "counted": false,
   "files": [
    "src/app/trainer/student/[id].tsx"
   ],
   "kind": "ui",
   "placeholders": [
-   "ago"
+   "name"
   ]
  },
  {
@@ -13311,7 +13467,29 @@
   ]
  },
  {
+  "key": "{name} «Şagirdlər» və «Söhbət» siyahılarından çıxacaq. Ona bildiriş getməyəcək — deməyə sözün varsa, əvvəlcə ona yaz.",
+  "counted": false,
+  "files": [
+   "src/app/trainer/student/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "name"
+  ]
+ },
+ {
   "key": "{name} üçün proqram təyin edildi — «Məşq» səhifəsində ona görünür",
+  "counted": false,
+  "files": [
+   "src/app/trainer/student/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "name"
+  ]
+ },
+ {
+  "key": "{name} şagirdlikdən çıxarılsın?",
   "counted": false,
   "files": [
    "src/app/trainer/student/[id].tsx"
@@ -13381,7 +13559,34 @@
   "placeholders": []
  },
  {
+  "key": "Şagirdlikdən çıxar",
+  "counted": false,
+  "files": [
+   "src/app/trainer/student/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Şagirdlikdən çıxarmaq alınmadı — yenidən cəhd et",
+  "counted": false,
+  "files": [
+   "src/app/trainer/student/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Şagirdlərə qayıt",
+  "counted": false,
+  "files": [
+   "src/app/trainer/student/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Əvvəlki yazışmanız silinmir. O, sənə yenidən sorğu göndərə bilər.",
   "counted": false,
   "files": [
    "src/app/trainer/student/[id].tsx"
@@ -13415,6 +13620,17 @@
   ],
   "kind": "ui",
   "placeholders": []
+ },
+ {
+  "key": "Qəbul edildi: {date}",
+  "counted": false,
+  "files": [
+   "src/app/trainer/students.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "date"
+  ]
  },
  {
   "key": "Sorğular {n}",
@@ -13453,17 +13669,6 @@
   ],
   "kind": "ui",
   "placeholders": []
- },
- {
-  "key": "{ago} əvvəldən",
-  "counted": false,
-  "files": [
-   "src/app/trainer/students.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "ago"
-  ]
  },
  {
   "key": "{name} sorğusunu qəbul et",
@@ -13521,6 +13726,17 @@
   ]
  },
  {
+  "key": "İlk sorğu: {date}",
+  "counted": false,
+  "files": [
+   "src/app/trainer/students.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "date"
+  ]
+ },
+ {
   "key": "İstifadəçilər səni Kəşf bölməsində tapıb sorğu göndərəndə sorğu «Sorğular» tabında görünəcək. Qəbul etdiyin insanlar burada olacaq.",
   "counted": false,
   "files": [
@@ -13560,6 +13776,24 @@
  },
  {
   "key": "Adının yanında mavi nişan görünür",
+  "counted": false,
+  "files": [
+   "src/app/trainer/verify.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Açılmadı",
+  "counted": false,
+  "files": [
+   "src/app/trainer/verify.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Baxılmış sorğuya sənəd əlavə olunmur. Ən son yüklədiyin şəkil «Yenidən müraciət et» ilə göndərilən yeni sorğuya əlavə olunur.",
   "counted": false,
   "files": [
    "src/app/trainer/verify.tsx"
@@ -13685,6 +13919,15 @@
   "placeholders": []
  },
  {
+  "key": "Köhnə sorğuna artıq baxılıb — ona sənəd əlavə olunmur. Bu sertifikatla yeni sorğu göndərilsin?",
+  "counted": false,
+  "files": [
+   "src/app/trainer/verify.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "MAVİ NİŞAN NƏ VERİR",
   "counted": false,
   "files": [
@@ -13712,7 +13955,7 @@
   "placeholders": []
  },
  {
-  "key": "Məşqçi sertifikatının şəklini yüklə. Sənəd qapalı saxlancda saxlanılır — yalnız SPOT komandası açır.",
+  "key": "Məşqçi sertifikatının şəklini yüklə. Sənəd qapalı saxlancda saxlanılır — onu yalnız sən və SPOT komandası görür.",
   "counted": false,
   "files": [
    "src/app/trainer/verify.tsx"
@@ -13757,7 +14000,7 @@
   "placeholders": []
  },
  {
-  "key": "Sertifikat saxlancda saxlanıldı, amma açıq sorğuna əlavə olunmadı — dəstəyə yaz",
+  "key": "Sertifikat saxlanıldı — açıq sorğun yoxdur, ona görə növbəyə düşmür",
   "counted": false,
   "files": [
    "src/app/trainer/verify.tsx"
@@ -13766,7 +14009,25 @@
   "placeholders": []
  },
  {
-  "key": "Sertifikat saxlanıldı — açıq sorğun yoxdur, ona görə növbəyə düşmür",
+  "key": "Sertifikat saxlanıldı, amma sorğuna əlavə olunmadı — sorğunun vəziyyəti yenidən yoxlanılır",
+  "counted": false,
+  "files": [
+   "src/app/trainer/verify.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Sertifikat sorğuna əlavə olundu",
+  "counted": false,
+  "files": [
+   "src/app/trainer/verify.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Sertifikat yükləndi",
   "counted": false,
   "files": [
    "src/app/trainer/verify.tsx"
@@ -13888,7 +14149,7 @@
   "placeholders": []
  },
  {
-  "key": "Sənədlər qapalı saxlancdadır — yalnız SPOT komandası yoxlayır, profilində göstərilmir. Ona görə burada şəkil əvəzinə sənəd nişanı görə bilərsən.",
+  "key": "Sənədlər qapalı saxlancdadır — onları yalnız sən və SPOT komandası görür, profilində göstərilmir.",
   "counted": false,
   "files": [
    "src/app/trainer/verify.tsx"
@@ -13951,7 +14212,7 @@
   "placeholders": []
  },
  {
-  "key": "Yüklədiyin sertifikatlar qapalı saxlancda saxlanılır. Yoxlayana yalnız doğrulama sorğusuna bağlanmış sənəd çatır — ona görə sertifikatı sorğunu göndərməzdən əvvəl yüklə. Doğrulanma olmadan da profil yarada və pulsuz proqram paylaşa bilərsən; sadəcə nişansız görünürsən.",
+  "key": "Yüklədiyin sertifikatlar qapalı saxlancda saxlanılır. Yoxlayan sorğuna bağlanmış ən son sertifikatı görür — açıq sorğun varsa, yeni yüklədiyin şəkil ona özü əlavə olunur. Doğrulanma olmadan da profil yarada və pulsuz proqram paylaşa bilərsən; sadəcə nişansız görünürsən.",
   "counted": false,
   "files": [
    "src/app/trainer/verify.tsx"
@@ -13991,7 +14252,18 @@
   ]
  },
  {
-  "key": "Şəkillər saxlancdadır, amma açıq doğrulama sorğuna bağlanmayıb — yoxlayan onları görmür. Dəstəyə yaz ki, sorğuna əlavə etsinlər.",
+  "key": "{n}. sənədin önizləməsi açılmadı — yenidən cəhd et",
+  "counted": false,
+  "files": [
+   "src/app/trainer/verify.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "Şəkillər saxlancdadır, amma açıq doğrulama sorğuna bağlanmayıb — yoxlayan onları görmür.",
   "counted": false,
   "files": [
    "src/app/trainer/verify.tsx"
@@ -14001,6 +14273,24 @@
  },
  {
   "key": "Şəxsiyyət vəsiqəsi",
+  "counted": false,
+  "files": [
+   "src/app/trainer/verify.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Əlavə olunur…",
+  "counted": false,
+  "files": [
+   "src/app/trainer/verify.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Ən son şəkli sorğuna əlavə et",
   "counted": false,
   "files": [
    "src/app/trainer/verify.tsx"
@@ -15746,6 +16036,17 @@
   ],
   "kind": "ui",
   "placeholders": []
+ },
+ {
+  "key": "Rəy yazanda {n} check-in etmişdi",
+  "counted": true,
+  "files": [
+   "src/lib/format.ts"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
  },
  {
   "key": "indi",

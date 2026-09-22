@@ -6,33 +6,29 @@ import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
-import { PressableScale } from '@/components/ui/PressableScale';
-import { EmptyNote, GymGate, daysSince, getGymRoster, useMyGym, type RosterMember } from '@/lib/gymOwner';
+import { EmptyNote, GymGate, getGymRoster, useMyGym, type RosterMember } from '@/lib/gymOwner';
 import { useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
 
-/** No check-in for this many days = at risk of churn. Derived, never invented. */
-const RISK_DAYS = 14;
-
-type Filter = 'all' | 'new' | 'risk';
-
-const isNew = (m: RosterMember) => {
-  if (!m.joinedAt) return false;
-  const d = new Date(m.joinedAt);
-  const now = new Date();
-  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-};
-/**
- * Churn risk = a member who really has not checked in for RISK_DAYS. A member we
- * have known for less than that has not had the chance yet, so a missing
- * check-in is NOT risk — it would invent a status the app never obtained.
+/*
+ * The roster used to tag members «YENİ» and «RİSK» and count them in filter
+ * chips. Both were read off the age of the member's SPOT ACCOUNT, because the app
+ * does not record when somebody made this gym their home gym: a three-year-old
+ * account that moved here last week was never «new», and was «at risk» after one
+ * quiet fortnight. Neither status was measured, so neither is shown — each row
+ * carries only what the check-in table really says about this gym.
  */
-const isRisk = (m: RosterMember) => {
-  const d = daysSince(m.lastCheckIn);
-  if (d !== null) return d >= RISK_DAYS;
-  const joined = daysSince(m.joinedAt);
-  return joined !== null && joined >= RISK_DAYS;
-};
+
+/** «SADİQ» = at least this many check-ins here in the last 30 days. Counted. */
+const LOYAL_CHECKINS = 12;
+
+/* Azerbaijan is UTC+4 all year, and «bugün»/«dünən» are the gym's calendar days.
+   A plain 24-hour division called last night's check-in «bugün» at nine the next
+   morning. Same anchor as the occupancy chart in gymOwner.tsx. */
+const BAKU_OFFSET_MS = 4 * 3_600_000;
+const bakuDay = (ms: number) => Math.floor((ms + BAKU_OFFSET_MS) / 86_400_000);
+// Clamped: a phone clock a minute behind the server must not print «-1 gün».
+const daysAgo = (iso: string) => Math.max(0, bakuDay(Date.now()) - bakuDay(new Date(iso).getTime()));
 
 export default function GymMembers() {
   const t = useT();
@@ -45,7 +41,6 @@ export default function GymMembers() {
   /** The roster query failed — that is NOT the same as "no members yet". */
   const [failed, setFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<Filter>('all');
 
   const load = useCallback(async (gymId: string) => {
     try {
@@ -65,15 +60,7 @@ export default function GymMembers() {
     })();
   }, [gym, load]);
 
-  const counts = useMemo(
-    () => ({ all: members.length, new: members.filter(isNew).length, risk: members.filter(isRisk).length }),
-    [members]
-  );
-
-  const shown = useMemo(() => {
-    const list = filter === 'new' ? members.filter(isNew) : filter === 'risk' ? members.filter(isRisk) : members;
-    return [...list].sort((a, b) => b.checkIns30d - a.checkIns30d);
-  }, [members, filter]);
+  const shown = useMemo(() => [...members].sort((a, b) => b.checkIns30d - a.checkIns30d), [members]);
 
   const stats = useMemo(() => {
     const total = members.length;
@@ -83,10 +70,9 @@ export default function GymMembers() {
     return {
       avg: (visits / total).toFixed(1),
       activeShare: `${Math.round((active / total) * 100)}%`,
-      lapsed: counts.risk,
       enough: total >= 5,
     };
-  }, [members, counts.risk]);
+  }, [members]);
 
   if (!gym) {
     return (
@@ -101,12 +87,6 @@ export default function GymMembers() {
     await load(gym.id);
     setRefreshing(false);
   };
-
-  const FILTERS: { key: Filter; label: string }[] = [
-    { key: 'all', label: t('Hamısı {n}', { n: counts.all, count: counts.all }) },
-    { key: 'new', label: t('Yeni {n}', { n: counts.new, count: counts.new }) },
-    { key: 'risk', label: t('İtirilmə riski {n}', { n: counts.risk, count: counts.risk }) },
-  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.grouped }}>
@@ -137,22 +117,15 @@ export default function GymMembers() {
           </View>
         ) : null}
 
-        {failed && !members.length ? null : (
+        {failed && !members.length ? null : !loaded ? (
+          // Nothing is counted until the read returns: a stats card saying «Yetərli
+          // məlumat yoxdur» or an empty-list note here would describe a gym we have
+          // not looked at yet.
+          <View style={styles.card}>
+            <AppText style={{ fontSize: 14.5, color: palette.textSecondary }}>{t('Yüklənir…')}</AppText>
+          </View>
+        ) : (
           <>
-            <View style={styles.filters}>
-              {FILTERS.map((f) => (
-                <PressableScale
-                  key={f.key}
-                  activeScale={0.95}
-                  onPress={() => setFilter(f.key)}
-                  style={[styles.chip, filter === f.key && styles.chipOn]}>
-                  <AppText style={{ fontSize: 12.5, fontWeight: '600', color: filter === f.key ? palette.white : palette.inkText }}>
-                    {f.label}
-                  </AppText>
-                </PressableScale>
-              ))}
-            </View>
-
             <View style={styles.card}>
               <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 13 }}>
                 {t('DAVAMİYYƏT · SON 30 GÜN')}
@@ -162,8 +135,6 @@ export default function GymMembers() {
                   <Stat value={stats.avg} label={t('üzv başına check-in')} />
                   <View style={styles.vdiv} />
                   <Stat value={stats.activeShare} label={t('aktiv üzv payı')} />
-                  <View style={styles.vdiv} />
-                  <Stat value={String(stats.lapsed)} label={t('{n} gün gəlməyən', { n: RISK_DAYS, count: RISK_DAYS })} danger />
                 </View>
               ) : (
                 <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary }}>
@@ -179,23 +150,20 @@ export default function GymMembers() {
 
             {!members.length ? (
               <EmptyNote
-                title={loaded ? t('Hələ üzv yoxdur') : t('Yüklənir…')}
+                title={t('Hələ üzv yoxdur')}
                 body={t(
-                  'SPOT-da zalını seçən hər kəs burada görünəcək — ad, check-in tezliyi və üzvlük statusu ilə. Siyahı üzvlər zalını özləri seçdikcə dolur.'
+                  'SPOT-da zalını seçən üzvlər burada check-in tezliyi ilə görünəcək; adını gizlədən üzv adsız göstərilir. Siyahı üzvlər zalını özləri seçdikcə dolur.'
                 )}
               />
-            ) : !shown.length ? (
-              <EmptyNote title={t('Bu filtrdə üzv yoxdur')} body={t('Filtri dəyiş və ya bütün üzvlərə bax.')} />
             ) : (
               <View style={{ gap: 10 }}>
                 {shown.map((m) => {
-                  const since = daysSince(m.lastCheckIn);
-                  const risk = isRisk(m);
-                  const fresh = isNew(m);
-                  const tag = risk ? TAG.risk : fresh ? TAG.new : m.checkIns30d >= 12 ? TAG.loyal : null;
+                  const since = m.lastCheckIn ? daysAgo(m.lastCheckIn) : null;
+                  const loyal = m.checkIns30d >= LOYAL_CHECKINS;
                   const last =
                     since === null
-                      ? // The query only looks 30 days back, so this is all we know.
+                      ? /* The query only looks 30 days back, so this is all we know —
+                           not «never checked in». */
                         t('son 30 gündə check-in yoxdur')
                       : since === 0
                         ? t('bugün check-in edib')
@@ -222,9 +190,9 @@ export default function GymMembers() {
                                 }`}
                           </AppText>
                         </View>
-                        {tag ? (
-                          <View style={[styles.tag, { backgroundColor: tag.bg }]}>
-                            <AppText style={{ fontSize: 10.5, fontWeight: '700', color: tag.color }}>{t(tag.label)}</AppText>
+                        {loyal ? (
+                          <View style={styles.tag}>
+                            <AppText style={{ fontSize: 10.5, fontWeight: '700', color: '#3F5500' }}>{t('SADİQ')}</AppText>
                           </View>
                         ) : null}
                       </View>
@@ -240,15 +208,15 @@ export default function GymMembers() {
           <Icon name="lock" size={15} color={palette.tertiary} />
           <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.textSecondary, flex: 1 }}>
             {t(
-              'Zal admini üzvün məşq detallarını, çəkisini və söhbətlərini GÖRMÜR — yalnız check-in tezliyini və üzvlük statusunu. Üzvə birbaşa yazmaq imkanı da yoxdur.'
+              'Zal admini üzvün məşq detallarını, çəkisini və söhbətlərini GÖRMÜR — yalnız bu zaldakı check-in-lərini. Üzvə birbaşa yazmaq imkanı da yoxdur.'
             )}
           </AppText>
         </View>
 
         <AppText style={{ fontSize: 11.5, lineHeight: 16, color: palette.tertiary, marginTop: 12, paddingHorizontal: 4 }}>
           {t(
-            'Bütün rəqəmlər son 30 günün real check-in-lərindən hesablanır — uydurma statistika göstərmirik. «Yeni» = bu ay SPOT-a qeydiyyatdan keçib və zalın kimi bu zalı seçib. «Risk» = ən azı {days} gündür SPOT-dadır və son {days} gündə check-in etməyib. Təzə qoşulan üzv risk sayılmır — hələ gəlməyə vaxtı olmayıb.',
-            { days: RISK_DAYS }
+            'Bütün rəqəmlər son 30 günün real check-in-lərindən hesablanır — uydurma statistika göstərmirik. «Sadiq» = son 30 gündə ən azı {n} check-in. Üzvün bu zalı nə vaxt seçdiyini bilmirik, ona görə «yeni» və ya «risk» kimi status göstərmirik.',
+            { n: LOYAL_CHECKINS, count: LOYAL_CHECKINS }
           )}
         </AppText>
       </ScrollView>
@@ -256,31 +224,22 @@ export default function GymMembers() {
   );
 }
 
-const TAG = {
-  loyal: { label: 'SADİQ', bg: 'rgba(198,255,61,0.3)', color: '#3F5500' },
-  new: { label: 'YENİ', bg: 'rgba(10,132,255,0.12)', color: palette.blue },
-  risk: { label: 'RİSK', bg: 'rgba(255,107,53,0.16)', color: '#D14A15' },
-};
-
-function Stat({ value, label, danger }: { value: string; label: string; danger?: boolean }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
     <View style={{ flex: 1 }}>
-      <AppText style={{ fontSize: 20, fontWeight: '700', color: danger ? '#D14A15' : palette.inkText }}>{value}</AppText>
+      <AppText style={{ fontSize: 20, fontWeight: '700', color: palette.inkText }}>{value}</AppText>
       <AppText style={{ fontSize: 11, lineHeight: 15, color: palette.tertiary, marginTop: 6 }}>{label}</AppText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  filters: { flexDirection: 'row', gap: 7, marginBottom: 14 },
   failCard: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginBottom: 14 },
-  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: palette.white },
-  chipOn: { backgroundColor: palette.ink },
   card: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 14 },
   vdiv: { width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(60,60,67,0.12)' },
   memberCard: { backgroundColor: palette.white, borderRadius: 16, padding: 13 },
   memberHead: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   onlineDot: { position: 'absolute', right: 0, bottom: 0, width: 13, height: 13, borderRadius: 7, backgroundColor: palette.volt, borderWidth: 2.5, borderColor: palette.white },
-  tag: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7 },
+  tag: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7, backgroundColor: 'rgba(198,255,61,0.3)' },
   privacy: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', marginTop: 16, paddingHorizontal: 4 },
 });
