@@ -1,3 +1,5 @@
+-- APPLIED 2026-09-22 with the owner's approval. After it: all 8 functions lock first
+-- (plpgsql), 0 counter drift, verify_schema 532/532.
 -- schema82: denormalised counters could lose an update under concurrency.
 --
 -- Found by the live multi-user run cmw5xa (2026-09-22): a trainer accepted three

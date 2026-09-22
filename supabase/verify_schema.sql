@@ -916,6 +916,15 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema81. Programs stayed public and ownerless; a never-listed gym stayed usable with nobody to switch it off.'
   union all
+  select 'function', 'counters lock their row before recounting (8 functions)',
+         case when (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                     where n.nspname='public'
+                       and p.proname in ('refresh_trainer_clients','refresh_gym_trainers','refresh_gym_members','refresh_gym_rating',
+                                         'refresh_video_likes','tg_challenge_members','tg_post_likes','tg_video_saves')
+                       and pg_get_functiondef(p.oid) like '%for update%') = 8
+              then 'OK' else 'MISSING' end,
+         'schema82. update ... set n = (select count ...) counted a snapshot taken before the row-lock wait: three simultaneous accepts showed «2 şagird» (live run cmw5xa).'
+  union all
   select 'function', 'suggested_trainers falls back to verified trainers only',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
                            where n.nspname='public' and p.proname='suggested_trainers'
