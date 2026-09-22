@@ -54,6 +54,8 @@ function refusalOf(message: string): ChatRefusal {
   if (m.includes('no_relationship')) return 'no_relationship';
   if (m.includes('blocked')) return 'blocked';
   if (m.includes('wait_for_reply')) return 'wait_for_reply';
+  // Named by the server since schema83 (messages_gate), so no guessing is needed.
+  if (m.includes('sanctioned')) return 'sanctioned';
   if (m.includes('not_signed_in')) return 'not_signed_in';
   /* messages_send refuses for two reasons the error does not tell apart: a
      sanction on this account (is_sanctioned) or a block between the two people
