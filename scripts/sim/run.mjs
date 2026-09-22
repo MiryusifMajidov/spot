@@ -85,6 +85,9 @@ function parseArgs(argv) {
     else usage(`unknown flag ${a}`);
   }
   if (o.only && !PHASE_BY_NAME[o.only]) usage(`unknown phase «${o.only}»`);
+  // The social phase does not run under --keep (its TEST post would stay public
+  // in the İcma feed; only delete_my_account removes it), so this pair would run nothing.
+  if (o.keep && o.only === 'social') usage('--keep cannot be combined with --only social: the TEST post is public in the İcma feed and only goes when u1 deletes its account — the app has no delete-post path');
   if (o.phoneTrainer && !/^[A-Za-z0-9_-]{3,64}$/.test(o.phoneTrainer)) usage('--phone-trainer must be a trainer id');
   if (o.phoneCode && !/^[A-Za-z0-9]{4,32}$/.test(o.phoneCode)) usage('--phone-code must be the gym check-in code (letters/digits)');
   // A door code cannot be checked before it is used (only the gym's owner can
@@ -1118,6 +1121,577 @@ async function phaseEndStudent(ctx) {
   }
 }
 
+/**
+ * Likes, comments, follows, a crossing partner request and the notifications
+ * they cause — ONLY on content this run's TEST actors made: u1's own post, the
+ * TEST comments under it, follows and offers between TEST actors. Nothing real
+ * is liked, commented, followed or joined; those flows are UNREACHABLE by rule.
+ */
+async function phaseSocial(ctx) {
+  if (ctx.opts.keep) {
+    // --keep keeps the accounts, and the TEST post only goes with u1's account.
+    unreachable('social.keep', 'not run under --keep: the TEST post would stay public in the İcma feed with no end date — the app has no delete-post path, only delete_my_account removes it — and real people could like, comment on or report it');
+    return;
+  }
+  const userKeys = ['u1', 'u2', 'u3', 'u4', 'u5'];
+  if (!need(ctx, 'social', userKeys)) return;
+  ctx.state.socialRan = true;
+  const [u1, u2, u3, u4, u5] = userKeys.map((k) => A(ctx, k));
+  const users = [u1, u2, u3, u4, u5];
+  const sim = [...ctx.simIds];
+  const notSim = `(${sim.join(',')})`;
+  const head = { count: 'exact', head: true };
+  const keyOf = (pid) => [...ctx.actors.values()].find((a) => a.profileId && a.profileId === pid)?.key ?? 'outside-run';
+  const list = (arr) => [...arr].sort().join(', ') || 'none';
+  const sameSet = (got, want) => got.length === new Set(got).size && list(got) === list(want);
+
+  // Did a step's writes really overlap? together() lines up when each action
+  // STARTS; each then reads (auth.getUser, its profile row) before it writes, so
+  // every racing step below also lines up the WRITES (alignWrite → sync) and the
+  // recorder measures at the write itself. Client side that only says every
+  // write was in flight at once; created_at defaults to now(), the start of the
+  // writing transaction, so the rows say how close together the transactions
+  // began inside the database. TX_MS is an ESTIMATE of one PostgREST write
+  // transaction here (claims, RLS, the trigger, COMMIT), not a measurement —
+  // the offsets are printed so the reader can judge.
+  const TX_MS = 5;
+  // timestamptz → ms, keeping the microseconds Date.parse drops.
+  const tsMs = (iso) => {
+    const m = /^(.*T\d\d:\d\d:\d\d)(\.\d+)?(.*)$/.exec(String(iso ?? ''));
+    return m ? Date.parse(m[1] + m[3]) + (m[2] ? Number(m[2]) * 1000 : 0) : NaN;
+  };
+  // contended: true = overlapping at the database, false = not (or probably
+  // not), null = in flight together but the database's side is not observable.
+  // `isos`: the written rows' created_at; null when the write leaves none to read
+  // (`unseen` says why), [] when they could not be read.
+  const raceOf = (step, isos = null, unseen = 'a delete leaves no server timestamp') => {
+    const w = step.write;
+    if (!w || w.reached < 2) return { contended: false, text: `only ${w?.reached ?? 0} write(s) left, so nothing could overlap` };
+    const client = `the ${w.reached} writes left within ${w.spreadMs} ms`;
+    if (!(w.overlapMs > 0)) return { contended: false, text: `${client} but were never all in flight together (the first answer came ${round(-w.overlapMs)} ms before the last write left)` };
+    const t = (isos ?? []).map(tsMs).filter(Number.isFinite).sort((x, y) => x - y);
+    if (t.length < 2) {
+      return { contended: null, text: `${client} and were all in flight together for ${w.overlapMs} ms (${isos ? 'the rows\' server times did not come back' : unseen}, so overlap inside the database is not observable)` };
+    }
+    const spread = round(t[t.length - 1] - t[0]);
+    const offs = `created_at = now(); offsets ${t.map((x) => `+${round(x - t[0])}`).join(', ')} ms`;
+    return spread <= TX_MS
+      ? { contended: true, text: `${client}, were all in flight together for ${w.overlapMs} ms, and their transactions began within ${spread} ms of each other inside the database (${offs})` }
+      : { contended: false, text: `${client} and were all in flight together for ${w.overlapMs} ms, yet their transactions began ${spread} ms apart inside the database (${offs}) — longer than one write transaction lasts (~${TX_MS} ms, an estimate), so they probably ran one after another` };
+  };
+  // What really landed — the notification checks expect exactly this, no more.
+  const landed = { postLikers: new Set(), likeNotifiers: new Set(), followers: new Set(), commentLikers: [], replied: null, matchSends: [], matchAccepts: [] };
+  // actor key → id of the TEST comment it wrote under u1's post (scenario 2).
+  const commentOf = {};
+
+  unreachable('social.real-content', 'not exercised by rule: liking, commenting on or following a real person\'s post, video or profile would notify them and move public counters; every feed video belongs to a real person, and a TEST one would need a file upload');
+  unreachable('social.challenge-join', 'not exercised by rule: joining an admin challenge changes its public participant count — and the app has dropped the join path (src/lib/social.ts:108-111)');
+
+  // ---- 1 — a TEST post, then five hearts at the same instant --------------
+  const body = `TEST post ${ctx.runId} — simulyasiya, sonda silinir`;
+  const made = await act.createCommunityPost(u1, body);
+  expect(made.ok, 'social.post-created', made.ok ? `community_posts insert accepted — «${made.shown}»` : `refused: ${msgOf(made)} — «${made.shown ?? 'Post göndərilə bilmədi. Yenidən cəhd et.'}»`, made.ok ? null : made.error);
+  // The insert returns no row, so the id comes from the feed (filtered to u1's
+  // own posts). Every own post found is recorded — one whose response was lost
+  // too — so cleanup can prove all of them gone.
+  const mine = await act.openFeedPostsBy(u1, u1.profileId);
+  for (const p of mine.posts ?? []) if (!ctx.state.posts.includes(p.id)) ctx.state.posts.push(p.id);
+  const post = (mine.posts ?? []).find((p) => p.text === body) ?? null;
+  expect(
+    !!post && post.authorId === u1.profileId && post.author === u1.name,
+    'social.post-in-feed',
+    post ? `the feed card reads «${post.author}» (stamped from the profile by community_posts_stamp_author), likes=${post.likes}` : `u1's post is not in the feed: ${mine.ok ? 'no such row' : msgOf(mine)}`
+  );
+  if (post) {
+    info('social.post-public', 'the TEST post is public in the İcma feed (shown to people without a home gym) until u1 deletes its account at cleanup: the post menu offers «Şikayət et» / «Bu postu gizlət» only — the app has no delete-post path, though community_posts_owner_delete would allow one');
+  } else {
+    unreachable('social.post-flows', 'no TEST post — likes, comments and their notifications (scenarios 1, 2 and part of 5) cannot run');
+  }
+
+  if (post) {
+    const likeTasks = users.map((u) => ({ actor: u, label: `${u.key} likes`, alignWrite: true, prep: () => act.myPostLikes(u, [post.id]), fn: (_p, sync) => act.likePost(u, post.id, { sync }) }));
+    likeTasks.push({ actor: u4, label: 'u4 likes (second device)', alignWrite: true, fn: (_p, sync) => act.likePost(u4, post.id, { sync }) });
+    const s1 = await together('u1–u5 like the TEST post at the same instant (u4 from two devices)', likeTasks);
+    for (const r of s1.results) {
+      if (r.ok) {
+        landed.postLikers.add(r.actor);
+        if (r.actor !== 'u1') landed.likeNotifiers.add(r.actor);
+      }
+      if (r.label.includes('second')) continue;
+      expect(r.ok, `social.like.${r.actor}`, r.ok ? `like landed${r.duplicate ? ' (as a swallowed duplicate)' : ''}` : `refused: ${msgOf(r)} — the heart rolls back, «${r.shown ?? 'Bəyənmə göndərilmədi'}»`, r.ok ? null : r.error);
+    }
+    const pair = s1.results.filter((r) => r.actor === 'u4');
+    const dupes = pair.filter((r) => r.duplicate).length;
+    expect(
+      pair.every((r) => r.ok) && dupes === 1,
+      'social.like-double-tap',
+      pair.every((r) => r.ok)
+        ? dupes === 1
+          ? 'both of u4\'s likes came back ok: one inserted, the other hit post_likes_pkey and likePost swallowed it as «duplicate» (liked is the end state)'
+          : `both came back ok, but ${dupes} were duplicates (expected exactly 1)`
+        : `a like failed: ${pair.filter((r) => !r.ok).map(msgOf).join('; ')}`,
+      pair.map((r) => ({ label: r.label, ok: r.ok, duplicate: r.duplicate ?? null, error: r.error?.message ?? null }))
+    );
+
+    // community_posts.likes as the card shows it, against the rows themselves.
+    const likeState = async (viewer) => {
+      const [card, all, ours] = await Promise.all([
+        act.openFeedPost(viewer, post.id),
+        act.probeCount(viewer, (c) => c.from('post_likes').select('post_id', head).eq('post_id', post.id)),
+        act.probeRead(viewer, (c) => c.from('post_likes').select('profile_id,created_at').eq('post_id', post.id).in('profile_id', sim)),
+      ]);
+      const likers = (ours.rows ?? []).map((r) => keyOf(r.profile_id));
+      return {
+        likes: card.post?.likes ?? null,
+        rows: all.count,
+        likers,
+        // [] (not null) when the read failed: raceOf then says the times did not come back.
+        starts: ours.ok ? ours.rows.map((r) => r.created_at) : [],
+        foreign: all.count == null ? null : all.count - likers.length,
+        error: card.error ?? all.error ?? ours.error ?? null,
+      };
+    };
+    // One message per outcome, on the same condition as the check itself.
+    const counterSays = (st, race, what) => {
+      if (st.likes == null || st.rows == null) {
+        return `could not compare: ${st.likes == null ? 'the post card' : 'the post_likes count'} did not load (${st.error?.message ?? 'no error text'})`;
+      }
+      if (st.likes !== st.rows) return `community_posts.likes = ${st.likes} but ${st.rows} post_likes row(s) after ${what} — the counter lost an update. ${race.text}`;
+      if (race.contended === true) return `community_posts.likes = ${st.likes} = post_likes rows after ${what} — schema82's lock-then-count held under contention: ${race.text}`;
+      if (race.contended === null) return `community_posts.likes = ${st.likes} = post_likes rows after ${what}: ${race.text}`;
+      return `community_posts.likes = ${st.likes} = post_likes rows after ${what} — the counter is right, but this is no evidence that the lock held under contention: ${race.text}`;
+    };
+    const hearts = async (label, wantLiked) => {
+      const h = await together(label, users.map((u) => ({ actor: u, fn: () => act.myPostLikes(u, [post.id]) })));
+      return h.results.filter((r) => !r.ok || r.liked.includes(post.id) !== wantLiked.has(r.actor)).map((r) => (r.ok ? `${r.actor} ${r.liked.includes(post.id) ? 'filled' : 'empty'}` : `${r.actor}: ${msgOf(r)}`));
+    };
+    const st1 = await likeState(u2);
+    const race1 = raceOf(s1.step, st1.starts);
+    expect(st1.likes != null && st1.likes === st1.rows, 'social.likes-counter-matches', counterSays(st1, race1, `${s1.results.length} like taps`), { ...st1, write: s1.step.write, contended: race1.contended });
+    if (race1.contended === false) info('social.likes-no-overlap', `the like inserts did not overlap inside the database, so social.likes-counter-matches is no evidence about schema82's lock — re-run for an overlapping round. ${race1.text}`);
+    expect(sameSet(st1.likers, [...landed.postLikers]), 'social.likers-exact', `rows from ${list(st1.likers)} (expected ${list(landed.postLikers)}); u4 holds ${st1.likers.filter((k) => k === 'u4').length} row(s)`);
+    if (st1.foreign > 0) info('social.likes-foreign', `${st1.foreign} like(s) on the TEST post came from outside this run (counted, never read) — they are deleted with the post at cleanup`);
+    const wrong1 = await hearts('everyone re-reads which posts they liked (feed reconcile)', landed.postLikers);
+    expect(wrong1.length === 0, 'social.hearts-after-like', wrong1.length ? `the server says otherwise for: ${wrong1.join('; ')}` : 'each person\'s heart matches the server');
+
+    const s2 = await together('u2 and u3 unlike at the same instant', [u2, u3].map((u) => ({ actor: u, alignWrite: true, fn: (_p, sync) => act.unlikePost(u, post.id, { sync }) })));
+    for (const r of s2.results) {
+      expect(r.ok, `social.unlike.${r.actor}`, r.ok ? 'unlike sent (delete, no error)' : `refused: ${msgOf(r)}`);
+      if (r.ok) landed.postLikers.delete(r.actor);
+    }
+    const st2 = await likeState(u1);
+    const race2 = raceOf(s2.step);
+    expect(st2.likes != null && st2.likes === st2.rows, 'social.likes-counter-after-unlike', counterSays(st2, race2, 'two unlike taps'), { ...st2, write: s2.step.write, contended: race2.contended });
+    if (race2.contended === false) info('social.unlikes-no-overlap', `the two unlike deletes did not overlap, so the recount after them is no evidence about the lock. ${race2.text}`);
+    expect(sameSet(st2.likers, [...landed.postLikers]), 'social.likers-after-unlike', `rows from ${list(st2.likers)} (expected ${list(landed.postLikers)})`);
+    const wrong2 = await hearts('everyone re-reads their hearts after the unlikes', landed.postLikers);
+    expect(wrong2.length === 0, 'social.hearts-after-unlike', wrong2.length ? `the server says otherwise for: ${wrong2.join('; ')}` : 'u2 and u3 now read empty, the rest filled');
+
+    // ---- 2 — four comments at once, likes, a reply, deletes ---------------
+    const key = act.postKey(post.id);
+    const commenters = [u2, u3, u4, u5];
+    const s3 = await together('u2–u5 comment on u1\'s post at the same instant', commenters.map((u) => ({ actor: u, alignWrite: true, fn: (_p, sync) => act.addComment(u, key, `TEST şərh ${u.key} ${ctx.runId}`, null, { sync }) })));
+    for (const r of s3.results) {
+      if (r.ok) {
+        commentOf[r.actor] = r.comment.id;
+        ctx.state.comments.push(r.comment.id);
+      }
+      expect(r.ok, `social.comment.${r.actor}`, r.ok ? `comment ${short(r.comment.id)} came back with its row` : `refused: ${msgOf(r)} — «${r.shown ?? 'Şərh göndərilmədi'}»`, r.ok ? null : r.error);
+    }
+    const c1 = await act.fetchComments(u1, key, ctx.simIds);
+    const byId = new Map((c1.comments ?? []).map((c) => [c.id, c]));
+    const bad = Object.entries(commentOf).filter(([k, id]) => {
+      const c = byId.get(id);
+      return !c || c.parentId !== null || c.mine || c.authorName !== A(ctx, k).name;
+    });
+    expect(
+      c1.ok && bad.length === 0 && (c1.comments ?? []).length === Object.keys(commentOf).length,
+      'social.comments-u1-reads-all',
+      c1.ok
+        ? `u1's sheet shows ${(c1.comments ?? []).length} comment(s) (expected ${Object.keys(commentOf).length}), each under its author's name, none marked as u1's${bad.length ? `; wrong or missing: ${bad.map(([k]) => k).join(', ')}` : ''}`
+        : `the sheet could not load: ${msgOf(c1)} — it says «yüklənmədi»`
+    );
+    if (c1.foreign) info('social.comments-foreign', `${c1.foreign} comment(s) under the TEST post are from outside this run (counted, never read) — they are NOT deleted with the post (comments.target_key has no foreign key)`);
+    // The card counts raw comment rows (feed/index.tsx:90); the sheet reads
+    // comments_for. The run's own rows are compared exactly; rows from outside
+    // the run are counted apart (head-only, never read).
+    const [cnt, ourRaw, outRaw] = await Promise.all([
+      act.readCommentCounts(u2, [key]),
+      act.probeCount(u2, (c) => c.from('comments').select('id', head).eq('target_key', key).in('author_id', sim)),
+      act.probeCount(u2, (c) => c.from('comments').select('id', head).eq('target_key', key).not('author_id', 'in', notSim)),
+    ]);
+    const cardN = cnt.ok ? cnt.counts[key] : null;
+    const shownOurs = (c1.comments ?? []).length;
+    const countsRead = cnt.ok && ourRaw.ok && outRaw.ok;
+    expect(
+      countsRead && c1.ok && cardN === ourRaw.count + outRaw.count && ourRaw.count === shownOurs,
+      'social.comment-count-in-feed',
+      !cnt.ok
+        ? `count read failed: ${msgOf(cnt)} — the card shows no number`
+        : !countsRead
+          ? `the card counts ${cardN}, but a row count to compare it with failed: ${msgOf(ourRaw.ok ? outRaw : ourRaw)}`
+          : `the post card counts ${cardN} comment(s) = ${ourRaw.count} by TEST actors (u1's sheet shows ${shownOurs} of them) + ${outRaw.count} from outside the run`
+    );
+    if (countsRead && c1.ok && outRaw.count !== (c1.foreign ?? 0)) {
+      info(
+        'social.comment-count-hidden-authors',
+        `the card counts ${outRaw.count} comment(s) from outside the run, u1's sheet lists ${c1.foreign ?? 0}: comments_for is SECURITY INVOKER and inner-joins profiles, so a comment whose author's profile is hidden from members (show_in_gym_list off, profiles_read) is counted on the card and missing from the sheet — an app mismatch, not counter drift`
+      );
+    }
+    const card = await act.openFeedPost(u2, post.id);
+    const col = card.post?.comments;
+    const race3 = raceOf(s3.step, s3.results.filter((r) => r.ok).map((r) => r.comment.createdAt));
+    // refresh_comment_count() counts raw rows too, so the column is compared with the card's number.
+    info(
+      'social.comments-column',
+      `community_posts.comments = ${col ?? '—'}, ${cardN ?? '—'} comment row(s) — ${
+        col == null || cardN == null
+          ? 'not compared (a read failed)'
+          : col === cardN
+            ? race3.contended === false
+              ? `in step, though refresh_comment_count() was not really raced: ${race3.text}`
+              : `in step: ${race3.text}`
+            : `DRIFTED: refresh_comment_count() counts without taking the row lock first (it is not one of schema82's eight); ${race3.text}`
+      }. The app never renders this column (feed/index.tsx:50), so nobody sees it`,
+      { write: s3.step.write, contended: race3.contended }
+    );
+
+    if (commentOf.u2) {
+      const s4 = await together('u1 likes u2\'s comment from two devices while u4 likes it too', [
+        { actor: u1, label: 'u1 device 1', alignWrite: true, fn: (_p, sync) => act.toggleCommentLike(u1, commentOf.u2, true, { sync }) },
+        { actor: u1, label: 'u1 device 2', alignWrite: true, fn: (_p, sync) => act.toggleCommentLike(u1, commentOf.u2, true, { sync }) },
+        { actor: u4, label: 'u4', alignWrite: true, fn: (_p, sync) => act.toggleCommentLike(u4, commentOf.u2, true, { sync }) },
+      ]);
+      const l4 = s4.results.find((r) => r.label === 'u4');
+      expect(l4.ok, 'social.comment-like.u4', l4.ok ? 'u4\'s like landed' : `refused: ${msgOf(l4)}`);
+      const lost = s4.results.filter((r) => r.actor === 'u1' && !r.ok);
+      const rls = lost.some((r) => r.error?.code === '42501' || /row-level security/i.test(r.error?.message ?? ''));
+      expect(
+        lost.length === 0,
+        'social.comment-like-double-tap',
+        lost.length === 0
+          ? 'both of u1\'s simultaneous likes came back ok — the upsert is idempotent, as toggleCommentLike promises'
+          : `${lost.length} of u1's two simultaneous likes was REFUSED (${lost.map(msgOf).join('; ')})${rls ? ': the later upsert meets the first row and takes ON CONFLICT DO UPDATE, and comment_likes has an UPDATE grant but no UPDATE policy (read 2026-09-22), so RLS refuses that path' : ''} — the sheet rolls that device's heart back and says «Bəyənilmədi — yenidən cəhd et» although the like is stored`,
+        s4.results.map((r) => ({ label: r.label, ok: r.ok, error: r.error ?? null }))
+      );
+      const rows = await act.probeRead(u1, (c) => c.from('comment_likes').select('profile_id').eq('comment_id', commentOf.u2).in('profile_id', sim));
+      landed.commentLikers = (rows.rows ?? []).map((r) => keyOf(r.profile_id));
+      const wantLikers = [...new Set(s4.results.filter((r) => r.ok).map((r) => r.actor))];
+      expect(sameSet(landed.commentLikers, wantLikers), 'social.comment-like-rows', `u2's comment has like rows from ${list(landed.commentLikers)} (expected ${list(wantLikers)}; u1 holds ${landed.commentLikers.filter((k) => k === 'u1').length})`);
+      // comments_for counts EVERY like on the comment, so it is compared with every
+      // row; likes from outside the run are counted apart (head-only, never read).
+      const [v1, v2, allCl] = await Promise.all([
+        act.fetchComments(u1, key, ctx.simIds),
+        act.fetchComments(u2, key, ctx.simIds),
+        act.probeCount(u1, (c) => c.from('comment_likes').select('comment_id', head).eq('comment_id', commentOf.u2)),
+      ]);
+      const seen1 = (v1.comments ?? []).find((c) => c.id === commentOf.u2);
+      const seen2 = (v2.comments ?? []).find((c) => c.id === commentOf.u2);
+      const outCl = allCl.ok ? allCl.count - landed.commentLikers.length : null;
+      expect(
+        !!seen1 && !!seen2 && allCl.ok && seen2.likes === allCl.count && seen1.likes === seen2.likes && seen1.likedByMe === landed.commentLikers.includes('u1') && seen2.likedByMe === false && seen2.mine === true,
+        'social.comment-likes-shown',
+        !seen1 || !seen2
+          ? `the comment is missing from a sheet: ${msgOf(v1.ok ? v2 : v1)}`
+          : !allCl.ok
+            ? `u2 sees ${seen2.likes} like(s), but the row count to compare it with failed: ${msgOf(allCl)}`
+            : `u2 sees ${seen2.likes} like(s) on its own comment (marked «mine»), ${allCl.count} comment_likes row(s) (${landed.commentLikers.length} TEST + ${outCl} from outside the run); u1 sees ${seen1.likes} and its heart ${seen1.likedByMe ? 'filled' : 'EMPTY'}`
+      );
+      if (outCl > 0) info('social.comment-likes-foreign', `${outCl} like(s) on u2's TEST comment came from outside this run (counted, never read) — they are deleted with the comment at cleanup`);
+    }
+
+    if (commentOf.u3) {
+      const rep = await act.addComment(u1, key, `TEST cavab u1 ${ctx.runId}`, commentOf.u3);
+      if (rep.ok) {
+        ctx.state.comments.push(rep.comment.id);
+        landed.replied = rep.comment.id;
+      }
+      expect(rep.ok && rep.comment.parentId === commentOf.u3, 'social.reply', rep.ok ? `u1's reply hangs under u3's comment (parent ${short(rep.comment.parentId)})` : `refused: ${msgOf(rep)}`);
+    }
+
+    if (commentOf.u2) {
+      // The sheet offers «Sil» only on your own comment (CommentsSheet.tsx:380),
+      // so this is a direct call: what a stale or scripted client could send.
+      const del = await act.probeWrite(u3, (c) => c.from('comments').delete().eq('id', commentOf.u2).select('id'));
+      const after = await act.fetchComments(u1, key, ctx.simIds);
+      const still = (after.comments ?? []).some((c) => c.id === commentOf.u2);
+      expect(
+        del.count === 0 && still,
+        'social.non-author-cannot-delete',
+        del.count ? 'u3 DELETED u2\'s comment' : still ? `u3's delete of u2's comment removed 0 rows (${del.error?.message ?? 'comments_delete filtered it'}) and u1 still sees it` : `the delete came back empty, but u2's comment is gone from u1's sheet (${msgOf(after)})`
+      );
+      info('social.post-author-may-delete', 'comments_delete also lets the POST\'s author delete any comment under it; the sheet offers «Sil» on your own comments only, so no screen sends that — not exercised');
+    }
+    if (commentOf.u5) {
+      const own = await act.deleteMyComment(u5, key, commentOf.u5, ctx.simIds);
+      expect(
+        own.ok && own.gone,
+        'social.author-deletes-own',
+        !own.ok ? `refused: ${msgOf(own)} — «${own.shown}»` : own.gone ? `u5's own «Sil»: the re-read no longer has it — «${own.shown}»` : own.rereadOk ? `no error, but the re-read still has it — «${own.shown}»` : `the re-read after the delete failed, and the sheet then says «Şərh silindi» without knowing`
+      );
+      if (own.ok && own.gone) delete commentOf.u5;
+    }
+    const fin = await act.fetchComments(u1, key, ctx.simIds);
+    const ids = (fin.comments ?? []).map((c) => c.id);
+    const want = [commentOf.u2, commentOf.u3, commentOf.u4, commentOf.u5, landed.replied].filter(Boolean);
+    const threaded = !landed.replied || ids.indexOf(landed.replied) === ids.indexOf(commentOf.u3) + 1;
+    expect(
+      fin.ok && sameSet(ids, want) && threaded,
+      'social.comments-final',
+      fin.ok ? `u1's sheet: ${ids.length} comment(s) (expected ${want.length})${landed.replied ? `, the reply ${threaded ? 'right under' : 'NOT under'} u3's comment` : ''}` : `the sheet could not load: ${msgOf(fin)}`
+    );
+  }
+
+  // ---- 3 — four followers at the same instant ------------------------------
+  const s5 = await together('u2–u5 follow u1 at the same instant (u5 from two devices)', [
+    ...[u2, u3, u4, u5].map((u) => ({ actor: u, label: `${u.key} follows`, alignWrite: true, prep: () => act.myFollowing(u), fn: (_p, sync) => act.followProfile(u, u1.profileId, { sync }) })),
+    { actor: u5, label: 'u5 follows (second device)', alignWrite: true, fn: (_p, sync) => act.followProfile(u5, u1.profileId, { sync }) },
+  ]);
+  for (const r of s5.results) {
+    if (r.ok) landed.followers.add(r.actor);
+    if (r.label.includes('second')) continue;
+    expect(r.ok, `social.follow.${r.actor}`, r.ok ? `follow landed${r.duplicate ? ' (as a swallowed duplicate)' : ''}` : `refused: ${msgOf(r)} — «${r.shown ?? 'İzləmə göndərilmədi'}»`, r.ok ? null : r.error);
+  }
+  const fpair = s5.results.filter((r) => r.actor === 'u5');
+  const fdupes = fpair.filter((r) => r.duplicate).length;
+  expect(
+    fpair.every((r) => r.ok) && fdupes === 1,
+    'social.follow-double-tap',
+    fpair.every((r) => r.ok) ? (fdupes === 1 ? 'both of u5\'s follows came back ok: one inserted, the other hit follows_pkey and followProfile swallowed it' : `both came back ok, but ${fdupes} were duplicates (expected exactly 1)`) : `a follow failed: ${fpair.filter((r) => !r.ok).map(msgOf).join('; ')}`
+  );
+  const followNotifiers = new Set(landed.followers);
+  // followCounts counts EVERY follower of u1: it is compared with the TEST rows
+  // plus the followers from outside the run, counted apart (head-only, never read).
+  const followerState = async () => {
+    const [fc, fr, out] = await Promise.all([
+      act.followCounts(u1, u1.profileId),
+      act.probeRead(u1, (c) => c.from('follows').select('follower_id,created_at').eq('followee_id', u1.profileId).in('follower_id', sim)),
+      act.probeCount(u1, (c) => c.from('follows').select('follower_id', head).eq('followee_id', u1.profileId).not('follower_id', 'in', notSim)),
+    ]);
+    const keys = (fr.rows ?? []).map((r) => keyOf(r.follower_id));
+    const ok = fc.ok && fr.ok && out.ok;
+    return { fc, keys, out: out.count, starts: fr.ok ? fr.rows.map((r) => r.created_at) : [], ok, exact: ok && fc.followers === keys.length + out.count, error: fc.error ?? fr.error ?? out.error ?? null };
+  };
+  const f1 = await followerState();
+  const race5 = raceOf(s5.step, f1.starts);
+  expect(
+    f1.exact && sameSet(f1.keys, [...landed.followers]),
+    'social.followers-exact',
+    !f1.fc.ok
+      ? `followCounts failed (${msgOf(f1.fc)}) — the app would print 0`
+      : !f1.ok
+        ? `followCounts(u1) = ${f1.fc.followers}, but a row read to compare it with failed: ${f1.error?.message ?? 'no error text'}`
+        : `followCounts(u1) = ${f1.fc.followers} follower(s) = ${f1.keys.length} TEST row(s) + ${f1.out} from outside the run${f1.exact ? '' : ' — MISMATCH'}; TEST rows from ${list(f1.keys)} (expected ${list(landed.followers)}), u5 holds ${f1.keys.filter((k) => k === 'u5').length}`,
+    { followers: f1.fc.followers ?? null, testRows: f1.keys, outside: f1.out, write: s5.step.write, race: race5.text }
+  );
+  if (f1.out > 0) info('social.followers-foreign', `${f1.out} follower(s) of u1 are outside this run (counted, never read) — cascade-deleted with u1`);
+  info('social.follower-count-unshown', 'followCounts() (src/lib/social.ts:100) has no caller: no screen shows a follower number or a follower list. What the app does read is each person\'s own list (myFollowing — feed ordering and the launch sync)');
+  const fw = await together('each follower reads its own follow list (myFollowing)', [u2, u3, u4, u5].map((u) => ({ actor: u, fn: () => act.myFollowing(u) })));
+  const fwBad = fw.results.filter((r) => !r.ok || r.following.includes(u1.profileId) !== landed.followers.has(r.actor));
+  expect(fwBad.length === 0, 'social.following-lists', fwBad.length ? `wrong for ${fwBad.map((r) => (r.ok ? r.actor : `${r.actor}: ${msgOf(r)}`)).join('; ')}` : 'every follower\'s own list has u1 in it');
+  if (landed.followers.has('u2')) {
+    const uf = await act.unfollowProfile(u2, u1.profileId);
+    const [f2, mine2] = await Promise.all([followerState(), act.myFollowing(u2)]);
+    const wantAfter = [...landed.followers].filter((k) => k !== 'u2');
+    const gone = uf.ok && f2.exact && mine2.ok && sameSet(f2.keys, wantAfter) && !mine2.following.includes(u1.profileId);
+    expect(
+      gone,
+      'social.unfollow',
+      !uf.ok
+        ? `refused: ${msgOf(uf)}`
+        : !f2.ok
+          ? `u2 unfollowed, but a read to check it failed: ${f2.error?.message ?? 'no error text'}`
+          : `u2 unfollowed: followCounts(u1) ${f1.fc.followers} → ${f2.fc.followers} = ${f2.keys.length} TEST row(s) (${list(f2.keys)}, expected ${list(wantAfter)}) + ${f2.out} from outside${f2.exact ? '' : ' — MISMATCH'}; u2's list ${!mine2.ok ? `could not be read (${msgOf(mine2)})` : mine2.following.includes(u1.profileId) ? 'STILL has u1' : 'no longer has u1'}`
+    );
+    if (gone) landed.followers.delete('u2');
+  }
+  unreachable('social.follow-ui-path', 'the «İzlə» button sits on a video card and on the creator page reached from a video (feed/index.tsx:450, creator.tsx:134); u1 has no video (a TEST one would need a file upload), so no screen offers to follow u1 — followProfile, the exact call that button sends, is called directly');
+
+  // ---- 4 — u4 and u5 ask each other at the same instant ---------------------
+  unreachable('social.match-ui-path', 'u4 and u5 have no home gym (Profil → Redaktə offers listed gyms only, and a real gym would put TEST people in its member list), so neither is in the other\'s Kəşf lists or deck; send_match_request and the «Təkliflər» reads and writes below are the exact requests the match and requests screens send');
+  const proposal = `TEST ${ctx.runId} · Ç.a 19:00`;
+  const s6 = await together('u4 and u5 send each other a partner request at the same instant (crossing)', [
+    { actor: u4, label: 'u4 → u5', alignWrite: true, fn: (_p, sync) => act.sendMatchRequest(u4, u5.profileId, proposal, { sync }) },
+    { actor: u5, label: 'u5 → u4', alignWrite: true, fn: (_p, sync) => act.sendMatchRequest(u5, u4.profileId, proposal, { sync }) },
+  ]);
+  for (const r of s6.results) {
+    if (r.ok) landed.matchSends.push(r.actor);
+    expect(r.ok, `social.match-sent.${r.actor}`, r.ok ? `send_match_request accepted — «${r.shown}»` : `refused: ${msgOf(r)} — «${r.shown ?? 'Təklif göndərilmədi'}»`, r.ok ? null : r.error);
+  }
+  const pairRows = (res, me, other) =>
+    (res.rows ?? []).filter((r) => r.otherProfileId === other.profileId).map((r) => `${r.iSent ? me.key : other.key}→${r.iSent ? other.key : me.key} ${r.status}`).sort();
+  const [p4, p5] = await Promise.all([act.launchMatchSync(u4, { apply: false }), act.launchMatchSync(u5, { apply: false })]);
+  const rows4 = pairRows(p4, u4, u5);
+  const rows5 = pairRows(p5, u5, u4);
+  const twoPending = rows4.length === 2 && rows4.every((x) => x.endsWith('pending'));
+  info(
+    'social.match-cross-outcome',
+    `server after the crossing sends: ${rows4.length} row(s) — ${rows4.join(', ') || 'none'}${twoPending ? ': no error and no auto-match — each direction is its own pending offer (match_requests_one_per_pair is on from_profile, to_profile)' : ''}`,
+    { u4: rows4, u5: rows5 }
+  );
+  expect(p4.ok && p5.ok && rows4.join('|') === rows5.join('|'), 'social.match-cross-rows-agree', p4.ok && p5.ok ? `u4 reads ${rows4.join(', ') || 'none'}; u5 reads ${rows5.join(', ') || 'none'}` : `read failed: ${msgOf(p4.ok ? p5 : p4)}`);
+  const [q4, q5] = await Promise.all([act.openRequestsScreen(u4, ctx.simIds), act.openRequestsScreen(u5, ctx.simIds)]);
+  const screenOf = (q, other) =>
+    `incoming from ${other.key}: ${(q.incoming ?? []).some((r) => r.fromProfile === other.profileId) ? 'a «Qəbul et» card' : 'none'}, own offer: ${q.outgoing?.[other.profileId] ? `«${q.outgoing[other.profileId]}»` : (q.closed ?? []).includes(other.profileId) ? 'matched' : 'not listed'}`;
+  // The incoming cards carry each row's created_at (= now() of the sending transaction).
+  const crossStarts = [...(q4.incoming ?? []).filter((r) => r.fromProfile === u5.profileId), ...(q5.incoming ?? []).filter((r) => r.fromProfile === u4.profileId)].map((r) => r.at);
+  const race6 = raceOf(s6.step, crossStarts, 'no incoming card came back to read it from');
+  info('social.match-cross-screens', `u4's «Təkliflər» — ${screenOf(q4, u5)}; u5's — ${screenOf(q5, u4)}. The two sends: ${race6.text}`, { write: s6.step.write, contended: race6.contended });
+
+  const card5 = (q5.incoming ?? []).find((r) => r.fromProfile === u4.profileId) ?? null;
+  if (!card5) {
+    expect(false, 'social.match-card-visible', `u5's «Təkliflər» has no incoming offer from u4 (${q5.ok ? 'none listed' : msgOf(q5)}) — nothing to accept`);
+  } else {
+    const acc = await act.acceptMatchRequest(u5, card5);
+    expect(acc.ok, 'social.match-accepted', acc.ok ? `u5 accepted u4's offer — the row came back, «${acc.shown}»` : `accept did not reach the server (${msgOf(acc)}) — «${acc.shown}»`);
+    if (acc.ok) landed.matchAccepts.push({ by: 'u5', of: 'u4' });
+
+    // What each side's phone says: its device state after opening «Təkliflər»,
+    // any card still offered, its own open offer, and the next launch's state
+    // for both row orders (the launch read has no ORDER BY).
+    const view = async () => {
+      const [r4, r5] = await Promise.all([act.openRequestsScreen(u4, ctx.simIds), act.openRequestsScreen(u5, ctx.simIds)]);
+      const [l4, l5] = await Promise.all([act.launchMatchSync(u4, { apply: false }), act.launchMatchSync(u5, { apply: false })]);
+      const side = (a, other, r, l) => ({
+        device: a.db.matches[other.profileId]?.state ?? '—',
+        card: (r.incoming ?? []).find((x) => x.fromProfile === other.profileId) ?? null,
+        offer: r.outgoing?.[other.profileId] ?? null,
+        launch: l.matches?.[other.profileId]?.state ?? '—',
+        launchAlt: l.altMatches?.[other.profileId]?.state ?? '—',
+        readOk: !!(r.ok && l.ok),
+      });
+      return { u4: side(u4, u5, r4, l4), u5: side(u5, u4, r5, l5) };
+    };
+    const describe = (v) =>
+      Object.entries(v)
+        .map(([k, s]) => `${k}: device «${s.device}», ${s.card ? 'a live «Qəbul et» card from its partner' : 'no card'}, ${s.offer ? `own offer «${s.offer}»` : 'no open offer'}, next launch «${s.launch}»${s.launch !== s.launchAlt ? ` or «${s.launchAlt}» depending on row order` : ''}${s.readOk ? '' : ' (a read FAILED)'}`)
+        .join('; ');
+    const clean = (v) => Object.values(v).every((s) => s.readOk && s.device === 'accepted' && !s.card && !s.offer && s.launch === 'accepted' && s.launchAlt === 'accepted');
+    const why = (v) => {
+      const parts = [];
+      if (Object.values(v).some((s) => s.card)) parts.push('accepting one direction leaves the other direction pending, so its sender still gets a «Qəbul et» card from a person it is already matched with');
+      if (Object.values(v).some((s) => s.launch !== s.launchAlt)) parts.push('reconcileMatches keys the rows by the other person (db.ts:515) and the launch read has no ORDER BY (api.ts:1221), so the next launch shows a different state depending on which row the server returns last');
+      if (Object.values(v).some((s) => s.device !== 'accepted')) parts.push('a phone does not show the match');
+      return parts.join('; ');
+    };
+    if (acc.ok) {
+      const v1 = await view();
+      expect(v1.u4.device === 'accepted' && v1.u5.device === 'accepted', 'social.match-both-see-accepted', `after u5's «Qəbul et»: u4's phone «${v1.u4.device}», u5's «${v1.u5.device}»`, v1);
+      expect(clean(v1), 'social.match-cross-consistent', clean(v1) ? 'both phones say «matched» everywhere, now and at the next launch' : `the pair is half-open — ${describe(v1)}. ${why(v1)}`, v1);
+      if (v1.u4.card) {
+        // What the person would do with a card from somebody already matched: accept it.
+        const acc2 = await act.acceptMatchRequest(u4, v1.u4.card);
+        expect(acc2.ok, 'social.match-leftover-accepted', acc2.ok ? 'u4 pressed «Qəbul et» on the leftover card — accepted' : `refused: ${msgOf(acc2)}`);
+        if (acc2.ok) landed.matchAccepts.push({ by: 'u4', of: 'u5' });
+        const v2 = await view();
+        expect(clean(v2), 'social.match-consistent-after-both', clean(v2) ? 'with both directions accepted, both phones say «matched» now and at the next launch' : `still inconsistent — ${describe(v2)}. ${why(v2)}`, v2);
+      }
+
+      // The match opens a chat: both press «Göndər» on their first message at once.
+      const texts = { u4: `TEST salam, yoldaş (${ctx.runId})`, u5: `TEST salam (${ctx.runId})` };
+      const s7 = await together('u4 and u5 send their first message at the same instant (chat/[id].tsx)', [
+        { actor: u4, prep: () => act.openChatScreen(u4, u5.profileId), fn: (p) => act.sendChatMessage(u4, u5.profileId, p?.threadId ?? null, texts.u4) },
+        { actor: u5, prep: () => act.openChatScreen(u5, u4.profileId), fn: (p) => act.sendChatMessage(u5, u4.profileId, p?.threadId ?? null, texts.u5) },
+      ]);
+      const failedChat = s7.results.filter((r) => !r.ok);
+      expect(
+        failedChat.length === 0,
+        'social.match-chat-opens',
+        failedChat.length ? failedChat.map((f) => `${f.actor}: ${msgOf(f)} — the screen shows «${act.chatRefusalText(f.refusal)}»`).join('; ') : 'the accepted match opens a chat from both sides'
+      );
+      const t4 = s7.results.find((r) => r.actor === 'u4')?.threadId ?? null;
+      const t5 = s7.results.find((r) => r.actor === 'u5')?.threadId ?? null;
+      if (t4 && t5) expect(t4 === t5, 'social.match-one-thread', t4 === t5 ? 'one thread for the pair' : `TWO threads: ${t4} / ${t5}`);
+      const tid = t4 ?? t5;
+      if (tid) {
+        const sent = s7.results.filter((r) => r.ok).length;
+        const [read4, inbox5] = await Promise.all([act.openChatScreen(u4, u5.profileId), act.getMyThreads(u5, ctx.simIds)]);
+        const inInbox = (inbox5.threads ?? []).some((t) => t.threadId === tid);
+        expect(
+          read4.threadId === tid && (read4.messages ?? []).length === sent && inInbox,
+          'social.match-chat-reads',
+          `u4's chat holds ${read4.ok ? read4.messages.length : msgOf(read4)} message(s) (${sent} sent); u5's inbox ${inInbox ? 'lists' : 'does NOT list'} the thread`
+        );
+      }
+    }
+  }
+
+  // ---- 5 — what the inboxes say ----------------------------------------------
+  const n = await together('Bildirişlər: u1–u5 open their notifications', users.map((u) => ({ actor: u, fn: () => act.getNotifications(u, ctx.simIds) })));
+  const inbox = Object.fromEntries(n.results.map((r) => [r.actor, r]));
+  for (const r of n.results) if (!r.ok) expect(false, `social.notif-read.${r.actor}`, `the inbox did not load: ${msgOf(r)}`);
+  const tally = (k, type) => {
+    const out = {};
+    for (const x of inbox[k]?.notifications ?? []) {
+      if (x.type !== type) continue;
+      const who = x.actorId ? keyOf(x.actorId) : 'deleted';
+      out[who] = (out[who] ?? 0) + 1;
+    }
+    return out;
+  };
+  const onceEach = (got, from) => list(Object.keys(got)) === list(from) && Object.values(got).every((c) => c === 1);
+  const fmt = (got) =>
+    Object.entries(got)
+      .sort(([x], [y]) => (x < y ? -1 : 1))
+      .map(([k, c]) => `${k}×${c}`)
+      .join(', ') || 'none';
+  if (post) {
+    const pl = tally('u1', 'post_like');
+    expect(
+      inbox.u1?.ok && onceEach(pl, [...landed.likeNotifiers]),
+      'social.notif-post-like',
+      `u1: «… postunu bəyəndi» from ${fmt(pl)} — expected one each from ${list(landed.likeNotifiers)} (u1's own like notifies nobody, u4's second device must add none, an unlike removes none)`
+    );
+    if (Object.keys(commentOf).length || landed.replied) {
+      const aboutPost = (inbox.u1?.notifications ?? []).filter((x) => ['comment_reply', 'mention'].includes(x.type) && x.targetKey === act.postKey(post.id) && x.actorId && keyOf(x.actorId) !== 'u1');
+      info(
+        'social.notif-no-comment-notice',
+        `u1 got ${aboutPost.length} notification(s) for the comments under its post: tg_notify_comment notifies only the parent comment's author (a reply) and @mentions — nothing tells a post's author that somebody commented`
+      );
+    }
+    if (landed.commentLikers.length) {
+      const from = landed.commentLikers.filter((k) => k !== 'u2');
+      const clk = tally('u2', 'comment_like');
+      expect(inbox.u2?.ok && onceEach(clk, from), 'social.notif-comment-like', `u2: «… şərhini bəyəndi» from ${fmt(clk)} — expected one each from ${list(from)} (u1 liked from two devices)`);
+    }
+    if (landed.replied) {
+      const rp = tally('u3', 'comment_reply');
+      expect(inbox.u3?.ok && onceEach(rp, ['u1']), 'social.notif-comment-reply', `u3: «… şərhinə cavab yazdı» from ${fmt(rp)} — expected one from u1`);
+    }
+  }
+  if (followNotifiers.size) {
+    const fo = tally('u1', 'follow');
+    expect(
+      inbox.u1?.ok && onceEach(fo, [...followNotifiers]),
+      'social.notif-follow',
+      `u1: «… səni izləməyə başladı» from ${fmt(fo)} — expected one each from ${list(followNotifiers)} (u5 followed from two devices; u2's unfollow removes none)`
+    );
+  }
+  if (landed.matchSends.length) {
+    const want = { u4: { match_request: [], match_accepted: [] }, u5: { match_request: [], match_accepted: [] } };
+    for (const s of landed.matchSends) want[s === 'u4' ? 'u5' : 'u4'].match_request.push(s);
+    for (const m of landed.matchAccepts) want[m.of].match_accepted.push(m.by);
+    const got = {};
+    let good = true;
+    for (const k of ['u4', 'u5']) {
+      got[k] = { match_request: tally(k, 'match_request'), match_accepted: tally(k, 'match_accepted') };
+      good = good && !!inbox[k]?.ok && onceEach(got[k].match_request, want[k].match_request) && onceEach(got[k].match_accepted, want[k].match_accepted);
+    }
+    expect(
+      good,
+      'social.notif-match',
+      ['u4', 'u5'].map((k) => `${k}: offers from ${fmt(got[k].match_request)} (expected ${list(want[k].match_request)}), accepted by ${fmt(got[k].match_accepted)} (expected ${list(want[k].match_accepted)})`).join('; '),
+      { got, want }
+    );
+  }
+  const u1n = inbox.u1;
+  if (u1n?.ok && u1n.total < u1n.limit) {
+    const badge = await act.getUnreadCount(u1);
+    expect(badge.ok && badge.unread === u1n.unreadAll, 'social.notif-unread-badge', badge.ok ? `u1's badge says ${badge.unread} unread; the inbox holds ${u1n.unreadAll} unread row(s)` : `the badge read failed — it shows nothing (${msgOf(badge)})`);
+  }
+  for (const r of n.results) if (r.ok && r.foreign) info(`social.notif-foreign.${r.actor}`, `${r.foreign} notification(s) of ${r.actor} were caused by people outside this run (counted, never resolved)`);
+}
+
 // What delete_my_account() takes with it beyond the profile cascade. Before
 // schema81 (applied 2026-09-22) never-listed gyms, their codes and day passes,
 // programs and the notifications a person caused all stayed behind; the first
@@ -1159,13 +1733,24 @@ async function phaseCleanup(ctx) {
     }
   }
   if (ctx.opts.keep) {
-    for (const a of ctx.actors.values()) {
-      if (a.userId) ctx.rec.leftover('kept-actor', { actor: a.key, userId: a.userId, profileId: a.profileId, username: a.username });
-    }
+    recordKept(ctx);
     info('cleanup.kept', '--keep: nothing was deleted (TEST coaches were unlisted); every actor above is still in the live database');
     return;
   }
   await cleanupAll(ctx, 'end of run');
+}
+
+/** --keep (end of run, or a signal): every actor stays, and so does whatever it
+ *  made. The social phase does not run under --keep, so no TEST post should
+ *  exist — should one exist anyway, it is named as a leftover, never left silent. */
+function recordKept(ctx) {
+  for (const a of ctx.actors.values()) {
+    if (a.userId) ctx.rec.leftover('kept-actor', { actor: a.key, userId: a.userId, profileId: a.profileId, username: a.username });
+  }
+  for (const id of ctx.state.posts) {
+    ctx.rec.leftover('kept-public-post', { postId: id, why: 'public in the İcma feed until u1 deletes its account — the app has no delete-post path' });
+    console.log(`   ! --keep: TEST post ${id} stays PUBLIC in the İcma feed until u1 deletes its account`);
+  }
 }
 
 /** Delete every actor (idempotent; also the Ctrl+C / crash path). */
@@ -1197,7 +1782,9 @@ function cleanupAll(ctx, reason) {
       for (const [table, n] of Object.entries(i?.foreign ?? {})) {
         if (typeof n === 'number' && n > 0) {
           foreignTotal += n;
-          ctx.rec.leftover('real-user rows removed by cascade', { actor: k, table, count: n });
+          // A real person's comment under a TEST post has no foreign key to it
+          // (comments.target_key is text): it is orphaned, not deleted.
+          ctx.rec.leftover(/_orphaned$/.test(table) ? 'real-user rows orphaned (their target is deleted, the rows stay)' : 'real-user rows removed by cascade', { actor: k, table, count: n });
         } else if (n && typeof n === 'object' && n.error) {
           info(`cleanup.foreign-count.${k}.${table}`, `could not count real people's ${table} addressed to ${k}: ${n.error}`);
         }
@@ -1208,7 +1795,7 @@ function cleanupAll(ctx, reason) {
       'cleanup.no-real-user-rows',
       foreignTotal
         ? `${foreignTotal} row(s) that real people addressed to TEST actors are cascade-deleted with them (counts only, in leftovers)`
-        : 'no real person had sent anything to a TEST actor'
+        : `no real person had sent anything to a TEST actor that the public key can count (it cannot count reports or blocks${ctx.state.socialRan ? ' — see cleanup.reports-unverifiable' : ''})`
     );
 
     // 2 — programs would outlive their author, public and ownerless. Every actor
@@ -1281,7 +1868,18 @@ function cleanupAll(ctx, reason) {
     const del = await together('every actor deletes itself (delete_my_account)', doomed.map((a) => ({ actor: a, fn: () => act.deleteMyAccount(a) })));
     for (const r of del.results.filter((x) => !x.ok)) {
       const a = A(ctx, r.actor);
-      info(`cleanup.concurrent-delete-failed.${a.key}`, `first delete failed (${r.step ?? ''}): ${msgOf(r)} — retrying alone`);
+      const deadlock = r.error?.code === '40P01' || /deadlock detected/i.test(r.error?.message ?? '');
+      if (deadlock) {
+        // Not a harness fault: e.g. u1's post delete cascades into u4's post_likes
+        // row while u4's delete, holding that row, waits in tg_post_likes for u1's post.
+        info(
+          `cleanup.concurrent-delete-deadlock.${a.key}`,
+          `first delete_my_account() failed with «deadlock detected» (40P01): accounts that interacted, deleting at the same instant, lock shared rows (post_likes / comments / comment_likes / follows and the post they point at) in opposite order. In the app one of two such people is told «Hesab silinmədi — internet yoxlanılsın, sonra yenidən cəhd et» and must retry. Retrying alone`,
+          r.error
+        );
+      } else {
+        info(`cleanup.concurrent-delete-failed.${a.key}`, `first delete failed (${r.step ?? ''}): ${msgOf(r)} — retrying alone`, r.error);
+      }
       let again = null;
       for (let i = 1; i <= 3 && !a.deleted; i++) {
         await sleep(300 * i);
@@ -1314,7 +1912,12 @@ function cleanupAll(ctx, reason) {
     const gymIds = [...ctx.actors.values()].map((a) => a.gymId).filter(Boolean);
     const programIds = [...new Set(ctx.state.programs.map((p) => p.id))];
     const handles = [...ctx.actors.values()].filter((a) => a.userId).map((a) => a.username).concat(`sim_${ctx.runId}_race`);
-    const pub = await act.publicLeftovers(ctx.env, { runId: ctx.runId, trainerIds, programIds, gymIds, handles });
+    // Every post and comment the run made — what the phase recorded plus what each
+    // actor's inventory held (an insert whose response was lost is found there).
+    const held = (k) => Object.values(ctx.inventory ?? {}).flatMap((i) => (Array.isArray(i?.[k]) ? i[k] : []));
+    const postIds = [...new Set([...ctx.state.posts, ...held('community_posts')])];
+    const commentIds = [...new Set([...ctx.state.comments, ...held('comments')])];
+    const pub = await act.publicLeftovers(ctx.env, { runId: ctx.runId, trainerIds, programIds, gymIds, handles, postIds, commentIds });
     for (const p of pub) {
       const id = `cleanup.public.${p.label.replace(/\s*\(.*\)$/, '').replace(/\s+/g, '-')}`;
       if (!p.label.startsWith('gyms')) {
@@ -1325,6 +1928,21 @@ function cleanupAll(ctx, reason) {
       }
       for (const row of p.rows) ctx.rec.leftover(`public:${p.label}`, { row });
     }
+    if (ctx.state.socialRan || postIds.length) {
+      info(
+        'cleanup.social-cascades',
+        'post_likes, follows, match_requests and notifications cannot be read with the bare key; they go by ON DELETE CASCADE (post_likes → community_posts and profiles; follows, match_requests, notifications → profiles; read 2026-09-22) — the rows each actor held are listed in its inventory; confirm with read-only SQL if needed'
+      );
+      // What a real person may have done to TEST content that nobody here can see:
+      // reports_admin_read hides reports from everyone but admins, and blocks_own
+      // shows a block to its blocker only.
+      const profileIds = [...ctx.actors.values()].map((a) => a.profileId).filter(Boolean);
+      ctx.rec.expectedDeleted = { ...(ctx.rec.expectedDeleted ?? {}), reports_to_check: { content: postIds, user: profileIds } };
+      info(
+        'cleanup.reports-unverifiable',
+        'a real person\'s «Şikayət et» on the TEST post writes a reports row (target_type content, target_id = the post id), and one from the comments sheet reports the commenter (target_type user, target_id = the TEST profile id). reports.target_id is plain text: such a row is not cascaded, stays in the moderation queue pointing at deleted content, and the public key can neither read nor count it. A real person\'s block of a TEST actor goes with delete_my_account() uncounted. Check with read-only SQL: select id, target_type, status from public.reports where target_id in (the ids in report.expectedDeleted.reports_to_check)'
+      );
+    }
 
     // 7 — what the public key cannot see: the TEST gyms and their passes.
     const passIds = Object.values(ctx.inventory ?? {}).flatMap((i) => (Array.isArray(i?.day_passes) ? i.day_passes : []));
@@ -1333,7 +1951,7 @@ function cleanupAll(ctx, reason) {
         'cleanup.unverifiable-deletions',
         `${gymIds.length} TEST gym(s) with their door codes and ${passIds.length} day-pass row(s): ${DELETED_SINCE_SCHEMA81}. Ids are in report.expectedDeleted.`
       );
-      ctx.rec.expectedDeleted = { gyms: gymIds, day_passes: passIds };
+      ctx.rec.expectedDeleted = { ...(ctx.rec.expectedDeleted ?? {}), gyms: gymIds, day_passes: passIds };
     }
   })();
   return ctx.cleanupPromise;
@@ -1443,6 +2061,23 @@ const PHASES = [
     ],
   },
   {
+    name: 'social',
+    title: 'likes, comments, follows and a crossing partner request — on TEST content only',
+    needs: [],
+    actors: ['u1', 'u2', 'u3', 'u4', 'u5'],
+    run: phaseSocial,
+    plan: [
+      'not run under --keep (the TEST post only goes with u1\'s account); u1: «Yeni post» (community_posts insert, text only), id read back from the feed filtered to u1\'s own posts',
+      'every racing step lines up the WRITES, not just the calls: each actor does its own reads (getUser, profile), then all writes leave at a second barrier',
+      'u1..u5 post_likes insert together (+u4 second device): likes = rows (schema82 lock-then-count), judged by whether the writes overlapped (in flight together + created_at = transaction start); one row for u4; u2+u3 unlike together: recount',
+      'u2..u5 comments insert together; u1 reads comments_for; card count = TEST rows + outside rows; comment_likes upsert u1×2 + u4 together; u1 replies to u3; u3 cannot delete u2\'s; u5 deletes its own (sheet re-read)',
+      'u2..u5 follows insert together (+u5 second device): followCounts(u1) = TEST rows + outside rows (counted apart), one row for u5; myFollowing each; u2 unfollows',
+      'u4 + u5 send_match_request to each other together (crossing): rows and «Təkliflər» recorded; u5 accepts; both phones + next launch must agree; chat opens, one thread',
+      'Bildirişlər: post_like / follow / comment_like / comment_reply / match_* exactly once each (no duplicate for a double tap); unread badge = unread rows',
+      'nothing real is liked, commented, followed or joined — those flows are UNREACHABLE by rule; reports/blocks by real people are not countable — ids to check with SQL go to report.expectedDeleted',
+    ],
+  },
+  {
     name: 'cleanup',
     title: 'every actor deletes itself; public listings re-read',
     needs: [],
@@ -1508,7 +2143,7 @@ async function dryRun(opts) {
   }
 
   console.log(`run id (example): ${runId}`);
-  console.log(`phases: ${phases.join(' → ')}${opts.keep ? '   [--keep: cleanup skipped]' : ''}`);
+  console.log(`phases: ${phases.join(' → ')}${opts.keep ? `   [--keep: cleanup skipped${phases.includes('social') ? '; social NOT run — its public TEST post could not be removed' : ''}]` : ''}`);
   for (const n of phases) {
     const p = PHASE_BY_NAME[n];
     if (typeof p.run !== 'function') problems.push(`phase ${n} has no runner`);
@@ -1566,6 +2201,18 @@ async function dryRun(opts) {
   const program = phases.includes('program-chat');
   if (coaches) console.log(`  while it runs: ${coaches} «TEST t…» trainer listing(s) are public for a few seconds in setup, then unlisted`);
   if (program) console.log(`  while it runs: up to ${coaches || 3} «TEST proqram …» row(s) are readable in the library (programs_read is public), deleted at cleanup`);
+  if (phases.includes('social') && opts.keep) {
+    console.log('  social: NOT run under --keep — its «TEST post …» would stay public in the İcma feed with no end date');
+    console.log('    (the app has no delete-post path; only delete_my_account removes it). Reported UNREACHABLE.');
+  } else if (phases.includes('social')) {
+    console.log('  while it runs: 1 «TEST post …» is public in the İcma feed (people without a home gym see it), with TEST comments under it;');
+    console.log('    the app has no delete-post path, so it goes when u1 deletes its account (delete_my_account removes posts and comments;');
+    console.log('    likes, comment likes, follows, partner requests and notifications cascade). A real person\'s like on it goes with it;');
+    console.log('    a real person\'s COMMENT would be orphaned (comments.target_key has no foreign key) — counted, reported, never read.');
+    console.log('    A real person\'s REPORT of the post or a TEST commenter (reports.target_id is text) or BLOCK of a TEST actor cannot be');
+    console.log('    counted with the public key: the ids to check with read-only SQL go to report.expectedDeleted.reports_to_check.');
+    console.log('  nothing real is liked, commented, followed or joined.');
+  }
 
   console.log(`\nnetwork calls attempted: ${attempts}`);
   if (attempts) problems.push(`${attempts} network call(s) were attempted in --dry`);
@@ -1664,7 +2311,8 @@ async function main() {
     simIds: new Set(),
     // programs: every id a coach's phone minted ({ actor, id, result });
     // reviewsWritten: { key, gymId } of reviews the server should have refused.
-    state: { gyms: {}, requestIds: {}, active: {}, programId: null, programs: [], threadId: null, dayPasses: 0, dayPassCode: null, landedAtG1: [], reviewsWritten: [] },
+    // posts / comments: ids of the social phase's TEST rows, proven gone at cleanup.
+    state: { gyms: {}, requestIds: {}, active: {}, programId: null, programs: [], threadId: null, dayPasses: 0, dayPassCode: null, landedAtG1: [], reviewsWritten: [], posts: [], comments: [], socialRan: false },
     phone: { trainerOk: false, gymOk: false, ownerProfileId: null, requests: 0, decisions: 0, checkins: 0 },
     aborted: false,
     sigint: false,
@@ -1713,9 +2361,7 @@ async function main() {
         if (opts.keep) {
           abortState.cleaning = true;
           await unlistTrainers(ctx, 'TEST coaches hidden from Kəşf (--keep)');
-          for (const a of ctx.actors.values()) {
-            if (a.userId) rec.leftover('kept-actor', { actor: a.key, userId: a.userId, profileId: a.profileId, username: a.username });
-          }
+          recordKept(ctx);
           return null;
         }
         return cleanupAll(ctx, why);

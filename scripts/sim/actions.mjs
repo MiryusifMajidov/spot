@@ -109,6 +109,8 @@ function chatRefusal(message) {
   if (m.includes('no_relationship')) return 'no_relationship';
   if (m.includes('blocked')) return 'blocked';
   if (m.includes('wait_for_reply')) return 'wait_for_reply';
+  // mirrors: named by the server since schema83
+  if (m.includes('sanctioned')) return 'sanctioned';
   if (m.includes('not_signed_in')) return 'not_signed_in';
   // The app says «sanction» only when the store holds one; a virtual actor never does.
   if (m.includes('row-level security')) return 'blocked';
@@ -1596,6 +1598,605 @@ export async function finishWorkout(a, { title, durationSec, volumeKg, setsDone,
   }
 }
 
+// --------------------------------------------------------------- social ----
+// The community feed, likes, comments, follows and partner requests. Every
+// target the scenario hands these is content a TEST actor of this run made; a
+// row written by anyone else that comes back from an app read (a comment, a
+// notification, an incoming offer) is COUNTED and dropped — never kept, never
+// resolved to a name, never logged.
+
+// mirrors: src/app/(tabs)/feed/index.tsx:41
+export const postKey = (id) => `post:${id}`;
+
+// mirrors: src/lib/hooks.ts:77-84
+function mapPost(r) {
+  return {
+    id: r.id,
+    author: r.author,
+    authorId: r.author_id ?? null,
+    gym: r.gym,
+    type: r.type,
+    text: r.body,
+    likes: r.likes ?? 0,
+    comments: r.comments ?? 0,
+  };
+}
+
+async function socialMyId(a) {
+  // app: src/lib/social.ts:23
+  const me = await readMyProfile(a);
+  if (!me?.id) throw new Error('no profile');
+  return me.id;
+}
+
+// Harness only, not an app call: the write actions below take `{ sync }` from
+// together()'s alignWrite and await it AFTER their own reads (auth.getUser, the
+// profile row), right before the write — so the writes of a concurrent step
+// leave together, not just the function calls. The app's calls and their order
+// are unchanged; alone, sync is this no-op.
+const noSync = async () => {};
+
+/** «Yeni post» → «Paylaş» on feed/compose.tsx: a text post (createCommunityPost). */
+export async function createCommunityPost(a, text) {
+  try {
+    // app: src/app/(tabs)/feed/compose.tsx:27
+    if (!text.trim()) return fail(new Error('empty post'));
+    // app: src/app/(tabs)/feed/compose.tsx:28
+    if (!a.store.profile.name.trim()) return fail(new Error('no-name'), { shown: 'Əvvəlcə profilində adını yaz — post adınla paylaşılır' });
+    // The composer stamps the HOME gym's name from the gym catalogue. A TEST actor
+    // never has a home gym, so the app sends ''; with one set the harness stops
+    // rather than guess a name it did not read.
+    if (a.store.profile.homeGymId) return fail(new Error('harness: a home gym is set — the composer would stamp its name, which is not mirrored'));
+    // mirrors: src/app/(tabs)/feed/compose.tsx:24
+    const gymName = '';
+    // app: src/app/(tabs)/feed/compose.tsx:38
+    const p = { author: a.store.profile.name.trim(), gym: gymName, body: text.trim() };
+    // app: src/lib/api.ts:681
+    const me = await readMyProfile(a);
+    if (!me?.id) return fail(new Error('no profile'));
+    // No .select(): the app gets no row back and meets its post again in the feed.
+    // app: src/lib/api.ts:686-697
+    const { error } = await a.client.from('community_posts').insert({
+      author: p.author,
+      author_id: me.id,
+      gym: p.gym,
+      time_ago: 'indi',
+      type: 'text',
+      body: p.body,
+    });
+    if (error) return fail(error, { shown: 'Post göndərilə bilmədi. Yenidən cəhd et.' });
+    return ok(null, { body: p.body, shown: 'Postun paylaşıldı' });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** The community feed (useCommunityPosts), FILTERED server-side to one author.
+ *  The app reads every post; the filter keeps real people's posts from ever
+ *  being fetched. The insert above returns no row, so this is how the id of the
+ *  post just written is learned — the same way the app sees it again. */
+export async function openFeedPostsBy(a, authorProfileId) {
+  try {
+    // app: src/lib/hooks.ts:335
+    const { data, error } = await a.client.from('community_posts').select('*').is('hidden_at', null).eq('author_id', authorProfileId).order('created_at', { ascending: false });
+    if (error) return fail(error);
+    const posts = (data ?? []).map(mapPost);
+    return ok(posts, { posts });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** One post card as the feed draws it — likes straight from community_posts.likes
+ *  (the trigger-kept counter) — with the feed read filtered to that post's id. */
+export async function openFeedPost(a, postId) {
+  try {
+    // app: src/lib/hooks.ts:335
+    const { data, error } = await a.client.from('community_posts').select('*').is('hidden_at', null).eq('id', postId).order('created_at', { ascending: false });
+    if (error) return fail(error);
+    const post = (data ?? []).map(mapPost)[0] ?? null;
+    return ok(post ? [post] : [], { post });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** The heart on a post card (PostCard onLike → likePost). */
+export async function likePost(a, postId, { sync = noSync } = {}) {
+  try {
+    // app: src/app/(tabs)/feed/index.tsx:853
+    const me = await socialMyId(a);
+    await sync();
+    // app: src/lib/social.ts:56
+    const { error } = await a.client.from('post_likes').insert({ post_id: postId, profile_id: me });
+    // «Already liked is the desired end state»: the app swallows a duplicate.
+    // mirrors: src/lib/social.ts:57
+    const duplicate = !!error && String(error.message ?? '').includes('duplicate');
+    if (error && !duplicate) return fail(error, { shown: 'Bəyənmə göndərilmədi — yenidən cəhd et' });
+    return ok(null, { duplicate });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Tapping a filled heart again (PostCard onLike → unlikePost). */
+export async function unlikePost(a, postId, { sync = noSync } = {}) {
+  try {
+    // app: src/app/(tabs)/feed/index.tsx:853
+    const me = await socialMyId(a);
+    await sync();
+    // app: src/lib/social.ts:62-63
+    const { error } = await a.client.from('post_likes').delete().eq('post_id', postId).eq('profile_id', me);
+    if (error) return fail(error, { shown: 'Bəyənmə göndərilmədi — yenidən cəhd et' });
+    return ok(null);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Which of these posts the SERVER says I liked — the feed's reconcile of the
+ *  hearts (CommunityFeed → myPostLikes). */
+export async function myPostLikes(a, postIds) {
+  try {
+    // app: src/lib/social.ts:68
+    const me = await readMyProfile(a);
+    if (!me?.id || !postIds.length) return ok([], { liked: [] });
+    // app: src/lib/social.ts:70-71
+    const { data, error } = await a.client.from('post_likes').select('post_id').eq('profile_id', me.id).in('post_id', postIds);
+    if (error) return fail(error);
+    return ok(data ?? [], { liked: (data ?? []).map((r) => r.post_id) });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** «İzlə» (followProfile) — the button on a video card and on the creator page. */
+export async function followProfile(a, profileId, { sync = noSync } = {}) {
+  try {
+    // app: src/app/(tabs)/feed/creator.tsx:63
+    const me = await socialMyId(a);
+    await sync();
+    // app: src/lib/social.ts:80
+    const { error } = await a.client.from('follows').insert({ follower_id: me, followee_id: profileId });
+    // mirrors: src/lib/social.ts:81
+    const duplicate = !!error && String(error.message ?? '').includes('duplicate');
+    if (error && !duplicate) return fail(error, { shown: 'İzləmə göndərilmədi — yenidən cəhd et' });
+    return ok(null, { duplicate });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** «İzlənir» tapped again (unfollowProfile). */
+export async function unfollowProfile(a, profileId) {
+  try {
+    // app: src/app/(tabs)/feed/creator.tsx:63
+    const me = await socialMyId(a);
+    // app: src/lib/social.ts:86-87
+    const { error } = await a.client.from('follows').delete().eq('follower_id', me).eq('followee_id', profileId);
+    if (error) return fail(error, { shown: 'İzləmə göndərilmədi — yenidən cəhd et' });
+    return ok(null);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Who I follow (myFollowing) — what the feed orders videos by, and what the
+ *  launch-time social sync puts back on the device. */
+export async function myFollowing(a) {
+  try {
+    // app: src/lib/social.ts:92
+    const me = await readMyProfile(a);
+    if (!me?.id) return ok([], { following: [] });
+    // app: src/lib/social.ts:94
+    const { data, error } = await a.client.from('follows').select('followee_id').eq('follower_id', me.id);
+    if (error) return fail(error);
+    return ok(data ?? [], { following: (data ?? []).map((r) => r.followee_id) });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** followCounts(profileId). The app ignores both errors (a failed count reads 0);
+ *  they are returned beside the numbers so a 0 can be told from a failure. */
+export async function followCounts(a, profileId) {
+  try {
+    // app: src/lib/social.ts:101-104
+    const [x, y] = await Promise.all([
+      a.client.from('follows').select('followee_id', { count: 'exact', head: true }).eq('followee_id', profileId),
+      a.client.from('follows').select('follower_id', { count: 'exact', head: true }).eq('follower_id', profileId),
+    ]);
+    const error = x.error ?? y.error ?? null;
+    return { ok: !error, rows: null, error: errInfo(error), followers: x.count ?? 0, following: y.count ?? 0 };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// mirrors: src/lib/comments.ts:51
+const UNKNOWN_AUTHOR = 'Silinmiş istifadəçi';
+
+// mirrors: src/lib/comments.ts:53-68
+function toComment(r, myProfileId) {
+  return {
+    id: r.id,
+    parentId: r.parent_id,
+    authorId: r.author_id,
+    authorName: r.author_name?.trim() || UNKNOWN_AUTHOR,
+    body: r.body,
+    createdAt: r.created_at,
+    likes: Number(r.likes ?? 0),
+    likedByMe: r.liked_by_me === true,
+    mine: myProfileId != null && r.author_id === myProfileId,
+  };
+}
+
+/** The comments sheet opening on a target (fetchComments → comments_for). A
+ *  comment by anyone outside this run is counted and dropped right here. */
+export async function fetchComments(a, targetKey, simIds) {
+  try {
+    // app: src/lib/comments.ts:87-90
+    const [me, res] = await Promise.all([readMyProfile(a), a.client.rpc('comments_for', { target: targetKey })]);
+    if (res.error) return fail(res.error, { shown: 'yüklənmədi' });
+    const all = (res.data ?? []).map((r) => toComment(r, me?.id ?? null));
+    const rows = simIds ? all.filter((c) => simIds.has(c.authorId)) : all;
+    return ok(rows, { comments: rows, foreign: all.length - rows.length, total: all.length });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** «Göndər» in the comments sheet (CommentsSheet send → addComment). A reply
+ *  passes the TOP-LEVEL comment as `parentId`. */
+export async function addComment(a, targetKey, body, parentId = null, { sync = noSync } = {}) {
+  try {
+    // app: src/components/CommentsSheet.tsx:397
+    const text = body.trim();
+    if (!text) return fail(new Error('empty comment'));
+    // app: src/lib/comments.ts:109
+    const me = await readMyProfile(a);
+    if (!me) return fail(new Error('no profile'));
+    await sync();
+    // app: src/lib/comments.ts:112-121
+    const { data, error } = await a.client
+      .from('comments')
+      .insert({ target_key: targetKey, parent_id: parentId ?? null, author_id: me.id, body: text })
+      .select('id,parent_id,author_id,body,created_at')
+      .single();
+    if (error) return fail(error, { shown: 'Şərh göndərilmədi — yenidən cəhd et' });
+    const comment = { id: data.id, parentId: data.parent_id, authorId: data.author_id, body: data.body, createdAt: data.created_at };
+    return ok([comment], { comment });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** The heart under a comment (CommentsSheet like → toggleCommentLike). `liked` is
+ *  the state to END in, so a device with a stale screen sends «like» again. */
+export async function toggleCommentLike(a, commentId, liked, { sync = noSync } = {}) {
+  try {
+    // app: src/lib/comments.ts:155
+    const me = await readMyProfile(a);
+    if (!me) return fail(new Error('no profile'));
+    await sync();
+    if (liked) {
+      // app: src/lib/comments.ts:159-161
+      const { error } = await a.client
+        .from('comment_likes')
+        .upsert({ comment_id: commentId, profile_id: me.id }, { onConflict: 'comment_id,profile_id' });
+      if (error) return fail(error, { shown: 'Bəyənilmədi — yenidən cəhd et' });
+      return ok(null);
+    }
+    // app: src/lib/comments.ts:165-169
+    const { error } = await a.client
+      .from('comment_likes')
+      .delete()
+      .eq('comment_id', commentId)
+      .eq('profile_id', me.id);
+    if (error) return fail(error, { shown: 'Bəyənmə geri götürülmədi — yenidən cəhd et' });
+    return ok(null);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** «Sil» on your OWN comment (CommentsSheet remove): delete, then re-read — the
+ *  re-read, not the request, decides what the person is told. */
+export async function deleteMyComment(a, targetKey, commentId, simIds) {
+  try {
+    // app: src/lib/comments.ts:145
+    const { error } = await a.client.from('comments').delete().eq('id', commentId);
+    if (error) return fail(error, { shown: 'Şərh silinmədi — yenidən cəhd et' });
+    // app: src/components/CommentsSheet.tsx:369
+    const after = await fetchComments(a, targetKey, simIds);
+    // A failed re-read is null in the sheet, and `after?.some` is then false: the
+    // app says «Şərh silindi» without knowing. Reported as rereadOk.
+    const still = (after.comments ?? []).some((c) => c.id === commentId);
+    return ok(null, { gone: after.ok && !still, rereadOk: after.ok, shown: still ? 'Şərh silinmədi' : 'Şərh silindi' });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** The comment count under each post card (useCommentCounts): one read of the
+ *  target keys, tallied on the phone. */
+export async function readCommentCounts(a, keys) {
+  try {
+    // app: src/app/(tabs)/feed/index.tsx:90
+    const { data, error } = await a.client.from('comments').select('target_key').in('target_key', keys);
+    if (error || !data) return fail(error ?? new Error('no data'));
+    const counts = {};
+    for (const k of keys) counts[k] = 0;
+    for (const row of data) counts[row.target_key] = (counts[row.target_key] ?? 0) + 1;
+    return ok(null, { counts });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** «Bildirişlər» (getNotifications). Names are read only for this run's actors;
+ *  a row caused by anyone else is counted, never resolved or kept. */
+export async function getNotifications(a, simIds, limit = 50) {
+  try {
+    // app: src/lib/notifications.ts:86
+    const me = await readMyProfile(a);
+    if (!me) return ok([], { notifications: [], foreign: 0, total: 0, unreadAll: 0 });
+    // app: src/lib/notifications.ts:88-92
+    const { data, error } = await a.client
+      .from('notifications')
+      .select('id,type,actor_id,target_key,entity_id,read_at,created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) return fail(error);
+    const all = data ?? [];
+    const rows = simIds ? all.filter((r) => !r.actor_id || simIds.has(r.actor_id)) : all;
+    const ids = [...new Set(rows.map((r) => r.actor_id).filter(Boolean))];
+    const names = new Map();
+    if (ids.length) {
+      // app: src/lib/notifications.ts:102
+      const { data: profs } = await a.client.from('profiles').select('id,name').in('id', ids);
+      for (const p of profs ?? []) if (p.name) names.set(p.id, p.name);
+    }
+    const list = rows.map((r) => ({
+      id: r.id,
+      type: r.type,
+      actorId: r.actor_id,
+      actorName: r.actor_id ? (names.get(r.actor_id) ?? null) : null,
+      targetKey: r.target_key,
+      entityId: r.entity_id,
+      read: !!r.read_at,
+      createdAt: r.created_at,
+    }));
+    return ok(list, { notifications: list, foreign: all.length - rows.length, total: all.length, unreadAll: all.filter((r) => !r.read_at).length, limit });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** The unread badge (getUnreadCount). `null` = could not ask, as in the app. */
+export async function getUnreadCount(a) {
+  try {
+    // app: src/lib/notifications.ts:123
+    const me = await readMyProfile(a);
+    if (!me) return ok(null, { unread: null });
+    // app: src/lib/notifications.ts:125-128
+    const { count, error } = await a.client.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null);
+    if (error) return fail(error, { unread: null });
+    return ok(null, { unread: count ?? 0 });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// mirrors: src/store/db.ts:549-553
+function acceptLocal(a, partnerId) {
+  a.db.matches = { ...a.db.matches, [partnerId]: { partnerId, state: 'accepted', at: new Date().toISOString() } };
+}
+
+// mirrors: src/app/chat/requests.tsx:52-57
+function forgetOutgoing(a, partnerId) {
+  const rest = { ...a.db.matches };
+  delete rest[partnerId];
+  a.db.matches = rest;
+}
+
+// mirrors: src/lib/api.ts:1228-1234
+function mapMatchRows(data, meId) {
+  return data.map((r) => {
+    const iSent = r.from_profile === meId;
+    const st = r.status === 'accepted' || r.status === 'declined' ? r.status : 'pending';
+    return { otherProfileId: iSent ? r.to_profile : r.from_profile, status: st, iSent, note: r.note ?? null };
+  });
+}
+
+// mirrors: src/store/db.ts:511-545
+function reconcileMatches(matches, rows) {
+  const stateOf = (r) => (r.status === 'accepted' ? 'accepted' : r.status === 'declined' ? 'declined' : r.iSent ? 'requested' : 'incoming');
+  // A Map keyed by the other person: when two rows share a partner, the LAST wins.
+  const server = new Map(rows.map((r) => [r.otherProfileId, r]));
+  const next = {};
+  for (const [pid, m] of Object.entries(matches)) {
+    if (!UUID_RE.test(pid)) {
+      next[pid] = m;
+      continue;
+    }
+    const r = server.get(pid);
+    if (!r) {
+      if (m.state === 'declined') next[pid] = m;
+      continue;
+    }
+    next[pid] = { ...m, state: stateOf(r) };
+  }
+  for (const r of rows) {
+    if (next[r.otherProfileId]) continue;
+    next[r.otherProfileId] = { partnerId: r.otherProfileId, at: new Date().toISOString(), state: stateOf(r) };
+  }
+  return next;
+}
+
+/** «Təklif göndər» on discover/match.tsx: the RPC first; the device records the
+ *  offer only once it reached the server. */
+export async function sendMatchRequest(a, toProfileId, proposal, { sync = noSync } = {}) {
+  try {
+    // app: src/app/(tabs)/discover/match.tsx:208
+    const clean = (proposal ?? '').trim().slice(0, 200);
+    // The RPC is the first request, so here sync only lets the step measure it.
+    await sync();
+    // app: src/lib/api.ts:670-673
+    const { error } = await a.client.rpc('send_match_request', { p_to: toProfileId, p_note: clean || null });
+    if (error) return fail(error, { shown: 'Təklif göndərilmədi — yenidən cəhd et' });
+    // The store's sendMatchRequest (db.ts:481-484).
+    // app: src/app/(tabs)/discover/match.tsx:216
+    a.db.matches = { ...a.db.matches, [toProfileId]: { partnerId: toProfileId, state: 'requested', at: new Date().toISOString(), question: `Məşq təklifi: ${proposal}` } };
+    return ok(null, { shown: 'Təklif göndərildi' });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+async function readMyMatchRequests(a) {
+  // app: src/lib/api.ts:1219
+  const me = await readMyProfile(a);
+  if (!me) return [];
+  // app: src/lib/api.ts:1221-1224
+  const { data, error } = await a.client
+    .from('match_requests')
+    .select('from_profile,to_profile,status,note')
+    .or(`from_profile.eq.${me.id},to_profile.eq.${me.id}`);
+  if (error) throw error;
+  return mapMatchRows(data ?? [], me.id);
+}
+
+/**
+ * The next launch's partner sync (bootstrap → getMatchRequestsSafe →
+ * reconcileMatches). The read has no ORDER BY and the device keys the rows by
+ * the other person, so when two rows share a partner the last one wins. The
+ * state is computed for the order the server returned AND for the reverse, so a
+ * state that depends on row order shows up. `apply: false` leaves the device as
+ * it is (a look at what a relaunch would show, without relaunching).
+ */
+export async function launchMatchSync(a, { apply = true } = {}) {
+  try {
+    // app: src/store/appStore.ts:323-324
+    const rows = await readMyMatchRequests(a);
+    const before = a.db.matches;
+    const matches = reconcileMatches(before, rows);
+    const altMatches = reconcileMatches(before, [...rows].reverse());
+    if (apply) a.db.matches = matches;
+    return ok(rows, { rows, matches, altMatches });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * «Təkliflər» (chat/requests.tsx load): the pending offers TO me, then the
+ * answers to the offers I sent — which the device applies (an accepted answer
+ * opens the match, a vanished row is forgotten). A sender outside this run is
+ * counted and never resolved to a name.
+ */
+export async function openRequestsScreen(a, simIds) {
+  try {
+    // app: src/app/chat/requests.tsx:101
+    const me = await readMyProfile(a);
+    if (!me) return fail(new Error('no profile'));
+    // app: src/app/chat/requests.tsx:109-114
+    const { data, error } = await a.client
+      .from('match_requests')
+      .select('id,from_profile,created_at,note')
+      .eq('to_profile', me.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    if (error) return fail(error, { shown: 'yüklənmədi' });
+    const all = data ?? [];
+    const rows = simIds ? all.filter((r) => simIds.has(r.from_profile)) : all;
+    // The name is getPartner() per card: its own getMyProfile() (auth.getUser +
+    // own profile), then the sender's profile. A TEST sender has no home gym and
+    // neither has the reader, so activeProfileIdsAtGym (api.ts:639) is skipped and
+    // gymGapKm (api.ts:473) returns before any read — neither makes a request.
+    // mirrors: src/app/chat/requests.tsx:125-129
+    const resolved = await Promise.all(
+      rows.map(async (r) => {
+        let name = null;
+        try {
+          // app: src/lib/api.ts:631
+          const mine = await readMyProfile(a);
+          // app: src/lib/api.ts:632
+          const { data: p, error: pErr } = await a.client.from('profiles').select(PROFILE_COLS).eq('id', r.from_profile).maybeSingle();
+          if (pErr) throw pErr;
+          // mirrors: src/lib/api.ts:637
+          const listable = !!p && (p.show_in_gym_list !== false || p.id === mine?.id);
+          // mirrors: src/lib/api.ts:552
+          name = listable ? (p.name ?? 'İstifadəçi') : null;
+        } catch {
+          // requests.tsx: getPartner(...).catch(() => null)
+          name = null;
+        }
+        return { id: r.id, fromProfile: r.from_profile, at: r.created_at, note: r.note ?? null, name };
+      })
+    );
+    // app: src/app/chat/requests.tsx:135-137
+    const local = a.db.matches;
+    const incoming = resolved.filter((r) => local[r.fromProfile]?.state !== 'declined');
+    const hidden = resolved.filter((r) => local[r.fromProfile]?.state === 'declined');
+    // app: src/app/chat/requests.tsx:151-157
+    const { data: mine, error: mineErr } = await a.client
+      .from('match_requests')
+      .select('to_profile,status,created_at')
+      .eq('from_profile', me.id)
+      .order('created_at', { ascending: true });
+    if (mineErr) return ok(null, { incoming, hidden, foreign: all.length - rows.length, outgoing: null, closed: [], outError: errInfo(mineErr) });
+    // mirrors: src/app/chat/requests.tsx:159-178
+    const byId = new Map((mine ?? []).map((r) => [r.to_profile, r.status]));
+    const outgoing = {};
+    const closed = [];
+    for (const m of Object.values({ ...a.db.matches })) {
+      if (m.state !== 'requested' || !UUID_RE.test(m.partnerId)) continue;
+      const status = byId.get(m.partnerId);
+      if (status === 'accepted') {
+        acceptLocal(a, m.partnerId);
+        closed.push(m.partnerId);
+      } else if (status === 'declined') outgoing[m.partnerId] = 'declined';
+      else if (status === 'pending') outgoing[m.partnerId] = 'pending';
+      else forgetOutgoing(a, m.partnerId);
+    }
+    return ok(null, { incoming, hidden, foreign: all.length - rows.length, outgoing, closed });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** «Qəbul et» on an incoming offer (requests.tsx accept): the server first, the
+ *  device either way; then the chat screen opens (the scenario opens it). */
+export async function acceptMatchRequest(a, row) {
+  let delivered = false;
+  let error = null;
+  try {
+    // app: src/app/chat/requests.tsx:228-232
+    const { data, error: e } = await a.client
+      .from('match_requests')
+      .update({ status: 'accepted' })
+      .eq('id', row.id)
+      .select('id');
+    delivered = !e && !!data?.length;
+    error = e ? errInfo(e) : null;
+  } catch (e) {
+    delivered = false;
+    error = errInfo(e);
+  }
+  // app: src/app/chat/requests.tsx:237
+  acceptLocal(a, row.fromProfile);
+  return {
+    ok: delivered,
+    rows: null,
+    error: delivered ? null : (error ?? { message: 'zero rows came back' }),
+    delivered,
+    shown: delivered ? 'Təklif qəbul edildi' : 'Qəbul bu cihazda qeyd olundu — qarşı tərəfə hələ çatmayıb',
+  };
+}
+
 // ======================================================== NOT app calls ====
 // Everything below is either an adversarial probe (what someone holding the
 // same public key could send by hand) or the harness's own bookkeeping.
@@ -1609,6 +2210,18 @@ export async function probeRead(a, build) {
     return ok(rows, { count: rows.length, refused: false });
   } catch (e) {
     return fail(e, { count: 0, refused: true });
+  }
+}
+
+/** Bookkeeping: a head-only COUNT as this actor — no row content comes back, so
+ *  rows other people own can be counted without being read. */
+export async function probeCount(a, build) {
+  try {
+    const { count, error } = await build(a.client);
+    if (error) return fail(error, { count: null });
+    return ok(null, { count: count ?? 0 });
+  } catch (e) {
+    return fail(e, { count: null });
   }
 }
 
@@ -1739,11 +2352,23 @@ export async function inventory(a, simIds) {
   note('workouts', await q((c) => c.from('workouts').select('id').eq('profile_id', pid), (d) => d.map((r) => r.id)));
   note('prs', await q((c) => c.from('prs').select('id').eq('profile_id', pid), (d) => d.map((r) => r.id)));
   note('notifications', await q((c) => c.from('notifications').select('id').eq('profile_id', pid), (d) => d.map((r) => r.id)));
+  // Social rows (social phase). delete_my_account() deletes the account's posts
+  // and comments; post_likes, comment_likes, follows and match_requests cascade.
+  note('community_posts', await q((c) => c.from('community_posts').select('id').eq('author_id', pid), (d) => d.map((r) => r.id)));
+  note('comments', await q((c) => c.from('comments').select('id').eq('author_id', pid), (d) => d.map((r) => r.id)));
+  note('post_likes', await q((c) => c.from('post_likes').select('post_id').eq('profile_id', pid), (d) => d.map((r) => r.post_id)));
+  note('comment_likes', await q((c) => c.from('comment_likes').select('comment_id').eq('profile_id', pid), (d) => d.map((r) => r.comment_id)));
+  note('follows', await q((c) => c.from('follows').select('followee_id').eq('follower_id', pid), (d) => d.map((r) => r.followee_id)));
+  // Filtered server-side to requests between two actors of this run.
+  note('match_requests', await q((c) => c.from('match_requests').select('id').in('from_profile', sim).in('to_profile', sim).or(`from_profile.eq.${pid},to_profile.eq.${pid}`), (d) => d.map((r) => r.id)));
 
   // Rows a REAL person addressed to this actor. delete_my_account() cascades
   // them away with the account (trainer_requests via trainers, chat_threads and
-  // their messages, match_requests, follows), so the report must say so — but
-  // only as a COUNT: head-only requests, no row content ever comes back.
+  // their messages, match_requests, follows, likes on its posts and comments),
+  // so the report must say so — but only as a COUNT: head-only requests, no row
+  // content ever comes back. A real person's COMMENT under a TEST post is worse:
+  // comments.target_key is plain text with no foreign key, so it is not deleted
+  // with the post — it stays behind, orphaned («_orphaned» in its name).
   const count = async (build) => {
     try {
       const { count: n, error } = await build(a.client);
@@ -1766,6 +2391,16 @@ export async function inventory(a, simIds) {
     foreign.chat_threads = mine.error || simOnly.error ? { error: mine.error ?? simOnly.error } : { value: mine.value - simOnly.value };
     foreign.match_requests = await count((c) => c.from('match_requests').select('id', head).eq('to_profile', pid).not('from_profile', 'in', notSim));
     foreign.follows = await count((c) => c.from('follows').select('follower_id', head).eq('followee_id', pid).not('follower_id', 'in', notSim));
+    const myPosts = Array.isArray(out.community_posts) ? out.community_posts : [];
+    const myComments = Array.isArray(out.comments) ? out.comments : [];
+    if (myPosts.length) {
+      foreign.post_likes_on_my_posts = await count((c) => c.from('post_likes').select('post_id', head).in('post_id', myPosts).not('profile_id', 'in', notSim));
+      foreign.comments_on_my_posts_orphaned = await count((c) => c.from('comments').select('id', head).in('target_key', myPosts.map(postKey)).not('author_id', 'in', notSim));
+    }
+    if (myComments.length) {
+      foreign.comment_likes_on_my_comments = await count((c) => c.from('comment_likes').select('comment_id', head).in('comment_id', myComments).not('profile_id', 'in', notSim));
+      foreign.replies_to_my_comments = await count((c) => c.from('comments').select('id', head).in('parent_id', myComments).not('author_id', 'in', notSim));
+    }
   }
   out.foreign = Object.fromEntries(Object.entries(foreign).map(([k, r]) => [k, r.error ? { error: r.error.message } : r.value]));
   return out;
@@ -1775,7 +2410,7 @@ export async function inventory(a, simIds) {
  * After every actor deleted itself: read the PUBLIC listings with the bare key
  * (no session at all — what a logged-out phone sees) for anything of this run.
  */
-export async function publicLeftovers(env, { runId, trainerIds, programIds, gymIds, handles = [] }) {
+export async function publicLeftovers(env, { runId, trainerIds, programIds, gymIds, handles = [], postIds = [], commentIds = [] }) {
   const bare = createClient(env.url, env.anonKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: `sb-sim-${runId}-bare` },
   });
@@ -1800,6 +2435,21 @@ export async function publicLeftovers(env, { runId, trainerIds, programIds, gymI
   if (gymIds.length) out.push(await read('gyms by id (not verifiable with the public key: unlisted)', () => bare.from('gyms').select('id,name,listed').in('id', gymIds)));
   out.push(await read('gyms by TEST name (not verifiable with the public key: unlisted)', () => bare.from('gyms').select('id,name,listed').ilike('name', like)));
   if (gymIds.length) out.push(await read('reviews of TEST gyms', () => bare.from('reviews').select('id,gym_id').in('gym_id', gymIds)));
+  // The social phase. community_posts, comments and comment_likes are readable
+  // by anyone (their *_read policies), so the bare key CAN prove these are gone.
+  // Only ids and keys are selected: a real person's orphaned comment under a
+  // TEST post is found by its target_key, never read for its text or author.
+  if (postIds.length) {
+    out.push(await read('community posts by id', () => bare.from('community_posts').select('id').in('id', postIds)));
+    out.push(await read('comments on TEST posts', () => bare.from('comments').select('id,target_key').in('target_key', postIds.map(postKey))));
+  }
+  out.push(await read('community posts by TEST author', () => bare.from('community_posts').select('id').ilike('author', like)));
+  out.push(await read('community posts by TEST text', () => bare.from('community_posts').select('id').ilike('body', like)));
+  out.push(await read('comments by TEST text', () => bare.from('comments').select('id').ilike('body', like)));
+  if (commentIds.length) {
+    out.push(await read('comments by id', () => bare.from('comments').select('id').in('id', commentIds)));
+    out.push(await read('comment likes on TEST comments', () => bare.from('comment_likes').select('comment_id').in('comment_id', commentIds)));
+  }
   // The profiles themselves: profiles_read needs is_registered(), so the bare
   // key cannot list them — but username_taken() is SECURITY DEFINER and anon may
   // call it, so every handle this run held must now answer false.

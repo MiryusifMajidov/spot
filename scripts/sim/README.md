@@ -35,6 +35,7 @@ how many calls were attempted — it must say 0.
 | `daypass` | g2 switches passes off while u4 asks for one | u3 refused `day_pass_off`, u2's pass still valid at reception |
 | `privacy` | g1 reads u1's workouts, PRs, weight, messages…; u1 edits g1 / t1's listing; server-rule review probes | all 0 rows / refused; a review below 3 check-ins is refused by `reviews_insert` (see below) |
 | `end-student` | two devices of t1 end u2 at once | exactly one end lands; counts drop by one; t1 can no longer open a thread with u2; u2 keeps the assigned program |
+| `social` | u1–u5 like u1's TEST post (u4 from two devices), then u2+u3 unlike; u2–u5 comment; u1 likes u2's comment from two devices while u4 likes it; u2–u5 follow u1 (u5 from two devices); u4 and u5 send each other a partner request — in each step the **writes** leave together, after every actor's own reads | `community_posts.likes` = `post_likes` rows after each step (schema82), and the report says whether the writes really overlapped; one row per double tap; u1 reads every comment; a non-author cannot delete one; `followCounts` = TEST rows + rows from outside the run; the crossing offers leave both phones agreeing, now and at the next launch; the match opens one chat; every like/follow/comment-like/reply/offer notifies exactly once. Not run under `--keep` |
 | `cleanup` | every actor runs `delete_my_account()` | JWTs stop resolving; every @handle is free again; nothing of the run left in public listings |
 
 Every check is **PASS**, **FAIL** or **UNREACHABLE**. UNREACHABLE means a live
@@ -50,10 +51,46 @@ not a UI path. The server does not *refuse* a forged owner reply — the
 check-ins the insert is refused first, so the stripping is reported
 UNREACHABLE; `supabase/schema80_reviews_stamp.sql` records its rolled-back proof.
 
+About the social phase: it only ever touches what this run's TEST actors made
+— u1's own post, the TEST comments under it, follows and partner offers
+between TEST actors. Liking, commenting on or following a real person's post,
+video or profile, and joining an admin challenge (a public participant count),
+are UNREACHABLE by rule. Two UI paths are reported UNREACHABLE and the exact
+app call is made directly instead: following u1 (the «İzlə» button needs a
+video by u1, and a video needs an upload), and finding u4/u5 in each other's
+Kəşf lists (a TEST actor has no home gym). The post's insert returns no row
+(the app sends no `.select()`), so its id is read back from the feed query
+filtered to u1's own posts — the unfiltered feed would fetch real people's
+posts. Comments, notifications and incoming offers from anyone outside the run
+are counted and dropped, never read further; where an app number counts
+everyone (`followCounts`, the card's comment count, a comment's likes), it is
+compared with the run's own rows plus the outside rows counted apart
+(head-only). The crossing partner request is
+recorded as INFO (what the server did) and FAILs only on an inconsistent
+state: a phone still offering «Qəbul et» from a partner it is matched with, or
+a next-launch state that depends on row order (`reconcileMatches` keys the
+rows by the other person; the launch read has no ORDER BY).
+
+Starting together is not writing together. Each app action reads first
+(`auth.getUser`, the caller's profile row) and writes last, so actions released
+at the same instant would send their writes tens of ms apart — while a
+`tg_post_likes` transaction lasts a few. So in every racing social step each
+actor does its own reads, then waits at a second barrier, and all the writes
+leave at once (`together()`'s `alignWrite`; the app's calls and their order are
+unchanged). The report then says whether the writes overlapped: client side,
+whether every write was in flight at once; inside the database, from the rows'
+`created_at` (it defaults to `now()`, the start of the writing transaction).
+Starts more than ~5 ms apart (an estimate of one write transaction, not a
+measurement; the offsets are printed) count as «probably one after another»,
+and then `social.likes-counter-matches` says the counter is right but is no
+evidence about the lock, and `social.likes-no-overlap` asks for a re-run. A
+delete leaves no timestamp, so the unlike step's database side is not judged.
+
 Output: the console summary, and `scripts/sim/last-report.json` (gitignored)
 with every check, every concurrent step (how many calls, their start spread in
-ms, which were refused), the inventory each actor held before deleting itself,
-and the leftovers.
+ms, which were refused; for steps that race writes also `write`: how many left,
+their spread, and how long all were in flight together), the inventory each
+actor held before deleting itself, and the leftovers.
 
 ## The phone (optional)
 
@@ -97,10 +134,20 @@ node scripts/sim/run.mjs --phone-trainer <trainerId> --phone-gym <gymId> --phone
   own profiles (a trainer's request list, the inbox). The only real account
   involved is the owner's test account, and only through the flags above.
 - **No trap for real people.** A TEST coach is public only for the seconds
-  between its publish and its unlist in setup. Whatever a real person sends to a
-  TEST actor (a request, a chat, a match request, a follow) would be
-  cascade-deleted with it, so cleanup **counts** such rows (never reads them),
-  lists them as leftovers and fails `cleanup.no-real-user-rows`.
+  between its publish and its unlist in setup; the TEST post only during the
+  `social` phase and cleanup. Whatever a real person sends to a TEST actor (a
+  request, a chat, a match request, a follow, a like on its post or comment)
+  would be cascade-deleted with it, and a comment under its post orphaned, so
+  cleanup **counts** such rows (never reads them), lists them as leftovers and
+  fails `cleanup.no-real-user-rows`. Two residues the public key can neither
+  read nor count, so that check cannot see them: a real person's **report**
+  («Şikayət et» on the TEST post: `target_type content`, `target_id` = the post
+  id; from the comments sheet it reports the commenter: `target_type user`,
+  `target_id` = the profile id — `reports.target_id` is text, so the row is not
+  cascaded and stays in the moderation queue), and a real person's **block** of
+  a TEST actor (deleted with the account, uncounted). Cleanup prints
+  `cleanup.reports-unverifiable` and puts the ids to check in
+  `report.expectedDeleted.reports_to_check`; check them with read-only SQL.
 - **No faked facts.** No privileged SQL, ever; unreachable flows are reported.
 - **The door code stays secret.** `--phone-code` is redacted in the report's
   `meta.argv`; the codes rotated during the run are never recorded.
@@ -110,6 +157,11 @@ node scripts/sim/run.mjs --phone-trainer <trainerId> --phone-gym <gymId> --phone
   deletes itself. A second Ctrl+C leaves at once, but first writes the report
   and prints every actor that still exists. `--keep` skips the deletion (the
   TEST coaches are still unlisted) and prints every actor that is still there.
+  The `social` phase does **not** run under `--keep` (reported UNREACHABLE as
+  `social.keep`; `--keep --only social` is refused): its TEST post is public in
+  the İcma feed and only goes when u1 deletes its account, so a kept run would
+  leave it there with no end date. Should a TEST post exist under `--keep`
+  anyway, it is listed as a `kept-public-post` leftover.
 
 ## What a live run leaves behind
 
@@ -125,6 +177,29 @@ The app has no way to delete these, so neither does the harness:
   or the passes are left with neither a user nor a gym and can never be found.
 - With `--phone-trainer`: **5 notifications** in @yghh's Bildirişlər, their
   sender removed.
+
+While the `social` phase runs, **one «TEST post …» is public** in the İcma feed
+(people without a home gym see it). The app has no delete-post path (the post
+menu offers «Şikayət et» / «Bu postu gizlət»), so it goes when u1 deletes its
+account: `delete_my_account()` deletes the account's posts and comments, and
+post likes, comment likes, follows, partner requests and notifications cascade.
+The bare key can read posts, comments and comment likes, so cleanup proves
+those gone by id and by run id; the rest are not readable with it. A real
+person's like on the TEST post would go with the post; a real person's
+**comment** would stay behind orphaned (`comments.target_key` is text with no
+foreign key). Both are counted at cleanup, never read, and fail
+`cleanup.no-real-user-rows`. A real person's **report** of the post or of a
+TEST commenter, and a **block** of a TEST actor, cannot be counted (see «No
+trap for real people»): check `report.expectedDeleted.reports_to_check` with
+read-only SQL.
+
+The accounts delete themselves at the same instant, and after the `social`
+phase they share rows (likes, comments, comment likes, follows) and the post
+those point at, so two deletions can lock them in opposite order and one gets
+`deadlock detected` (40P01). That is reported as
+`cleanup.concurrent-delete-deadlock.<actor>` and retried alone — not a harness
+fault, and a real app finding: two people who interacted, deleting their
+accounts at the same moment, and one is told «Hesab silinmədi».
 
 `last-report.json → leftovers` lists them by id. Programs are deleted by their
 authors before the accounts go (every program each actor owns, per its own
@@ -148,4 +223,9 @@ profile or trainer references, their day passes first.
 - A public-key read cannot see an unlisted gym, so the post-cleanup gym reads
   are INFO only; the profiles are verified through `username_taken()`.
 - The bootstrap syncs that do nothing for a fresh account (training history,
-  exercise videos, social, partner requests) are not mirrored.
+  exercise videos, social, partner requests) are not mirrored in setup. The
+  `social` phase mirrors the partner-request launch sync (`reconcileMatches`)
+  to show what the next launch would display, for both row orders.
+- `followCounts()` exists in `src/lib/social.ts` but no screen calls it: the
+  app shows no follower number or list. The phase checks it anyway, plus each
+  follower's own `myFollowing()` list (what the feed does read).

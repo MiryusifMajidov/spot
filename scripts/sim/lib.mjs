@@ -147,7 +147,11 @@ export class Recorder {
     if (this.cur) this.cur.steps.push(s);
     if (!this.quiet) {
       const bad = s.calls.filter((c) => !c.ok).length;
-      console.log(`   · ${s.label}: ${s.calls.length} call(s) released together, start spread ${s.spreadMs} ms, took ${s.ms} ms${bad ? `, ${bad} refused/failed` : ''}`);
+      const w = s.write;
+      const writes = w
+        ? `; writes: ${w.reached}/${w.aligned} left within ${w.spreadMs ?? '—'} ms${w.overlapMs == null ? '' : w.overlapMs > 0 ? `, all in flight together for ${w.overlapMs} ms` : ', never all in flight together'}`
+        : '';
+      console.log(`   · ${s.label}: ${s.calls.length} call(s) released together, start spread ${s.spreadMs} ms${writes}, took ${s.ms} ms${bad ? `, ${bad} refused/failed` : ''}`);
     }
   }
 
@@ -264,11 +268,27 @@ export class SimAbort extends Error {
  * before the barrier, then its `fn` runs the moment every task has arrived. The
  * start-time spread is recorded, so the report shows the calls really did go
  * out together rather than one after another.
+ *
+ * Starting together is not writing together: most actions read first
+ * (auth.getUser, the caller's profile row) and write last, and the jitter of
+ * those round trips staggers the writes by tens of ms, while a trigger's
+ * transaction lasts a few. A task with `alignWrite: true` therefore gets a
+ * second hook, `fn(prep, sync)`: the action calls `await sync()` after its own
+ * reads, right before its write, and no aligned write leaves until every
+ * aligned task is there. A task that ends before its write (a failed read)
+ * counts as arrived, so it never holds the others. The step then carries
+ * `write`: how many writes left, their spread, and how long all of them were
+ * in flight at once (client side — the database's side is the scenario's to
+ * judge, e.g. from created_at = now()).
  */
 export async function together(label, tasks) {
   if (abortState.aborted && !abortState.cleaning) throw new SimAbort(label);
   const barrier = new Barrier(tasks.length);
+  const aligned = tasks.filter((t) => t.alignWrite).length;
+  const writeBarrier = new Barrier(aligned);
   const starts = new Array(tasks.length).fill(0);
+  const writeAt = new Array(tasks.length).fill(null);
+  const ends = new Array(tasks.length).fill(0);
   const t0 = now();
   const results = await Promise.all(
     tasks.map(async (task, i) => {
@@ -282,21 +302,53 @@ export async function together(label, tasks) {
       }
       await barrier.wait();
       starts[i] = now();
+      // A task without alignWrite never touches the write barrier: sync() is a no-op.
+      let atWrite = !task.alignWrite;
+      const sync = async () => {
+        if (atWrite) return;
+        atWrite = true;
+        await writeBarrier.wait();
+        writeAt[i] = now();
+      };
       let r;
       try {
-        r = await task.fn(prep);
+        r = await task.fn(prep, sync);
       } catch (e) {
         r = fail(e, { threw: true });
+      } finally {
+        if (!atWrite) {
+          atWrite = true;
+          writeBarrier.wait();
+        }
       }
-      return { ...(r ?? { ok: false, error: { message: 'no result' } }), actor: task.actor?.key ?? null, label: task.label ?? task.actor?.key ?? `task${i}`, ms: round(now() - starts[i]) };
+      ends[i] = now();
+      return {
+        ...(r ?? { ok: false, error: { message: 'no result' } }),
+        actor: task.actor?.key ?? null,
+        label: task.label ?? task.actor?.key ?? `task${i}`,
+        ms: round(ends[i] - starts[i]),
+        writeMs: writeAt[i] == null ? null : round(ends[i] - writeAt[i]),
+      };
     })
   );
   const spreadMs = tasks.length ? round(Math.max(...starts) - Math.min(...starts)) : 0;
+  const w = writeAt.flatMap((at, i) => (at == null ? [] : [{ at, end: ends[i] }]));
+  const write = aligned
+    ? {
+        aligned,
+        reached: w.length,
+        spreadMs: w.length ? round(Math.max(...w.map((x) => x.at)) - Math.min(...w.map((x) => x.at))) : null,
+        // > 0: every write had left before the first answer came back.
+        overlapMs: w.length > 1 ? round(Math.min(...w.map((x) => x.end)) - Math.max(...w.map((x) => x.at))) : null,
+        slowestMs: w.length ? round(Math.max(...w.map((x) => x.end - x.at))) : null,
+      }
+    : null;
   const step = {
     label,
     spreadMs,
+    ...(write ? { write } : {}),
     ms: round(now() - t0),
-    calls: results.map((r) => ({ actor: r.actor, label: r.label, ok: !!r.ok, ms: r.ms, error: r.error?.message ?? null })),
+    calls: results.map((r) => ({ actor: r.actor, label: r.label, ok: !!r.ok, ms: r.ms, writeMs: r.writeMs, error: r.error?.message ?? null })),
   };
   active?.step(step);
   return { results, spreadMs, step };
@@ -342,6 +394,13 @@ export function emptyStore() {
     showInGymList: true,
     lastSaveError: null,
   };
+}
+
+/** A fresh install's device database (useDb) — only the partner-request map,
+ *  the one part of it the social phase reads and writes. */
+// mirrors: src/store/db.ts:389
+export function emptyDb() {
+  return { matches: {} };
 }
 
 /** Hard ceiling on one HTTP round trip. Without it a hung request would hold a
@@ -400,6 +459,7 @@ export function makeActor(role, idx, runId, { env = null, recorder = null, dry =
     ready: false,
     deleted: false,
     store: emptyStore(),
+    db: emptyDb(),
     log(event, data) {
       recorder?.event(key, event, data);
     },
