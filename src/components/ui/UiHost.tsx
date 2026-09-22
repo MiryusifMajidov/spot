@@ -35,10 +35,10 @@ function untilLabel(until: Date): string {
   const now = new Date();
   const day = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
   const time = until.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' });
-  if (day(until) === day(now)) return t('bu gün saat {time}-a qədər', { time });
+  if (day(until) === day(now)) return t('bu gün saat {time}-dək', { time });
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
-  if (day(until) === day(tomorrow)) return t('sabah saat {time}-a qədər', { time });
+  if (day(until) === day(tomorrow)) return t('sabah saat {time}-dək', { time });
   return t('{date} tarixinə qədər', { date: until.toLocaleDateString('az-AZ') });
 }
 

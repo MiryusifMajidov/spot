@@ -36,7 +36,7 @@ const stateText = (r: PassCheck): { title: string; body: string; tone: 'ok' | 'b
       return {
         title: t('Kod keçərlidir'),
         body: r.expires_at
-          ? t('Bu gün {h}:{m}-a qədər. Qonağı içəri burax və aşağıdan təsdiqlə.', {
+          ? t('Bu gün {h}:{m}-dək. Qonağı içəri burax və aşağıdan təsdiqlə.', {
               h: new Date(r.expires_at).getHours(),
               m: String(new Date(r.expires_at).getMinutes()).padStart(2, '0'),
             })

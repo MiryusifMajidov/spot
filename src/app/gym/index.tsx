@@ -10,6 +10,7 @@ import { SpotMap } from '@/components/SpotMap';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { StatusBarScrim } from '@/components/ui/StatusBarScrim';
 import { showAccountSwitcher } from '@/lib/accounts';
 import {
   EmptyNote,
@@ -479,6 +480,7 @@ export default function GymPanel() {
           </View>
         ) : null}
       </ScrollView>
+      <StatusBarScrim />
 
       <Modal visible={announce} animationType="slide" transparent onRequestClose={() => setAnnounce(false)}>
         <View style={styles.modalBg}>

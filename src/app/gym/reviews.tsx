@@ -7,6 +7,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { StatusBarScrim } from '@/components/ui/StatusBarScrim';
 import { createReport } from '@/lib/api';
 import { tenureLabel } from '@/lib/format';
 import { EmptyNote, GymGate, getGymReviews, replyToReview, useMyGym, type GymReviewRow } from '@/lib/gymOwner';
@@ -245,6 +246,7 @@ export default function GymReviews() {
           </AppText>
         </View>
       </ScrollView>
+      <StatusBarScrim />
 
       <Modal visible={!!replyTo} animationType="slide" transparent onRequestClose={() => setReplyTo(null)}>
         <View style={styles.modalBg}>

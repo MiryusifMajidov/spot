@@ -323,7 +323,9 @@ export default function CreateGym() {
     return (
       <Screen edges={['top', 'bottom']}>
         <NavBar title={t('Zal yaradıldı')} />
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        {/* Own key: otherwise React reuses the form's ScrollView, offset and all,
+            and this page opens scrolled past «qeydə alındı». */}
+        <ScrollView key="created" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.doneCard}>
             <Icon name="check" size={22} color={palette.voltDeep} />
             <View style={{ flex: 1 }}>
@@ -519,9 +521,13 @@ export default function CreateGym() {
       {/* The scroller shrinks to whatever this block leaves it, so lifting the block by
           the keyboard overlap carries the whole form with it. */}
       <View style={{ paddingHorizontal: spacing.screen, paddingBottom: 8, marginBottom: lift }}>
-        <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 10, lineHeight: 17 }}>
-          {t('Qiymətlər yalnız məlumat üçündür — SPOT ödəniş qəbul etmir və komissiya tutmur. Qeydiyyatdan sonra zal paneli açılır; sahiblik təsdiqi ayrıca addımdır və onu sonra özün göndərirsən.')}
-        </AppText>
+        {/* Hidden while typing: with the keyboard up, three lines of note left
+            the form a sliver of room and the next field sat half under them. */}
+        {lift === 0 ? (
+          <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 10, lineHeight: 17 }}>
+            {t('Qiymətlər yalnız məlumat üçündür — SPOT ödəniş qəbul etmir və komissiya tutmur. Qeydiyyatdan sonra zal paneli açılır; sahiblik təsdiqi ayrıca addımdır və onu sonra özün göndərirsən.')}
+          </AppText>
+        ) : null}
         <Button
           title={saving ? t('Göndərilir…') : t('Zalı qeydiyyata al')}
           variant="volt"

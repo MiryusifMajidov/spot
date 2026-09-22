@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
@@ -100,6 +100,14 @@ async function publishTrainer(input: { specialty: string; bio: string; priceFrom
       owner_id: me.id,
     });
     if (tErr) throw tErr;
+    /* Listed at once. `listed` is not in the INSERT grant (schema53: a row must
+       not publish itself), but it IS the trainer's own switch after that
+       (schema73, «Kəşfdə görün»), so hidden-by-default protected nothing — it
+       only broke the promise this screen makes: «İstifadəçilər səni Kəşf
+       bölməsində tapıb…». A failure here is not thrown: the listing exists,
+       and the panel reads the real flag and offers the switch. */
+    const { data: shown, error: lErr } = await supabase.from('trainers').update({ listed: true }).eq('id', me.id).select('id');
+    if (lErr || !shown?.length) console.warn('[become-trainer] listing stays hidden', lErr);
   }
 
   // Queue for admin verification only if this trainer has no row yet. A failed
@@ -127,6 +135,13 @@ async function publishTrainer(input: { specialty: string; bio: string; priceFrom
 export default function BecomeTrainer() {
   const t = useT();
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  /* Opened from the trainer panel (`from=trainer`), this screen sits on a new
+     member-tabs route whose profile stack holds only this screen. router.back()
+     then bubbles to the tab navigator, which switches to its first tab, Kəşf:
+     the trainer saved and landed in the member app instead of the panel.
+     dismissTo pops back to the panel (or replaces this screen with it). */
+  const leave = () => (from === 'trainer' ? router.dismissTo('/trainer') : router.back());
   const gate = useAuthGate();
   const profile = useAppStore((s) => s.profile);
   const setProfile = useAppStore((s) => s.setProfile);
@@ -181,7 +196,7 @@ export default function BecomeTrainer() {
           photo = null;
         }
         const [{ data: t, error: tErr }, { data: v, error: vErr }] = await Promise.all([
-          supabase.from('trainers').select('id,verified').eq('id', me.id).maybeSingle(),
+          supabase.from('trainers').select('id,verified,name,specialty,price_from,bio').eq('id', me.id).maybeSingle(),
           supabase
             .from('trainer_verifications')
             .select('status')
@@ -194,7 +209,22 @@ export default function BecomeTrainer() {
         // the trainer to fix a listing that may be perfectly fine.
         if (tErr) throw tErr;
         if (vErr) throw vErr;
+        /* «The row exists» is not «the row says what you saved». save() writes
+           the phone first, so a save whose server write failed left the
+           'unsaved' card only until the screen was left; the next visit read
+           the row, found it, and called stale data «synced». Compare what the
+           listing says with what this phone holds instead. */
+        const row = t as { name?: string | null; specialty?: string | null; price_from?: number | null; bio?: string | null } | null;
+        const local = useAppStore.getState().profile;
+        const same = (a: string | null | undefined, b: string | null | undefined) => (a ?? '').trim() === (b ?? '').trim();
+        const differs =
+          !!row &&
+          (!same(row.name, local.name) ||
+            !same(row.specialty, local.specialty) ||
+            !same(row.bio, local.bio) ||
+            (row.price_from || 0) !== (local.priceFrom || 0));
         return {
+          differs,
           listed: !!t,
           st: ((v as { status: 'pending' | 'approved' | 'rejected' } | null)?.status ?? null),
           photo,
@@ -204,7 +234,7 @@ export default function BecomeTrainer() {
       })()
         .then((r) => {
           if (!alive) return;
-          setSync(r.listed ? 'synced' : 'unsynced');
+          setSync(r.listed ? (r.differs ? 'unsaved' : 'synced') : 'unsynced');
           setStatus(r.st);
           setPhotoUrl(r.photo);
           setBadge(r.badge);
@@ -329,7 +359,7 @@ export default function BecomeTrainer() {
       if (alreadyTrainer) {
         // Closing the screen on a failed write would take away the very
         // «Yenidən sinxronla» button the error toast points at.
-        if (serverOk || !hasSupabaseConfig) router.back();
+        if (serverOk || !hasSupabaseConfig) leave();
       } else {
         setMode('trainer');
         router.replace('/trainer');
@@ -455,7 +485,7 @@ export default function BecomeTrainer() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <NavBar title={alreadyTrainer ? t('Müəllim profili') : t('Müəllim ol')} />
+      <NavBar title={alreadyTrainer ? t('Müəllim profili') : t('Müəllim ol')} onBack={leave} />
       <ScrollView
         ref={scroller}
         showsVerticalScrollIndicator={false}
@@ -466,7 +496,9 @@ export default function BecomeTrainer() {
         }}
         scrollEventThrottle={16}>
         <AppText variant="body" color={palette.textSecondary} style={{ lineHeight: 21, marginBottom: 20 }}>
-          {t('Öz təlim xidmətini yarat. İstifadəçilər səni Kəşf bölməsində tapıb məşq sorğusu göndərə biləcək. Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir.')}
+          {alreadyTrainer
+            ? t('Burada yazdıqların Kəşfdəki müəllim profilində görünür. Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir.')
+            : t('Öz təlim xidmətini yarat. İstifadəçilər səni Kəşf bölməsində tapıb məşq sorğusu göndərə biləcək. Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir.')}
         </AppText>
 
         {/* Why the save button is off. The name is edited on the profile, not

@@ -116,7 +116,7 @@ export default function SuggestTrainers() {
     toast(
       ok === chosen.length
         ? t('{n} müəllim izlənilir', { n: ok, count: ok })
-        : t('{total} müəllimdən {n}-i izlənildi — qalanını sonra yenidən yoxla', {
+        : t('İzlənildi: {n} / {total} müəllim — qalanını sonra yenidən yoxla', {
             total: chosen.length,
             n: ok,
             count: chosen.length,

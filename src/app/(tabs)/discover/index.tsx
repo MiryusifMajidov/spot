@@ -319,7 +319,7 @@ export default function Discover() {
                         ? /* A guest has no Profil tab — the other sentence
                              sent them to a screen they cannot reach. */
                           t('Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, daxil ol və zalını əlavə et.')
-                        : t('Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, Profil → «Zal əlavə et» ilə özün əlavə edə bilərsən.')
+                        : t('Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, Profil → Parametrlər → «Zal hesabı yarat» ilə özün əlavə edə bilərsən.')
               }
               /* «Xəritədə bax» over an empty catalogue opened a map with nothing
                  on it. Only offered when the list is empty because of a filter

@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
@@ -40,18 +40,22 @@ function avatarOf(row: unknown): string | null {
  * `photo_url` at the avatar's: each setter deletes the object it replaces, so a
  * shared file would vanish from one row the next time the other one changed.
  */
-async function syncTrainerListing(name: string, photoLocal: string | null): Promise<'ok' | 'failed' | 'photo-failed'> {
+async function syncTrainerListing(name: string, bio: string, photoLocal: string | null): Promise<'ok' | 'failed' | 'photo-failed'> {
   let primaryId: string;
   try {
     const me = await getMyProfile();
     if (!me?.id) throw new Error('no profile');
-    const { data, error: readErr } = await supabase.from('trainers').select('id,name').eq('owner_id', me.id);
+    const { data, error: readErr } = await supabase.from('trainers').select('id,name,bio').eq('owner_id', me.id);
     if (readErr) throw readErr;
-    const owned = (data ?? []) as { id: string; name: string | null }[];
+    const owned = (data ?? []) as { id: string; name: string | null; bio: string | null }[];
     // No row on the server: nothing public is showing the old name.
     if (!owned.length) return 'ok';
-    if (owned.some((r) => (r.name ?? '').trim() !== name)) {
-      const { data: saved, error } = await supabase.from('trainers').update({ name }).eq('owner_id', me.id).select('id');
+    // «Haqqında» is one field in this app: «Müəllim profili» edits the same
+    // profile.bio and writes it to the listing. Left out here, a bio edited on
+    // this screen stayed old in Kəşf — and «Müəllim profili» then (rightly)
+    // reported the listing as out of step with the phone.
+    if (owned.some((r) => (r.name ?? '').trim() !== name || (r.bio ?? '').trim() !== bio)) {
+      const { data: saved, error } = await supabase.from('trainers').update({ name, bio }).eq('owner_id', me.id).select('id');
       if (error) throw error;
       if ((saved?.length ?? 0) < owned.length) throw new Error('listing-not-saved');
     }
@@ -80,6 +84,13 @@ async function syncTrainerListing(name: string, photoLocal: string | null): Prom
 export default function EditProfile() {
   const t = useT();
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  /* Opened from the trainer panel (`from=trainer`), this screen sits on a new
+     member-tabs route whose profile stack holds only this screen. router.back()
+     then bubbles to the tab navigator, which switches to its first tab, Kəşf:
+     the trainer saved and landed in the member app instead of the panel.
+     dismissTo pops back to the panel (or replaces this screen with it). */
+  const leave = () => (from === 'trainer' ? router.dismissTo('/trainer') : router.back());
   const profile = useAppStore((s) => s.profile);
   const setProfile = useAppStore((s) => s.setProfile);
   const saveProfile = useAppStore((s) => s.saveProfile);
@@ -251,7 +262,11 @@ export default function EditProfile() {
     // Only after a real server save: 'local' means nothing reached the server,
     // and the listing must not get ahead of the profile it copies.
     if (result === 'saved' && isTrainer) {
-      const listing = await syncTrainerListing(profile.name.trim(), listingPhoto.current);
+      // The values saveProfile() just sent, read now — not the ones this
+      // render closed over before the awaits above (the name field stays
+      // editable while the handle check runs).
+      const sent = useAppStore.getState().profile;
+      const listing = await syncTrainerListing(sent.name.trim(), (sent.bio ?? '').trim(), listingPhoto.current);
       if (listing === 'ok') listingPhoto.current = null;
       else {
         setSaving(false);
@@ -268,7 +283,7 @@ export default function EditProfile() {
     }
     setSaving(false);
     toast(result === 'local' ? t('Yadda saxlanıldı — hələlik yalnız bu cihazda') : t('Profilin yadda saxlanıldı'));
-    router.back();
+    leave();
   };
 
   const shownHandleErr = usernameError(handle) ?? (taken === handle.trim().toLowerCase() ? USERNAME_TAKEN_MSG : null);
@@ -277,6 +292,7 @@ export default function EditProfile() {
     <Screen>
       <NavBar
         title={t('Profili redaktə et')}
+        onBack={leave}
         right={
           <PressableScale onPress={save} disabled={saving || uploading} haptic={false} activeScale={0.94}>
             <AppText variant="headline" color={saving || uploading ? palette.tertiary : palette.blue}>

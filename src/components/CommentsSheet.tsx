@@ -617,7 +617,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                   <Icon name="msg" size={13} color={palette.textSecondary} />
                   <AppText variant="caption" color={palette.textSecondary} numberOfLines={1} style={{ flex: 1 }}>
                     {replyTo.handle
-                      ? t('@{handle}-ə cavab', { handle: replyTo.handle })
+                      ? t('Cavab: @{handle}', { handle: replyTo.handle })
                       : t('{name} adlı istifadəçiyə cavab', { name: shownName(replyTo.name, t) })}
                   </AppText>
                   {/* Changed your mind? Drop the chip and the same text posts as a normal comment. */}

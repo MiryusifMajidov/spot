@@ -326,24 +326,20 @@ export async function getGymRoster(gymId: string): Promise<RosterMember[]> {
   const base = await getGymMembers(gymId);
   if (!base.length) return [];
 
-  const ids = base.map((m) => m.profileId);
   const nowIso = new Date().toISOString();
-  const [{ data: profs, error: pErr }, { data: active, error: aErr }] = await Promise.all([
-    supabase.from('profiles').select('id,show_in_gym_list,created_at').in('id', ids),
-    supabase.from('check_ins').select('profile_id').eq('gym_id', gymId).gt('expires_at', nowIso),
-  ]);
-  // A failed privacy/presence read would draw the whole roster as «Anonim üzv»
-  // with nobody in the gym — invented facts. The caller shows «yüklənmədi».
-  if (pErr) throw pErr;
+  const { data: active, error: aErr } = await supabase
+    .from('check_ins')
+    .select('profile_id')
+    .eq('gym_id', gymId)
+    .gt('expires_at', nowIso);
+  // A failed presence read would draw nobody in the gym — an invented fact.
+  // The caller shows «yüklənmədi».
   if (aErr) throw aErr;
 
-  type P = { id: string; show_in_gym_list: boolean | null; created_at: string | null };
-  const meta = new Map(((profs ?? []) as P[]).map((p) => [p.id, p]));
   const here = new Set(((active ?? []) as { profile_id: string }[]).map((r) => r.profile_id));
 
   return base.map((m) => {
-    const p = meta.get(m.profileId);
-    const anonymous = p?.show_in_gym_list === false;
+    const anonymous = m.showInGymList === false;
     return {
       profileId: m.profileId,
       name: anonymous ? t('Anonim üzv') : m.name,
@@ -353,7 +349,7 @@ export async function getGymRoster(gymId: string): Promise<RosterMember[]> {
       checkIns30d: m.checkIns30d,
       lastCheckIn: m.lastCheckIn,
       hereNow: here.has(m.profileId),
-      joinedAt: p?.created_at ?? null,
+      joinedAt: m.joinedAt,
     };
   });
 }

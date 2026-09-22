@@ -162,7 +162,7 @@ export default function ExerciseLibrary() {
           {q
             ? t('Axtarış · {n} nəticə', { n: list.length, count: list.length })
             : t('{muscle} · {n} hərəkət', { muscle: t(muscle), n: list.length, count: list.length })}
-          {gym ? ` · ${t('{gym}-də olanlar öndədir', { gym: gym.name })}` : ''}
+          {gym ? ` · ${t('{gym} zalında olanlar öndədir', { gym: gym.name })}` : ''}
         </AppText>
         {list.length === 0 ? (
           <View style={styles.empty}>

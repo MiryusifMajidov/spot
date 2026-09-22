@@ -882,6 +882,12 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema79. The owner''s «Day-pass qəbul et» switch only hid the button; a direct RPC call still registered a new pass at a gym that turned day passes off, and the owner''s panel counted it.'
   union all
+  select 'trigger', 'reviews_stamp stamps reply/name/tenure/created_at',
+         case when exists (select 1 from pg_trigger where tgname = 'reviews_stamp'
+                             and tgrelid = 'public.reviews'::regclass and not tgisinternal)
+              then 'OK' else 'MISSING' end,
+         'schema80. reviews_guard only covers UPDATE; on INSERT the author could write a fake gym reply, any display name, any «N check-in edib» and any date.'
+  union all
   select 'function', 'suggested_trainers falls back to verified trainers only',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
                            where n.nspname='public' and p.proname='suggested_trainers'

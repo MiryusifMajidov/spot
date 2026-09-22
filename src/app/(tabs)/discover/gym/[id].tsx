@@ -628,6 +628,23 @@ export default function GymDetail() {
               {t('Üzvlük zalın özündə rəsmiləşir — SPOT ödəniş qəbul etmir, qiymətlər yalnız məlumat üçündür.')}
             </AppText>
 
+            {/* Drawn from the cached catalogue copy: the server row did not come
+                back, so the owner's day-pass and «Üzvlər» choices are unknown
+                and both are hidden. Silently missing, they read as «this gym
+                offers neither». */}
+            {gymReadFailed ? (
+              <PressableScale
+                activeScale={0.98}
+                haptic={false}
+                accessibilityRole="button"
+                onPress={() => loadGym()}
+                style={{ marginTop: 10, padding: 12, borderRadius: 12, backgroundColor: palette.fill }}>
+                <AppText variant="caption" color={palette.textSecondary} style={{ lineHeight: 17 }}>
+                  {t('Zalın son məlumatı serverdən gəlmədi — day-pass və «Üzvlər» göstərilmir. Yeniləmək üçün toxun.')}
+                </AppText>
+              </PressableScale>
+            ) : null}
+
             {/* The pass is only useful with its door code — show it, do not just claim success. */}
             {dayPass ? (
               <View style={styles.passCard}>
@@ -640,7 +657,7 @@ export default function GymDetail() {
                 <AppText style={styles.passCode}>{dayPass.code}</AppText>
                 <AppText variant="footnote" color={palette.text3} style={{ marginTop: 6, lineHeight: 18 }}>
                   {t(
-                    'Resepsiyada bu kodu göstər — zal onu SPOT panelindən yoxlayır. Bu gün {time}-a qədər keçərlidir. {price} ₼ zalın özünə ödənilir; SPOT komissiya götürmür.',
+                    'Resepsiyada bu kodu göstər — zal onu SPOT panelindən yoxlayır. Bu gün {time}-dək keçərlidir. {price} ₼ zalın özünə ödənilir; SPOT komissiya götürmür.',
                     { time: hhmm(dayPass.expiresAt), price: dayPass.price }
                   )}
                 </AppText>
@@ -688,7 +705,7 @@ export default function GymDetail() {
                 ) : null}
                 <AppText style={styles.liveText}>
                   {visibleHere.length > 0
-                    ? t('{n} nəfər indi zalda · {m}-i sənə uyğundur', {
+                    ? t('{n} nəfər indi zalda · sənə uyğun olanlar: {m}', {
                         n: gym.liveCount,
                         count: gym.liveCount,
                         m: visibleHere.length,

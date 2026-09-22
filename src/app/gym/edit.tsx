@@ -597,7 +597,7 @@ export default function GymEdit() {
         </View>
 
         <AppText style={[styles.note, styles.noteLast]}>
-          {t('«Üzvlər» bölməsini yuxarıdakı açarla bütövlükdə gizlədə bilərsən. Siyahıda adının görünüb-görünməməsini isə hər üzv özü Məxfilik ayarlarından seçir — zal bunu dəyişə bilmir.')}
+          {t('«Üzvlər» bölməsini yuxarıdakı açarla bütövlükdə gizlədə bilərsən. Siyahıda görünüb-görünməməyi isə hər üzv özü Məxfilik ayarlarından seçir — zal bunu dəyişə bilmir.')}
         </AppText>
       </ScrollView>
     </Screen>

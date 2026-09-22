@@ -195,7 +195,7 @@ export const workout: Dict = {
   'san': 'сек',
   'set': 'подходы',
   '{focus} · {n} hərəkət · ~{min} dəq': { one: '{focus} · {n} упражнение · ~{min} мин', few: '{focus} · {n} упражнения · ~{min} мин', many: '{focus} · {n} упражнений · ~{min} мин', other: '{focus} · {n} упражнений · ~{min} мин' },
-  '{gym}-də olanlar öndədir': 'Сначала то, что есть в {gym}',
+  '{gym} zalında olanlar öndədir': 'Сначала то, что есть в {gym}',
   '{muscle} · {n} hərəkət': { one: '{muscle} · {n} упражнение', few: '{muscle} · {n} упражнения', many: '{muscle} · {n} упражнений', other: '{muscle} · {n} упражнений' },
   '{name} artıq bu gündədir': '{name} уже есть в этом дне',
   '{name} sənə təyin etdi': 'Назначение от {name}',

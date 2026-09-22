@@ -357,6 +357,11 @@ export interface GymMemberRow {
   goals: string[];
   lastCheckIn: string | null;
   checkIns30d: number;
+  /** Read with the member row itself, so the roster needs no second
+   *  `.in('id', ids)` request — one id list of a big gym's members made a URL
+   *  past the gateway's limit (~430 ids) and the whole panel failed. */
+  showInGymList: boolean | null;
+  joinedAt: string | null;
 }
 
 /** The gym owned by the current user (null if they own none).
@@ -385,7 +390,9 @@ export async function getMyGymId(): Promise<string | null> {
  *  1000 rows and says nothing about it, so a busy gym's month of check-ins
  *  (50 visits a day is 1500) came back short and every count, «son gəliş» and
  *  SADİQ tag built from it was quietly wrong. The caller orders the query by a
- *  unique key so the pages neither overlap nor skip. */
+ *  unique key so the pages neither overlap nor skip — for a table that grows
+ *  during the read, by a key new rows sort AFTER (created_at first), or an
+ *  insert between two pages shifts every later row by one. */
 const PAGE = 1000;
 async function readAll<T>(page: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: unknown }>): Promise<T[]> {
   const out: T[] = [];
@@ -400,11 +407,23 @@ async function readAll<T>(page: (from: number, to: number) => PromiseLike<{ data
 
 /** Members = profiles whose home gym this is, enriched with real check-in counts. */
 export async function getGymMembers(gymId: string): Promise<GymMemberRow[]> {
-  type P = { id: string; name: string | null; level: string | null; goals: string[] | null };
+  type P = {
+    id: string;
+    name: string | null;
+    level: string | null;
+    goals: string[] | null;
+    show_in_gym_list: boolean | null;
+    created_at: string | null;
+  };
   // «ÜZVLƏR 0» is a measurement; a failed read is not. readAll throws so the
   // panel can render its «yüklənmədi» notice instead of an invented zero.
   const rows = await readAll<P>((from, to) =>
-    supabase.from('profiles').select('id,name,level,goals').eq('home_gym_id', gymId).order('id').range(from, to)
+    supabase
+      .from('profiles')
+      .select('id,name,level,goals,show_in_gym_list,created_at')
+      .eq('home_gym_id', gymId)
+      .order('id')
+      .range(from, to)
   );
   if (!rows.length) return [];
 
@@ -415,6 +434,7 @@ export async function getGymMembers(gymId: string): Promise<GymMemberRow[]> {
       .select('profile_id,created_at')
       .eq('gym_id', gymId)
       .gt('created_at', since)
+      .order('created_at')
       .order('id')
       .range(from, to)
   );
@@ -433,6 +453,8 @@ export async function getGymMembers(gymId: string): Promise<GymMemberRow[]> {
     goals: p.goals ?? [],
     lastCheckIn: counts.get(p.id)?.last ?? null,
     checkIns30d: counts.get(p.id)?.n ?? 0,
+    showInGymList: p.show_in_gym_list,
+    joinedAt: p.created_at,
   }));
 }
 

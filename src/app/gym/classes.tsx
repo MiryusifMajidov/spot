@@ -6,6 +6,7 @@ import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { StatusBarScrim } from '@/components/ui/StatusBarScrim';
 import { EmptyNote, GymGate, updateMyGym, useMyGym, type OwnedGym, type ScheduleItem } from '@/lib/gymOwner';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useT } from '@/lib/useT';
@@ -153,6 +154,7 @@ export default function GymClasses() {
           </AppText>
         ) : null}
       </ScrollView>
+      <StatusBarScrim />
 
       <Modal visible={!!editing} animationType="slide" transparent onRequestClose={() => setEditing(null)}>
         <View style={styles.modalBg}>

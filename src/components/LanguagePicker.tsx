@@ -1,6 +1,5 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Lang, LANG_NAMES, LANGS } from '@/lib/i18n';
@@ -46,10 +45,14 @@ export function LanguagePicker({ compact, tone = 'light' }: { compact?: boolean;
             <AppText
               variant={compact ? 'footnote' : 'subhead'}
               color={on ? palette.ink : tone === 'dark' ? 'rgba(255,255,255,0.72)' : palette.textSecondary}
-              numberOfLines={1}>
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}>
               {LANG_NAMES[code]}
             </AppText>
-            {on && !compact ? <Icon name="check" size={14} color={palette.ink} /> : null}
+            {/* No check mark: on a third of a phone's width it cut the chosen
+                language's own name to «Azərbayca…». The volt fill marks the
+                choice; accessibilityState says it to a screen reader. */}
           </PressableScale>
         );
       })}

@@ -89,7 +89,7 @@ export default function TrainerChat() {
           <Notice
             title={t('Müəllim elanın serverdə tapılmadı')}
             body={t('Şagird sorğuları müəllim elanına gəlir, amma bu hesaba bağlı elan serverdə yoxdur — ona görə sorğuları və şagirdləri göstərə bilmirik. «Müəllim hesabım» səhifəsində profilini yadda saxla, elan yaradılsın.')}
-            action={{ label: t('Müəllim hesabımı aç'), onPress: () => router.push('/(tabs)/profile/become-trainer') }}
+            action={{ label: t('Müəllim hesabımı aç'), onPress: () => router.push({ pathname: '/(tabs)/profile/become-trainer', params: { from: 'trainer' } }) }}
           />
         ) : failed ? (
           <Notice title={t('Yüklənmədi')} body={t('Şagird siyahısını gətirmək alınmadı.')} action={{ label: t('Yenidən cəhd et'), onPress: reload }} />

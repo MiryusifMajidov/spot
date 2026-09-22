@@ -147,7 +147,9 @@ export default function Profile() {
             <View style={styles.badges}>
               {profile.role === 'trainer' ? (
                 <View style={[styles.badge, { backgroundColor: 'rgba(10,132,255,0.12)' }]}>
-                  <Icon name="verified" size={12} color={palette.blue} />
+                  {/* Not the verified seal: this chip says «trainer», and the blue
+                      badge is only for trainers SPOT has checked. */}
+                  <Icon name="users" size={12} color={palette.blue} />
                   <AppText style={{ fontSize: 11.5, fontWeight: '700', color: palette.blue }}>{t('Müəllim')}</AppText>
                 </View>
               ) : null}

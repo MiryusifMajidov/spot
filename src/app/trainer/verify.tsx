@@ -212,7 +212,8 @@ export default function Verify() {
 
   /** Really upload a certificate photo, then put it where a reviewer will see it. */
   const addCert = async (source: 'camera' | 'library') => {
-    if (certBusy) return;
+    // Not while a request is being filed either — see the top button.
+    if (certBusy || sending) return;
     if (!hasSupabaseConfig) {
       toast(t('Sənəd yükləmək üçün server bağlantısı lazımdır'), 'error');
       return;
@@ -339,7 +340,7 @@ export default function Verify() {
                           ? (row?.reject_reason ?? t('Səbəb göstərilməyib.'))
                           : status === 'pending'
                             ? row?.sla_due_at
-                              ? t('Sorğu {date} tarixində göndərildi · yoxlama {due}-a qədər.', { date: fmt(row?.created_at ?? null), due: fmt(row.sla_due_at) })
+                              ? t('Sorğu {date} tarixində göndərildi · yoxlamanın son tarixi: {due}.', { date: fmt(row?.created_at ?? null), due: fmt(row.sla_due_at) })
                               : t('Sorğu {date} tarixində göndərildi.', { date: fmt(row?.created_at ?? null) })
                             : t('Hələ doğrulama sorğusu göndərməmisən.')}
                 </AppText>
@@ -358,11 +359,14 @@ export default function Verify() {
             ) : hasSupabaseConfig && canApply ? (
               <PressableScale
                 activeScale={0.97}
-                disabled={sending}
+                /* Not during an upload: addCert picks «attach» or «new request»
+                   from the request it saw when the upload started, and a request
+                   filed meanwhile made it offer a second one. */
+                disabled={sending || certBusy}
                 accessibilityRole="button"
                 accessibilityLabel={t('Doğrulama sorğusu göndər')}
                 onPress={() => void submit()}
-                style={[styles.primaryBtn, sending && { opacity: 0.5 }]}>
+                style={[styles.primaryBtn, (sending || certBusy) && { opacity: 0.5 }]}>
                 <AppText style={{ color: palette.white, fontSize: 13.5, fontWeight: '600' }}>
                   {sending ? t('Göndərilir…') : status === null ? t('Doğrulamaya başla') : t('Yenidən müraciət et')}
                 </AppText>
@@ -432,12 +436,14 @@ export default function Verify() {
                 reviewer sees no document, however many photos are in the bucket.
                 A pending request can still be pointed at one, so the fix is a
                 button here — not a message telling the trainer to write to support. */}
-            {certs.length > 0 && row?.status === 'pending' && !row.doc_cert_url ? (
+            {certs.length > 0 && row?.status === 'pending' && row.doc_cert_url !== certs[certs.length - 1] ? (
               <View style={styles.warnRow}>
                 <Icon name="shield" size={14} color="#8A5A00" />
                 <View style={{ flex: 1 }}>
                   <AppText style={{ fontSize: 12, lineHeight: 17, color: '#8A5A00' }}>
-                    {t('Şəkillər saxlancdadır, amma açıq doğrulama sorğuna bağlanmayıb — yoxlayan onları görmür.')}
+                    {row.doc_cert_url
+                      ? t('Sorğuna köhnə şəkil bağlıdır — yoxlayan ən son yüklədiyin sertifikatı görmür.')
+                      : t('Şəkillər saxlancdadır, amma açıq doğrulama sorğuna bağlanmayıb — yoxlayan onları görmür.')}
                   </AppText>
                   <PressableScale
                     activeScale={0.97}

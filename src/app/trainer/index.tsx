@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { StatusBarScrim } from '@/components/ui/StatusBarScrim';
 import { showAccountSwitcher } from '@/lib/accounts';
 import { getMyProfile } from '@/lib/api';
 import { isPlaceholderName } from '@/lib/authorName';
@@ -260,7 +261,7 @@ export default function TrainerPanel() {
             </AppText>
             <PressableScale
               activeScale={0.97}
-              onPress={() => router.push('/(tabs)/profile/become-trainer')}
+              onPress={() => router.push({ pathname: '/(tabs)/profile/become-trainer', params: { from: 'trainer' } })}
               style={styles.emptyBtn}>
               <Icon name="edit" size={15} color={palette.inkText} />
               <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Profilini gücləndir')}</AppText>
@@ -316,7 +317,7 @@ export default function TrainerPanel() {
               activeScale={0.97}
               accessibilityRole="button"
               accessibilityLabel={t('Müəllim profili')}
-              onPress={() => router.push('/(tabs)/profile/become-trainer')}
+              onPress={() => router.push({ pathname: '/(tabs)/profile/become-trainer', params: { from: 'trainer' } })}
               style={styles.noticeBtn}>
               <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Müəllim profili')}</AppText>
             </PressableScale>
@@ -325,7 +326,7 @@ export default function TrainerPanel() {
               activeScale={0.97}
               accessibilityRole="button"
               accessibilityLabel={t('Adını yaz')}
-              onPress={() => router.push('/(tabs)/profile/edit')}
+              onPress={() => router.push({ pathname: '/(tabs)/profile/edit', params: { from: 'trainer' } })}
               style={styles.noticeBtn}>
               <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Adını yaz')}</AppText>
             </PressableScale>
@@ -355,6 +356,7 @@ export default function TrainerPanel() {
           </AppText>
         </View>
       </ScrollView>
+      <StatusBarScrim />
     </View>
   );
 }

@@ -9803,7 +9803,7 @@
  },
  {
   "key": "{name} şagirdlikdən çıxarılsın?",
-  "ru": "Убрать {name} из учеников?",
+  "ru": "Убрать из учеников: {name}?",
   "en": "Remove {name} from your students?"
  },
  {
@@ -9903,5 +9903,101 @@
   "ru_many": "На момент отзыва: {n} отметок",
   "en_one": "{n} check-in when reviewing",
   "en_other": "{n} check-ins when reviewing"
+ },
+ {
+  "key": "Zalın son məlumatı serverdən gəlmədi — day-pass və «Üzvlər» göstərilmir. Yeniləmək üçün toxun.",
+  "ru": "Свежие данные зала не пришли с сервера — разовое посещение и «Участники» не показываются. Нажми, чтобы обновить.",
+  "en": "The gym's latest details didn't come from the server — the day pass and \"Members\" aren't shown. Tap to refresh."
+ },
+ {
+  "key": "«Üzvlər» bölməsini yuxarıdakı açarla bütövlükdə gizlədə bilərsən. Siyahıda görünüb-görünməməyi isə hər üzv özü Məxfilik ayarlarından seçir — zal bunu dəyişə bilmir.",
+  "ru": "Раздел «Участники» можно целиком скрыть переключателем выше. А показываться ли в списке, каждый участник решает сам в настройках конфиденциальности — зал не может это изменить.",
+  "en": "You can hide the whole \"Members\" section with the switch above. Whether they appear in the list is each member's own choice in their Privacy settings — the gym can't change that."
+ },
+ {
+  "key": "Zalını SPOT-da seçən və zal siyahısında görünməyə icazə verən üzvlər burada check-in tezliyi ilə görünəcək. Siyahı üzvlər zalını özləri seçdikcə dolur.",
+  "ru": "Здесь появятся участники, которые выбрали твой зал в SPOT и разрешили показывать себя в списке зала, — с частотой их отметок. Список пополняется по мере того, как участники сами выбирают зал.",
+  "en": "Members who pick your gym in SPOT and allow themselves to be shown in the gym's list will appear here with how often they check in. The list fills up as members choose your gym themselves."
+ },
+ {
+  "key": "Sorğuna köhnə şəkil bağlıdır — yoxlayan ən son yüklədiyin sertifikatı görmür.",
+  "ru": "К твоему запросу прикреплено старое фото — проверяющий не видит последний загруженный сертификат.",
+  "en": "An older photo is attached to your request — the reviewer can't see the latest certificate you uploaded."
+ },
+ {
+  "key": "Müəllim profili yaradılan kimi Kəşfdə görünür, zal isə SPOT yoxlayandan sonra. Instagram kimi bir neçə hesab arasında keçə bilərsən.",
+  "ru": "Профиль тренера появляется в Обзоре сразу после создания, а зал — после проверки SPOT. Как в Instagram, можно переключаться между несколькими аккаунтами.",
+  "en": "A trainer profile shows up in Discover as soon as it is created; a gym shows up after SPOT has checked it. Like Instagram, you can switch between several accounts."
+ },
+ {
+  "key": "Sorğu {date} tarixində göndərildi · yoxlamanın son tarixi: {due}.",
+  "ru": "Запрос отправлен {date} · срок проверки: {due}.",
+  "en": "Request sent on {date} · review deadline: {due}."
+ },
+ {
+  "key": "bu gün saat {time}-dək",
+  "ru": "сегодня до {time}",
+  "en": "until {time} today"
+ },
+ {
+  "key": "sabah saat {time}-dək",
+  "ru": "завтра до {time}",
+  "en": "until {time} tomorrow"
+ },
+ {
+  "key": "Bu gün {h}:{m}-dək. Qonağı içəri burax və aşağıdan təsdiqlə.",
+  "ru": "Действует сегодня до {h}:{m}. Пропусти гостя и подтверди внизу.",
+  "en": "Valid today until {h}:{m}. Let the guest in and confirm below."
+ },
+ {
+  "key": "Resepsiyada bu kodu göstər — zal onu SPOT panelindən yoxlayır. Bu gün {time}-dək keçərlidir. {price} ₼ zalın özünə ödənilir; SPOT komissiya götürmür.",
+  "ru": "Покажи этот код на ресепшене — зал проверит его в панели SPOT. Действует сегодня до {time}. {price} ₼ оплачиваются самому залу; SPOT не берёт комиссию.",
+  "en": "Show this code at reception — the gym checks it in the SPOT panel. Valid today until {time}. The {price} ₼ is paid to the gym directly; SPOT takes no commission."
+ },
+ {
+  "key": "{n} nəfər indi zalda · sənə uyğun olanlar: {m}",
+  "ru_one": "{n} человек сейчас в зале · подходят тебе: {m}",
+  "ru_few": "{n} человека сейчас в зале · подходят тебе: {m}",
+  "ru_many": "{n} человек сейчас в зале · подходят тебе: {m}",
+  "en_one": "{n} person at the gym now · matches for you: {m}",
+  "en_other": "{n} people at the gym now · matches for you: {m}"
+ },
+ {
+  "key": "{gym} zalında olanlar öndədir",
+  "ru": "Сначала то, что есть в {gym}",
+  "en": "Available at {gym} first"
+ },
+ {
+  "key": "İzlənildi: {n} / {total} müəllim — qalanını sonra yenidən yoxla",
+  "ru_one": "Удалось подписаться на {n} из {total} тренера — на остальных попробуй подписаться позже",
+  "ru_few": "Удалось подписаться на {n} из {total} тренеров — на остальных попробуй подписаться позже",
+  "ru_many": "Удалось подписаться на {n} из {total} тренеров — на остальных попробуй подписаться позже",
+  "en_one": "Followed {n} of {total} trainer — try the rest again later",
+  "en_other": "Followed {n} of {total} trainers — try the rest again later"
+ },
+ {
+  "key": "Cavab: @{handle}",
+  "ru": "Ответ @{handle}",
+  "en": "Replying to @{handle}"
+ },
+ {
+  "key": "Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, Profil → Parametrlər → «Zal hesabı yarat» ilə özün əlavə edə bilərsən.",
+  "ru": "В SPOT пока не зарегистрирован ни один зал. Если ты владелец зала, добавь его сам: Профиль → Настройки → «Создать аккаунт зала».",
+  "en": "No gym has registered on SPOT yet. If you own a gym, you can add it yourself: Profile → Settings → \"Create a gym account\"."
+ },
+ {
+  "key": "Şəxsi",
+  "ru": "Личный",
+  "en": "Personal"
+ },
+ {
+  "key": "Çap etmək üçün bu ekranın şəklini çək.",
+  "ru": "Чтобы распечатать, сделай снимок этого экрана.",
+  "en": "To print it, take a screenshot of this screen."
+ },
+ {
+  "key": "Burada yazdıqların Kəşfdəki müəllim profilində görünür. Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir.",
+  "ru": "То, что ты пишешь здесь, видно в твоём профиле тренера в Обзоре. Цена указана только для информации — SPOT не принимает оплату.",
+  "en": "What you write here shows on your trainer profile in Discover. The price is for information only — SPOT takes no payments."
  }
 ]

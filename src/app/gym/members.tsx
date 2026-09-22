@@ -6,6 +6,7 @@ import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import { StatusBarScrim } from '@/components/ui/StatusBarScrim';
 import { EmptyNote, GymGate, getGymRoster, useMyGym, type RosterMember } from '@/lib/gymOwner';
 import { useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
@@ -152,7 +153,7 @@ export default function GymMembers() {
               <EmptyNote
                 title={t('Hələ üzv yoxdur')}
                 body={t(
-                  'SPOT-da zalını seçən üzvlər burada check-in tezliyi ilə görünəcək; adını gizlədən üzv adsız göstərilir. Siyahı üzvlər zalını özləri seçdikcə dolur.'
+                  'Zalını SPOT-da seçən və zal siyahısında görünməyə icazə verən üzvlər burada check-in tezliyi ilə görünəcək. Siyahı üzvlər zalını özləri seçdikcə dolur.'
                 )}
               />
             ) : (
@@ -220,6 +221,7 @@ export default function GymMembers() {
           )}
         </AppText>
       </ScrollView>
+      <StatusBarScrim />
     </View>
   );
 }

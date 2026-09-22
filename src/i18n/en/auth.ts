@@ -76,11 +76,11 @@ export const auth: Dict = {
   '{provider} ilə davam et': 'Continue with {provider}',
   '{provider} ilə daxil oldun': 'Signed in with {provider}',
   '{reason} hesabınla daxil ol və ya yenisini aç — bir dəqiqə çəkir. Onsuz sadəcə baxış rejimindəsən.': '{reason}, sign in to your account or create a new one — it takes a minute. Without one, you\'re just browsing.',
-  '{total} müəllimdən {n}-i izlənildi — qalanını sonra yenidən yoxla': { one: 'Followed {n} of {total} trainer — try the rest again later', other: 'Followed {n} of {total} trainers — try the rest again later' },
   '{what} hələ açılmayıb. Bu, tətbiqin deyil, serverin ayarıdır.': '{what} isn\'t enabled yet. That\'s a server setting, not an app setting.',
   '{who} hazırda yalnız bu telefonda yaşayır. Tətbiqi silsən və ya telefonu dəyişsən, məşq tarixçən, @adın və videoların qayıtmır.': '{who} currently lives only on this phone. If you delete the app or switch phones, your workout history, @username and videos won\'t come back.',
   'Çox tez-tez cəhd edildi — bir neçə dəqiqə gözlə': 'Too many attempts — wait a few minutes',
   'İstifadəçi adını indi yoxlaya bilmədik — yadda saxlayanda yoxlanacaq': 'Couldn\'t check the username right now — it will be checked when you save',
   'İzləmək alınmadı — bağlantını yoxla. Müəllimləri sonra Kəşf-dən tapa bilərsən.': 'Couldn\'t follow — check your connection. You can find trainers later in Discover.',
+  'İzlənildi: {n} / {total} müəllim — qalanını sonra yenidən yoxla': { one: 'Followed {n} of {total} trainer — try the rest again later', other: 'Followed {n} of {total} trainers — try the rest again later' },
   'İzlənilir…': 'Following…',
 };

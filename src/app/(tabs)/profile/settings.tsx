@@ -229,12 +229,12 @@ export default function Settings() {
             without one («Kəşfdə zal seç» in check-in, «Kəşfdən çıxarıldı» in
             become-trainer), so this footer spelled the tab differently from the
             tab. */}
-        <ListGroup header={t('Hesablar')} footer={t('Müəllim və ya zal hesabı yarat — Kəşfdə görünəcəksən. Instagram kimi bir neçə hesab arasında keçə bilərsən.')}>
+        <ListGroup header={t('Hesablar')} footer={t('Müəllim profili yaradılan kimi Kəşfdə görünür, zal isə SPOT yoxlayandan sonra. Instagram kimi bir neçə hesab arasında keçə bilərsən.')}>
           {accountCount() > 1 ? (
-            <ListRow icon="grid" iconBg={palette.inkText} title={t('Hesabı dəyiş')} subtitle={t('Şəxsi · Müəllim · Zal')} onPress={() => showAccountSwitcher(router)} />
+            <ListRow icon="grid" iconBg={palette.inkText} title={t('Hesabı dəyiş')} subtitle={[t('Şəxsi'), role === 'trainer' ? t('Müəllim') : null, ownsGym ? t('Zal') : null].filter(Boolean).join(' · ')} onPress={() => showAccountSwitcher(router)} />
           ) : null}
           {role === 'trainer' ? (
-            <ListRow icon="verified" iconBg={palette.blue} title={t('Müəllim hesabım')} subtitle={t('Redaktə et')} onPress={() => router.push('/(tabs)/profile/become-trainer')} />
+            <ListRow icon="users" iconBg={palette.blue} title={t('Müəllim hesabım')} subtitle={t('Redaktə et')} onPress={() => router.push('/(tabs)/profile/become-trainer')} />
           ) : (
             <ListRow icon="verified" iconBg={palette.blue} title={t('Müəllim ol')} subtitle={t('Öz təlim hesabını yarat')} onPress={() => router.push('/(tabs)/profile/become-trainer')} />
           )}

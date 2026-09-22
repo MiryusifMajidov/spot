@@ -121,6 +121,10 @@ export default function GymQr() {
               <AppText variant="caption" color={palette.caption} center style={{ marginTop: 6, lineHeight: 17 }}>
                 {t('QR oxunmasa, üzv bu kodu əl ilə də yaza bilər.')}
               </AppText>
+              {/* The only way to paper now that «Kodu paylaş» is gone. */}
+              <AppText variant="caption" color={palette.caption} center style={{ marginTop: 4, lineHeight: 17 }}>
+                {t('Çap etmək üçün bu ekranın şəklini çək.')}
+              </AppText>
             </>
           ) : code.k === 'loading' ? (
             <AppText variant="body" color={palette.textSecondary}>

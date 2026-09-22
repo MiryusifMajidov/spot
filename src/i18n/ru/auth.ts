@@ -76,11 +76,11 @@ export const auth: Dict = {
   '{provider} ilə davam et': 'Продолжить с {provider}',
   '{provider} ilə daxil oldun': 'Вход через {provider} выполнен',
   '{reason} hesabınla daxil ol və ya yenisini aç — bir dəqiqə çəkir. Onsuz sadəcə baxış rejimindəsən.': '{reason}, войди в аккаунт или создай новый — это займёт минуту. Без него ты просто в режиме просмотра.',
-  '{total} müəllimdən {n}-i izlənildi — qalanını sonra yenidən yoxla': { one: 'Удалось подписаться на {n} из {total} тренера — на остальных попробуй подписаться позже', few: 'Удалось подписаться на {n} из {total} тренеров — на остальных попробуй подписаться позже', many: 'Удалось подписаться на {n} из {total} тренеров — на остальных попробуй подписаться позже', other: 'Удалось подписаться на {n} из {total} тренеров — на остальных попробуй подписаться позже' },
   '{what} hələ açılmayıb. Bu, tətbiqin deyil, serverin ayarıdır.': '{what} пока не включён. Это настройка сервера, а не приложения.',
   '{who} hazırda yalnız bu telefonda yaşayır. Tətbiqi silsən və ya telefonu dəyişsən, məşq tarixçən, @adın və videoların qayıtmır.': '{who} сейчас хранится только на этом телефоне. Если удалишь приложение или сменишь телефон, история тренировок, @имя пользователя и видео не вернутся.',
   'Çox tez-tez cəhd edildi — bir neçə dəqiqə gözlə': 'Слишком много попыток — подожди несколько минут',
   'İstifadəçi adını indi yoxlaya bilmədik — yadda saxlayanda yoxlanacaq': 'Не удалось проверить имя пользователя сейчас — проверим при сохранении',
   'İzləmək alınmadı — bağlantını yoxla. Müəllimləri sonra Kəşf-dən tapa bilərsən.': 'Не удалось подписаться — проверь соединение. Тренеров можно найти позже в разделе «Обзор».',
+  'İzlənildi: {n} / {total} müəllim — qalanını sonra yenidən yoxla': { one: 'Удалось подписаться на {n} из {total} тренера — на остальных попробуй подписаться позже', few: 'Удалось подписаться на {n} из {total} тренеров — на остальных попробуй подписаться позже', many: 'Удалось подписаться на {n} из {total} тренеров — на остальных попробуй подписаться позже', other: 'Удалось подписаться на {n} из {total} тренеров — на остальных попробуй подписаться позже' },
   'İzlənilir…': 'Подписываемся…',
 };
