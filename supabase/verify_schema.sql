@@ -934,6 +934,15 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema83. A block and a sanction both came back as one anonymous RLS refusal, and the app told blocked people they were sanctioned; two simultaneous first messages both passed the one-until-reply count.'
   union all
+  select 'trigger', 'match_requests_mutual settles both directions',
+         case when exists (select 1 from pg_trigger where tgname='match_requests_mutual'
+                             and tgrelid='public.match_requests'::regclass and not tgisinternal)
+               and exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='send_match_request'
+                             and pg_get_functiondef(p.oid) like '%reverse_status%')
+              then 'OK' else 'MISSING' end,
+         'schema84. Crossing partner requests left the pair half-open: one side accepted, the other still «pending», so the sender kept getting a «Qəbul et» card from somebody already matched (live run cq8rjw).'
+  union all
   select 'function', 'suggested_trainers falls back to verified trainers only',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
                            where n.nspname='public' and p.proname='suggested_trainers'

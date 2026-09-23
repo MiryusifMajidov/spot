@@ -1,3 +1,6 @@
+-- APPLIED 2026-09-23 with the owner's approval. Proved (rolled back): crossing asks
+-- end with both rows accepted; a plain accept settles the one row and invents no
+-- reverse row. 0 half-open pairs existed before.
 -- schema84: two people who ask each other are a match, and one accept settles
 -- both directions.
 --
