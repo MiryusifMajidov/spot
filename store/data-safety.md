@@ -1,6 +1,6 @@
 # SPOT — «Data safety» (Google Play) və «App Privacy» (Apple)
 
-**Tətbiq:** SPOT · `com.spot.app` · versiya 1.3.7 · Android `versionCode` 11 · iOS `buildNumber` 1
+**Tətbiq:** SPOT · `com.spot.app` · versiya 1.3.8 · Android `versionCode` 12 · iOS `buildNumber` 1
 **Yoxlanma tarixi:** 23 sentyabr 2026
 **Nəyə əsaslanır:** bu fayldakı hər cavab `D:\spot` kodundan və canlı Supabase bazasından (`oezzgcumwprpoqekmlop`, yalnız oxuma) yoxlanılıb. Təxmin edilən heç nə yoxdur — əmin olmadığım hər şey §8 «Açıq suallar»dadır.
 
@@ -134,8 +134,8 @@ Bu sualın cavabı iki hissədir və ikisi də vacibdir.
 
 ### 2.7 Şəkil və video metadatası
 
-- **Şəkillər (avatar, zal fotosu, sertifikat):** `expo-image-manipulator` ilə yenidən ölçülüb JPEG kimi saxlanılır (`src/lib/images.ts:89–95`). Bu, EXIF-i — **o cümlədən GPS koordinatını** — silir. Yaxşı.
-- **Videolar:** `src/lib/api.ts` → `uploadFeedVideo()` faylı **olduğu kimi** (bayt-bayt) `videos` bucketinə yükləyir. Yenidən kodlaşdırma yoxdur → qalereyadan seçilmiş videonun konteyner metadatası (bəzi telefonlarda GPS daxil) **açıq bucketə düşür**. Bax §7, açıq sual №4.
+- **Şəkillər (avatar, zal fotosu, sertifikat):** `expo-image-manipulator` ilə JPEG kimi yenidən kodlaşdırılır (`src/lib/images.ts` → `downscale()`). Bu, EXIF-i — **o cümlədən GPS koordinatını** — silir. Yenidən kodlaşdırma uğursuz olsa, indi ölçü dəyişmədən bir də cəhd edilir; yalnız o da alınmasa orijinal göndərilir.
+- **Videolar (23.09.2026-dan):** hər iki yükləmə yolu — `src/lib/api.ts` → `uploadFeedVideo()` və `src/lib/exerciseVideo.ts` → `uploadExerciseClip()` — faylı `stripVideoLocation()`-dan keçirir (`src/lib/videoMeta.ts`): MP4/MOV qutu ağacında çəkiliş yerini daşıyan atomlar (`©xyz`, `loci`, `gps…`) tapılır, tipi `free` edilir və içi sıfırlanır. Fayl uzunluğu və bütün offsetlər dəyişmir, `mdat` oxunmur da; anlaşılmayan fayl olduğu kimi yüklənir. Sübut: `npm run video:test` (30 yoxlama). **Bilinən hədd:** GoPro tipli kameraların `mdat` içindəki fasiləsiz GPS treki qalır — telefon videosuna aid deyil.
 
 ---
 
@@ -380,9 +380,9 @@ Səhifədə olmalıdır (üç dildə — az/ru/en):
 
 2. **Məxfilik siyasəti üçün veb ünvan.** Hər iki mağaza **URL** istəyir; tətbiqdaxili ekran (`src/app/legal`) buna əvəz deyil. Səhifələr artıq yaradılıb (`store/legal/privacy.html` və §6.2-dəki `delete-account.html`, üçü də üç dildə) — qalan iş domen seçmək və `web/landing` ilə birlikdə yayımlamaqdır (`store/legal/README.md` §3). Diqqət: landing-in nginx konfiqurasiyası mövcud olmayan yola **200 ilə landing səhifəsini** qaytarır, ona görə yayımdan sonra üç URL-in hər birini açıb yoxlamaq lazımdır, yoxsa yoxlayıcı məxfilik siyasəti əvəzinə reklam səhifəsi görər.
 
-3. **Xəritə üçüncü tərəfləri.** Xəritə `WebView` içində **unpkg.com**-dan Leaflet, **tile.openstreetmap.org**-dan tayl yükləyir (`src/components/SpotMap.tsx:102–111`). Bu o deməkdir ki, insan xəritəni açanda IP-si və baxdığı sahənin koordinatları həmin serverlərə gedir. İki qərar səndən asılıdır: (a) bunu məxfilik siyasətinə əlavə edək (tövsiyəm: bəli), (b) Play formasında «Shared» kimi bəyan edək, yoxsa yox. Mənim oxuduğuma görə bu, tətbiqin **göndərdiyi** data deyil, brauzerin adi resurs sorğusudur və adətən bəyan edilmir — amma bu, hüquqi qərardır, kod qərarı deyil. Əlavə qeyd: unpkg.com sıradan çıxsa, xəritə ümumiyyətlə açılmır.
+3. **Xəritə üçüncü tərəfləri.** Xəritə `WebView` içində **unpkg.com**-dan Leaflet, **tile.openstreetmap.org**-dan tayl yükləyir (`src/components/SpotMap.tsx:102–111`). Bu o deməkdir ki, insan xəritəni açanda IP-si və baxdığı sahənin koordinatları həmin serverlərə gedir. (a) **Edildi:** hər ikisi (və Expo push xidməti) məxfilik siyasətinə yazıldı — həm tətbiqdə, həm saytda. (b) Play formasında «Shared» kimi bəyan edək, yoxsa yox — bu hələ səndən asılıdır. Mənim oxuduğuma görə bu, tətbiqin **göndərdiyi** data deyil, brauzerin adi resurs sorğusudur və adətən bəyan edilmir — amma bu, hüquqi qərardır, kod qərarı deyil. Əlavə qeyd: unpkg.com sıradan çıxsa, xəritə ümumiyyətlə açılmır.
 
-4. **Video metadatası.** Şəkillərdən EXIF silinir, videolardan **silinmir** — fayl olduğu kimi **açıq** bucketə yüklənir (§2.7). Qalereyadan seçilmiş bəzi videolarda GPS koordinatı olur. Bunu düzəltmək kod dəyişikliyidir (bu tapşırıqda `src/`-ə toxunmuram); istəsən ayrıca iş kimi görülə bilər. Nə qədər ki düzəlməyib, formada bu, `Videos` altında qalır.
+4. ~~**Video metadatası.**~~ **HƏLL OLUNDU (23.09.2026)** — həm lentdəki, həm proqrama bağlanan videodan çəkiliş yeri telefonda, fayl serverə getməzdən əvvəl silinir (§2.7). Formada `Videos` altında lokasiya bəyan etməyə ehtiyac yoxdur.
 
 5. **`day_passes` və «Purchase history».** Mən **No** yazdım, çünki tətbiqdən bir qəpik də keçmir. Amma cədvəldə `status`, `refunded_at`, `refund_reason` sütunları var — bunlar mövcud olmayan bir ödəniş modelindən qalıb. Əgər hüquqi olaraq ehtiyatlı davranmaq istəyirsənsə, `Purchase history` = Yes yazmaq da olar (bu, rədd riski yaratmır). Mənim tövsiyəm: **No**, çünki doğrusu budur.
 
@@ -396,31 +396,29 @@ Səhifədə olmalıdır (üç dildə — az/ru/en):
 
 ## 8. Kodla formanın ziddiyyəti — göndərməzdən əvvəl düzəldilməli
 
-Bunları tapdım, amma tapşırığa görə `src/`-ə toxunmadım. Hər biri **mağaza yoxlayıcısının görə biləcəyi** uyğunsuzluqdur.
+Hər biri **mağaza yoxlayıcısının görə biləcəyi** uyğunsuzluqdur. Siyahı ilk yazılanda `src/` bu tapşırığın hüdudundan kənarda idi; 23.09.2026-da 1, 2, 3 və 6 mənbədə düzəldildi və üstündən xətt çəkildi. Qalanları (4, 5, 7) sənin qərarındır.
 
-1. **iOS lokasiya mətni artıq doğru deyil.** `app.json`:
-   `"NSLocationWhenInUseUsageDescription": "Check-in üçün zalın 150 metr radiusunda olduğunu yoxlayırıq. Yerin saxlanılmır."`
-   Check-in artıq QR ilədir və lokasiyadan **ümumiyyətlə istifadə etmir**. Apple bu mətni faktiki istifadə ilə tutuşdurur. Doğru mətn xəritədən danışmalıdır — məsələn: «Yaxınlıqdakı zalları məsafəyə görə sıralamaq üçün yerini soruşuruq. Koordinatın saxlanılmır.» (ru: «Спрашиваем геопозицию, чтобы показать ближайшие залы по расстоянию. Координаты не сохраняются.» / en: «We ask for your location to sort nearby gyms by distance. Your coordinates are not stored.»)
+1. ~~**iOS lokasiya mətni artıq doğru deyil.**~~ **DÜZƏLDİLDİ (23.09.2026).** Mətn check-in-in 150 metr radiusundan danışırdı; check-in schema74-dən bəri QR ilədir və lokasiyadan ümumiyyətlə istifadə etmir. `app.json`-da indi:
+   `"NSLocationWhenInUseUsageDescription": "Yaxınlıqdakı zalları məsafəyə görə sıralamaq üçün yerini soruşuruq. Koordinatın heç bir cədvələ yazılmır."`
 
-> **Yenilik (fakt-yoxlama, 23.09.2026):** aşağıdakı 2-ci və 3-cü maddələr **veb
-> səhifələrdə artıq düzəldilib** — `store/legal/build.mjs`-dəki `CORRECTIONS` cədvəli
-> həmin cümlələri üç dildə doğru mətnlə əvəz edir və `store/legal/*.html` yenidən
-> yaradılıb. Tətbiqin öz ekranı (`src/lib/legal.ts`, `src/i18n/{ru,en}/legal.ts`) hələ
-> köhnə mətni göstərir, yəni bu gün tətbiq ilə sayt fərqlidir. Dəqiq az/ru/en əvəzləri
-> və nəyi harada dəyişməli — `store/legal/README.md` §1a.
+> **Yenilik (23.09.2026):** aşağıdakı 2-ci, 3-cü və 6-cı maddələr **mənbədə
+> düzəldilib** — `src/lib/legal.ts` və `i18n/translations.json` yenilənib,
+> `store/legal/*.html` yenidən yaradılıb, `build.mjs`-dəki `CORRECTIONS` cədvəli
+> isə boşaldılıb. Yəni tətbiqin ekranı ilə sayt artıq eyni mətni göstərir — bir
+> sənədin iki müxtəlif versiyası qalmadı.
 
-2. **Məxfilik siyasətində iki yanlış cümlə** (`src/lib/legal.ts`):
+2. ~~**Məxfilik siyasətində iki yanlış cümlə**~~ — **DÜZƏLDİLDİ (23.09.2026),** həm tətbiqdə, həm saytda (`src/lib/legal.ts`):
    - «Check-in anında telefonun yerini zalın koordinatı ilə müqayisə edirik» və «check-in zamanı zalda olduğunu yoxlamaq» — **artıq doğru deyil** (QR).
    - «Bədən: qeyd etdiyin çəki və istəsən **progress fotoları**» — progress fotosu funksiyası **yoxdur**. Kodda yalnız `spot-progress-photos` adlı, heç kimin yazmadığı ölü AsyncStorage açarı qalıb (`privacy.tsx:21`). Çəki də bu gün yazılmır (§2.5).
    Tətbiqin öz qaydası — «heç vaxt olmayan şeyi iddia etmə» — məhz burada pozulur, üstəlik pozulan sənəd məxfilik siyasətidir.
 
-3. **Telefon nömrəsi haqqında cümlə.** Siyasət «Telefon nömrəsi (əgər yazmısansa) — yalnız sənə görünür» deyir. Əslində telefonla giriş silinib, canlı bazada 0 nömrə var və `profiles.phone` sütunu heç bir müştəri roluna oxuma üçün verilməyib — yəni **sənin özünə də görünmür**. Cümlə tamamilə çıxarılmalıdır.
+3. ~~**Telefon nömrəsi haqqında cümlə.**~~ **ÇIXARILDI (23.09.2026).** Siyasət «Telefon nömrəsi (əgər yazmısansa) — yalnız sənə görünür» deyirdi. Əslində telefonla giriş silinib, canlı bazada 0 nömrə var və `profiles.phone` sütunu heç bir müştəri roluna oxuma üçün verilməyib — yəni **sənin özünə də görünmür**. Cümlə hər üç fayldan tamamilə çıxarıldı.
 
 4. **`OPERATOR` / `CONTACT` boşdur** — ekranda `[DOLDURULMALI: ...]` kimi görünür (§7.1).
 
 5. **iOS mikrofon mətni.** `NSMicrophoneUsageDescription` var, amma `expo-camera` üçün `microphonePermission: false` qoyulub və Android-də `RECORD_AUDIO` bloklanıb. Mətn `ImagePicker.launchCameraAsync` səsli video çəkdiyi üçün texniki olaraq lazımdır — sadəcə bilərək saxlandığını yoxla, yoxsa Apple «istifadə olunmayan icazə» sualı verə bilər.
 
-6. **Şərtlərdə olmayan funksiya.** İstifadə şərtləri «Tətbiqdəki proqramlar, çəki təklifləri və **qidalanma nümunələri** tibbi məsləhət deyil» deyir. Qidalanma hissəsi silinib — `NutritionToday`, kalori/protein/su hesablamaları `src/store/db.ts`-dən çıxarılıb. Hüquqi risk yaratmır (olmayan şeyi inkar edir), amma tətbiqin öz qaydasını pozur. Veb səhifədə düzəldilib (§8 yuxarıdakı qeyd), `src/`-də yox.
+6. ~~**Şərtlərdə olmayan funksiya.**~~ **DÜZƏLDİLDİ (23.09.2026).** İstifadə şərtləri «Tətbiqdəki proqramlar, çəki təklifləri və **qidalanma nümunələri** tibbi məsləhət deyil» deyirdi. Qidalanma hissəsi silinib — `NutritionToday`, kalori/protein/su hesablamaları `src/store/db.ts`-dən çıxarılıb. Hüquqi risk yaratmır (olmayan şeyi inkar edir), amma tətbiqin öz qaydasını pozur. İndi hər iki yerdə düzgündür.
 
 7. **Android icazələri formaya uyğundur — yoxlanıldı.** `android/app/src/main/AndroidManifest.xml`-də yalnız `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, `CAMERA`, `FOREGROUND_SERVICE(_MEDIA_PLAYBACK)`, `INTERNET`, `MODIFY_AUDIO_SETTINGS`, `VIBRATE` var; `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `RECORD_AUDIO`, `SYSTEM_ALERT_WINDOW` `tools:node="remove"` ilə çıxarılıb. **`READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` yoxdur**, ona görə Play-in «Photo and Video Permissions» deklarasiya forması bu build üçün tələb olunmur. Bu vəziyyət `expo-image-picker` konfiqurasiyası dəyişərsə pozula bilər — hər native build-dən sonra manifesti yenidən oxu.
 
