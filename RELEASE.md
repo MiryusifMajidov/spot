@@ -52,9 +52,34 @@ bundle id, the distribution certificate and the provisioning profile. That step
 needs the owner: Apple credentials are never entered by anyone else.
 
 What is already in `app.json` for iOS: bundle id `com.spot.app`,
-`buildNumber`, `usesAppleSignIn`, `ITSAppUsesNonExemptEncryption: false` (so the
-export-compliance question is answered automatically), and the four permission
-sentences iOS shows (camera, photos, microphone, location-when-in-use).
+`buildNumber`, `usesAppleSignIn` and the `expo-apple-authentication` plugin (CNG
+needs the plugin, not just the flag — it is what puts
+`com.apple.developer.applesignin` in the entitlements),
+`ITSAppUsesNonExemptEncryption: false` (so the export-compliance question is
+answered automatically), and the four permission sentences iOS shows.
+
+Check those four with the config itself, never by reading `ios.infoPlist` —
+**a config plugin overrides it**, and two of them were wrong for exactly that
+reason (23.09.2026): `expo-camera`'s `cameraPermission` replaced the camera
+sentence with one that only mentioned the QR code, and `expo-audio` replaced the
+microphone sentence with its English default, «Allow $(PRODUCT_NAME) to access
+your microphone», in an Azerbaijani app. Apple compares a purpose string to what
+the app actually does, and a generic default is a known rejection reason. The
+command that shows what iOS will really see:
+
+```bash
+npx expo config --type introspect --json
+```
+
+**One thing that cannot be settled from Windows:** that introspection also shows
+`"aps-environment": "development"`. For an App Store build it has to be
+`production`, or the device registers with the APNs sandbox and **no push
+notification ever arrives** for a TestFlight or App Store user. EAS is expected
+to set it from the distribution provisioning profile, but the v57 docs do not
+say so in writing. Read the entitlements in the first `eas build` log, and send
+yourself one push from TestFlight before submitting. If it is still
+`development`, add `"entitlements": { "aps-environment": "production" }` under
+`ios` in `app.json` and rebuild.
 
 ### Sign in with Apple
 
@@ -85,6 +110,8 @@ would fail.
 2. Fill the two legal placeholders (`src/lib/legal.ts`), regenerate the public
    pages, deploy them, and put the URL in both stores.
 3. Enable Apple as a Supabase provider and rebuild for iOS.
+3a. Confirm `aps-environment` is `production` in the first iOS build, and prove
+   push works from TestFlight (see above).
 4. Decide what the catalogue looks like on day one: today Kəşf → Zallar is
    empty and says so honestly.
 5. Supabase: the free plan's restriction notice (04 Oct 2026) and the Sydney

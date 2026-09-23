@@ -45,6 +45,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {
@@ -55,7 +56,12 @@
       ],
       "expo-font",
       "expo-video",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Texnika videosu səsi ilə çəkildikdə mikrofon işlədilir."
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -66,7 +72,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Zalın resepsiyasındakı QR kodu oxumaq üçün kameraya icazə lazımdır.",
+          "cameraPermission": "Kamera üç yerdə işlənir: zalın resepsiyasındakı QR kodu oxumaq, texnika videosu çəkmək və profil şəkli əlavə etmək.",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
