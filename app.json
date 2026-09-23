@@ -15,9 +15,7 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Yaxınlıqdakı zalları məsafəyə görə sıralamaq üçün yerini soruşuruq. Koordinatın heç bir cədvələ yazılmır.",
-        "NSCameraUsageDescription": "Texnika videosu çəkmək və profil şəkli əlavə etmək üçün kameradan istifadə olunur.",
         "NSPhotoLibraryUsageDescription": "Profil şəkli, zal fotosu və texnika videosu seçmək üçün qalereyaya baxırıq.",
-        "NSMicrophoneUsageDescription": "Texnika videosu səsi ilə çəkildikdə mikrofon işlədilir.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
