@@ -10004,5 +10004,10 @@
   "key": "Gizli · Kəşfdə yalnız sən görürsən — SPOT yoxlayandan sonra hamı görəcək",
   "ru": "Скрыт · в Обзоре его видишь только ты — после проверки SPOT увидят все",
   "en": "Hidden · only you can see it in Discover — everyone will once SPOT has checked it"
+ },
+ {
+  "key": "{name} da səni seçmişdi — artıq məşq yoldaşısınız",
+  "ru": "{name} — взаимный выбор: вы уже напарники",
+  "en": "{name} had chosen you too — you are training partners now"
  }
 ]

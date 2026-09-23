@@ -156,9 +156,15 @@ export async function toggleCommentLike(commentId: string, liked: boolean): Prom
   if (!me) throw new Error('no profile');
 
   if (liked) {
+    /* DO NOTHING, not DO UPDATE: comment_likes has INSERT and DELETE policies and
+       no UPDATE one (checked live), so when the row already exists — a double
+       tap, or the same person on two devices at the same instant — the update
+       path is refused by RLS and the sheet rolled the heart back with
+       «Bəyənilmədi — yenidən cəhd et» although the like WAS stored (live run
+       cq8rjw). Nothing about the row can change anyway: it is (comment, person). */
     const { error } = await supabase
       .from('comment_likes')
-      .upsert({ comment_id: commentId, profile_id: me.id }, { onConflict: 'comment_id,profile_id' });
+      .upsert({ comment_id: commentId, profile_id: me.id }, { onConflict: 'comment_id,profile_id', ignoreDuplicates: true });
     if (error) throw error;
     return;
   }

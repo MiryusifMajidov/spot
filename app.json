@@ -11,11 +11,14 @@
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.spot.app",
       "supportsTablet": false,
+      "buildNumber": "1",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Check-in üçün zalın 150 metr radiusunda olduğunu yoxlayırıq. Yerin saxlanılmır.",
         "NSCameraUsageDescription": "Texnika videosu çəkmək və profil şəkli əlavə etmək üçün kameradan istifadə olunur.",
         "NSPhotoLibraryUsageDescription": "Profil şəkli, zal fotosu və texnika videosu seçmək üçün qalereyaya baxırıq.",
-        "NSMicrophoneUsageDescription": "Texnika videosu səsi ilə çəkildikdə mikrofon işlədilir."
+        "NSMicrophoneUsageDescription": "Texnika videosu səsi ilə çəkildikdə mikrofon işlədilir.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

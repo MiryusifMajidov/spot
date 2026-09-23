@@ -1883,7 +1883,11 @@ export async function toggleCommentLike(a, commentId, liked, { sync = noSync } =
       // app: src/lib/comments.ts:159-161
       const { error } = await a.client
         .from('comment_likes')
-        .upsert({ comment_id: commentId, profile_id: me.id }, { onConflict: 'comment_id,profile_id' });
+        .upsert(
+          { comment_id: commentId, profile_id: me.id },
+          // ignoreDuplicates since the cq8rjw fix: comment_likes has no UPDATE policy.
+          { onConflict: 'comment_id,profile_id', ignoreDuplicates: true }
+        );
       if (error) return fail(error, { shown: 'Bəyənilmədi — yenidən cəhd et' });
       return ok(null);
     }

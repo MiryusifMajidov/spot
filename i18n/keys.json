@@ -2333,6 +2333,17 @@
   ]
  },
  {
+  "key": "{name} da səni seçmişdi — artıq məşq yoldaşısınız",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/match.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "name"
+  ]
+ },
+ {
   "key": "{name} hələ SPOT istifadəçisi deyil — təklif yalnız sənin cihazında saxlanılıb.",
   "counted": false,
   "files": [

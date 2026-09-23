@@ -271,6 +271,7 @@ export const discover: Dict = {
   '{km} km': '{km} km',
   '{lift} · kq': '{lift} · kg',
   '{name} cavab verənə qədər söhbət açılmır. Cavab gələndə «Sorğular»da görünəcək.': 'The chat won\'t open until {name} replies. The reply will show up in "Requests".',
+  '{name} da səni seçmişdi — artıq məşq yoldaşısınız': '{name} had chosen you too — you are training partners now',
   '{name} hələ SPOT istifadəçisi deyil — təklif yalnız sənin cihazında saxlanılıb.': '{name} isn\'t on SPOT yet — the invite is saved only on your device.',
   '{name} hələ cavab verməyib. Cavab gələndə söhbət açılacaq.': '{name} hasn\'t replied yet. The chat opens once they do.',
   '{name} qəbul etmədi': '{name} didn\'t accept',

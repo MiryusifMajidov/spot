@@ -219,7 +219,49 @@ export async function signInWithGoogle(): Promise<void> {
 }
 
 export async function signInWithApple(): Promise<void> {
+  /* On iOS Apple's own sheet is the expected Sign in with Apple, and App Review
+     looks for it. The browser flow stays as the fallback for anything that
+     cannot show the sheet (a simulator with no Apple ID, an older iOS), and it
+     is the only path on Android. */
+  if (Platform.OS === 'ios') {
+    await requireProvider('apple');
+    if (await signInWithAppleNative()) return;
+  }
   return signInWithProvider('apple');
+}
+
+/** Apple's native sheet → an identity token Supabase verifies itself.
+ *  `false` means this device cannot show it; the caller falls back. A cancel is
+ *  reported the same way the browser flow reports it: `Error('cancelled')`. */
+async function signInWithAppleNative(): Promise<boolean> {
+  let apple: typeof import('expo-apple-authentication');
+  try {
+    apple = await import('expo-apple-authentication');
+  } catch {
+    return false;
+  }
+  try {
+    if (!(await apple.isAvailableAsync())) return false;
+  } catch {
+    return false;
+  }
+
+  let credential: import('expo-apple-authentication').AppleAuthenticationCredential;
+  try {
+    credential = await apple.signInAsync({
+      requestedScopes: [apple.AppleAuthenticationScope.FULL_NAME, apple.AppleAuthenticationScope.EMAIL],
+    });
+  } catch (e) {
+    // The person closed the sheet. Not an error — the caller says nothing.
+    if ((e as { code?: string })?.code === 'ERR_REQUEST_CANCELED') throw new Error('cancelled');
+    throw e;
+  }
+
+  // Without a token there is nothing Supabase can verify; the browser flow can.
+  if (!credential.identityToken) return false;
+  const { error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: credential.identityToken });
+  if (error) throw error;
+  return true;
 }
 
 async function signInWithProvider(provider: 'google' | 'apple'): Promise<void> {

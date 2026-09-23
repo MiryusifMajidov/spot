@@ -203,9 +203,10 @@ function Match() {
       // the user retries with the button, which is still enabled.
       // The proposal text goes WITH the request; it is the whole content of it.
       const proposal = `${slot.label}${gym ? ` · ${gym.name}` : ''}`;
+      let matched = false;
       if (deliverable) {
         try {
-          await apiSendMatchRequest(partner.id, proposal);
+          matched = (await apiSendMatchRequest(partner.id, proposal)) === 'accepted';
         } catch {
           setSending(false);
           errorFeedback();
@@ -213,12 +214,20 @@ function Match() {
           return;
         }
       }
-      sendRequest(partner.id, t('Məşq təklifi: {proposal}', { proposal }));
+      /* They had already asked us, so the server settled both directions
+         (schema84). Saying «təklif göndərildi» would hide a match that has
+         already happened — and leave this device showing «gözləyir». */
+      if (matched) useDb.getState().acceptMatch(partner.id);
+      else sendRequest(partner.id, t('Məşq təklifi: {proposal}', { proposal }));
       setSending(false);
       successFeedback();
       toast(
-        deliverable ? t('Təklif göndərildi') : t('Təklif cihazında qeyd olundu — hələ göndərilməyib'),
-        deliverable ? 'success' : 'info'
+        matched
+          ? t('{name} da səni seçmişdi — artıq məşq yoldaşısınız', { name: partner.name })
+          : deliverable
+            ? t('Təklif göndərildi')
+            : t('Təklif cihazında qeyd olundu — hələ göndərilməyib'),
+        matched || deliverable ? 'success' : 'info'
       );
     }, t('Yoldaşa təklif göndərmək üçün'));
   };

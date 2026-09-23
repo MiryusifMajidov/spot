@@ -665,13 +665,22 @@ export async function getPartner(id: string): Promise<Partner | null> {
  * re-send, refuses a blocked or sanctioned sender, and will not re-open a match
  * that was already accepted.
  */
-export async function sendMatchRequest(toProfileId: string, note?: string): Promise<void> {
+export async function sendMatchRequest(toProfileId: string, note?: string): Promise<'pending' | 'accepted'> {
   const clean = (note ?? '').trim().slice(0, 200);
-  const { error } = await supabase.rpc('send_match_request', {
+  const { data, error } = await supabase.rpc('send_match_request', {
     p_to: toProfileId,
     p_note: clean || null,
   });
   if (error) throw error;
+  /* Since schema84 the same call can END in a match: asking somebody who had
+     already asked you settles both directions at once. Read the row back so the
+     screen says which of the two happened instead of always «göndərildi».
+     A failed read is not a failure of the send — it is reported as pending, the
+     state the next launch's reconcile will correct. */
+  const id = typeof data === 'string' ? data : null;
+  if (!id) return 'pending';
+  const { data: row } = await supabase.from('match_requests').select('status').eq('id', id).maybeSingle();
+  return (row as { status?: string } | null)?.status === 'accepted' ? 'accepted' : 'pending';
 }
 
 // -------------------- community --------------------

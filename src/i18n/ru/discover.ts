@@ -271,6 +271,7 @@ export const discover: Dict = {
   '{km} km': '{km} км',
   '{lift} · kq': '{lift} · кг',
   '{name} cavab verənə qədər söhbət açılmır. Cavab gələndə «Sorğular»da görünəcək.': 'Пока {name} не ответит, чат не откроется. Ответ появится в «Запросах».',
+  '{name} da səni seçmişdi — artıq məşq yoldaşısınız': '{name} — взаимный выбор: вы уже напарники',
   '{name} hələ SPOT istifadəçisi deyil — təklif yalnız sənin cihazında saxlanılıb.': '{name} ещё не пользуется SPOT — предложение сохранено только на твоём устройстве.',
   '{name} hələ cavab verməyib. Cavab gələndə söhbət açılacaq.': 'От {name} пока нет ответа. Когда ответ придёт, откроется чат.',
   '{name} qəbul etmədi': '{name}: предложение не принято',
