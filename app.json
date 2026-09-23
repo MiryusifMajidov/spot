@@ -16,7 +16,10 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Yaxınlıqdakı zalları məsafəyə görə sıralamaq üçün yerini soruşuruq. Koordinatın heç bir cədvələ yazılmır.",
         "NSPhotoLibraryUsageDescription": "Profil şəkli, zal fotosu və texnika videosu seçmək üçün qalereyaya baxırıq.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false
+        }
       }
     },
     "android": {
@@ -35,7 +38,8 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_EXTERNAL_STORAGE"
-      ]
+      ],
+      "allowBackup": false
     },
     "web": {
       "output": "static",
@@ -44,6 +48,14 @@
     "plugins": [
       "expo-router",
       "expo-apple-authentication",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "motionUsagePermission": false
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -57,7 +69,9 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Texnika videosu səsi ilə çəkildikdə mikrofon işlədilir."
+          "microphonePermission": "Texnika videosu səsi ilə çəkildikdə mikrofon işlədilir.",
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
         }
       ],
       [
