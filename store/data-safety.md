@@ -420,7 +420,13 @@ Hər biri **mağaza yoxlayıcısının görə biləcəyi** uyğunsuzluqdur. Siya
 
 6. ~~**Şərtlərdə olmayan funksiya.**~~ **DÜZƏLDİLDİ (23.09.2026).** İstifadə şərtləri «Tətbiqdəki proqramlar, çəki təklifləri və **qidalanma nümunələri** tibbi məsləhət deyil» deyirdi. Qidalanma hissəsi silinib — `NutritionToday`, kalori/protein/su hesablamaları `src/store/db.ts`-dən çıxarılıb. Hüquqi risk yaratmır (olmayan şeyi inkar edir), amma tətbiqin öz qaydasını pozur. İndi hər iki yerdə düzgündür.
 
-7. **Android icazələri formaya uyğundur — yoxlanıldı.** `android/app/src/main/AndroidManifest.xml`-də yalnız `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, `CAMERA`, `FOREGROUND_SERVICE(_MEDIA_PLAYBACK)`, `INTERNET`, `MODIFY_AUDIO_SETTINGS`, `VIBRATE` var; `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `RECORD_AUDIO`, `SYSTEM_ALERT_WINDOW` `tools:node="remove"` ilə çıxarılıb. **`READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` yoxdur**, ona görə Play-in «Photo and Video Permissions» deklarasiya forması bu build üçün tələb olunmur. Bu vəziyyət `expo-image-picker` konfiqurasiyası dəyişərsə pozula bilər — hər native build-dən sonra manifesti yenidən oxu.
+7. **Android icazələri — 1.3.8 AAB-ının özündən oxundu (23.09.2026).** Play mənbə faylını yox, **birləşmiş** manifesti göstərir, ona görə siyahı `base/manifest/AndroidManifest.xml`-dən çıxarılıb:
+
+   `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, `ACCESS_NETWORK_STATE`, `BIND_JOB_SERVICE`, `CAMERA`, `DUMP`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `INTERNET`, `MODIFY_AUDIO_SETTINGS`, `POST_NOTIFICATIONS`, `READ_APP_BADGE`, `RECEIVE_BOOT_COMPLETED`, `VIBRATE`, `WAKE_LOCK`.
+
+   Lokasiya və kamera tətbiqin özünündür (xəritə, QR); qalanları kitabxanalardan gəlir — bildirişlər (`POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `BIND_JOB_SERVICE`, `READ_APP_BADGE`), video oynadıcısı (`FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `MODIFY_AUDIO_SETTINGS`) və React Native (`ACCESS_NETWORK_STATE`, `DUMP`).
+
+   `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `RECORD_AUDIO`, `SYSTEM_ALERT_WINDOW` `app.json`-dakı `blockedPermissions` ilə çıxarılıb və birləşmiş manifestdə **yoxdur**. **`READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` də yoxdur**, ona görə Play-in «Photo and Video Permissions» deklarasiya forması bu build üçün tələb olunmur — `expo-image-picker` foto seçicisini (Photo Picker) işlədir, o isə icazə istəmir. Hər native build-dən sonra bu siyahını AAB-dan yenidən oxu.
 
 ---
 
