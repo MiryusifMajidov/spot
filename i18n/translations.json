@@ -10031,6 +10031,11 @@
   "en": "Your exact coordinates are shown to nobody and are not stored on the server — only the gym's own coordinates are stored, and its owner sets them."
  },
  {
+  "key": "Yüklədiyin video və şəkillərdən çəkiliş yeri (GPS) telefonda, fayl serverə getməzdən əvvəl silinir — kamera onu faylın içinə yazsa da.",
+  "ru": "Место съёмки (GPS) удаляется из загружаемых тобой видео и фотографий прямо на телефоне, до того как файл уйдёт на сервер, — даже если камера записала его внутрь файла.",
+  "en": "The filming location (GPS) is taken out of the videos and photos you upload on the phone itself, before the file leaves for the server — even when the camera wrote it inside the file."
+ },
+ {
   "key": "Hesabını tətbiqin içindən silə bilərsən: Profil → Məxfilik → Hesabı sil. Bu, profilini, məşqlərini, proqramlarını, videolarını, şərhlərini və yüklədiyin faylları silir; yazdığın zal rəyi qalır, amma adın onun üstündən götürülür.",
   "ru": "Аккаунт можно удалить прямо в приложении: Профиль → Конфиденциальность → Удалить аккаунт. Удаляются профиль, тренировки, программы, видео, комментарии и загруженные файлы; написанный тобой отзыв о зале остаётся, но твоё имя с него снимается.",
   "en": "You can delete your account from inside the app: Profile → Privacy → Delete account. That removes your profile, workouts, programs, videos, comments and uploaded files; a gym review you wrote stays, but your name is taken off it."
@@ -10051,13 +10056,23 @@
   "en": "SPOT is not a doctor. The programs and the weight suggestions in the app are not medical advice."
  },
  {
-  "key": "Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar), bildiriş göndərmək üçün Google FCM və Apple APNs, xəritə açılanda isə OpenStreetMap kafel serverləri — xəritə onlara IP ünvanını və baxdığın ərazinin koordinatlarını göstərir.",
-  "ru": "Приложение обращается к следующим сервисам: Supabase (база, вход и файлы), Google FCM и Apple APNs для отправки уведомлений, а при открытии карты — тайловые серверы OpenStreetMap: карта показывает им твой IP-адрес и координаты области, которую ты смотришь.",
-  "en": "These are the services the app talks to: Supabase (database, sign-in and files), Google FCM and Apple APNs to deliver notifications, and, when the map opens, the OpenStreetMap tile servers — the map shows them your IP address and the coordinates of the area you are looking at."
+  "key": "Lokasiya",
+  "ru": "Местоположение",
+  "en": "Location"
+ },
+ {
+  "key": "Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə OpenStreetMap kafel serverləri və Leaflet kitabxanasını verən unpkg.com — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür.",
+  "ru": "Приложение обращается к следующим сервисам: Supabase (база, вход и файлы); уведомления идут через push-сервис Expo (exp.host) в Google FCM и Apple APNs — текст сообщения, комментария или отзыва внутри уведомления не передаётся, только имя и событие; а при открытии карты — тайловые серверы OpenStreetMap и unpkg.com, откуда загружается библиотека Leaflet: они видят твой IP-адрес и координаты области, которую ты смотришь.",
+  "en": "These are the services the app talks to: Supabase (database, sign-in and files); notifications go through the Expo push service (exp.host) to Google FCM and Apple APNs — the text of a message, comment or review is never inside the notification, only a name and an event; and when the map opens, the OpenStreetMap tile servers and unpkg.com, which serves the Leaflet library: they see your IP address and the coordinates of the area you are looking at."
  },
  {
   "key": "Zal sahibi: yalnız öz zalının check-in qeydlərini və üzv sayını görür. Üzvün məşqini, yazışmasını və ya yerini görmür.",
   "ru": "Владелец зала: видит только отметки в своём зале и число участников. Тренировки, переписку и местоположение участника он не видит.",
   "en": "The gym owner: sees only the check-ins at their own gym and the member count. They do not see a member's workouts, messages or location."
+ },
+ {
+  "key": "23 sentyabr 2026",
+  "ru": "23 сентября 2026",
+  "en": "23 September 2026"
  }
 ]

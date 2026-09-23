@@ -107,30 +107,30 @@ html[data-lang="en"] .L:not(.en){display:none}
 <main class="wrap">
 <div class="L az" lang="az">
 <h1>Məxfilik siyasəti</h1>
-<p class="updated">Son yenilənmə: 3 sentyabr 2026</p>
+<p class="updated">Son yenilənmə: 23 sentyabr 2026</p>
 <p class="intro">Bu sənəd SPOT-un hansı məlumatı topladığını, niyə topladığını və kimin görə bildiyini yazır. Burada yazılmayan heç nə toplanmır.</p>
 <section>
 <h2>Nə toplayırıq</h2>
 <p>Profil: ad, istifadəçi adı, yaş, cins, məşq məqsədi, səviyyə, zal, məşq saatları, qısa bio, avatar.</p>
 <p>Məşq: etdiyin məşqlər, setlər, çəkilər, RPE, şəxsi rekordlar.</p>
-<p>Bədən ölçüləri: SPOT bu gün çəki və ya bədən fotosu toplamır — tətbiqdə belə ekran yoxdur.</p>
-<p>Check-in: hansı zalda və nə vaxt. Check-in zalın resepsiyasındakı QR kodu ilə (və ya həmin kodu əl ilə yazmaqla) olur — lokasiyadan istifadə edilmir və check-in zamanı heç bir koordinat göndərilmir.</p>
+<p>Check-in: hansı zalda, nə vaxt. Check-in zalın kodu və ya QR-ı ilə olur — telefonun yeri oxunmur.</p>
 <p>Ünsiyyət: mesajlar, şərhlər, postlar, videolar.</p>
 </section>
 <section>
 <h2>Kim nəyi görür</h2>
 <p>Digər istifadəçilər: adın, istifadəçi adın, yaşın, cinsin, zalın, məqsədin, səviyyən, bion, avatarın, paylaşdığın video və postlar.</p>
 <p>«İndi zalda» siyahısı: yalnız check-in-in qüvvədə olduğu müddətdə görünürsən. Vaxtı bitəndən sonra həmin qeyd başqalarına bağlanır. Profil → Məxfilik-dən tamamilə söndürə bilərsən.</p>
-<p>MƏŞQ TƏFƏRRÜATLARIN, ŞƏXSİ REKORDLARIN VƏ YAZIŞMALARIN heç kimə görünmür — nə digər istifadəçilərə, nə zal sahibinə, nə SPOT admininə. Bu, tətbiqin arzusu deyil, bazanın icazə qaydası ilə bağlanıb.</p>
-<p>Zal sahibi: yalnız öz zalının check-in qeydlərini və üzv sayını görür. Üzvün çəkisini, məşqini və ya yerini görmür.</p>
+<p>MƏŞQ TƏFƏRRÜATLARIN, ŞƏXSİ QEYDLƏRİN VƏ YAZIŞMALARIN heç kimə görünmür — nə digər istifadəçilərə, nə zal sahibinə, nə SPOT admininə. Bu, tətbiqin arzusu deyil, bazanın icazə qaydası ilə bağlanıb.</p>
+<p>Zal sahibi: yalnız öz zalının check-in qeydlərini və üzv sayını görür. Üzvün məşqini, yazışmasını və ya yerini görmür.</p>
 <p>Müəllim: yalnız onu qəbul etmiş şagirdin ona açdığı məşq datasını görür.</p>
-<p>Admin: şikayətlərə baxır. Çəki, foto, məşq və yazışma sorğusu admin panelində ümumiyyətlə yoxdur.</p>
+<p>Admin: şikayətlərə baxır. Məşq, foto və yazışma sorğusu admin panelində ümumiyyətlə yoxdur.</p>
 </section>
 <section>
 <h2>Lokasiya</h2>
-<p>Lokasiya yalnız bir yerdə istifadə olunur: Kəşf → Xəritədə yaxınlıqdakı zalları məsafəyə görə sıralamaq üçün. İcazə verməsən, xəritə yenə işləyir — sadəcə məsafə göstərilmir.</p>
+<p>Lokasiya yalnız iki halda istifadə olunur: xəritədə yaxınlıqdakı zalları sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.</p>
 <p>Fon rejimində izləmə yoxdur. Tətbiq bağlıdırsa yerin oxunmur.</p>
-<p>Dəqiq koordinatın heç kimə göstərilmir və heç bir cədvələ yazılmır: o, yalnız yaxın zalları məsafəyə görə sıralayan sorğunun cavabını hazırlamaq üçün işlədilir və dərhal atılır.</p>
+<p>Dəqiq koordinatın heç kimə göstərilmir və serverdə saxlanılmır — yalnız zalın öz koordinatı saxlanılır, onu isə zal sahibi özü qoyur.</p>
+<p>Yüklədiyin video və şəkillərdən çəkiliş yeri (GPS) telefonda, fayl serverə getməzdən əvvəl silinir — kamera onu faylın içinə yazsa da.</p>
 </section>
 <section>
 <h2>Haradadır</h2>
@@ -139,12 +139,13 @@ html[data-lang="en"] .L:not(.en){display:none}
 </section>
 <section>
 <h2>Reklam və üçüncü tərəflər</h2>
-<p>Reklam şəbəkəsi yoxdur. Analitika və çökmə (crash) SDK-sı yoxdur. Məlumatın satılmır və reklam məqsədilə heç kimə verilmir. Sənin adından işləyən xidmətlər bunlardır: məlumat Supabase-də saxlanılır; bildirişlər Expo, Google (FCM) və Apple (APNs) üzərindən çatdırılır — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir; xəritəni açdıqda xəritə lövhələri OpenStreetMap-dən, xəritə kitabxanası isə unpkg.com-dan yüklənir və həmin serverlər IP ünvanını və baxdığın sahəni görür.</p>
+<p>Reklam şəbəkəsi yoxdur. Analitika SDK-sı yoxdur. Məlumatın satılmır və reklam məqsədilə heç kimə verilmir.</p>
+<p>Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə OpenStreetMap kafel serverləri və Leaflet kitabxanasını verən unpkg.com — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür.</p>
 </section>
 <section>
 <h2>Sənin hüquqların</h2>
 <p>Profilini istənilən vaxt redaktə edə bilərsən.</p>
-<p>Hesabını tətbiqin içindən silə bilərsən: Profil → Məxfilik → Hesabı sil. Bu, profilini, məşq tarixçəni, şəxsi rekordlarını, check-in-lərini, yazışmalarını, videolarını, şərhlərini və yüklədiyin faylları silir. Tam siyahı «Hesabın silinməsi» səhifəsindədir.</p>
+<p>Hesabını tətbiqin içindən silə bilərsən: Profil → Məxfilik → Hesabı sil. Bu, profilini, məşqlərini, proqramlarını, videolarını, şərhlərini və yüklədiyin faylları silir; yazdığın zal rəyi qalır, amma adın onun üstündən götürülür.</p>
 <p>Görünürlüyünü söndürə bilərsən — bu halda kəşf siyahılarında və «indi zalda» siyahısında görünmürsən.</p>
 <p>Sualın varsa: <b class="blank">[DOLDURULMALI: əlaqə e-poçtu]</b>.</p>
 </section>
@@ -155,31 +156,31 @@ html[data-lang="en"] .L:not(.en){display:none}
 </div>
 <div class="L ru" lang="ru">
 <h1>Политика конфиденциальности</h1>
-<p class="updated">Последнее обновление: 3 сентября 2026</p>
+<p class="updated">Последнее обновление: 23 сентября 2026</p>
 <p class="intro">В этом документе описано, какие данные собирает SPOT, зачем он их собирает и кто может их видеть. Ничего, что здесь не указано, не собирается.</p>
 <p class="note">Это перевод. Юридическую силу имеет текст на азербайджанском языке; в случае расхождений за основу принимается он.</p>
 <section>
 <h2>Что мы собираем</h2>
 <p>Профиль: имя, имя пользователя, возраст, пол, цель тренировок, уровень, зал, время тренировок, короткое био, аватар.</p>
 <p>Тренировки: выполненные тобой тренировки, подходы, веса, RPE, личные рекорды.</p>
-<p>Данные о теле: сегодня SPOT не собирает вес и фотографии тела — такого экрана в приложении нет.</p>
-<p>Check-in: в каком зале и когда. Check-in делается по QR-коду на ресепшене зала (или вводом этого кода вручную) — местоположение не используется, и при check-in никакие координаты не отправляются.</p>
+<p>Check-in: в каком зале и когда. Отметка делается кодом зала или QR — местоположение телефона не считывается.</p>
 <p>Общение: сообщения, комментарии, посты, видео.</p>
 </section>
 <section>
 <h2>Кто что видит</h2>
 <p>Другие пользователи: твоё имя, имя пользователя, возраст, пол, зал, цель, уровень, био, аватар, опубликованные тобой видео и посты.</p>
 <p>Список «Сейчас в зале»: тебя видно только пока действует твой check-in. После истечения его срока эта запись закрывается для других. Полностью отключить это можно в разделе Профиль → Конфиденциальность.</p>
-<p>ПОДРОБНОСТИ ТВОИХ ТРЕНИРОВОК, ЛИЧНЫЕ РЕКОРДЫ И ПЕРЕПИСКА не видны никому — ни другим пользователям, ни владельцу зала, ни администратору SPOT. Это не пожелание приложения: доступ закрыт правилом разрешений базы данных.</p>
-<p>Владелец зала: видит только записи check-in своего зала и число участников. Вес, тренировки или местоположение участника он не видит.</p>
+<p>ДЕТАЛИ ТВОИХ ТРЕНИРОВОК, ЛИЧНЫЕ ЗАМЕТКИ И ПЕРЕПИСКА не видны никому — ни другим пользователям, ни владельцу зала, ни администратору SPOT. Это не пожелание приложения: так закрыто правилами доступа самой базы данных.</p>
+<p>Владелец зала: видит только отметки в своём зале и число участников. Тренировки, переписку и местоположение участника он не видит.</p>
 <p>Тренер: видит только те данные о тренировках, к которым ему открыл доступ принявший его ученик.</p>
-<p>Администратор: рассматривает жалобы. Запросов к данным о весе, фото, тренировках и переписке в панели администратора нет вообще.</p>
+<p>Администратор: рассматривает жалобы. Запроса к тренировкам, фото и переписке в админ-панели нет вообще.</p>
 </section>
 <section>
 <h2>Местоположение</h2>
-<p>Местоположение используется только в одном месте: в «Обзор → Карта», чтобы отсортировать ближайшие залы по расстоянию. Если ты не дашь разрешение, карта всё равно работает — просто без расстояний.</p>
+<p>Местоположение используется только в двух случаях: чтобы показать на карте ближайшие залы и когда владелец зала отмечает место своего зала на карте.</p>
 <p>Фонового отслеживания нет. Если приложение закрыто, твоё местоположение не считывается.</p>
-<p>Твои точные координаты никому не показываются и не записываются ни в одну таблицу: они используются только для того, чтобы построить ответ на запрос ближайших залов по расстоянию, и сразу отбрасываются.</p>
+<p>Твои точные координаты никому не показываются и на сервере не хранятся — хранятся только координаты самого зала, и их ставит его владелец.</p>
+<p>Место съёмки (GPS) удаляется из загружаемых тобой видео и фотографий прямо на телефоне, до того как файл уйдёт на сервер, — даже если камера записала его внутрь файла.</p>
 </section>
 <section>
 <h2>Где находятся данные</h2>
@@ -188,12 +189,13 @@ html[data-lang="en"] .L:not(.en){display:none}
 </section>
 <section>
 <h2>Реклама и третьи стороны</h2>
-<p>Рекламной сети нет. SDK аналитики и сбора сбоев нет. Твои данные не продаются и никому не передаются для рекламы. От твоего имени работают только эти сервисы: данные хранятся в Supabase; уведомления доставляются через Expo, Google (FCM) и Apple (APNs) — текст сообщения, комментария или отзыва внутри уведомления не передаётся; когда ты открываешь карту, плитки карты загружаются с OpenStreetMap, а библиотека карты — с unpkg.com, и эти серверы видят твой IP-адрес и область, которую ты смотришь.</p>
+<p>Рекламной сети нет. SDK аналитики нет. Твои данные не продаются и никому не передаются в рекламных целях.</p>
+<p>Приложение обращается к следующим сервисам: Supabase (база, вход и файлы); уведомления идут через push-сервис Expo (exp.host) в Google FCM и Apple APNs — текст сообщения, комментария или отзыва внутри уведомления не передаётся, только имя и событие; а при открытии карты — тайловые серверы OpenStreetMap и unpkg.com, откуда загружается библиотека Leaflet: они видят твой IP-адрес и координаты области, которую ты смотришь.</p>
 </section>
 <section>
 <h2>Твои права</h2>
 <p>Ты можешь в любой момент редактировать свой профиль.</p>
-<p>Ты можешь удалить аккаунт прямо в приложении: Профиль → Конфиденциальность → Удалить аккаунт. При этом удаляются твой профиль, история тренировок, личные рекорды, check-in, переписка, видео, комментарии и загруженные тобой файлы. Полный список — на странице «Удаление аккаунта».</p>
+<p>Аккаунт можно удалить прямо в приложении: Профиль → Конфиденциальность → Удалить аккаунт. Удаляются профиль, тренировки, программы, видео, комментарии и загруженные файлы; написанный тобой отзыв о зале остаётся, но твоё имя с него снимается.</p>
 <p>Ты можешь отключить свою видимость — в этом случае тебя не видно в списках «Обзора» и в списке «Сейчас в зале».</p>
 <p>Если у тебя есть вопрос: <b class="blank">[DOLDURULMALI: əlaqə e-poçtu]</b>.</p>
 </section>
@@ -204,31 +206,31 @@ html[data-lang="en"] .L:not(.en){display:none}
 </div>
 <div class="L en" lang="en">
 <h1>Privacy Policy</h1>
-<p class="updated">Last updated: 3 September 2026</p>
+<p class="updated">Last updated: 23 September 2026</p>
 <p class="intro">This document describes what data SPOT collects, why it collects it and who can see it. Nothing that is not written here is collected.</p>
 <p class="note">This is a translation. The legally binding text is the Azerbaijani version; in case of any discrepancy, it prevails.</p>
 <section>
 <h2>What we collect</h2>
 <p>Profile: name, username, age, gender, training goal, level, gym, training hours, short bio, avatar.</p>
 <p>Workouts: the workouts you do, sets, weights, RPE, personal records.</p>
-<p>Body data: SPOT does not collect body weight or body photos today — the app has no such screen.</p>
-<p>Check-in: which gym and when. A check-in is made with the QR code at the gym’s reception (or by typing that code in by hand) — location is not used, and no coordinates are sent when you check in.</p>
+<p>Check-in: which gym, and when. A check-in is made with the gym's code or QR — the phone's location is not read.</p>
 <p>Communication: messages, comments, posts, videos.</p>
 </section>
 <section>
 <h2>Who sees what</h2>
 <p>Other users: your name, username, age, gender, gym, goal, level, bio, avatar, and the videos and posts you share.</p>
 <p>The "In the gym now" list: you appear only while your check-in is in effect. Once it expires, that record is closed to others. You can turn it off completely in Profile → Privacy.</p>
-<p>YOUR WORKOUT DETAILS, PERSONAL RECORDS AND MESSAGES are not visible to anyone — not to other users, not to the gym owner, not to the SPOT admin. This is not a wish of the app; it is locked by the database’s permission rule.</p>
-<p>Gym owner: sees only their own gym's check-in records and member count. They do not see a member's weight, workouts or location.</p>
+<p>YOUR WORKOUT DETAILS, PRIVATE NOTES AND MESSAGES are visible to nobody — not to other people, not to the gym owner, not to a SPOT admin. That is not the app's wish: it is closed off by the database's own access rules.</p>
+<p>The gym owner: sees only the check-ins at their own gym and the member count. They do not see a member's workouts, messages or location.</p>
 <p>Trainer: sees only the workout data that a student who has accepted them has opened to them.</p>
-<p>Admin: reviews reports. The admin panel has no query for weight, photos, workouts or messages at all.</p>
+<p>Admin: reviews reports. The admin panel has no query for workouts, photos or messages at all.</p>
 </section>
 <section>
 <h2>Location</h2>
-<p>Location is used in one place only: on Discover → Map, to sort nearby gyms by distance. If you do not give permission the map still works — it just shows no distances.</p>
+<p>Location is used in two cases only: to rank nearby gyms on the map, and when a gym owner pins their own gym on the map.</p>
 <p>There is no background tracking. If the app is closed, your location is not read.</p>
-<p>Your exact coordinates are shown to no one and written to no table: they are used only to build the answer to the nearby-gyms-by-distance query, and are discarded immediately.</p>
+<p>Your exact coordinates are shown to nobody and are not stored on the server — only the gym's own coordinates are stored, and its owner sets them.</p>
+<p>The filming location (GPS) is taken out of the videos and photos you upload on the phone itself, before the file leaves for the server — even when the camera wrote it inside the file.</p>
 </section>
 <section>
 <h2>Where the data is</h2>
@@ -237,12 +239,13 @@ html[data-lang="en"] .L:not(.en){display:none}
 </section>
 <section>
 <h2>Advertising and third parties</h2>
-<p>There is no ad network. There is no analytics or crash SDK. Your data is not sold and is given to no one for advertising. The services that act on your behalf are these: your data is stored in Supabase; notifications are delivered through Expo, Google (FCM) and Apple (APNs) — the text of a message, comment or review is never inside the notification; and when you open the map, the map tiles are loaded from OpenStreetMap and the map library from unpkg.com, so those servers see your IP address and the area you are looking at.</p>
+<p>There is no ad network. There is no analytics SDK. Your data is not sold and is not given to anyone for advertising purposes.</p>
+<p>These are the services the app talks to: Supabase (database, sign-in and files); notifications go through the Expo push service (exp.host) to Google FCM and Apple APNs — the text of a message, comment or review is never inside the notification, only a name and an event; and when the map opens, the OpenStreetMap tile servers and unpkg.com, which serves the Leaflet library: they see your IP address and the coordinates of the area you are looking at.</p>
 </section>
 <section>
 <h2>Your rights</h2>
 <p>You can edit your profile at any time.</p>
-<p>You can delete your account from inside the app: Profile → Privacy → Delete account. That removes your profile, your training history, your personal records, your check-ins, your conversations, your videos, your comments and the files you uploaded. The full list is on the “Deleting your account” page.</p>
+<p>You can delete your account from inside the app: Profile → Privacy → Delete account. That removes your profile, workouts, programs, videos, comments and uploaded files; a gym review you wrote stays, but your name is taken off it.</p>
 <p>You can turn off your visibility — in that case you don't appear in Discover lists or in the "In the gym now" list.</p>
 <p>If you have a question: <b class="blank">[DOLDURULMALI: əlaqə e-poçtu]</b>.</p>
 </section>

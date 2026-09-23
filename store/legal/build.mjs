@@ -69,118 +69,27 @@ function stripDict(s) {
 const { LEGAL, OPERATOR, CONTACT } = az;
 
 /**
- * Gaps in the app's own legal dictionaries, filled here so the web pages are
- * complete in all three languages.
+ * OVERRIDES and CORRECTIONS — both empty, and that is the point.
  *
- * «Lokasiya» is a section heading of the Privacy Policy that was never
- * translated: `src/i18n/{ru,en}/legal.ts` translate every sentence of that
- * section but not its title, so a Russian or English reader sees an
- * Azerbaijani heading in the app today. The wording below is taken straight
- * from the first sentence of that same section, which both dictionaries
- * already translate («Местоположение…» / «Location…»).
+ * They existed because the published policy had to describe the build being
+ * submitted while `src/lib/legal.ts` still carried sentences that were no
+ * longer true (body weight, check-in by location, phone numbers, meal plans,
+ * the third parties the app talks to). Every one of those sentences has since
+ * been fixed at the source, so the website and the in-app screen now say the
+ * same thing — which is the only state in which a privacy policy can be
+ * trusted.
  *
- * This is a local patch for the website only — src/ is not modified. The build
- * prints every override it used, so the same strings can be added to the app
- * dictionaries and this table emptied.
+ * Keep them empty. If a sentence is wrong, it is wrong in the app too: fix
+ * `src/lib/legal.ts` and `i18n/translations.json` (then regenerate), rather
+ * than patching the public copy and leaving the app lying to the same reader.
+ *
+ * OVERRIDES fills a translation the dictionaries do not have; CORRECTIONS
+ * replaces a sentence (`null` drops it). The build prints a loud warning for
+ * any entry here that no longer matches a sentence in the source.
  */
-const OVERRIDES = {
-  Lokasiya: { ru: 'Местоположение', en: 'Location' },
-};
+const OVERRIDES = {};
 
-/**
- * CORRECTIONS — sentences of `src/lib/legal.ts` that are NO LONGER TRUE of the
- * app, rewritten here so the published policy describes the build that is being
- * submitted.
- *
- * This is not a style pass. Each entry below was checked against the code and
- * against the live database on 23.09.2026, and each one currently contradicts
- * `store/data-safety.md` — the answers that go into Play's «Data safety» form
- * and App Store Connect's «App Privacy». A reviewer reads both, and a privacy
- * policy that describes collection the form denies is a rejection.
- *
- *   · body weight / progress photos — the weight screen was removed and nothing
- *     writes `public.progress` any more (`src/lib/api.ts`: the writer is gone,
- *     `getLatestWeight` has no caller); a progress-photo feature never existed —
- *     only a dead AsyncStorage key. The forms answer `Health info` = No.
- *   · check-in and location — schema74 replaced the 150 m radius check with the
- *     QR code at reception. `check_in_with_code()` receives a code and nothing
- *     else; `check_ins` has no coordinate column.
- *   · phone number — sign-in by phone was removed (`src/app/auth/sign-in.tsx`),
- *     `profiles.phone` carries no SELECT grant for `anon`/`authenticated`, and
- *     the live table holds zero numbers. The forms answer `Phone number` = No.
- *   · third parties — the map WebView loads Leaflet from unpkg.com and tiles
- *     from tile.openstreetmap.org, so opening the map shows those servers an IP
- *     address. The policy promises «nothing that is not written here», so it
- *     has to be written here.
- *   · meal plans — `NutritionToday` and the calorie/protein totals were deleted
- *     (`src/store/db.ts`), so the health disclaimer disclaimed a screen that
- *     does not exist.
- *
- * THE APP STILL SHOWS THE OLD SENTENCES. `src/` is out of scope for this
- * folder, so until `src/lib/legal.ts` and `src/i18n/{ru,en}/legal.ts` are
- * updated, the in-app screen and this website differ. README.md §1a carries the
- * exact replacement strings for that edit; when it is done, empty this table.
- *
- * Key = the Azerbaijani source string, verbatim. Value = the replacement in all
- * three languages, or `null` to drop the sentence.
- */
-const CORRECTIONS = {
-  // ---------------------------------------------------------- privacy policy
-  'Bədən: qeyd etdiyin çəki və istəsən progress fotoları.': {
-    az: 'Bədən ölçüləri: SPOT bu gün çəki və ya bədən fotosu toplamır — tətbiqdə belə ekran yoxdur.',
-    ru: 'Данные о теле: сегодня SPOT не собирает вес и фотографии тела — такого экрана в приложении нет.',
-    en: 'Body data: SPOT does not collect body weight or body photos today — the app has no such screen.',
-  },
-  'Check-in: hansı zalda, nə vaxt. Check-in anında telefonun yerini zalın koordinatı ilə müqayisə edirik — məsafə yoxlanılır, sənin koordinatın YADDA SAXLANILMIR.':
-    {
-      az: 'Check-in: hansı zalda və nə vaxt. Check-in zalın resepsiyasındakı QR kodu ilə (və ya həmin kodu əl ilə yazmaqla) olur — lokasiyadan istifadə edilmir və check-in zamanı heç bir koordinat göndərilmir.',
-      ru: 'Check-in: в каком зале и когда. Check-in делается по QR-коду на ресепшене зала (или вводом этого кода вручную) — местоположение не используется, и при check-in никакие координаты не отправляются.',
-      en: 'Check-in: which gym and when. A check-in is made with the QR code at the gym’s reception (or by typing that code in by hand) — location is not used, and no coordinates are sent when you check in.',
-    },
-  'Telefon nömrəsi (əgər yazmısansa) — yalnız sənə görünür.': null,
-  /* Same sentence, minus the two things that are not collected: naming
-     «progress photos» in the list of what nobody can see still tells the reader
-     the app takes them. `workouts` / `prs` / `progress` carry one policy each —
-     `profile_id in (select id from profiles where user_id = auth.uid())` — and
-     no admin policy, which is what the last clause is about. */
-  'ÇƏKİN, PROGRESS FOTOLARIN, MƏŞQ TƏFƏRRÜATLARIN VƏ YAZIŞMALARIN heç kimə görünmür — nə digər istifadəçilərə, nə zal sahibinə, nə SPOT admininə. Bu, tətbiqin arzusu deyil, bazanın icazə qaydası ilə bağlanıb.':
-    {
-      az: 'MƏŞQ TƏFƏRRÜATLARIN, ŞƏXSİ REKORDLARIN VƏ YAZIŞMALARIN heç kimə görünmür — nə digər istifadəçilərə, nə zal sahibinə, nə SPOT admininə. Bu, tətbiqin arzusu deyil, bazanın icazə qaydası ilə bağlanıb.',
-      ru: 'ПОДРОБНОСТИ ТВОИХ ТРЕНИРОВОК, ЛИЧНЫЕ РЕКОРДЫ И ПЕРЕПИСКА не видны никому — ни другим пользователям, ни владельцу зала, ни администратору SPOT. Это не пожелание приложения: доступ закрыт правилом разрешений базы данных.',
-      en: 'YOUR WORKOUT DETAILS, PERSONAL RECORDS AND MESSAGES are not visible to anyone — not to other users, not to the gym owner, not to the SPOT admin. This is not a wish of the app; it is locked by the database’s permission rule.',
-    },
-  'Lokasiya yalnız iki halda istifadə olunur: yaxınlıqdakı zalları sıralamaq və check-in zamanı zalda olduğunu yoxlamaq.':
-    {
-      az: 'Lokasiya yalnız bir yerdə istifadə olunur: Kəşf → Xəritədə yaxınlıqdakı zalları məsafəyə görə sıralamaq üçün. İcazə verməsən, xəritə yenə işləyir — sadəcə məsafə göstərilmir.',
-      ru: 'Местоположение используется только в одном месте: в «Обзор → Карта», чтобы отсортировать ближайшие залы по расстоянию. Если ты не дашь разрешение, карта всё равно работает — просто без расстояний.',
-      en: 'Location is used in one place only: on Discover → Map, to sort nearby gyms by distance. If you do not give permission the map still works — it just shows no distances.',
-    },
-  'Dəqiq koordinatın heç kimə göstərilmir və check-in üçün istifadə olunandan sonra saxlanılmır.': {
-    az: 'Dəqiq koordinatın heç kimə göstərilmir və heç bir cədvələ yazılmır: o, yalnız yaxın zalları məsafəyə görə sıralayan sorğunun cavabını hazırlamaq üçün işlədilir və dərhal atılır.',
-    ru: 'Твои точные координаты никому не показываются и не записываются ни в одну таблицу: они используются только для того, чтобы построить ответ на запрос ближайших залов по расстоянию, и сразу отбрасываются.',
-    en: 'Your exact coordinates are shown to no one and written to no table: they are used only to build the answer to the nearby-gyms-by-distance query, and are discarded immediately.',
-  },
-  'Reklam şəbəkəsi yoxdur. Analitika SDK-sı yoxdur. Məlumatın satılmır və reklam məqsədilə heç kimə verilmir.':
-    {
-      az: 'Reklam şəbəkəsi yoxdur. Analitika və çökmə (crash) SDK-sı yoxdur. Məlumatın satılmır və reklam məqsədilə heç kimə verilmir. Sənin adından işləyən xidmətlər bunlardır: məlumat Supabase-də saxlanılır; bildirişlər Expo, Google (FCM) və Apple (APNs) üzərindən çatdırılır — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir; xəritəni açdıqda xəritə lövhələri OpenStreetMap-dən, xəritə kitabxanası isə unpkg.com-dan yüklənir və həmin serverlər IP ünvanını və baxdığın sahəni görür.',
-      ru: 'Рекламной сети нет. SDK аналитики и сбора сбоев нет. Твои данные не продаются и никому не передаются для рекламы. От твоего имени работают только эти сервисы: данные хранятся в Supabase; уведомления доставляются через Expo, Google (FCM) и Apple (APNs) — текст сообщения, комментария или отзыва внутри уведомления не передаётся; когда ты открываешь карту, плитки карты загружаются с OpenStreetMap, а библиотека карты — с unpkg.com, и эти серверы видят твой IP-адрес и область, которую ты смотришь.',
-      en: 'There is no ad network. There is no analytics or crash SDK. Your data is not sold and is given to no one for advertising. The services that act on your behalf are these: your data is stored in Supabase; notifications are delivered through Expo, Google (FCM) and Apple (APNs) — the text of a message, comment or review is never inside the notification; and when you open the map, the map tiles are loaded from OpenStreetMap and the map library from unpkg.com, so those servers see your IP address and the area you are looking at.',
-    },
-  'Hesabını tətbiqin içindən silə bilərsən: Profil → Məxfilik → Hesabı sil. Bu, profilini, məşqlərini, çəki qeydlərini, videolarını, şərhlərini və yüklədiyin faylları silir.':
-    {
-      az: 'Hesabını tətbiqin içindən silə bilərsən: Profil → Məxfilik → Hesabı sil. Bu, profilini, məşq tarixçəni, şəxsi rekordlarını, check-in-lərini, yazışmalarını, videolarını, şərhlərini və yüklədiyin faylları silir. Tam siyahı «Hesabın silinməsi» səhifəsindədir.',
-      ru: 'Ты можешь удалить аккаунт прямо в приложении: Профиль → Конфиденциальность → Удалить аккаунт. При этом удаляются твой профиль, история тренировок, личные рекорды, check-in, переписка, видео, комментарии и загруженные тобой файлы. Полный список — на странице «Удаление аккаунта».',
-      en: 'You can delete your account from inside the app: Profile → Privacy → Delete account. That removes your profile, your training history, your personal records, your check-ins, your conversations, your videos, your comments and the files you uploaded. The full list is on the “Deleting your account” page.',
-    },
-  // ------------------------------------------------------------------ terms
-  'SPOT həkim deyil. Tətbiqdəki proqramlar, çəki təklifləri və qidalanma nümunələri tibbi məsləhət deyil.':
-    {
-      az: 'SPOT həkim deyil. Tətbiqdəki proqramlar və çəki təklifləri tibbi məsləhət deyil.',
-      ru: 'SPOT — не врач. Программы и предлагаемые веса в приложении — это не медицинская консультация.',
-      en: 'SPOT is not a doctor. The programs and the suggested weights in the app are not medical advice.',
-    },
-};
-
+const CORRECTIONS = {};
 const usedCorrections = new Set();
 
 /** The sentence as it must appear on the website: the correction if there is
@@ -220,7 +129,7 @@ const LANG_LABEL = { az: 'AZ', ru: 'RU', en: 'EN' };
 /** The update date, formatted in each language. The app interpolates the
  *  Azerbaijani date into every language; on a public page a Russian reader
  *  gets a Russian date. Same day, three spellings — no clause changes. */
-const UPDATED = { az: '3 sentyabr 2026', ru: '3 сентября 2026', en: '3 September 2026' };
+const UPDATED = { az: '23 sentyabr 2026', ru: '23 сентября 2026', en: '23 September 2026' };
 
 /** Exact in-app labels, copied from src/i18n/{ru,en}/system.ts so the
  *  instructions on the delete page name the buttons the user actually sees. */

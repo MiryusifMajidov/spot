@@ -35,7 +35,7 @@ export interface LegalContent {
 export const OPERATOR = '[DOLDURULMALI: operator şirkətin/şəxsin adı]';
 export const CONTACT = '[DOLDURULMALI: əlaqə e-poçtu]';
 
-const UPDATED = '3 sentyabr 2026';
+const UPDATED = '23 sentyabr 2026';
 
 export const LEGAL: Record<LegalDoc, LegalContent> = {
   terms: {
@@ -142,6 +142,7 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
           'Lokasiya yalnız iki halda istifadə olunur: xəritədə yaxınlıqdakı zalları sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.',
           'Fon rejimində izləmə yoxdur. Tətbiq bağlıdırsa yerin oxunmur.',
           'Dəqiq koordinatın heç kimə göstərilmir və serverdə saxlanılmır — yalnız zalın öz koordinatı saxlanılır, onu isə zal sahibi özü qoyur.',
+          'Yüklədiyin video və şəkillərdən çəkiliş yeri (GPS) telefonda, fayl serverə getməzdən əvvəl silinir — kamera onu faylın içinə yazsa da.',
         ],
       },
       {
@@ -155,7 +156,7 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
         heading: 'Reklam və üçüncü tərəflər',
         body: [
           'Reklam şəbəkəsi yoxdur. Analitika SDK-sı yoxdur. Məlumatın satılmır və reklam məqsədilə heç kimə verilmir.',
-          'Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar), bildiriş göndərmək üçün Google FCM və Apple APNs, xəritə açılanda isə OpenStreetMap kafel serverləri — xəritə onlara IP ünvanını və baxdığın ərazinin koordinatlarını göstərir.',
+          'Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə OpenStreetMap kafel serverləri və Leaflet kitabxanasını verən unpkg.com — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür.',
         ],
       },
       {

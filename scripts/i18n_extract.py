@@ -28,6 +28,10 @@ I18N = os.path.normpath(os.path.join(SRC, "i18n"))
 # SPOT's own content, rendered through t(value). NOT user content.
 DATA_FILES = ["src/store/db.ts", "src/data/mock.ts", "src/lib/notifications.ts", "src/lib/legal.ts"]
 
+# Files that are nothing BUT prose: every string literal in them is shown to a
+# person, so none of them may be skipped for looking like ASCII.
+PROSE_FILES = ["src/lib/legal.ts"]
+
 CALL = re.compile(
     r"""\b(?:t|tr)\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")""",
     re.S,
@@ -102,7 +106,20 @@ def main():
         body = strip_comments(io.open(f, encoding="utf-8").read())
         for m in LIT.finditer(body):
             raw = m.group(1) if m.group(1) is not None else m.group(2)
-            if not raw or not any(c in AZ for c in raw):
+            if not raw:
+                continue
+            # The Azerbaijani-letter test is what tells a sentence apart from an
+            # identifier, a url or a storage key. PROSE_FILES are exempt: every
+            # literal in them is text somebody reads, and the test silently lost
+            # the ones that happen to be spelled in plain ASCII -- the heading
+            # «Lokasiya» went untranslated onto the published privacy policy
+            # («Местоположение» / «Location») for exactly this reason.
+            if f not in PROSE_FILES and not any(c in AZ for c in raw):
+                continue
+            # …but a prose file still holds a few identifiers-as-literals
+            # ('terms', 'privacy', 'rules' name the three documents). A
+            # lower-case ASCII token with no space is never a sentence.
+            if not any(c in AZ for c in raw) and re.fullmatch(r"[a-z][a-z0-9_-]*", raw):
                 continue
             k = unescape(raw).strip()
             if not k:

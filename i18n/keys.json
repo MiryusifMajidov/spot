@@ -16302,6 +16302,15 @@
   "placeholders": []
  },
  {
+  "key": "23 sentyabr 2026",
+  "counted": false,
+  "files": [
+   "src/lib/legal.ts"
+  ],
+  "kind": "data",
+  "placeholders": []
+ },
+ {
   "key": "Admin: şikayətlərə baxır. Məşq, foto və yazışma sorğusu admin panelində ümumiyyətlə yoxdur.",
   "counted": false,
   "files": [
@@ -16510,6 +16519,15 @@
  },
  {
   "key": "Kimsə səni narahat edirsə: profilində «Blok et» — həmin an qarşılıqlı gizlənirsiniz — və «Şikayət et».",
+  "counted": false,
+  "files": [
+   "src/lib/legal.ts"
+  ],
+  "kind": "data",
+  "placeholders": []
+ },
+ {
+  "key": "Lokasiya",
   "counted": false,
   "files": [
    "src/lib/legal.ts"
@@ -16847,7 +16865,7 @@
   "placeholders": []
  },
  {
-  "key": "Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar), bildiriş göndərmək üçün Google FCM və Apple APNs, xəritə açılanda isə OpenStreetMap kafel serverləri — xəritə onlara IP ünvanını və baxdığın ərazinin koordinatlarını göstərir.",
+  "key": "Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə OpenStreetMap kafel serverləri və Leaflet kitabxanasını verən unpkg.com — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür.",
   "counted": false,
   "files": [
    "src/lib/legal.ts"
@@ -16875,6 +16893,15 @@
  },
  {
   "key": "Yalnız özünə aid, çəkməyə haqqın olan məzmunu yerləşdir. Başqasının videosunu, musiqisini və ya fotosunu icazəsiz yükləmə.",
+  "counted": false,
+  "files": [
+   "src/lib/legal.ts"
+  ],
+  "kind": "data",
+  "placeholders": []
+ },
+ {
+  "key": "Yüklədiyin video və şəkillərdən çəkiliş yeri (GPS) telefonda, fayl serverə getməzdən əvvəl silinir — kamera onu faylın içinə yazsa da.",
   "counted": false,
   "files": [
    "src/lib/legal.ts"

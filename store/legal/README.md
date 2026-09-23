@@ -47,51 +47,43 @@ does not actually give a working route, and Play's reviewer checks it.
 
 ---
 
-## 1a. Eight sentences the website corrects, and the app still gets wrong
+## 1a. The eight sentences that were wrong — fixed at the source
 
 A fact-check against the code and the live database (23.09.2026) found eight
-sentences in `src/lib/legal.ts` that are **no longer true of the build being
-submitted**, and every one of them contradicts `store/data-safety.md` — the
+sentences in `src/lib/legal.ts` that were **no longer true of the build being
+submitted**, and every one of them contradicted `store/data-safety.md` — the
 answers that go into Play's «Data safety» form and App Store Connect's «App
 Privacy». A reviewer reads the policy and the form side by side; a policy that
 describes collection the form denies is a rejection, not a typo.
 
-They are corrected in `build.mjs` (the `CORRECTIONS` table, which prints every
-entry it used on each run) so the published pages describe the real app. **The
-app screen still shows the old text.** Until `src/lib/legal.ts` and
-`src/i18n/{ru,en}/legal.ts` are updated, Profil → Parametrlər and this website
-disagree — so make the edit below, re-run the build, and empty the table. A
-correction whose key stops matching a sentence in `src/lib/legal.ts` fails the
-build instead of silently republishing the old wording.
+| # | What it said | Why it was wrong |
+|---|---|---|
+| 1 | «Bədən: qeyd etdiyin çəki və istəsən progress fotoları.» | The weight screen was removed and nothing writes `public.progress`; a progress-photo feature never existed (only a dead AsyncStorage key). |
+| 2 | «Check-in anında telefonun yerini zalın koordinatı ilə müqayisə edirik» | Check-in is the reception QR code since schema74. The RPC takes a code and nothing else, and `check_ins` has no coordinate column. |
+| 3 | «Telefon nömrəsi (əgər yazmısansa) — yalnız sənə görünür.» | Sign-in by phone was removed, `profiles.phone` carries no SELECT grant for `anon`/`authenticated`, and the live table holds zero numbers. |
+| 4 | «ÇƏKİN, PROGRESS FOTOLARIN … görünmür» | Same as 1 — listing them among the things nobody can see still tells the reader the app takes them. |
+| 5 | «Lokasiya yalnız iki halda … check-in zamanı zalda olduğunu yoxlamaq» | Check-in does not read location at all. |
+| 6 | «…check-in üçün istifadə olunandan sonra saxlanılmır» | Right conclusion, wrong reason: the coordinate is never written anywhere. |
+| 7 | «Reklam şəbəkəsi yoxdur…» (nothing else named) | True but incomplete, in a document that promises «Burada yazılmayan heç nə toplanmır». Opening the map shows unpkg.com (Leaflet) and tile.openstreetmap.org an IP address; push goes through Expo's own service (exp.host) before FCM and APNs. |
+| 8 | «…çəki təklifləri və **qidalanma nümunələri** tibbi məsləhət deyil» | The meal planner was deleted, so the disclaimer disclaimed a screen that is not there. |
 
-| # | The app says | Why it is wrong | Proof |
-|---|---|---|---|
-| 1 | «Bədən: qeyd etdiyin çəki və istəsən progress fotoları.» | The weight screen was removed and nothing writes `public.progress`; a progress-photo feature never existed (only a dead AsyncStorage key). | `src/lib/api.ts` — the writer is gone, `getLatestWeight()` has no caller; `src/app/(tabs)/profile/privacy.tsx` |
-| 2 | «Check-in anında telefonun yerini zalın koordinatı ilə müqayisə edirik» | Check-in is the reception QR code since schema74. The RPC takes a code and nothing else, and `check_ins` has no coordinate column. | `supabase/schema74_qr_checkin.sql` → `check_in_with_code(p_code text)` |
-| 3 | «Telefon nömrəsi (əgər yazmısansa) — yalnız sənə görünür.» | Sign-in by phone was removed, `profiles.phone` carries no SELECT grant for `anon`/`authenticated`, and the live table holds zero numbers. Both forms answer «Phone number: No». | `src/app/auth/sign-in.tsx`; live column grants |
-| 4 | «ÇƏKİN, PROGRESS FOTOLARIN … görünmür» | Same as 1 — listing them among the things nobody can see still tells the reader the app takes them. | as 1 |
-| 5 | «Lokasiya yalnız iki halda … check-in zamanı zalda olduğunu yoxlamaq» | One case, not two: sorting gyms by distance on the map. Check-in does not read location at all. | `src/app/(tabs)/discover/map.tsx`, `gyms_near()` |
-| 6 | «…check-in üçün istifadə olunandan sonra saxlanılmır» | Right conclusion, wrong reason. The coordinate is never written anywhere; it only builds the nearby-gyms answer. | `gyms_near()` is pure SQL — it writes and logs nothing |
-| 7 | «Reklam şəbəkəsi yoxdur…» (nothing else named) | True but incomplete, in a document that promises «Burada yazılmayan heç nə toplanmır». Opening the map shows unpkg.com and tile.openstreetmap.org an IP address; push goes through Expo, FCM and APNs. | `src/components/SpotMap.tsx`; `supabase/schema61_push.sql` |
-| 8 | «…çəki təklifləri və **qidalanma nümunələri** tibbi məsləhət deyil» | The meal planner was deleted — `NutritionToday`, the calorie/protein/water totals, all gone. The disclaimer disclaims a screen that is not there. | `src/store/db.ts`, the comment where `NutritionToday` used to be |
+All eight are now corrected in `src/lib/legal.ts` and `i18n/translations.json`,
+so **the app screen and these pages say the same thing** and the `CORRECTIONS`
+table in `build.mjs` is empty. Keep it that way: if a sentence is wrong it is
+wrong in the app too, and patching only the public copy leaves the app lying to
+the same reader. The build prints a loud warning for any entry that no longer
+matches a sentence in the source.
+
+Two more things the source now says, and the pages with it: the filming
+location (GPS) is stripped from uploaded videos and photos on the phone before
+the file is sent (`src/lib/videoMeta.ts`), and a deleted account's gym review
+stays with the gym but loses the name (`supabase/schema87_review_detach.sql`).
 
 `delete-account.html` carried two of the same claims in its own text (weight
 measurements and progress photos among «Nə silinir», and a phone number among
 the profile fields). Both are fixed directly in `build.mjs`, and a missing item
 was added under «Nə qalır»: a gym-ownership claim, which carries a VÖEN, is
 `ON DELETE SET NULL` against `auth.users`, so it outlives the account.
-
-**To make the app agree with the website:** open `build.mjs`, copy the `az`
-value of each `CORRECTIONS` entry over the matching sentence in
-`src/lib/legal.ts`, and the `ru` / `en` values over the matching entries in
-`src/i18n/{ru,en}/legal.ts` — whose keys are the Azerbaijani source strings, so
-the key has to change with the sentence. Entry 3 is a deletion: remove the line
-from all three files. Then `node store/legal/build.mjs` again and empty
-`CORRECTIONS`.
-
-While you are in `src/i18n/{ru,en}/legal.ts`, add the heading
-`'Lokasiya': 'Местоположение' / 'Location'` — see §6.4 — and the table
-`OVERRIDES` can be emptied too.
 
 ## 2. Regenerating the pages
 
@@ -106,10 +98,10 @@ screen a user taps in Profil → Parametrlər and the page a reviewer opens cann
 drift apart. If any sentence has no translation the build **fails** instead of
 publishing an Azerbaijani paragraph under a Russian heading.
 
-The one deliberate exception is the `CORRECTIONS` table (§1a): sentences the app
-still shows and the website must not, because they are no longer true. The build
-prints every one it applies and fails if a key stops matching, so the exception
-cannot be forgotten.
+`CORRECTIONS` and `OVERRIDES` in `build.mjs` are the escape hatch for a sentence
+the website must say differently (§1a). Both are empty, and the build prints a
+warning for any entry that stops matching, so an exception cannot be left behind
+and forgotten.
 
 Re-run it after any change to those three files. The text of
 `delete-account.html` has no counterpart in the app and lives inside
@@ -221,8 +213,11 @@ database. None of them is fixed here — this folder only contains the pages.
    has 0 rows — but it becomes real on the first moderation action, and
    `delete-account.html` promises deletion without qualification. The fix is
    `SET NULL` on that column, like `audit_log.admin_id` already has.
-4. **The Privacy Policy heading «Lokasiya» has no translation**, so Russian and
-   English readers see an Azerbaijani heading in the app. The website fills it
-   from the section's own first sentence (`OVERRIDES` in `build.mjs`); adding
-   `'Lokasiya': 'Местоположение' / 'Location'` to `src/i18n/{ru,en}/legal.ts`
-   fixes the app and lets that table be emptied.
+4. ~~The Privacy Policy heading «Lokasiya» has no translation~~ — FIXED
+   (23.09.2026). It was missing because `scripts/i18n_extract.py` skips any
+   literal without an Azerbaijani-specific letter, which is how it tells a
+   sentence from an identifier; «Lokasiya» is spelled in plain ASCII and was
+   dropped silently. `src/lib/legal.ts` is now in that script's `PROSE_FILES`,
+   where every literal is text somebody reads, so the heading (and the «updated»
+   date, which used to render in Azerbaijani under a Russian heading) is
+   translated like everything else.
