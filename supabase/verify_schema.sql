@@ -943,6 +943,23 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema84. Crossing partner requests left the pair half-open: one side accepted, the other still «pending», so the sender kept getting a «Qəbul et» card from somebody already matched (live run cq8rjw).'
   union all
+  select 'function', 'send_match_request queues the pair (advisory lock)',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='send_match_request'
+                             and pg_get_functiondef(p.oid) like '%pg_advisory_xact_lock%')
+              then 'OK' else 'MISSING' end,
+         'schema86. Two simultaneous crossing asks each read the other direction before it was committed, so both stayed «pending» and schema84 never fired (live run eb6evp).'
+  union all
+  select 'function', 'delete_my_account detaches and anonymises the person''s reviews',
+         case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='delete_my_account'
+                             and pg_get_functiondef(p.oid) like '%update public.reviews set author_id = null, name = null%')
+               and exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='reviews_guard'
+                             and pg_get_functiondef(p.oid) like '%detaching%')
+              then 'OK' else 'MISSING' end,
+         'schema85/87. reviews.author_id is ON DELETE SET NULL, and reviews_guard called that tampering — so anyone who had written a review COULD NOT DELETE THEIR ACCOUNT at all; reviews_stamp also put the name back.'
+  union all
   select 'function', 'suggested_trainers falls back to verified trainers only',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
                            where n.nspname='public' and p.proname='suggested_trainers'
