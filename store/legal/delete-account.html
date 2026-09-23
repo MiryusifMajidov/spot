@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="az" data-lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SPOT — Hesabın silinməsi · SPOT — Удаление аккаунта · SPOT — Deleting your account</title>
+<meta name="description" content="SPOT — hesabın silinməsi / удаление аккаунта / deleting your account.">
+<meta name="theme-color" content="#101014">
+<meta name="color-scheme" content="dark">
+<link rel="alternate" hreflang="az" href="?lang=az">
+<link rel="alternate" hreflang="ru" href="?lang=ru">
+<link rel="alternate" hreflang="en" href="?lang=en">
+<style>
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#101014;color:#F4F4F7;
+  font:400 16.5px/1.68 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;
+  -webkit-font-smoothing:antialiased;overflow-wrap:break-word}
+.wrap{max-width:740px;margin:0 auto;padding:0 20px}
+a{color:#C6FF3D;text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---- header ---- */
+.site{position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(255,255,255,.12);
+  background:rgba(16,16,20,.92);-webkit-backdrop-filter:saturate(150%) blur(12px);
+  backdrop-filter:saturate(150%) blur(12px)}
+.site .row{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding-top:12px;padding-bottom:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;color:#F4F4F7}
+.brand:hover{text-decoration:none}
+.mark{width:30px;height:30px;border-radius:9px;background:#1E1E26;flex:none;
+  display:flex;align-items:center;justify-content:center}
+.ring{box-sizing:content-box;width:13px;height:13px;border-radius:50%;
+  border:3px solid #C6FF3D;position:relative}
+.ring i{position:absolute;inset:2px;border-radius:50%;background:#C6FF3D}
+.word{font:700 17px/1 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;
+  letter-spacing:-.4px}
+.langs{display:inline-flex;gap:2px;padding:3px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05)}
+.langbtn{font:600 13px/1 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;
+  -webkit-appearance:none;appearance:none;border:0;background:transparent;color:#9A9AA6;
+  min-height:34px;padding:0 12px;border-radius:9px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.langbtn[aria-selected="true"]{background:#C6FF3D;color:#101014}
+.langbtn:focus-visible{outline:2px solid #C6FF3D;outline-offset:2px}
+
+/* ---- document ---- */
+main{padding:38px 0 8px}
+h1{margin:0 0 10px;letter-spacing:-.9px;
+  font:700 clamp(27px,6.4vw,35px)/1.14 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif}
+.updated{margin:0 0 20px;color:#9A9AA6;font-size:14px}
+.intro{margin:0 0 4px;font-size:17.5px;color:#E7E7EC}
+.note{margin:22px 0 0;padding:13px 15px;border:1px solid rgba(255,255,255,.14);
+  border-radius:14px;background:rgba(255,255,255,.04);color:#9A9AA6;font-size:14.5px;line-height:1.55}
+section{margin-top:30px;padding-top:26px;border-top:1px solid rgba(255,255,255,.12)}
+h2{margin:0 0 13px;letter-spacing:-.35px;
+  font:600 20.5px/1.3 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif}
+p{margin:0 0 13px}
+ul,ol{margin:0 0 13px;padding-left:22px}
+li{margin-bottom:10px}
+li::marker{color:#C6FF3D}
+strong{font-weight:600}
+
+/* ---- the unfilled blanks: impossible to miss ---- */
+.blank{display:inline-block;margin:1px 0;padding:2px 8px;border-radius:7px;
+  border:1px dashed #101014;background:#FFD24A;color:#101014;
+  font:700 13.5px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+/* ---- footer ---- */
+footer{margin-top:44px;padding:26px 0 46px;border-top:1px solid rgba(255,255,255,.12);
+  color:#9A9AA6;font-size:14.5px}
+.flabel{font:600 12px/1 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;
+  letter-spacing:.1em;text-transform:uppercase;color:#7C7C87;margin-bottom:14px}
+.flinks{display:flex;flex-direction:column;gap:11px;margin-bottom:24px}
+.flinks a[aria-current="page"]{color:#9A9AA6;pointer-events:none}
+.copy{color:#7C7C87;font-size:13px}
+
+@media (max-width:420px){
+  .site .row{gap:10px}
+  .word{font-size:16px}
+  .langbtn{padding:0 10px}
+}
+
+/* Only the active language is rendered. Without JavaScript the page shows
+   Azerbaijani, which is the legally binding version. */
+html[data-lang="az"] .L:not(.az){display:none}
+html[data-lang="ru"] .L:not(.ru){display:none}
+html[data-lang="en"] .L:not(.en){display:none}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap row">
+    <a class="brand" href="/">
+      <span class="mark"><span class="ring"><i></i></span></span>
+      <span class="word">SPOT</span>
+    </a>
+    <div class="langs" role="group" aria-label="Dil / Язык / Language">
+      <button type="button" class="langbtn" data-set="az" aria-selected="true" lang="az">AZ</button>
+      <button type="button" class="langbtn" data-set="ru" aria-selected="false" lang="ru">RU</button>
+      <button type="button" class="langbtn" data-set="en" aria-selected="false" lang="en">EN</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+<div class="L az" lang="az">
+<h1>Hesabın silinməsi</h1>
+<p class="updated">Son yenilənmə: 3 sentyabr 2026</p>
+<p class="intro">Bu səhifə SPOT hesabının necə silindiyini, silinəndə hansı məlumatın getdiyini və nəyin qaldığını izah edir. Hesabı özün, tətbiqin içindən silirsən — sorğu göndərib cavab gözləməyə ehtiyac yoxdur.</p>
+<section>
+<h2>Tətbiqin içindən necə silinir</h2>
+<ol>
+  <li>Profil → Parametrlər → Məxfilik ekranını aç.</li>
+  <li>«Sənin datan» bölməsində sonuncu sətir: «Hesabı tamamilə sil».</li>
+  <li>Təsdiq iki dəfə soruşulur. İkinci təsdiqdən sonra silinmə dərhal başlayır və geri qaytarılmır.</li>
+  <li>Əvvəlcə yüklədiyin fayllar silinir, sonra serverdəki sətirlər, sonra bu telefondakı nüsxə. Addımlardan biri alınmasa, tətbiq «Hesab silinmədi» deyir və hesab yerində qalır — yarımçıq silinmə heç vaxt «oldu» kimi göstərilmir.</li>
+</ol>
+</section>
+<section>
+<h2>Silməzdən əvvəl: datanı özünə götür</h2>
+<p>Eyni ekranda «Datanı yüklə» sətri var: bu telefondakı profil, məşq, check-in və qeydlərini JSON mətni kimi özünə göndərir. Silinmədən sonra bu məlumatı geri qaytarmaq mümkün deyil.</p>
+</section>
+<section>
+<h2>Nə silinir</h2>
+<p>Silinmə serverdə bir əməliyyatla gedir və aşağıdakıların hamısını aparır:</p>
+<ul>
+  <li>Profilin: ad, istifadəçi adı, yaş, cins, məşq məqsədi, səviyyə, zal, məşq saatları, bio və avatar. İstifadəçi adın boşalır.</li>
+  <li>Məşq tarixçən: məşqlər, setlər, çəkilər, RPE və şəxsi rekordların.</li>
+  <li>Bədən qeydlərin: köhnə buraxılışdan qalan çəki ölçmələrin (tətbiqdə bu gün çəki yazan ekran yoxdur).</li>
+  <li>Bütün check-inlərin.</li>
+  <li>Videoların, postların, şərhlərin, bəyənmələrin və saxladığın videolar.</li>
+  <li>Yazdığın proqramlar — və onlara qoşulmuş şagird bağlantıları.</li>
+  <li>Yazışmaların: söhbətlər və mesajlar hər iki tərəfdə silinir, yəni yazışdığın adamda da qalmır.</li>
+  <li>İzləmələrin, məşq yoldaşı sorğuların və müəllim sorğuların.</li>
+  <li>Müəllim elanın, müəllim kimi qeydiyyatdan keçmisənsə.</li>
+  <li>Bildirişlərin — həm sənə gələnlər, həm də sənin səbəb olduqların.</li>
+  <li>Blok qeydləri: həm sənin blok etdiklərin, həm də səni blok edənlərin qeydi.</li>
+  <li>Çağırış (challenge) üzvlüklərin və bu telefonun bildiriş ünvanı.</li>
+  <li>Yüklədiyin bütün fayllar: avatar, videolar, şəkillər və doğrulama üçün göndərdiyin sənədlər.</li>
+  <li>Giriş hesabın: bundan sonra həmin hesabla daxil olmaq mümkün deyil.</li>
+</ul>
+</section>
+<section>
+<h2>Nə qalır</h2>
+<p>Bunlar qəsdən qalır, çünki başqa insanlar onlara baxıb qərar verib və ya onlardan istifadə edir:</p>
+<ul>
+  <li>Zala yazdığın rəy. Rəyin mətni, ulduz sayı və rəyi yazdığın anda profilində olan ad zalın səhifəsində qalır; rəy artıq heç bir hesabla bağlı olmur. Tətbiqdə rəyi silmək düyməsi yoxdur — rəyin tamamilə götürülməsini istəyirsənsə, hesabı silməzdən əvvəl bizə yaz.</li>
+  <li>SPOT-un kataloqa saldığı zal, əgər zalı sən yaratmısansa. Zal kataloqda qalır — başqa istifadəçilər ona bağlıdır — amma sahibi kimi sən çıxarılırsan və zalın şəkilləri silinir, çünki o fayllar sənindir. Kataloqa heç vaxt düşməmiş zal isə hesabla birlikdə silinir (ona başqa üzv və ya müəllim bağlanmayıbsa).</li>
+  <li>Zal sahibliyi üçün göndərdiyin iddia (VÖEN daxil) moderasiya qeydi kimi qalır — onu yalnız SPOT moderatoru görür — amma səninlə bağlılığı kəsilir.</li>
+  <li>Yerində qalan zalda bir günlük keçidin (day-pass) qeydi zalın öz qeydi kimi qalır, amma səninlə bağlılığı kəsilir.</li>
+  <li>Etdiyin şikayətin mətni moderasiya qeydi kimi qalır — onu yalnız SPOT moderatoru görür — amma səninlə bağlılığı kəsilir.</li>
+  <li>Provayderin (Supabase) avtomatik ehtiyat nüsxələri. Silinmiş sətirlərin köhnə surəti orada müvəqqəti qala bilər: o nüsxələr yalnız fəlakət bərpası üçündür, tətbiqdə heç kimə göstərilmir və öz müddəti bitəndə üzərinə yazılır.</li>
+</ul>
+</section>
+<section>
+<h2>Tətbiqi silmək hesabı silmir</h2>
+<p>Tətbiqi telefondan silsən, serverdəki profilin, videoların və şərhlərin yerində qalır. Məxfilik ekranındakı «Bu cihazdakı nüsxəni sil» də yalnız telefondakı nüsxəni təmizləyir — hesab silinmir. Hesabı silən yeganə düymə «Hesabı tamamilə sil»dir.</p>
+</section>
+<section>
+<h2>Tətbiqə girə bilmirsənsə</h2>
+<p>Telefon əlində deyilsə və ya hesaba daxil ola bilmirsənsə, silinmə sorğusunu <b class="blank">[DOLDURULMALI: əlaqə e-poçtu]</b> ünvanına göndər. Hesabın sənin olduğunu təsdiqlədikdən sonra hesabı yuxarıda yazılan qaydada silirik və nəticəni sənə yazırıq.</p>
+<p>Sorğuda hesabın istifadəçi adını yaz. Parol, kart nömrəsi və ya şəxsiyyət sənədi göndərmə — bunları heç vaxt istəmirik.</p>
+</section>
+<section>
+<h2>Dəyişikliklər və əlaqə</h2>
+<p>Operator: <b class="blank">[DOLDURULMALI: operator şirkətin/şəxsin adı]</b>. Əlaqə: <b class="blank">[DOLDURULMALI: əlaqə e-poçtu]</b>.</p>
+</section>
+</div>
+<div class="L ru" lang="ru">
+<h1>Удаление аккаунта</h1>
+<p class="updated">Последнее обновление: 3 сентября 2026</p>
+<p class="intro">На этой странице объясняется, как удалить аккаунт SPOT, какие данные при этом удаляются и что остаётся. Аккаунт ты удаляешь сам, прямо в приложении — отправлять запрос и ждать ответа не нужно.</p>
+<p class="note">Это перевод. Юридическую силу имеет текст на азербайджанском языке; в случае расхождений за основу принимается он.</p>
+<section>
+<h2>Как удалить аккаунт в приложении</h2>
+<ol>
+  <li>Открой экран Профиль → Настройки → Конфиденциальность.</li>
+  <li>В разделе «Твои данные» последняя строка: «Удалить аккаунт полностью».</li>
+  <li>Подтверждение спрашивается дважды. После второго подтверждения удаление начинается сразу и отменить его нельзя.</li>
+  <li>Сначала удаляются загруженные тобой файлы, затем строки на сервере, затем копия на этом телефоне. Если какой-то шаг не проходит, приложение говорит «Аккаунт не удалён», и аккаунт остаётся на месте — незавершённое удаление никогда не показывается как выполненное.</li>
+</ol>
+</section>
+<section>
+<h2>Перед удалением: забери свои данные</h2>
+<p>На том же экране есть строка «Выгрузить данные»: она отправляет тебе профиль, тренировки, check-in и записи с этого телефона в виде текста JSON. После удаления вернуть эти данные невозможно.</p>
+</section>
+<section>
+<h2>Что удаляется</h2>
+<p>Удаление выполняется на сервере одной операцией и забирает всё перечисленное:</p>
+<ul>
+  <li>Твой профиль: имя, имя пользователя, возраст, пол, цель тренировок, уровень, зал, время тренировок, био и аватар. Имя пользователя освобождается.</li>
+  <li>История тренировок: тренировки, подходы, веса, RPE и личные рекорды.</li>
+  <li>Записи о теле: измерения веса, оставшиеся от прежней версии (экрана для записи веса в приложении сегодня нет).</li>
+  <li>Все твои check-in.</li>
+  <li>Твои видео, посты, комментарии, лайки и сохранённые видео.</li>
+  <li>Написанные тобой программы — и связанные с ними подключения учеников.</li>
+  <li>Твоя переписка: чаты и сообщения удаляются у обеих сторон, то есть не остаются и у того, с кем ты переписывался.</li>
+  <li>Твои подписки, заявки к напарникам по тренировкам и заявки к тренерам.</li>
+  <li>Твоё объявление тренера, если ты регистрировался как тренер.</li>
+  <li>Твои уведомления — и те, что пришли тебе, и те, причиной которых был ты.</li>
+  <li>Записи о блокировках: и те, кого заблокировал ты, и те, кто заблокировал тебя.</li>
+  <li>Твоё участие в челленджах и адрес для уведомлений этого телефона.</li>
+  <li>Все загруженные тобой файлы: аватар, видео, фотографии и документы, отправленные для проверки.</li>
+  <li>Твой аккаунт для входа: после этого войти под ним невозможно.</li>
+</ul>
+</section>
+<section>
+<h2>Что остаётся</h2>
+<p>Перечисленное остаётся намеренно, потому что другие люди уже смотрели на это, принимали по нему решение или пользуются им:</p>
+<ul>
+  <li>Отзыв, который ты написал о зале. Текст отзыва, оценка и имя, которое было в твоём профиле в момент написания, остаются на странице зала; при этом отзыв больше не связан ни с одним аккаунтом. Кнопки удаления отзыва в приложении нет — если хочешь, чтобы отзыв убрали полностью, напиши нам до удаления аккаунта.</li>
+  <li>Зал, который SPOT внёс в каталог, если этот зал создал ты. Зал остаётся в каталоге — на него завязаны другие пользователи, — но тебя убирают из владельцев, а фотографии зала удаляются, потому что эти файлы твои. Зал, который так и не попал в каталог, удаляется вместе с аккаунтом (если к нему не привязаны другой участник или тренер).</li>
+  <li>Заявка на подтверждение владения залом (включая VÖEN) остаётся как запись модерации — её видит только модератор SPOT, — но связь с тобой обрывается.</li>
+  <li>Запись о разовом посещении в зале, который остаётся, сохраняется как собственная запись зала, но связь с тобой обрывается.</li>
+  <li>Текст поданной тобой жалобы остаётся как запись модерации — её видит только модератор SPOT, — но связь с тобой обрывается.</li>
+  <li>Автоматические резервные копии провайдера (Supabase). Старая копия удалённых строк может временно оставаться в них: эти копии нужны только для аварийного восстановления, никому в приложении не показываются и перезаписываются по истечении срока.</li>
+</ul>
+</section>
+<section>
+<h2>Удаление приложения не удаляет аккаунт</h2>
+<p>Если ты удалишь приложение с телефона, твой профиль, видео и комментарии на сервере останутся на месте. Строка «Удалить копию на этом устройстве» на экране конфиденциальности тоже очищает только копию на телефоне — аккаунт при этом не удаляется. Единственная кнопка, которая удаляет аккаунт, — «Удалить аккаунт полностью».</p>
+</section>
+<section>
+<h2>Если ты не можешь войти в приложение</h2>
+<p>Если телефона нет под рукой или ты не можешь войти в аккаунт, отправь запрос на удаление на адрес <b class="blank">[DOLDURULMALI: əlaqə e-poçtu]</b>. После того как мы убедимся, что аккаунт твой, мы удалим его так, как описано выше, и сообщим тебе результат.</p>
+<p>В запросе укажи имя пользователя аккаунта. Не присылай пароль, номер карты или документ, удостоверяющий личность, — мы их никогда не запрашиваем.</p>
+</section>
+<section>
+<h2>Изменения и контакты</h2>
+<p>Оператор: <b class="blank">[DOLDURULMALI: operator şirkətin/şəxsin adı]</b>. Контакт: <b class="blank">[DOLDURULMALI: əlaqə e-poçtu]</b>.</p>
+</section>
+</div>
+<div class="L en" lang="en">
+<h1>Deleting your account</h1>
+<p class="updated">Last updated: 3 September 2026</p>
+<p class="intro">This page explains how a SPOT account is deleted, what data is removed and what stays. You delete the account yourself, inside the app — there is no request to send and no reply to wait for.</p>
+<p class="note">This is a translation. The legally binding text is the Azerbaijani version; in case of any discrepancy, it prevails.</p>
+<section>
+<h2>How to delete it in the app</h2>
+<ol>
+  <li>Open Profile → Settings → Privacy.</li>
+  <li>In the "Your data" section, the last row: "Delete account completely".</li>
+  <li>You are asked to confirm twice. After the second confirmation the deletion starts immediately and cannot be undone.</li>
+  <li>First the files you uploaded are deleted, then the rows on the server, then the copy on this phone. If any step fails, the app says the account was not deleted and the account stays — a half-finished deletion is never reported as done.</li>
+</ol>
+</section>
+<section>
+<h2>Before you delete: take your data with you</h2>
+<p>On the same screen there is an "Export your data" row: it sends you the profile, workouts, check-ins and notes held on this phone as JSON text. After deletion this data cannot be recovered.</p>
+</section>
+<section>
+<h2>What is deleted</h2>
+<p>The deletion runs on the server as a single operation and takes all of the following:</p>
+<ul>
+  <li>Your profile: name, username, age, gender, training goal, level, gym, training hours, bio and avatar. Your username is freed up.</li>
+  <li>Your training history: workouts, sets, weights, RPE and personal records.</li>
+  <li>Your body log: any weight entries left over from an earlier release (the app has no weight screen today).</li>
+  <li>All of your check-ins.</li>
+  <li>Your videos, posts, comments, likes and saved videos.</li>
+  <li>The programs you wrote — and the student links attached to them.</li>
+  <li>Your conversations: threads and messages are deleted on both sides, so they do not stay with the person you were writing to either.</li>
+  <li>Your follows, workout-partner requests and trainer requests.</li>
+  <li>Your trainer listing, if you signed up as a trainer.</li>
+  <li>Your notifications — both the ones you received and the ones you caused.</li>
+  <li>Block records: both the people you blocked and the people who blocked you.</li>
+  <li>Your challenge memberships and this phone’s notification address.</li>
+  <li>Every file you uploaded: avatar, videos, photos and any documents you sent for verification.</li>
+  <li>Your sign-in account: after this you cannot sign in with it.</li>
+</ul>
+</section>
+<section>
+<h2>What stays</h2>
+<p>These stay on purpose, because other people have already read them, decided on them or depend on them:</p>
+<ul>
+  <li>A review you wrote about a gym. The text, the rating and the name that was on your profile when you wrote it stay on the gym’s page; the review is no longer tied to any account. The app has no button for deleting a review — if you want it taken down entirely, write to us before you delete the account.</li>
+  <li>A gym that SPOT listed in the catalogue, if you were the one who created it. The gym stays in the catalogue — other users depend on it — but you are removed as its owner and the gym’s photos are deleted, because those files are yours. A gym that was never listed is deleted together with the account (unless another member or trainer is attached to it).</li>
+  <li>A gym-ownership claim you sent (including the VÖEN tax number) stays as a moderation record — only a SPOT moderator can see it — but its link to you is cut.</li>
+  <li>A day pass record at a gym that stays remains as the gym’s own record, but its link to you is cut.</li>
+  <li>The text of a report you filed stays as a moderation record — only a SPOT moderator can see it — but its link to you is cut.</li>
+  <li>The provider’s automatic backups (Supabase). An older copy of the deleted rows may remain there for a while: those backups exist only for disaster recovery, are shown to no one in the app, and are overwritten when their retention period ends.</li>
+</ul>
+</section>
+<section>
+<h2>Uninstalling the app does not delete the account</h2>
+<p>If you uninstall the app, your profile, videos and comments on the server stay where they are. The "Delete the copy on this device" row on the privacy screen also clears only the copy on the phone — the account is not deleted. The only button that deletes the account is "Delete account completely".</p>
+</section>
+<section>
+<h2>If you cannot get into the app</h2>
+<p>If you do not have the phone at hand, or you cannot sign in, send a deletion request to <b class="blank">[DOLDURULMALI: əlaqə e-poçtu]</b>. Once we have confirmed the account is yours, we delete it exactly as described above and write back to tell you it is done.</p>
+<p>Put the account’s username in the request. Do not send a password, a card number or an identity document — we never ask for those.</p>
+</section>
+<section>
+<h2>Changes and contact</h2>
+<p>Operator: <b class="blank">[DOLDURULMALI: operator şirkətin/şəxsin adı]</b>. Contact: <b class="blank">[DOLDURULMALI: əlaqə e-poçtu]</b>.</p>
+</section>
+</div>
+</main>
+
+<footer class="wrap">
+<div class="L az">
+      <div class="flabel">Digər sənədlər</div>
+      <div class="flinks">
+        <a href="privacy.html">Məxfilik siyasəti</a>
+        <a href="terms.html">İstifadə şərtləri</a>
+        <a href="delete-account.html" aria-current="page">Hesabın silinməsi</a>
+        <a href="/">Ana səhifə</a>
+      </div></div>
+<div class="L ru">
+      <div class="flabel">Другие документы</div>
+      <div class="flinks">
+        <a href="privacy.html">Политика конфиденциальности</a>
+        <a href="terms.html">Условия использования</a>
+        <a href="delete-account.html" aria-current="page">Удаление аккаунта</a>
+        <a href="/">Главная</a>
+      </div></div>
+<div class="L en">
+      <div class="flabel">Other documents</div>
+      <div class="flinks">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Use</a>
+        <a href="delete-account.html" aria-current="page">Deleting your account</a>
+        <a href="/">Home</a>
+      </div></div>
+  <div class="copy">© 2026 SPOT</div>
+</footer>
+
+<script>
+(function () {
+  var KEY = 'spot-legal-lang', OK = ['az','ru','en'], TITLES = {"az":"SPOT — Hesabın silinməsi","ru":"SPOT — Удаление аккаунта","en":"SPOT — Deleting your account"};
+  var root = document.documentElement;
+  function set(l, persist) {
+    if (OK.indexOf(l) < 0) l = 'az';
+    root.setAttribute('data-lang', l);
+    root.setAttribute('lang', l);
+    if (TITLES[l]) document.title = TITLES[l];
+    var b = document.getElementsByClassName('langbtn');
+    for (var i = 0; i < b.length; i++) {
+      b[i].setAttribute('aria-selected', b[i].getAttribute('data-set') === l ? 'true' : 'false');
+    }
+    if (persist) { try { localStorage.setItem(KEY, l); } catch (e) {} }
+  }
+  var pick = null;
+  try {
+    var m = /[?&]lang=(az|ru|en)\b/i.exec(location.search);
+    if (m) pick = m[1].toLowerCase();
+  } catch (e) {}
+  if (!pick) { try { pick = localStorage.getItem(KEY); } catch (e) {} }
+  if (!pick) {
+    var n = (navigator.language || '').slice(0, 2).toLowerCase();
+    pick = n === 'ru' ? 'ru' : n === 'en' ? 'en' : 'az';
+  }
+  set(pick, false);
+  document.addEventListener('click', function (e) {
+    var el = e.target;
+    while (el && el !== document && el.className !== undefined) {
+      if (String(el.className).indexOf('langbtn') >= 0) {
+        e.preventDefault();
+        set(el.getAttribute('data-set'), true);
+        return;
+      }
+      el = el.parentNode;
+    }
+  });
+})();
+</script>
+</body>
+</html>

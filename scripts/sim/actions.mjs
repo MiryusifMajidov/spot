@@ -2040,23 +2040,53 @@ function reconcileMatches(matches, rows) {
   return next;
 }
 
-/** «Təklif göndər» on discover/match.tsx: the RPC first; the device records the
- *  offer only once it reached the server. */
-export async function sendMatchRequest(a, toProfileId, proposal, { sync = noSync } = {}) {
+/**
+ * «Təklif göndər» on discover/match.tsx: the RPC first; the device records the
+ * offer only once it reached the server.
+ *
+ * Since schema84 the same tap can END in a match: asking somebody who had
+ * already asked you is written as 'accepted' and the mutual trigger settles
+ * their row too. The app reads the row back to know which of the two happened
+ * (api.ts:680-683), so the harness does the same and reports `status`, because
+ * everything after it differs — the toast, this device's state, and which
+ * notification the server sent.
+ */
+export async function sendMatchRequest(a, toProfileId, proposal, { sync = noSync, partnerName = null } = {}) {
   try {
-    // app: src/app/(tabs)/discover/match.tsx:208
+    // app: src/lib/api.ts:669
     const clean = (proposal ?? '').trim().slice(0, 200);
     // The RPC is the first request, so here sync only lets the step measure it.
     await sync();
     // app: src/lib/api.ts:670-673
-    const { error } = await a.client.rpc('send_match_request', { p_to: toProfileId, p_note: clean || null });
-    if (error) return fail(error, { shown: 'Təklif göndərilmədi — yenidən cəhd et' });
+    const { data, error } = await a.client.rpc('send_match_request', { p_to: toProfileId, p_note: clean || null });
+    if (error) return fail(error, { status: null, matched: false, shown: 'Təklif göndərilmədi — yenidən cəhd et' });
+    // app: src/lib/api.ts:680
+    const id = typeof data === 'string' ? data : null;
+    // A failed read-back is not a failed send: the app calls it 'pending', the
+    // state the next launch's reconcile corrects.
+    let status = 'pending';
+    if (id) {
+      // app: src/lib/api.ts:682
+      const { data: row } = await a.client.from('match_requests').select('status').eq('id', id).maybeSingle();
+      status = row?.status === 'accepted' ? 'accepted' : 'pending';
+    }
+    const matched = status === 'accepted';
+    // The store's acceptMatch (db.ts:549-553) — the match is already made, so
+    // recording «gözləyir» would hide it on this phone.
+    // app: src/app/(tabs)/discover/match.tsx:220
+    if (matched) acceptLocal(a, toProfileId);
     // The store's sendMatchRequest (db.ts:481-484).
-    // app: src/app/(tabs)/discover/match.tsx:216
-    a.db.matches = { ...a.db.matches, [toProfileId]: { partnerId: toProfileId, state: 'requested', at: new Date().toISOString(), question: `Məşq təklifi: ${proposal}` } };
-    return ok(null, { shown: 'Təklif göndərildi' });
+    // app: src/app/(tabs)/discover/match.tsx:221
+    else a.db.matches = { ...a.db.matches, [toProfileId]: { partnerId: toProfileId, state: 'requested', at: new Date().toISOString(), question: `Məşq təklifi: ${proposal}` } };
+    return ok(null, {
+      status,
+      matched,
+      requestId: id,
+      // app: src/app/(tabs)/discover/match.tsx:226
+      shown: matched ? `${partnerName ?? 'O'} da səni seçmişdi — artıq məşq yoldaşısınız` : 'Təklif göndərildi',
+    });
   } catch (e) {
-    return fail(e);
+    return fail(e, { status: null, matched: false });
   }
 }
 

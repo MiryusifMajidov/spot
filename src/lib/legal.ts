@@ -62,7 +62,7 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
       {
         heading: 'Sağlamlıq və məsuliyyət',
         body: [
-          'SPOT həkim deyil. Tətbiqdəki proqramlar, çəki təklifləri və qidalanma nümunələri tibbi məsləhət deyil.',
+          'SPOT həkim deyil. Tətbiqdəki proqramlar və çəki təklifləri tibbi məsləhət deyil.',
           'Məşqə başlamazdan əvvəl, xüsusən xroniki xəstəliyin, zədən, hamiləliyin varsa və ya uzun fasilədən sonra qayıdırsansa, həkimlə məsləhətləş.',
           'Ağrı hiss edirsənsə dayan. Tətbiqin təklif etdiyi çəki əvvəlki setlərindən hesablanır — sənin o gün necə olduğunu bilmir.',
           'Məşq zamanı baş verən zədəyə görə məsuliyyəti sən daşıyırsan.',
@@ -121,10 +121,8 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
         body: [
           'Profil: ad, istifadəçi adı, yaş, cins, məşq məqsədi, səviyyə, zal, məşq saatları, qısa bio, avatar.',
           'Məşq: etdiyin məşqlər, setlər, çəkilər, RPE, şəxsi rekordlar.',
-          'Bədən: qeyd etdiyin çəki və istəsən progress fotoları.',
-          'Check-in: hansı zalda, nə vaxt. Check-in anında telefonun yerini zalın koordinatı ilə müqayisə edirik — məsafə yoxlanılır, sənin koordinatın YADDA SAXLANILMIR.',
+          'Check-in: hansı zalda, nə vaxt. Check-in zalın kodu və ya QR-ı ilə olur — telefonun yeri oxunmur.',
           'Ünsiyyət: mesajlar, şərhlər, postlar, videolar.',
-          'Telefon nömrəsi (əgər yazmısansa) — yalnız sənə görünür.',
         ],
       },
       {
@@ -132,18 +130,18 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
         body: [
           'Digər istifadəçilər: adın, istifadəçi adın, yaşın, cinsin, zalın, məqsədin, səviyyən, bion, avatarın, paylaşdığın video və postlar.',
           '«İndi zalda» siyahısı: yalnız check-in-in qüvvədə olduğu müddətdə görünürsən. Vaxtı bitəndən sonra həmin qeyd başqalarına bağlanır. Profil → Məxfilik-dən tamamilə söndürə bilərsən.',
-          'ÇƏKİN, PROGRESS FOTOLARIN, MƏŞQ TƏFƏRRÜATLARIN VƏ YAZIŞMALARIN heç kimə görünmür — nə digər istifadəçilərə, nə zal sahibinə, nə SPOT admininə. Bu, tətbiqin arzusu deyil, bazanın icazə qaydası ilə bağlanıb.',
-          'Zal sahibi: yalnız öz zalının check-in qeydlərini və üzv sayını görür. Üzvün çəkisini, məşqini və ya yerini görmür.',
+          'MƏŞQ TƏFƏRRÜATLARIN, ŞƏXSİ QEYDLƏRİN VƏ YAZIŞMALARIN heç kimə görünmür — nə digər istifadəçilərə, nə zal sahibinə, nə SPOT admininə. Bu, tətbiqin arzusu deyil, bazanın icazə qaydası ilə bağlanıb.',
+          'Zal sahibi: yalnız öz zalının check-in qeydlərini və üzv sayını görür. Üzvün məşqini, yazışmasını və ya yerini görmür.',
           'Müəllim: yalnız onu qəbul etmiş şagirdin ona açdığı məşq datasını görür.',
-          'Admin: şikayətlərə baxır. Çəki, foto, məşq və yazışma sorğusu admin panelində ümumiyyətlə yoxdur.',
+          'Admin: şikayətlərə baxır. Məşq, foto və yazışma sorğusu admin panelində ümumiyyətlə yoxdur.',
         ],
       },
       {
         heading: 'Lokasiya',
         body: [
-          'Lokasiya yalnız iki halda istifadə olunur: yaxınlıqdakı zalları sıralamaq və check-in zamanı zalda olduğunu yoxlamaq.',
+          'Lokasiya yalnız iki halda istifadə olunur: xəritədə yaxınlıqdakı zalları sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.',
           'Fon rejimində izləmə yoxdur. Tətbiq bağlıdırsa yerin oxunmur.',
-          'Dəqiq koordinatın heç kimə göstərilmir və check-in üçün istifadə olunandan sonra saxlanılmır.',
+          'Dəqiq koordinatın heç kimə göstərilmir və serverdə saxlanılmır — yalnız zalın öz koordinatı saxlanılır, onu isə zal sahibi özü qoyur.',
         ],
       },
       {
@@ -157,13 +155,14 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
         heading: 'Reklam və üçüncü tərəflər',
         body: [
           'Reklam şəbəkəsi yoxdur. Analitika SDK-sı yoxdur. Məlumatın satılmır və reklam məqsədilə heç kimə verilmir.',
+          'Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar), bildiriş göndərmək üçün Google FCM və Apple APNs, xəritə açılanda isə OpenStreetMap kafel serverləri — xəritə onlara IP ünvanını və baxdığın ərazinin koordinatlarını göstərir.',
         ],
       },
       {
         heading: 'Sənin hüquqların',
         body: [
           'Profilini istənilən vaxt redaktə edə bilərsən.',
-          'Hesabını tətbiqin içindən silə bilərsən: Profil → Məxfilik → Hesabı sil. Bu, profilini, məşqlərini, çəki qeydlərini, videolarını, şərhlərini və yüklədiyin faylları silir.',
+          'Hesabını tətbiqin içindən silə bilərsən: Profil → Məxfilik → Hesabı sil. Bu, profilini, məşqlərini, proqramlarını, videolarını, şərhlərini və yüklədiyin faylları silir; yazdığın zal rəyi qalır, amma adın onun üstündən götürülür.',
           'Görünürlüyünü söndürə bilərsən — bu halda kəşf siyahılarında və «indi zalda» siyahısında görünmürsən.',
           'Sualın varsa: {contact}.',
         ],

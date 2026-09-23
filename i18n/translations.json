@@ -10014,5 +10014,50 @@
   "key": "Hesabı silinmiş istifadəçi",
   "ru": "Пользователь удалил аккаунт",
   "en": "Account deleted"
+ },
+ {
+  "key": "Admin: şikayətlərə baxır. Məşq, foto və yazışma sorğusu admin panelində ümumiyyətlə yoxdur.",
+  "ru": "Администратор: рассматривает жалобы. Запроса к тренировкам, фото и переписке в админ-панели нет вообще.",
+  "en": "Admin: reviews reports. The admin panel has no query for workouts, photos or messages at all."
+ },
+ {
+  "key": "Check-in: hansı zalda, nə vaxt. Check-in zalın kodu və ya QR-ı ilə olur — telefonun yeri oxunmur.",
+  "ru": "Check-in: в каком зале и когда. Отметка делается кодом зала или QR — местоположение телефона не считывается.",
+  "en": "Check-in: which gym, and when. A check-in is made with the gym's code or QR — the phone's location is not read."
+ },
+ {
+  "key": "Dəqiq koordinatın heç kimə göstərilmir və serverdə saxlanılmır — yalnız zalın öz koordinatı saxlanılır, onu isə zal sahibi özü qoyur.",
+  "ru": "Твои точные координаты никому не показываются и на сервере не хранятся — хранятся только координаты самого зала, и их ставит его владелец.",
+  "en": "Your exact coordinates are shown to nobody and are not stored on the server — only the gym's own coordinates are stored, and its owner sets them."
+ },
+ {
+  "key": "Hesabını tətbiqin içindən silə bilərsən: Profil → Məxfilik → Hesabı sil. Bu, profilini, məşqlərini, proqramlarını, videolarını, şərhlərini və yüklədiyin faylları silir; yazdığın zal rəyi qalır, amma adın onun üstündən götürülür.",
+  "ru": "Аккаунт можно удалить прямо в приложении: Профиль → Конфиденциальность → Удалить аккаунт. Удаляются профиль, тренировки, программы, видео, комментарии и загруженные файлы; написанный тобой отзыв о зале остаётся, но твоё имя с него снимается.",
+  "en": "You can delete your account from inside the app: Profile → Privacy → Delete account. That removes your profile, workouts, programs, videos, comments and uploaded files; a gym review you wrote stays, but your name is taken off it."
+ },
+ {
+  "key": "Lokasiya yalnız iki halda istifadə olunur: xəritədə yaxınlıqdakı zalları sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.",
+  "ru": "Местоположение используется только в двух случаях: чтобы показать на карте ближайшие залы и когда владелец зала отмечает место своего зала на карте.",
+  "en": "Location is used in two cases only: to rank nearby gyms on the map, and when a gym owner pins their own gym on the map."
+ },
+ {
+  "key": "MƏŞQ TƏFƏRRÜATLARIN, ŞƏXSİ QEYDLƏRİN VƏ YAZIŞMALARIN heç kimə görünmür — nə digər istifadəçilərə, nə zal sahibinə, nə SPOT admininə. Bu, tətbiqin arzusu deyil, bazanın icazə qaydası ilə bağlanıb.",
+  "ru": "ДЕТАЛИ ТВОИХ ТРЕНИРОВОК, ЛИЧНЫЕ ЗАМЕТКИ И ПЕРЕПИСКА не видны никому — ни другим пользователям, ни владельцу зала, ни администратору SPOT. Это не пожелание приложения: так закрыто правилами доступа самой базы данных.",
+  "en": "YOUR WORKOUT DETAILS, PRIVATE NOTES AND MESSAGES are visible to nobody — not to other people, not to the gym owner, not to a SPOT admin. That is not the app's wish: it is closed off by the database's own access rules."
+ },
+ {
+  "key": "SPOT həkim deyil. Tətbiqdəki proqramlar və çəki təklifləri tibbi məsləhət deyil.",
+  "ru": "SPOT — не врач. Программы и предлагаемые веса в приложении не являются медицинской рекомендацией.",
+  "en": "SPOT is not a doctor. The programs and the weight suggestions in the app are not medical advice."
+ },
+ {
+  "key": "Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar), bildiriş göndərmək üçün Google FCM və Apple APNs, xəritə açılanda isə OpenStreetMap kafel serverləri — xəritə onlara IP ünvanını və baxdığın ərazinin koordinatlarını göstərir.",
+  "ru": "Приложение обращается к следующим сервисам: Supabase (база, вход и файлы), Google FCM и Apple APNs для отправки уведомлений, а при открытии карты — тайловые серверы OpenStreetMap: карта показывает им твой IP-адрес и координаты области, которую ты смотришь.",
+  "en": "These are the services the app talks to: Supabase (database, sign-in and files), Google FCM and Apple APNs to deliver notifications, and, when the map opens, the OpenStreetMap tile servers — the map shows them your IP address and the coordinates of the area you are looking at."
+ },
+ {
+  "key": "Zal sahibi: yalnız öz zalının check-in qeydlərini və üzv sayını görür. Üzvün məşqini, yazışmasını və ya yerini görmür.",
+  "ru": "Владелец зала: видит только отметки в своём зале и число участников. Тренировки, переписку и местоположение участника он не видит.",
+  "en": "The gym owner: sees only the check-ins at their own gym and the member count. They do not see a member's workouts, messages or location."
  }
 ]

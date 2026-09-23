@@ -1180,6 +1180,8 @@ async function phaseSocial(ctx) {
       : { contended: false, text: `${client} and were all in flight together for ${w.overlapMs} ms, yet their transactions began ${spread} ms apart inside the database (${offs}) — longer than one write transaction lasts (~${TX_MS} ms, an estimate), so they probably ran one after another` };
   };
   // What really landed — the notification checks expect exactly this, no more.
+  // matchSends holds { by, to, status }: since schema84 a send can be written
+  // 'pending' OR 'accepted', and the two cause different notifications.
   const landed = { postLikers: new Set(), likeNotifiers: new Set(), followers: new Set(), commentLikers: [], replied: null, matchSends: [], matchAccepts: [] };
   // actor key → id of the TEST comment it wrote under u1's post (scenario 2).
   const commentOf = {};
@@ -1507,111 +1509,192 @@ async function phaseSocial(ctx) {
   }
   unreachable('social.follow-ui-path', 'the «İzlə» button sits on a video card and on the creator page reached from a video (feed/index.tsx:450, creator.tsx:134); u1 has no video (a TEST one would need a file upload), so no screen offers to follow u1 — followProfile, the exact call that button sends, is called directly');
 
-  // ---- 4 — u4 and u5 ask each other at the same instant ---------------------
-  unreachable('social.match-ui-path', 'u4 and u5 have no home gym (Profil → Redaktə offers listed gyms only, and a real gym would put TEST people in its member list), so neither is in the other\'s Kəşf lists or deck; send_match_request and the «Təkliflər» reads and writes below are the exact requests the match and requests screens send');
-  const proposal = `TEST ${ctx.runId} · Ç.a 19:00`;
-  const s6 = await together('u4 and u5 send each other a partner request at the same instant (crossing)', [
-    { actor: u4, label: 'u4 → u5', alignWrite: true, fn: (_p, sync) => act.sendMatchRequest(u4, u5.profileId, proposal, { sync }) },
-    { actor: u5, label: 'u5 → u4', alignWrite: true, fn: (_p, sync) => act.sendMatchRequest(u5, u4.profileId, proposal, { sync }) },
-  ]);
-  for (const r of s6.results) {
-    if (r.ok) landed.matchSends.push(r.actor);
-    expect(r.ok, `social.match-sent.${r.actor}`, r.ok ? `send_match_request accepted — «${r.shown}»` : `refused: ${msgOf(r)} — «${r.shown ?? 'Təklif göndərilmədi'}»`, r.ok ? null : r.error);
-  }
+  // ---- 4 — partner requests: a crossing pair, then a one-way ask -----------
+  unreachable('social.match-ui-path', 'u2–u5 have no home gym (Profil → Redaktə offers listed gyms only, and a real gym would put TEST people in its member list), so none of them is in another\'s Kəşf lists or deck; send_match_request and the «Təkliflər» reads and writes below are the exact requests the match and requests screens send');
+
+  // What both phones of a pair say, read the way the app reads them: the device
+  // state after «Təkliflər» ran, any card still offered, its own open offer, and
+  // what the NEXT launch would show for either row order (the launch read has no
+  // ORDER BY). Used by the crossing pair and by the one-way pair below.
+  const viewPair = async (x, y) => {
+    const [rx, ry] = await Promise.all([act.openRequestsScreen(x, ctx.simIds), act.openRequestsScreen(y, ctx.simIds)]);
+    const [lx, ly] = await Promise.all([act.launchMatchSync(x, { apply: false }), act.launchMatchSync(y, { apply: false })]);
+    const side = (me, other, r, l) => ({
+      device: me.db.matches[other.profileId]?.state ?? '—',
+      card: (r.incoming ?? []).find((z) => z.fromProfile === other.profileId) ?? null,
+      offer: r.outgoing?.[other.profileId] ?? null,
+      launch: l.matches?.[other.profileId]?.state ?? '—',
+      launchAlt: l.altMatches?.[other.profileId]?.state ?? '—',
+      readOk: !!(r.ok && l.ok),
+    });
+    return { [x.key]: side(x, y, rx, lx), [y.key]: side(y, x, ry, ly) };
+  };
+  const describe = (v) =>
+    Object.entries(v)
+      .map(([k, s]) => `${k}: device «${s.device}», ${s.card ? 'a live «Qəbul et» card from its partner' : 'no card'}, ${s.offer ? `own offer «${s.offer}»` : 'no open offer'}, next launch «${s.launch}»${s.launch !== s.launchAlt ? ` or «${s.launchAlt}» depending on row order` : ''}${s.readOk ? '' : ' (a read FAILED)'}`)
+      .join('; ');
+  const clean = (v) => Object.values(v).every((s) => s.readOk && s.device === 'accepted' && !s.card && !s.offer && s.launch === 'accepted' && s.launchAlt === 'accepted');
+  const why = (v) => {
+    const parts = [];
+    if (Object.values(v).some((s) => s.card)) parts.push('one direction is still pending, so its sender gets a «Qəbul et» card from a person it is already matched with');
+    if (Object.values(v).some((s) => s.launch !== s.launchAlt)) parts.push('reconcileMatches keys the rows by the other person (db.ts:515) and the launch read has no ORDER BY (api.ts:1221), so the next launch shows a different state depending on which row the server returns last');
+    if (Object.values(v).some((s) => s.device !== 'accepted')) parts.push('a phone does not show the match');
+    return parts.join('; ');
+  };
+  const cardsLeft = (v) => Object.entries(v).filter(([, s]) => s.card).map(([k]) => k);
   const pairRows = (res, me, other) =>
     (res.rows ?? []).filter((r) => r.otherProfileId === other.profileId).map((r) => `${r.iSent ? me.key : other.key}→${r.iSent ? other.key : me.key} ${r.status}`).sort();
+
+  const proposal = `TEST ${ctx.runId} · Ç.a 19:00`;
+  const s6 = await together('u4 and u5 send each other a partner request at the same instant (crossing)', [
+    { actor: u4, label: 'u4 → u5', alignWrite: true, fn: (_p, sync) => act.sendMatchRequest(u4, u5.profileId, proposal, { sync, partnerName: u5.name }) },
+    { actor: u5, label: 'u5 → u4', alignWrite: true, fn: (_p, sync) => act.sendMatchRequest(u5, u4.profileId, proposal, { sync, partnerName: u4.name }) },
+  ]);
+  for (const r of s6.results) {
+    // The status the app read back decides everything after the tap — the toast,
+    // this device's state, and which notification the server sent (scenario 5).
+    if (r.ok) landed.matchSends.push({ by: r.actor, to: r.actor === 'u4' ? 'u5' : 'u4', status: r.status });
+    expect(r.ok, `social.match-sent.${r.actor}`, r.ok ? `send_match_request accepted, the row came back «${r.status}» — «${r.shown}»` : `refused: ${msgOf(r)} — «${r.shown ?? 'Təklif göndərilmədi'}»`, r.ok ? null : r.error);
+  }
   const [p4, p5] = await Promise.all([act.launchMatchSync(u4, { apply: false }), act.launchMatchSync(u5, { apply: false })]);
   const rows4 = pairRows(p4, u4, u5);
   const rows5 = pairRows(p5, u5, u4);
+  const bothAccepted = rows4.length === 2 && rows4.every((x) => x.endsWith('accepted'));
   const twoPending = rows4.length === 2 && rows4.every((x) => x.endsWith('pending'));
+  // schema84 (applied 2026-09-23): asking somebody who has already asked you is
+  // mutual interest, so send_match_request writes that row as 'accepted' and the
+  // match_requests_mutual trigger settles the opposite row too.
   info(
     'social.match-cross-outcome',
-    `server after the crossing sends: ${rows4.length} row(s) — ${rows4.join(', ') || 'none'}${twoPending ? ': no error and no auto-match — each direction is its own pending offer (match_requests_one_per_pair is on from_profile, to_profile)' : ''}`,
+    `server after the crossing sends: ${rows4.length} row(s) — ${rows4.join(', ') || 'none'}${
+      bothAccepted
+        ? ': the second ask met the first, so it was written as «accepted» and match_requests_mutual settled the first direction — a match on the spot, with nothing left to accept'
+        : twoPending
+          ? ': BOTH rows are pending — each send read the other direction before the other had committed, so neither saw an ask to answer'
+          : ''
+    }`,
     { u4: rows4, u5: rows5 }
   );
   expect(p4.ok && p5.ok && rows4.join('|') === rows5.join('|'), 'social.match-cross-rows-agree', p4.ok && p5.ok ? `u4 reads ${rows4.join(', ') || 'none'}; u5 reads ${rows5.join(', ') || 'none'}` : `read failed: ${msgOf(p4.ok ? p5 : p4)}`);
-  const [q4, q5] = await Promise.all([act.openRequestsScreen(u4, ctx.simIds), act.openRequestsScreen(u5, ctx.simIds)]);
-  const screenOf = (q, other) =>
-    `incoming from ${other.key}: ${(q.incoming ?? []).some((r) => r.fromProfile === other.profileId) ? 'a «Qəbul et» card' : 'none'}, own offer: ${q.outgoing?.[other.profileId] ? `«${q.outgoing[other.profileId]}»` : (q.closed ?? []).includes(other.profileId) ? 'matched' : 'not listed'}`;
-  // The incoming cards carry each row's created_at (= now() of the sending transaction).
-  const crossStarts = [...(q4.incoming ?? []).filter((r) => r.fromProfile === u5.profileId), ...(q5.incoming ?? []).filter((r) => r.fromProfile === u4.profileId)].map((r) => r.at);
-  const race6 = raceOf(s6.step, crossStarts, 'no incoming card came back to read it from');
-  info('social.match-cross-screens', `u4's «Təkliflər» — ${screenOf(q4, u5)}; u5's — ${screenOf(q5, u4)}. The two sends: ${race6.text}`, { write: s6.step.write, contended: race6.contended });
 
-  const card5 = (q5.incoming ?? []).find((r) => r.fromProfile === u4.profileId) ?? null;
-  if (!card5) {
-    expect(false, 'social.match-card-visible', `u5's «Təkliflər» has no incoming offer from u4 (${q5.ok ? 'none listed' : msgOf(q5)}) — nothing to accept`);
-  } else {
-    const acc = await act.acceptMatchRequest(u5, card5);
-    expect(acc.ok, 'social.match-accepted', acc.ok ? `u5 accepted u4's offer — the row came back, «${acc.shown}»` : `accept did not reach the server (${msgOf(acc)}) — «${acc.shown}»`);
-    if (acc.ok) landed.matchAccepts.push({ by: 'u5', of: 'u4' });
+  // Exactly one of the two sends must come back 'accepted' (the one that arrived
+  // second), and both rows must be accepted. Two pending rows is the pre-schema84
+  // half-open pair — a FAIL with its own explanation, never a silent pass.
+  const acceptedSends = s6.results.filter((r) => r.ok && r.status === 'accepted').map((r) => r.actor);
+  expect(
+    bothAccepted && acceptedSends.length === 1,
+    'social.match-cross-mutual',
+    bothAccepted && acceptedSends.length === 1
+      ? `${acceptedSends[0]} asked second: its row was written «accepted» and match_requests_mutual settled the other direction — ${rows4.join(', ')}`
+      : twoPending
+        ? `both rows stayed «pending» (${rows4.join(', ')}): each send read the opposite direction before the other transaction had committed, so send_match_request saw nothing to answer. The pair is back to the state schema84 was written for — accepting one direction would leave the other pending, its sender keeping a «Qəbul et» card from somebody it is already matched with, and the next launch showing «accepted» or «incoming» depending on which row the server returns last`
+        : `expected two accepted rows and exactly one send answering «accepted»; the server left ${rows4.join(', ') || 'no rows'} and ${acceptedSends.length} send(s) came back «accepted»`,
+    { rows: rows4, acceptedSends, sends: s6.results.map((r) => ({ actor: r.actor, ok: r.ok, status: r.status ?? null })) }
+  );
 
-    // What each side's phone says: its device state after opening «Təkliflər»,
-    // any card still offered, its own open offer, and the next launch's state
-    // for both row orders (the launch read has no ORDER BY).
-    const view = async () => {
-      const [r4, r5] = await Promise.all([act.openRequestsScreen(u4, ctx.simIds), act.openRequestsScreen(u5, ctx.simIds)]);
-      const [l4, l5] = await Promise.all([act.launchMatchSync(u4, { apply: false }), act.launchMatchSync(u5, { apply: false })]);
-      const side = (a, other, r, l) => ({
-        device: a.db.matches[other.profileId]?.state ?? '—',
-        card: (r.incoming ?? []).find((x) => x.fromProfile === other.profileId) ?? null,
-        offer: r.outgoing?.[other.profileId] ?? null,
-        launch: l.matches?.[other.profileId]?.state ?? '—',
-        launchAlt: l.altMatches?.[other.profileId]?.state ?? '—',
-        readOk: !!(r.ok && l.ok),
-      });
-      return { u4: side(u4, u5, r4, l4), u5: side(u5, u4, r5, l5) };
-    };
-    const describe = (v) =>
-      Object.entries(v)
-        .map(([k, s]) => `${k}: device «${s.device}», ${s.card ? 'a live «Qəbul et» card from its partner' : 'no card'}, ${s.offer ? `own offer «${s.offer}»` : 'no open offer'}, next launch «${s.launch}»${s.launch !== s.launchAlt ? ` or «${s.launchAlt}» depending on row order` : ''}${s.readOk ? '' : ' (a read FAILED)'}`)
-        .join('; ');
-    const clean = (v) => Object.values(v).every((s) => s.readOk && s.device === 'accepted' && !s.card && !s.offer && s.launch === 'accepted' && s.launchAlt === 'accepted');
-    const why = (v) => {
-      const parts = [];
-      if (Object.values(v).some((s) => s.card)) parts.push('accepting one direction leaves the other direction pending, so its sender still gets a «Qəbul et» card from a person it is already matched with');
-      if (Object.values(v).some((s) => s.launch !== s.launchAlt)) parts.push('reconcileMatches keys the rows by the other person (db.ts:515) and the launch read has no ORDER BY (api.ts:1221), so the next launch shows a different state depending on which row the server returns last');
-      if (Object.values(v).some((s) => s.device !== 'accepted')) parts.push('a phone does not show the match');
-      return parts.join('; ');
-    };
-    if (acc.ok) {
-      const v1 = await view();
-      expect(v1.u4.device === 'accepted' && v1.u5.device === 'accepted', 'social.match-both-see-accepted', `after u5's «Qəbul et»: u4's phone «${v1.u4.device}», u5's «${v1.u5.device}»`, v1);
-      expect(clean(v1), 'social.match-cross-consistent', clean(v1) ? 'both phones say «matched» everywhere, now and at the next launch' : `the pair is half-open — ${describe(v1)}. ${why(v1)}`, v1);
-      if (v1.u4.card) {
-        // What the person would do with a card from somebody already matched: accept it.
-        const acc2 = await act.acceptMatchRequest(u4, v1.u4.card);
-        expect(acc2.ok, 'social.match-leftover-accepted', acc2.ok ? 'u4 pressed «Qəbul et» on the leftover card — accepted' : `refused: ${msgOf(acc2)}`);
-        if (acc2.ok) landed.matchAccepts.push({ by: 'u4', of: 'u5' });
-        const v2 = await view();
-        expect(clean(v2), 'social.match-consistent-after-both', clean(v2) ? 'with both directions accepted, both phones say «matched» now and at the next launch' : `still inconsistent — ${describe(v2)}. ${why(v2)}`, v2);
-      }
+  const v1 = await viewPair(u4, u5);
+  // Both rows are accepted, so neither «Təkliflər» has a card whose created_at
+  // could time the two sending transactions — raceOf is told why, not handed [].
+  const race6 = raceOf(s6.step, cardsLeft(v1).length ? Object.values(v1).filter((s) => s.card).map((s) => s.card.at) : null, 'both rows are accepted, so neither «Təkliflər» has an incoming card to read the server times from');
+  info('social.match-cross-screens', `after the crossing sends — ${describe(v1)}. The two sends: ${race6.text}`, { write: s6.step.write, contended: race6.contended, view: v1 });
+  expect(
+    cardsLeft(v1).length === 0,
+    'social.match-cross-no-card',
+    cardsLeft(v1).length === 0
+      ? 'neither «Təkliflər» offers a «Qəbul et» card: the two asks settled each other, so there is nothing left for either of them to accept'
+      : `${cardsLeft(v1).join(', ')} still has a «Qəbul et» card from a person it is already matched with — ${describe(v1)}`,
+    v1
+  );
+  expect(v1.u4.device === 'accepted' && v1.u5.device === 'accepted', 'social.match-both-see-accepted', `after the crossing sends and one «Təkliflər» open: u4's phone «${v1.u4.device}», u5's «${v1.u5.device}» (u5 was told «${s6.results.find((r) => r.actor === 'u5')?.shown ?? '—'}»)`, v1);
+  expect(clean(v1), 'social.match-cross-consistent', clean(v1) ? 'both phones say «matched» everywhere, now and at the next launch' : `the pair is half-open — ${describe(v1)}. ${why(v1)}`, v1);
 
-      // The match opens a chat: both press «Göndər» on their first message at once.
-      const texts = { u4: `TEST salam, yoldaş (${ctx.runId})`, u5: `TEST salam (${ctx.runId})` };
-      const s7 = await together('u4 and u5 send their first message at the same instant (chat/[id].tsx)', [
-        { actor: u4, prep: () => act.openChatScreen(u4, u5.profileId), fn: (p) => act.sendChatMessage(u4, u5.profileId, p?.threadId ?? null, texts.u4) },
-        { actor: u5, prep: () => act.openChatScreen(u5, u4.profileId), fn: (p) => act.sendChatMessage(u5, u4.profileId, p?.threadId ?? null, texts.u5) },
-      ]);
-      const failedChat = s7.results.filter((r) => !r.ok);
+  if (bothAccepted) {
+    // The match opens a chat: both press «Göndər» on their first message at once.
+    const texts = { u4: `TEST salam, yoldaş (${ctx.runId})`, u5: `TEST salam (${ctx.runId})` };
+    const s7 = await together('u4 and u5 send their first message at the same instant (chat/[id].tsx)', [
+      { actor: u4, prep: () => act.openChatScreen(u4, u5.profileId), fn: (p) => act.sendChatMessage(u4, u5.profileId, p?.threadId ?? null, texts.u4) },
+      { actor: u5, prep: () => act.openChatScreen(u5, u4.profileId), fn: (p) => act.sendChatMessage(u5, u4.profileId, p?.threadId ?? null, texts.u5) },
+    ]);
+    const failedChat = s7.results.filter((r) => !r.ok);
+    expect(
+      failedChat.length === 0,
+      'social.match-chat-opens',
+      failedChat.length ? failedChat.map((f) => `${f.actor}: ${msgOf(f)} — the screen shows «${act.chatRefusalText(f.refusal)}»`).join('; ') : 'the match opens a chat from both sides'
+    );
+    const t4 = s7.results.find((r) => r.actor === 'u4')?.threadId ?? null;
+    const t5 = s7.results.find((r) => r.actor === 'u5')?.threadId ?? null;
+    if (t4 && t5) expect(t4 === t5, 'social.match-one-thread', t4 === t5 ? 'one thread for the pair' : `TWO threads: ${t4} / ${t5}`);
+    const tid = t4 ?? t5;
+    if (tid) {
+      const sent = s7.results.filter((r) => r.ok).length;
+      const [read4, inbox5] = await Promise.all([act.openChatScreen(u4, u5.profileId), act.getMyThreads(u5, ctx.simIds)]);
+      const inInbox = (inbox5.threads ?? []).some((t) => t.threadId === tid);
       expect(
-        failedChat.length === 0,
-        'social.match-chat-opens',
-        failedChat.length ? failedChat.map((f) => `${f.actor}: ${msgOf(f)} — the screen shows «${act.chatRefusalText(f.refusal)}»`).join('; ') : 'the accepted match opens a chat from both sides'
+        read4.threadId === tid && (read4.messages ?? []).length === sent && inInbox,
+        'social.match-chat-reads',
+        `u4's chat holds ${read4.ok ? read4.messages.length : msgOf(read4)} message(s) (${sent} sent); u5's inbox ${inInbox ? 'lists' : 'does NOT list'} the thread`
       );
-      const t4 = s7.results.find((r) => r.actor === 'u4')?.threadId ?? null;
-      const t5 = s7.results.find((r) => r.actor === 'u5')?.threadId ?? null;
-      if (t4 && t5) expect(t4 === t5, 'social.match-one-thread', t4 === t5 ? 'one thread for the pair' : `TWO threads: ${t4} / ${t5}`);
-      const tid = t4 ?? t5;
-      if (tid) {
-        const sent = s7.results.filter((r) => r.ok).length;
-        const [read4, inbox5] = await Promise.all([act.openChatScreen(u4, u5.profileId), act.getMyThreads(u5, ctx.simIds)]);
-        const inInbox = (inbox5.threads ?? []).some((t) => t.threadId === tid);
-        expect(
-          read4.threadId === tid && (read4.messages ?? []).length === sent && inInbox,
-          'social.match-chat-reads',
-          `u4's chat holds ${read4.ok ? read4.messages.length : msgOf(read4)} message(s) (${sent} sent); u5's inbox ${inInbox ? 'lists' : 'does NOT list'} the thread`
-        );
+    }
+  } else {
+    unreachable('social.match-chat-opens', 'u4 and u5 did not end up matched (see social.match-cross-mutual), so open_thread would refuse them with no_relationship — the chat cannot be judged here; the u2–u3 pair below carries the accept path');
+  }
+
+  // ---- 4b — a one-way ask: u2 asks u3, u3 presses «Qəbul et» --------------
+  // Since schema84 the crossing pair never reaches a «Qəbul et» card, so the
+  // accept path needs two people this phase has NOT matched. u2 and u3 have so
+  // far only liked, commented on and followed u1's post.
+  const oneWay = `TEST ${ctx.runId} · C. 18:00`;
+  const send23 = await act.sendMatchRequest(u2, u3.profileId, oneWay, { partnerName: u3.name });
+  if (send23.ok) landed.matchSends.push({ by: 'u2', to: 'u3', status: send23.status });
+  expect(
+    send23.ok && send23.status === 'pending',
+    'social.match-oneway-sent',
+    !send23.ok
+      ? `refused: ${msgOf(send23)} — «${send23.shown ?? 'Təklif göndərilmədi'}»`
+      : send23.status === 'pending'
+        ? `u2's offer to u3 was written «pending» — «${send23.shown}»`
+        : `the row came back «${send23.status}»: send_match_request answered a mutual ask, but u3 had never asked u2 — «${send23.shown}»`,
+    send23.ok ? null : send23.error
+  );
+  const before23 = await viewPair(u2, u3);
+  const card3 = before23.u3.card;
+  expect(
+    !!card3,
+    'social.match-oneway-card-visible',
+    card3
+      ? `u3's «Təkliflər» shows u2's offer («${card3.note ?? 'no note'}» from «${card3.name ?? 'name not readable'}»), and u2's own offer reads «${before23.u2.offer ?? '—'}»`
+      : `u3's «Təkliflər» has no incoming offer from u2 — nothing to accept; ${describe(before23)}`,
+    before23
+  );
+  if (card3) {
+    const acc = await act.acceptMatchRequest(u3, card3);
+    expect(acc.ok, 'social.match-oneway-accepted', acc.ok ? `u3 accepted u2's offer — the row came back, «${acc.shown}»` : `accept did not reach the server (${msgOf(acc)}) — «${acc.shown}»`);
+    if (acc.ok) landed.matchAccepts.push({ by: 'u3', of: 'u2' });
+    if (acc.ok) {
+      const after23 = await viewPair(u2, u3);
+      expect(
+        clean(after23),
+        'social.match-oneway-consistent',
+        clean(after23) ? 'both phones say «matched»: no card left, no open offer, and the next launch agrees whichever row the server returns last' : `the pair is half-open — ${describe(after23)}. ${why(after23)}`,
+        after23
+      );
+      // One message each way — the crossing pair already covers two first
+      // messages at the same instant, and messages_gate holds a sender to one
+      // message until the other side has replied.
+      const open2 = await act.openChatScreen(u2, u3.profileId);
+      const m1 = await act.sendChatMessage(u2, u3.profileId, open2.threadId ?? null, `TEST salam, yoldaş (${ctx.runId})`);
+      const m2 = m1.ok ? await act.sendChatMessage(u3, u2.profileId, null, `TEST salam (${ctx.runId})`) : null;
+      expect(
+        m1.ok && !!m2?.ok,
+        'social.match-oneway-chat-opens',
+        !m1.ok
+          ? `u2 could not write to its new partner: ${msgOf(m1)} — the screen shows «${act.chatRefusalText(m1.refusal)}»`
+          : !m2.ok
+            ? `u3's answer was refused: ${msgOf(m2)} — the screen shows «${act.chatRefusalText(m2.refusal)}»`
+            : 'the accepted offer opens a chat: one message each way, both delivered'
+      );
+      if (m1.ok && m2?.ok) {
+        expect(m1.threadId === m2.threadId, 'social.match-oneway-one-thread', m1.threadId === m2.threadId ? 'one thread for the pair' : `TWO threads: ${m1.threadId} / ${m2.threadId}`);
       }
     }
   }
@@ -1667,21 +1750,34 @@ async function phaseSocial(ctx) {
       `u1: «… səni izləməyə başladı» from ${fmt(fo)} — expected one each from ${list(followNotifiers)} (u5 followed from two devices; u2's unfollow removes none)`
     );
   }
-  if (landed.matchSends.length) {
-    const want = { u4: { match_request: [], match_accepted: [] }, u5: { match_request: [], match_accepted: [] } };
-    for (const s of landed.matchSends) want[s === 'u4' ? 'u5' : 'u4'].match_request.push(s);
+  if (landed.matchSends.length || landed.matchAccepts.length) {
+    // What the server really had to send, built from what each send REALLY did
+    // (send_match_request reads its row back, so the harness knows which it was):
+    //   · a row written 'pending' is an ask nobody has answered → one
+    //     «match_request» to the person asked;
+    //   · a row written 'accepted' answers an ask that was already there, so
+    //     tg_notify_match sends NO «match_request», and the mutual update sends
+    //     one «match_accepted» to whoever asked first — the person asked here.
+    // Plus one «match_accepted» for every «Qəbul et» that reached the server,
+    // addressed to the sender of the offer. Exactly one per (type, actor).
+    const matchKeys = ['u2', 'u3', 'u4', 'u5'];
+    const want = Object.fromEntries(matchKeys.map((k) => [k, { match_request: [], match_accepted: [] }]));
+    for (const s of landed.matchSends) {
+      if (s.status === 'accepted') want[s.to].match_accepted.push(s.by);
+      else want[s.to].match_request.push(s.by);
+    }
     for (const m of landed.matchAccepts) want[m.of].match_accepted.push(m.by);
     const got = {};
     let good = true;
-    for (const k of ['u4', 'u5']) {
+    for (const k of matchKeys) {
       got[k] = { match_request: tally(k, 'match_request'), match_accepted: tally(k, 'match_accepted') };
       good = good && !!inbox[k]?.ok && onceEach(got[k].match_request, want[k].match_request) && onceEach(got[k].match_accepted, want[k].match_accepted);
     }
     expect(
       good,
       'social.notif-match',
-      ['u4', 'u5'].map((k) => `${k}: offers from ${fmt(got[k].match_request)} (expected ${list(want[k].match_request)}), accepted by ${fmt(got[k].match_accepted)} (expected ${list(want[k].match_accepted)})`).join('; '),
-      { got, want }
+      matchKeys.map((k) => `${k}: offers from ${fmt(got[k].match_request)} (expected ${list(want[k].match_request)}), accepted by ${fmt(got[k].match_accepted)} (expected ${list(want[k].match_accepted)})`).join('; '),
+      { got, want, sends: landed.matchSends, accepts: landed.matchAccepts }
     );
   }
   const u1n = inbox.u1;
@@ -2062,7 +2158,7 @@ const PHASES = [
   },
   {
     name: 'social',
-    title: 'likes, comments, follows and a crossing partner request — on TEST content only',
+    title: 'likes, comments, follows and partner requests (crossing + one-way) — on TEST content only',
     needs: [],
     actors: ['u1', 'u2', 'u3', 'u4', 'u5'],
     run: phaseSocial,
@@ -2072,8 +2168,9 @@ const PHASES = [
       'u1..u5 post_likes insert together (+u4 second device): likes = rows (schema82 lock-then-count), judged by whether the writes overlapped (in flight together + created_at = transaction start); one row for u4; u2+u3 unlike together: recount',
       'u2..u5 comments insert together; u1 reads comments_for; card count = TEST rows + outside rows; comment_likes upsert u1×2 + u4 together; u1 replies to u3; u3 cannot delete u2\'s; u5 deletes its own (sheet re-read)',
       'u2..u5 follows insert together (+u5 second device): followCounts(u1) = TEST rows + outside rows (counted apart), one row for u5; myFollowing each; u2 unfollows',
-      'u4 + u5 send_match_request to each other together (crossing): rows and «Təkliflər» recorded; u5 accepts; both phones + next launch must agree; chat opens, one thread',
-      'Bildirişlər: post_like / follow / comment_like / comment_reply / match_* exactly once each (no duplicate for a double tap); unread badge = unread rows',
+      'u4 + u5 send_match_request to each other together (crossing): since schema84 the second ask is written «accepted» and match_requests_mutual settles the first, so BOTH rows must end accepted, neither «Təkliflər» may offer a card, and both phones must say matched now and at the next launch; their chat opens with two first messages at once, one thread',
+      'u2 → u3 one-way (a pair this phase has not matched): the row stays «pending», u3\'s «Təkliflər» shows the card, u3 accepts; both sides then read matched with no card and no open offer, at the next launch too; the chat takes one message each way',
+      'Bildirişlər: post_like / follow / comment_like / comment_reply exactly once each (no duplicate for a double tap); match_* built from what each send really wrote — «pending» → one match_request to the person asked, «accepted» → one match_accepted to whoever asked first and NO match_request — plus one match_accepted per «Qəbul et»; unread badge = unread rows',
       'nothing real is liked, commented, followed or joined — those flows are UNREACHABLE by rule; reports/blocks by real people are not countable — ids to check with SQL go to report.expectedDeleted',
     ],
   },
