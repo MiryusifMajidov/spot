@@ -68,3 +68,6 @@ __pycache__/
 # The concurrency harness's last live report: real ids of the run (gyms, day
 # passes, the owner's test account) — output of a run, not a project file.
 /scripts/sim/last-report.json
+
+# Play bundles are build output, and 95 MB each.
+/apk/*.aab
