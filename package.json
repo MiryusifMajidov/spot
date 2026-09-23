@@ -64,6 +64,7 @@
     "lint": "expo lint",
     "i18n:test": "bash scripts/i18n-test/run.sh",
     "i18n:check": "python scripts/check_i18n.py",
+    "video:test": "node scripts/videometa-test/run.mjs",
     "sim:dry": "node scripts/sim/run.mjs --dry"
   },
   "private": true

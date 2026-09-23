@@ -17,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { decimal } from './format';
 import { t } from './i18n';
 import { supabase } from './supabase';
+import { stripVideoLocation } from './videoMeta';
 
 /** The videos bucket's own ceiling (schema33), refused before a long upload. */
 export const CLIP_MAX_BYTES = 100 * 1024 * 1024;
@@ -93,6 +94,10 @@ export async function uploadExerciseClip(uri: string, sizeHint?: number | null):
   }
 
   const buffer = await new Response(blob).arrayBuffer();
+  /* The `videos` bucket is public. A clip filmed at the gym — or at home —
+     carries the coordinates of that spot in its own metadata, and a coach
+     recording a cue for one student has no idea they are publishing them. */
+  stripVideoLocation(buffer);
   const { error } = await supabase.storage.from('videos').upload(path, buffer, {
     contentType: 'video/mp4',
     upsert: true,

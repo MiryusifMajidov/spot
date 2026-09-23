@@ -85,17 +85,30 @@ const MAX_EDGE = 1024;
  * genuinely too big.
  */
 async function downscale(uri: string, width: number, height: number): Promise<string> {
-  try {
+  const encode = async (resize: boolean) => {
     const ctx = ImageManipulator.manipulate(uri);
-    if (Math.max(width, height) > MAX_EDGE) {
+    if (resize && Math.max(width, height) > MAX_EDGE) {
       // One dimension only — the manipulator derives the other and keeps the ratio.
       ctx.resize(width >= height ? { width: MAX_EDGE } : { height: MAX_EDGE });
     }
     const rendered = await ctx.renderAsync();
     const out = await rendered.saveAsync({ compress: 0.8, format: SaveFormat.JPEG });
     return out.uri;
+  };
+  try {
+    return await encode(true);
   } catch {
-    return uri;
+    /* Second try WITHOUT the resize. This re-encode is not only about bytes: the
+       JPEG it writes carries no EXIF, which is how the camera's GPS tag — the
+       coordinates of the place the photo was taken — is kept out of the public
+       `avatars` and `gyms` buckets (the same leak src/lib/videoMeta.ts closes for
+       video). Returning the untouched original publishes that tag, so the cheaper
+       path is attempted before giving up on it. */
+    try {
+      return await encode(false);
+    } catch {
+      return uri;
+    }
   }
 }
 

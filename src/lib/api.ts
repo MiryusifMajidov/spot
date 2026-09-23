@@ -6,6 +6,7 @@ import { invalidateFocusCache } from './focusFetch';
 import { cacheGyms } from './gymCache';
 import { isPlaceholderName } from './authorName';
 import { uniqueTail } from './ids';
+import { stripVideoLocation } from './videoMeta';
 
 /** Raw DB row shapes (snake_case, as stored in Postgres). */
 export interface DbGym {
@@ -887,6 +888,9 @@ export async function uploadFeedVideo(input: {
   }
 
   const arraybuffer = await new Response(blob).arrayBuffer();
+  /* Where it was filmed does not go with it. The bucket is public and the file
+     is downloadable by anyone; see src/lib/videoMeta.ts. */
+  stripVideoLocation(arraybuffer);
   const { error: upErr } = await supabase.storage
     .from('videos')
     .upload(path, arraybuffer, { contentType: 'video/mp4', upsert: true });
