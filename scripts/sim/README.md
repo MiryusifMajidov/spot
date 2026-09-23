@@ -35,7 +35,7 @@ how many calls were attempted — it must say 0.
 | `daypass` | g2 switches passes off while u4 asks for one | u3 refused `day_pass_off`, u2's pass still valid at reception |
 | `privacy` | g1 reads u1's workouts, PRs, weight, messages…; u1 edits g1 / t1's listing; server-rule review probes | all 0 rows / refused; a review below 3 check-ins is refused by `reviews_insert` (see below) |
 | `end-student` | two devices of t1 end u2 at once | exactly one end lands; counts drop by one; t1 can no longer open a thread with u2; u2 keeps the assigned program |
-| `social` | u1–u5 like u1's TEST post (u4 from two devices), then u2+u3 unlike; u2–u5 comment; u1 likes u2's comment from two devices while u4 likes it; u2–u5 follow u1 (u5 from two devices); u4 and u5 send each other a partner request — in each step the **writes** leave together, after every actor's own reads | `community_posts.likes` = `post_likes` rows after each step (schema82), and the report says whether the writes really overlapped; one row per double tap; u1 reads every comment; a non-author cannot delete one; `followCounts` = TEST rows + rows from outside the run; the crossing offers leave both phones agreeing, now and at the next launch; the match opens one chat; every like/follow/comment-like/reply/offer notifies exactly once. Not run under `--keep` |
+| `social` | u1–u5 like u1's TEST post (u4 from two devices), then u2+u3 unlike; u2–u5 comment; u1 likes u2's comment from two devices while u4 likes it; u2–u5 follow u1 (u5 from two devices); u4 and u5 send each other a partner request; u2 asks u3 one-way and u3 accepts — in each racing step the **writes** leave together, after every actor's own reads | `community_posts.likes` = `post_likes` rows after each step (schema82), and the report says whether the writes really overlapped; one row per double tap; u1 reads every comment; a non-author cannot delete one; `followCounts` = TEST rows + rows from outside the run; the crossing asks end as **two accepted rows** with no «Qəbul et» card left anywhere (schema84), and both phones agree now and at the next launch; the accepted one-way offer leaves the same clean state; each match opens one chat; every like/follow/comment-like/reply notifies exactly once, and the match notifications match what each send really wrote. Not run under `--keep` |
 | `cleanup` | every actor runs `delete_my_account()` | JWTs stop resolving; every @handle is free again; nothing of the run left in public listings |
 
 Every check is **PASS**, **FAIL** or **UNREACHABLE**. UNREACHABLE means a live
@@ -57,7 +57,7 @@ between TEST actors. Liking, commenting on or following a real person's post,
 video or profile, and joining an admin challenge (a public participant count),
 are UNREACHABLE by rule. Two UI paths are reported UNREACHABLE and the exact
 app call is made directly instead: following u1 (the «İzlə» button needs a
-video by u1, and a video needs an upload), and finding u4/u5 in each other's
+video by u1, and a video needs an upload), and finding u2–u5 in each other's
 Kəşf lists (a TEST actor has no home gym). The post's insert returns no row
 (the app sends no `.select()`), so its id is read back from the feed query
 filtered to u1's own posts — the unfiltered feed would fetch real people's
@@ -65,11 +65,43 @@ posts. Comments, notifications and incoming offers from anyone outside the run
 are counted and dropped, never read further; where an app number counts
 everyone (`followCounts`, the card's comment count, a comment's likes), it is
 compared with the run's own rows plus the outside rows counted apart
-(head-only). The crossing partner request is
-recorded as INFO (what the server did) and FAILs only on an inconsistent
-state: a phone still offering «Qəbul et» from a partner it is matched with, or
-a next-launch state that depends on row order (`reconcileMatches` keys the
-rows by the other person; the launch read has no ORDER BY).
+(head-only).
+
+Partner requests are exercised twice, because since `schema84` the two cases
+are different flows. **Crossing** (u4 and u5 ask each other at the same
+instant): asking somebody who has already asked you is mutual interest, so
+`send_match_request` writes that row as `accepted` and the
+`match_requests_mutual` trigger settles the opposite row too — the run asserts
+two accepted rows, at least one send reading `'accepted'` back (the app reads
+the row back, and the screen then says «… da səni seçmişdi — artıq məşq
+yoldaşısınız»; the first asker's read-back can land after the trigger and
+legitimately read `'accepted'` as well), **no** «Qəbul et» card on either side,
+and both phones saying matched now and at the next launch. Two `pending` rows — both sends reading the
+opposite direction before the other transaction committed — is the old
+half-open pair and FAILs with that explanation, never a silent pass: accepting
+one direction would leave the other pending, its sender keeping a «Qəbul et»
+card from a partner it is already matched with, and the next launch would
+depend on row order (`reconcileMatches` keys the rows by the other person; the
+launch read has no ORDER BY). **One-way** (u2 asks u3, a pair the phase has not
+matched): the row stays `pending`, u3's «Təkliflər» must show the card, u3
+presses «Qəbul et», and both sides must then read matched with no card and no
+open offer, at the next launch too — that is what keeps the accept path
+covered now that the crossing pair never produces a card. Both pairs then open
+a chat (the crossing pair with two first messages at the same instant, the
+one-way pair with one message each way).
+
+The match notifications are built from what each send **really** wrote, not
+from the fact that it was sent: a row written `pending` means one
+`match_request` to the person asked; a row born `accepted` means **no**
+`match_request` and one `match_accepted` to whoever asked first; every «Qəbul
+et» that reached the server adds one `match_accepted` to the sender of that
+offer. Exactly one per (type, actor), for u2 and u3 as well as u4 and u5.
+Which of the crossing asks arrived second — the one written `accepted` — is
+read from the two rows' `created_at` (a transaction that saw the other
+direction must have started after it committed), not from the read-backs,
+which can both say `accepted`. If that cannot be established the crossing
+pair's two notifications are reported UNREACHABLE
+(`social.notif-match-cross`) instead of guessed.
 
 Starting together is not writing together. Each app action reads first
 (`auth.getUser`, the caller's profile row) and writes last, so actions released

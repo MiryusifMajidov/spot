@@ -479,11 +479,11 @@ export function makeActor(role, idx, runId, { env = null, recorder = null, dry =
 export async function cleanup(a) {
   if (!a?.client || a.deleted || !a.userId) return ok(null, { skipped: true });
   try {
-    // app: src/lib/api.ts:1312
+    // app: src/lib/api.ts:1323
     const { data: who, error: whoErr } = await a.client.auth.getUser();
     if (whoErr || !who?.user?.id) return fail(whoErr ?? new Error('not-signed-in'), { step: 'getUser' });
 
-    // app: src/lib/api.ts:1327
+    // app: src/lib/api.ts:1338
     const { data: files, error: listErr } = await a.client.rpc('my_storage_objects');
     if (listErr) return fail(listErr, { step: 'my_storage_objects' });
 
@@ -494,18 +494,18 @@ export async function cleanup(a) {
       byBucket.set(f.bucket_id, arr);
     }
     for (const [bucket, names] of byBucket) {
-      // app: src/lib/api.ts:1337
+      // app: src/lib/api.ts:1348
       const { error: rmErr } = await a.client.storage.from(bucket).remove(names);
       if (rmErr) return fail(rmErr, { step: 'storage.remove', bucket });
     }
 
-    // app: src/lib/api.ts:1344
+    // app: src/lib/api.ts:1355
     const { error } = await a.client.rpc('delete_my_account');
     if (error) return fail(error, { step: 'delete_my_account' });
     a.deleted = true;
     a.log('deleted', { userId: a.userId, profileId: a.profileId });
 
-    // app: src/lib/api.ts:1347
+    // app: src/lib/api.ts:1358
     await a.client.auth.signOut().catch(() => {});
     return ok(null, { files: (files ?? []).length });
   } catch (e) {

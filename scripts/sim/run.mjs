@@ -1122,10 +1122,11 @@ async function phaseEndStudent(ctx) {
 }
 
 /**
- * Likes, comments, follows, a crossing partner request and the notifications
- * they cause — ONLY on content this run's TEST actors made: u1's own post, the
- * TEST comments under it, follows and offers between TEST actors. Nothing real
- * is liked, commented, followed or joined; those flows are UNREACHABLE by rule.
+ * Likes, comments, follows, partner requests (u4 ↔ u5 crossing, u2 → u3 one-way)
+ * and the notifications they cause — ONLY on content this run's TEST actors
+ * made: u1's own post, the TEST comments under it, follows and offers between
+ * TEST actors. Nothing real is liked, commented, followed or joined; those flows
+ * are UNREACHABLE by rule.
  */
 async function phaseSocial(ctx) {
   if (ctx.opts.keep) {
@@ -1537,7 +1538,7 @@ async function phaseSocial(ctx) {
   const why = (v) => {
     const parts = [];
     if (Object.values(v).some((s) => s.card)) parts.push('one direction is still pending, so its sender gets a «Qəbul et» card from a person it is already matched with');
-    if (Object.values(v).some((s) => s.launch !== s.launchAlt)) parts.push('reconcileMatches keys the rows by the other person (db.ts:515) and the launch read has no ORDER BY (api.ts:1221), so the next launch shows a different state depending on which row the server returns last');
+    if (Object.values(v).some((s) => s.launch !== s.launchAlt)) parts.push('reconcileMatches keys the rows by the other person (db.ts:515) and the launch read has no ORDER BY (api.ts:1230), so the next launch shows a different state depending on which row the server returns last');
     if (Object.values(v).some((s) => s.device !== 'accepted')) parts.push('a phone does not show the match');
     return parts.join('; ');
   };
@@ -1551,9 +1552,8 @@ async function phaseSocial(ctx) {
     { actor: u5, label: 'u5 → u4', alignWrite: true, fn: (_p, sync) => act.sendMatchRequest(u5, u4.profileId, proposal, { sync, partnerName: u4.name }) },
   ]);
   for (const r of s6.results) {
-    // The status the app read back decides everything after the tap — the toast,
-    // this device's state, and which notification the server sent (scenario 5).
-    if (r.ok) landed.matchSends.push({ by: r.actor, to: r.actor === 'u4' ? 'u5' : 'u4', status: r.status });
+    // The status the app read back decides what the person is told and what this
+    // device records (match.tsx:220-231).
     expect(r.ok, `social.match-sent.${r.actor}`, r.ok ? `send_match_request accepted, the row came back «${r.status}» — «${r.shown}»` : `refused: ${msgOf(r)} — «${r.shown ?? 'Təklif göndərilmədi'}»`, r.ok ? null : r.error);
   }
   const [p4, p5] = await Promise.all([act.launchMatchSync(u4, { apply: false }), act.launchMatchSync(u5, { apply: false })]);
@@ -1561,6 +1561,47 @@ async function phaseSocial(ctx) {
   const rows5 = pairRows(p5, u5, u4);
   const bothAccepted = rows4.length === 2 && rows4.every((x) => x.endsWith('accepted'));
   const twoPending = rows4.length === 2 && rows4.every((x) => x.endsWith('pending'));
+
+  // WHICH ask arrived second is what the notifications hang on, and the app's own
+  // read-back cannot tell: the first asker's read lands after the trigger has
+  // settled its row, so it reads «accepted» too. The rows themselves can: a
+  // transaction that saw the other direction must have started after it
+  // committed, so of two accepted rows the LATER created_at is the one written
+  // «accepted» (born accepted → no «match_request», and its update sends
+  // «match_accepted» to the earlier asker). Not an app call — the app never reads
+  // created_at here — so it is a bookkeeping probe of this pair's own two rows.
+  const crossProbe = await act.probeRead(u4, (c) =>
+    c
+      .from('match_requests')
+      .select('from_profile,to_profile,status,created_at')
+      .in('from_profile', [u4.profileId, u5.profileId])
+      .in('to_profile', [u4.profileId, u5.profileId])
+  );
+  const crossRows = (crossProbe.rows ?? [])
+    .map((r) => ({ by: keyOf(r.from_profile), to: keyOf(r.to_profile), status: r.status, at: r.created_at }))
+    .sort((x, y) => tsMs(x.at) - tsMs(y.at));
+  const acceptedSends = s6.results.filter((r) => r.ok && r.status === 'accepted').map((r) => r.actor);
+  const secondAsker = bothAccepted
+    ? crossRows.length === 2 && crossRows.every((r) => Number.isFinite(tsMs(r.at)))
+      ? crossRows[1].by
+      : acceptedSends.length === 1
+        ? acceptedSends[0]
+        : null
+    : null;
+  // Only when the direction is known can the two match notifications be judged.
+  const crossNotifUnknown = bothAccepted && !secondAsker;
+  for (const r of s6.results) {
+    if (!r.ok) continue;
+    if (crossNotifUnknown) continue;
+    const to = r.actor === 'u4' ? 'u5' : 'u4';
+    landed.matchSends.push({ by: r.actor, to, status: r.status, wrote: secondAsker ? (r.actor === secondAsker ? 'accepted' : 'pending') : r.status });
+  }
+  if (crossNotifUnknown) {
+    unreachable(
+      'social.notif-match-cross',
+      `both rows ended accepted, but the harness cannot say which ask arrived second (${crossProbe.ok ? 'the rows carry no usable created_at' : `the row probe failed: ${msgOf(crossProbe)}`}, and ${acceptedSends.length} read-back(s) said «accepted»), so the u4/u5 «match_request» / «match_accepted» pair is not judged — u2/u3 below still is`
+    );
+  }
   // schema84 (applied 2026-09-23): asking somebody who has already asked you is
   // mutual interest, so send_match_request writes that row as 'accepted' and the
   // match_requests_mutual trigger settles the opposite row too.
@@ -1568,34 +1609,40 @@ async function phaseSocial(ctx) {
     'social.match-cross-outcome',
     `server after the crossing sends: ${rows4.length} row(s) — ${rows4.join(', ') || 'none'}${
       bothAccepted
-        ? ': the second ask met the first, so it was written as «accepted» and match_requests_mutual settled the first direction — a match on the spot, with nothing left to accept'
+        ? `: the second ask${secondAsker ? ` (${secondAsker}'s, by created_at)` : ''} met the first, so it was written as «accepted» and match_requests_mutual settled the first direction — a match on the spot, with nothing left to accept`
         : twoPending
           ? ': BOTH rows are pending — each send read the other direction before the other had committed, so neither saw an ask to answer'
           : ''
     }`,
-    { u4: rows4, u5: rows5 }
+    { u4: rows4, u5: rows5, rows: crossRows, secondAsker, readBacks: s6.results.map((r) => ({ actor: r.actor, status: r.status ?? null })) }
   );
   expect(p4.ok && p5.ok && rows4.join('|') === rows5.join('|'), 'social.match-cross-rows-agree', p4.ok && p5.ok ? `u4 reads ${rows4.join(', ') || 'none'}; u5 reads ${rows5.join(', ') || 'none'}` : `read failed: ${msgOf(p4.ok ? p5 : p4)}`);
 
-  // Exactly one of the two sends must come back 'accepted' (the one that arrived
-  // second), and both rows must be accepted. Two pending rows is the pre-schema84
-  // half-open pair — a FAIL with its own explanation, never a silent pass.
-  const acceptedSends = s6.results.filter((r) => r.ok && r.status === 'accepted').map((r) => r.actor);
+  // Both rows must end accepted, and at least one phone must have SEEN that in
+  // its read-back. Only one row can be WRITTEN accepted (the second ask; the
+  // other direction is settled by the trigger), but the first asker's read-back
+  // can arrive after that update and then legitimately reads «accepted» too —
+  // both phones then say «artıq məşq yoldaşısınız», which is the truth.
+  // Two pending rows is the pre-schema84 half-open pair: a FAIL with its own
+  // explanation, never a silent pass.
+  const mutualOk = bothAccepted && acceptedSends.length >= 1;
   expect(
-    bothAccepted && acceptedSends.length === 1,
+    mutualOk,
     'social.match-cross-mutual',
-    bothAccepted && acceptedSends.length === 1
-      ? `${acceptedSends[0]} asked second: its row was written «accepted» and match_requests_mutual settled the other direction — ${rows4.join(', ')}`
+    mutualOk
+      ? `both rows are accepted — ${rows4.join(', ')}: the ask that arrived second was written «accepted» and match_requests_mutual settled the other direction${acceptedSends.length === 2 ? '; both read-backs saw it, so both phones said «artıq məşq yoldaşısınız» (the trigger beat the first asker\'s read-back)' : `; ${acceptedSends[0]}'s read-back saw it and its phone said «artıq məşq yoldaşısınız»`}`
       : twoPending
         ? `both rows stayed «pending» (${rows4.join(', ')}): each send read the opposite direction before the other transaction had committed, so send_match_request saw nothing to answer. The pair is back to the state schema84 was written for — accepting one direction would leave the other pending, its sender keeping a «Qəbul et» card from somebody it is already matched with, and the next launch showing «accepted» or «incoming» depending on which row the server returns last`
-        : `expected two accepted rows and exactly one send answering «accepted»; the server left ${rows4.join(', ') || 'no rows'} and ${acceptedSends.length} send(s) came back «accepted»`,
+        : bothAccepted
+          ? `both rows are accepted (${rows4.join(', ')}), but neither send read that back: both phones were told «Təklif göndərildi» although the two were already matched — the read-back (api.ts:682) answered «pending», and only «Təkliflər» or the next launch corrects the screens`
+          : `expected two accepted rows; the server left ${rows4.join(', ') || 'no rows'}, and ${acceptedSends.length} send(s) came back «accepted»`,
     { rows: rows4, acceptedSends, sends: s6.results.map((r) => ({ actor: r.actor, ok: r.ok, status: r.status ?? null })) }
   );
 
   const v1 = await viewPair(u4, u5);
-  // Both rows are accepted, so neither «Təkliflər» has a card whose created_at
-  // could time the two sending transactions — raceOf is told why, not handed [].
-  const race6 = raceOf(s6.step, cardsLeft(v1).length ? Object.values(v1).filter((s) => s.card).map((s) => s.card.at) : null, 'both rows are accepted, so neither «Təkliflər» has an incoming card to read the server times from');
+  // Both rows carry created_at = now() of their sending transaction, so the
+  // probe above also says how close together the two transactions began.
+  const race6 = raceOf(s6.step, crossProbe.ok ? crossRows.map((r) => r.at) : null, `the pair's rows could not be read (${msgOf(crossProbe)})`);
   info('social.match-cross-screens', `after the crossing sends — ${describe(v1)}. The two sends: ${race6.text}`, { write: s6.step.write, contended: race6.contended, view: v1 });
   expect(
     cardsLeft(v1).length === 0,
@@ -1645,7 +1692,9 @@ async function phaseSocial(ctx) {
   // far only liked, commented on and followed u1's post.
   const oneWay = `TEST ${ctx.runId} · C. 18:00`;
   const send23 = await act.sendMatchRequest(u2, u3.profileId, oneWay, { partnerName: u3.name });
-  if (send23.ok) landed.matchSends.push({ by: 'u2', to: 'u3', status: send23.status });
+  // One row only, so the read-back IS what the row was written as: nothing can
+  // have settled it between the insert and the read.
+  if (send23.ok) landed.matchSends.push({ by: 'u2', to: 'u3', status: send23.status, wrote: send23.status });
   expect(
     send23.ok && send23.status === 'pending',
     'social.match-oneway-sent',
@@ -1669,8 +1718,8 @@ async function phaseSocial(ctx) {
   if (card3) {
     const acc = await act.acceptMatchRequest(u3, card3);
     expect(acc.ok, 'social.match-oneway-accepted', acc.ok ? `u3 accepted u2's offer — the row came back, «${acc.shown}»` : `accept did not reach the server (${msgOf(acc)}) — «${acc.shown}»`);
-    if (acc.ok) landed.matchAccepts.push({ by: 'u3', of: 'u2' });
     if (acc.ok) {
+      landed.matchAccepts.push({ by: 'u3', of: 'u2' });
       const after23 = await viewPair(u2, u3);
       expect(
         clean(after23),
@@ -1751,8 +1800,7 @@ async function phaseSocial(ctx) {
     );
   }
   if (landed.matchSends.length || landed.matchAccepts.length) {
-    // What the server really had to send, built from what each send REALLY did
-    // (send_match_request reads its row back, so the harness knows which it was):
+    // What the server really had to send, built from what each send REALLY wrote:
     //   · a row written 'pending' is an ask nobody has answered → one
     //     «match_request» to the person asked;
     //   · a row written 'accepted' answers an ask that was already there, so
@@ -1760,10 +1808,12 @@ async function phaseSocial(ctx) {
     //     one «match_accepted» to whoever asked first — the person asked here.
     // Plus one «match_accepted» for every «Qəbul et» that reached the server,
     // addressed to the sender of the offer. Exactly one per (type, actor).
-    const matchKeys = ['u2', 'u3', 'u4', 'u5'];
+    // u4/u5 are left out only when the crossing pair's direction could not be
+    // established (social.notif-match-cross says so) — never silently.
+    const matchKeys = crossNotifUnknown ? ['u2', 'u3'] : ['u2', 'u3', 'u4', 'u5'];
     const want = Object.fromEntries(matchKeys.map((k) => [k, { match_request: [], match_accepted: [] }]));
     for (const s of landed.matchSends) {
-      if (s.status === 'accepted') want[s.to].match_accepted.push(s.by);
+      if ((s.wrote ?? s.status) === 'accepted') want[s.to].match_accepted.push(s.by);
       else want[s.to].match_request.push(s.by);
     }
     for (const m of landed.matchAccepts) want[m.of].match_accepted.push(m.by);

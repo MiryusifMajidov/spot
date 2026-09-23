@@ -809,11 +809,11 @@ export async function createProgram(a, { title, desc, days }) {
 /** Deleting a program from the author's library (removeProgram → deleteMyProgram). */
 export async function deleteMyProgram(a, id) {
   try {
-    // app: src/lib/api.ts:1039
+    // app: src/lib/api.ts:1050
     const { data, error } = await a.client.from('programs').delete().eq('id', id).select('id');
     if (error) return fail(error);
     if (data?.length) return ok(data, { result: 'deleted' });
-    // app: src/lib/api.ts:1042
+    // app: src/lib/api.ts:1053
     const { data: still, error: readErr } = await a.client.from('programs').select('id').eq('id', id).maybeSingle();
     if (readErr) return fail(readErr);
     if (still) return fail(new Error('program-not-deleted'));
@@ -1138,10 +1138,10 @@ export function subscribeToThread(a, threadId, onInsert) {
 /** «Zalı qeydiyyatdan keçir» on create-gym.tsx: createGym(), then the pin. */
 export async function createGym(a, { name, district, hours, priceMonth, dayPass, amenities, lat, lng }) {
   try {
-    // app: src/lib/api.ts:728
+    // app: src/lib/api.ts:739
     const me = await readMyProfile(a);
     if (!me) return fail(new Error('no profile'));
-    // app: src/lib/api.ts:733-739
+    // app: src/lib/api.ts:744-750
     const { data: owned, error: ownedErr } = await a.client
       .from('gyms')
       .select('id')
@@ -1151,9 +1151,9 @@ export async function createGym(a, { name, district, hours, priceMonth, dayPass,
       .maybeSingle();
     if (ownedErr) return fail(ownedErr);
     if (owned?.id) return fail(new Error('gym-exists'), { gymId: owned.id });
-    // mirrors: src/lib/api.ts:742 (time + random tail since the cl9gnb run)
+    // mirrors: src/lib/api.ts:753 (time + random tail since the cl9gnb run)
     const id = `usr-${uniqueTail()}`;
-    // app: src/lib/api.ts:748-760
+    // app: src/lib/api.ts:759-771
     const { error } = await a.client.from('gyms').insert({
       id,
       name,
@@ -1471,10 +1471,10 @@ export async function openGymPage(a, gymId) {
 
 export async function getMyDayPass(a, gymId) {
   try {
-    // app: src/lib/api.ts:822
+    // app: src/lib/api.ts:833
     const uid = await getUserId(a);
     if (!uid) return ok([], { pass: null });
-    // app: src/lib/api.ts:824-833
+    // app: src/lib/api.ts:835-844
     const { data, error } = await a.client
       .from('day_passes')
       .select('code,expires_at,price')
@@ -1495,7 +1495,7 @@ export async function getMyDayPass(a, gymId) {
 /** «Day-pass al» on the gym page. */
 export async function createDayPass(a, gymId) {
   try {
-    // app: src/lib/api.ts:808
+    // app: src/lib/api.ts:819
     const { data, error } = await a.client.rpc('create_day_pass', { g_id: gymId });
     if (error) return fail(error, { dayPassOff: error.message === 'day_pass_off' });
     const r = data ?? {};
@@ -1570,7 +1570,7 @@ export async function finishWorkout(a, { title, durationSec, volumeKg, setsDone,
     // app: src/app/(tabs)/workout/session.tsx:359
     const me = await readMyProfile(a);
     if (!me) return fail(new Error('no profile'));
-    // app: src/lib/api.ts:942
+    // app: src/lib/api.ts:953
     const { error } = await a.client.from('workouts').upsert(
       {
         id,
@@ -1589,7 +1589,7 @@ export async function finishWorkout(a, { title, durationSec, volumeKg, setsDone,
       // app: src/app/(tabs)/workout/session.tsx:380
       const pme = await readMyProfile(a);
       if (!pme) continue;
-      // app: src/lib/api.ts:1001
+      // app: src/lib/api.ts:1012
       await a.client.from('prs').insert({ profile_id: pme.id, lift, value, delta: null });
     }
     return ok(null, { workoutId: id });
@@ -1651,11 +1651,11 @@ export async function createCommunityPost(a, text) {
     const gymName = '';
     // app: src/app/(tabs)/feed/compose.tsx:38
     const p = { author: a.store.profile.name.trim(), gym: gymName, body: text.trim() };
-    // app: src/lib/api.ts:681
+    // app: src/lib/api.ts:690
     const me = await readMyProfile(a);
     if (!me?.id) return fail(new Error('no profile'));
     // No .select(): the app gets no row back and meets its post again in the feed.
-    // app: src/lib/api.ts:686-697
+    // app: src/lib/api.ts:695-706
     const { error } = await a.client.from('community_posts').insert({
       author: p.author,
       author_id: me.id,
@@ -2006,7 +2006,7 @@ function forgetOutgoing(a, partnerId) {
   a.db.matches = rest;
 }
 
-// mirrors: src/lib/api.ts:1228-1234
+// mirrors: src/lib/api.ts:1237-1243
 function mapMatchRows(data, meId) {
   return data.map((r) => {
     const iSent = r.from_profile === meId;
@@ -2091,10 +2091,10 @@ export async function sendMatchRequest(a, toProfileId, proposal, { sync = noSync
 }
 
 async function readMyMatchRequests(a) {
-  // app: src/lib/api.ts:1219
+  // app: src/lib/api.ts:1228
   const me = await readMyProfile(a);
   if (!me) return [];
-  // app: src/lib/api.ts:1221-1224
+  // app: src/lib/api.ts:1230-1233
   const { data, error } = await a.client
     .from('match_requests')
     .select('from_profile,to_profile,status,note')
