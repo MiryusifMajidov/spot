@@ -16096,6 +16096,15 @@
   "placeholders": []
  },
  {
+  "key": "Hesabı silinmiş istifadəçi",
+  "counted": false,
+  "files": [
+   "src/lib/format.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Rəy yazanda {n} check-in etmişdi",
   "counted": true,
   "files": [

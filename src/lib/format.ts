@@ -122,3 +122,12 @@ export function tenureLabel(raw: string | null | undefined, tr: typeof t = t): s
   const n = Number(m[1]);
   return tr('Rəy yazanda {n} check-in etmişdi', { n, count: n });
 }
+
+/** Who wrote a review. `reviews.name` is a COPY of the display name, taken when
+ *  the review was posted, and «Hesabı sil» empties it (schema85) while the
+ *  review itself stays for the gym. An empty name therefore means «that account
+ *  is gone» — said in the reader's own language, never filled with a made-up
+ *  name. */
+export function reviewerName(name: string | null | undefined, tr: typeof t = t): string {
+  return (name ?? '').trim() || tr('Hesabı silinmiş istifadəçi');
+}

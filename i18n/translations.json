@@ -10009,5 +10009,10 @@
   "key": "{name} da səni seçmişdi — artıq məşq yoldaşısınız",
   "ru": "{name} — взаимный выбор: вы уже напарники",
   "en": "{name} had chosen you too — you are training partners now"
+ },
+ {
+  "key": "Hesabı silinmiş istifadəçi",
+  "ru": "Пользователь удалил аккаунт",
+  "en": "Account deleted"
  }
 ]

@@ -126,6 +126,7 @@ export const system: Dict = {
   'Hesabdan çıxdın — bu telefondakı məlumatlar silindi': 'Выход выполнен — данные на этом телефоне удалены',
   'Hesablar': 'Аккаунты',
   'Hesabı dəyiş': 'Сменить аккаунт',
+  'Hesabı silinmiş istifadəçi': 'Пользователь удалил аккаунт',
   'Hesabı tamamilə sil': 'Удалить аккаунт полностью',
   'Hesabın bağlanıb — yeni paylaşım, şərh və mesaj göndərə bilmirsən.': 'Твой аккаунт закрыт — ты не можешь отправлять новые публикации, комментарии и сообщения.',
   'Hesabın dayandırılıb — yeni paylaşım, şərh və mesaj göndərə bilmirsən.': 'Твой аккаунт приостановлен — ты не можешь отправлять новые публикации, комментарии и сообщения.',

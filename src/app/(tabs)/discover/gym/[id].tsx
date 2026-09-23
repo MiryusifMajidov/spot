@@ -22,7 +22,7 @@ import { createDayPass, DayPass, getGym, getMyDayPass, getMyProfile, getWhoIsHer
 import { useAuthGate, useIsGuest } from '@/lib/authGate';
 import { usePartnersForGym, usePartnersPhase, useTrainersForGym, useTrainersForGymPhase } from '@/lib/hooks';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
-import { dayAndMonth, tenureLabel } from '@/lib/format';
+import { dayAndMonth, reviewerName, tenureLabel } from '@/lib/format';
 import { showModerationSheet } from '@/lib/moderation';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
@@ -1004,7 +1004,7 @@ export default function GymDetail() {
                   {reviews.map((r) => (
                     <View key={r.id} style={styles.review}>
                       <View style={styles.reviewHead}>
-                        <AppText variant="headline">{r.name}</AppText>
+                        <AppText variant="headline">{reviewerName(r.name, t)}</AppText>
                         <View style={{ flexDirection: 'row', gap: 2 }}>
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Icon key={i} name="star" size={12} color={i < r.rating ? palette.streak : palette.separator} />

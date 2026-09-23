@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { StatusBarScrim } from '@/components/ui/StatusBarScrim';
 import { createReport } from '@/lib/api';
-import { tenureLabel } from '@/lib/format';
+import { reviewerName, tenureLabel } from '@/lib/format';
 import { EmptyNote, GymGate, getGymReviews, replyToReview, useMyGym, type GymReviewRow } from '@/lib/gymOwner';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useT } from '@/lib/useT';
@@ -187,9 +187,9 @@ export default function GymReviews() {
             {reviews.map((r) => (
               <View key={r.id} style={styles.card}>
                 <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                  <Avatar name={r.name} size={40} />
+                  <Avatar name={reviewerName(r.name, t)} size={40} />
                   <View style={{ flex: 1 }}>
-                    <AppText variant="headline">{r.name}</AppText>
+                    <AppText variant="headline">{reviewerName(r.name, t)}</AppText>
                     {tenureLabel(r.tenure, t) ? (
                       <AppText variant="caption" color={palette.tertiary} style={{ marginTop: 2 }}>
                         {tenureLabel(r.tenure, t)}
