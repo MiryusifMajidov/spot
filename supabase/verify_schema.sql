@@ -569,7 +569,8 @@ expected_rpcs(f, why) as (values
   ('is_admin',                 'schema4 RLS predicate; also called by schema6 tr_read/sp_read'),
   ('admin_role',               'schema4 admins_owner_write predicate'),
   ('admin_at_least',           'schema4 reports/tv/gc/dp admin update predicates'),
-  ('owns_trainer',             'schema6 tr_update / sp_write — the trainer panel''s accept/assign writes'),
+  ('owns_trainer',             'schema6 tr_update / schema89 sp_assign — the trainer panel''s accept/assign writes'),
+  ('trainer_has_student',      'schema89 sp_assign/sp_edit — the consent test: an ACCEPTED trainer_requests row'),
   ('owns_profile',             'schema6 tr_insert — requestTrainer'),
   ('owns_gym',                 'schema6 profiles_gym_owner_read / checkins_gym_owner_read — the gym roster'),
   ('sync_gym_location',        'schema8 trigger fn — turns owner-picked lat/lng into the PostGIS point gyms_near sorts by'),
@@ -634,7 +635,11 @@ expected_policies(tbl, pol, why) as (values
   ('trainer_requests','tr_read',                'schema6:70 — getMyStudents'),
   ('trainer_requests','tr_update',              'schema6:75 — accept/decline'),
   ('student_programs','sp_read',                'schema6:80'),
-  ('student_programs','sp_write',               'schema6:84 — assignStudentProgram'),
+  -- schema89 split sp_write into three: the INSERT and the UPDATE now also
+  -- require an accepted student, and only the DELETE is trainer-only.
+  ('student_programs','sp_assign',              'schema89 — assignStudentProgram (was schema6 sp_write)'),
+  ('student_programs','sp_edit',                'schema89 — re-assigning an existing row'),
+  ('student_programs','sp_unassign',            'schema89 — removing an assignment'),
   ('profiles','profiles_gym_owner_read',        'schema6:105 — the gym roster reads OTHER users'' profiles'),
   ('check_ins','checkins_gym_owner_read',       'schema6:109 — the gym occupancy chart'),
   -- user-owned metrics
@@ -959,6 +964,23 @@ results(check_kind, object, status, detail) as (
                              and pg_get_functiondef(p.oid) like '%detaching%')
               then 'OK' else 'MISSING' end,
          'schema85/87. reviews.author_id is ON DELETE SET NULL, and reviews_guard called that tampering — so anyone who had written a review COULD NOT DELETE THEIR ACCOUNT at all; reviews_stamp also put the name back.'
+  union all
+  select 'column', 'moderation_actions.admin_id lets the admin be deleted',
+         case when (select not attnotnull from pg_attribute
+                     where attrelid = 'public.moderation_actions'::regclass and attname = 'admin_id')
+               and (select confdeltype = 'n' from pg_constraint
+                     where conname = 'moderation_actions_admin_id_fkey')
+              then 'OK' else 'MISSING' end,
+         'schema88. The FK was ON DELETE RESTRICT against auth.users, so from the moment the owner''s admin account resolved its first report, «Hesabı sil» failed for it with a foreign-key error. The moderation record stays; only «who did it» goes.'
+  union all
+  select 'policy', 'a program can only be assigned to an accepted student',
+         case when not exists (select 1 from pg_policies where schemaname='public' and tablename='student_programs' and policyname='sp_write')
+               and exists (select 1 from pg_policies where schemaname='public' and tablename='student_programs'
+                            and policyname='sp_assign' and with_check like '%trainer_has_student%')
+               and exists (select 1 from pg_policies where schemaname='public' and tablename='student_programs'
+                            and policyname='sp_edit' and with_check like '%trainer_has_student%')
+              then 'OK' else 'MISSING' end,
+         'schema89. sp_write tested only owns_trainer(trainer_id) and said nothing about student_id, and becoming a coach is self-service — so ANY account could put a program, with its free-text note, into ANY person''s «Məşq» tab, past the request flow and past the chat gate. Proved rolled back: stranger=blocked by RLS (42501) | accepted student: the assignment lands.'
   union all
   select 'function', 'suggested_trainers falls back to verified trainers only',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
