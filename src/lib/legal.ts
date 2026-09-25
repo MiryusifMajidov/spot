@@ -94,7 +94,7 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
       {
         heading: 'Hesabın bağlanması',
         body: [
-          'Hesabını istənilən vaxt tətbiqin içindən silə bilərsən: Profil → Məxfilik → Hesabı sil. Silinmə geri qaytarılmır.',
+          'Hesabını istənilən vaxt tətbiqin içindən silə bilərsən: Profil → Parametrlər → Məxfilik → «Hesabı tamamilə sil». Silinmə geri qaytarılmır.',
           'İcma qaydalarını ciddi pozan hesablar dayandırıla bilər.',
         ],
       },
@@ -123,14 +123,16 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
           'Məşq: etdiyin məşqlər, setlər, çəkilər, RPE, şəxsi rekordlar.',
           'Check-in: hansı zalda, nə vaxt. Check-in zalın kodu və ya QR-ı ilə olur — telefonun yeri oxunmur.',
           'Ünsiyyət: mesajlar, şərhlər, postlar, videolar.',
+          'Tətbiqi ilk açdığın anda serverdə adsız (anonim) hesab yaradılır — məşqini dərhal qeyd edə bilməyin üçün. Onun içində nə ad, nə e-poçt, nə telefon olur. E-poçt, Apple və ya Google ilə girdiyin anda həmin hesab sənin olur; ikinci hesab yaradılmır və qeydlərin yerində qalır.',
         ],
       },
       {
         heading: 'Kim nəyi görür',
         body: [
           'Digər istifadəçilər: adın, istifadəçi adın, yaşın, cinsin, zalın, məqsədin, səviyyən, bion, avatarın, paylaşdığın video və postlar.',
-          '«İndi zalda» siyahısı: yalnız check-in-in qüvvədə olduğu müddətdə görünürsən. Vaxtı bitəndən sonra həmin qeyd başqalarına bağlanır. Profil → Məxfilik-dən tamamilə söndürə bilərsən.',
-          'MƏŞQ TƏFƏRRÜATLARIN, ŞƏXSİ QEYDLƏRİN VƏ YAZIŞMALARIN heç kimə görünmür — nə digər istifadəçilərə, nə zal sahibinə, nə SPOT admininə. Bu, tətbiqin arzusu deyil, bazanın icazə qaydası ilə bağlanıb.',
+          '«İndi zalda» siyahısı: yalnız check-in-in qüvvədə olduğu müddətdə görünürsən. Vaxtı bitəndən sonra həmin qeyd başqalarına bağlanır. Profil → Parametrlər → Məxfilik-dən tamamilə söndürə bilərsən.',
+          'MƏŞQ TƏFƏRRÜATLARIN, ŞƏXSİ QEYDLƏRİN VƏ YAZIŞMALARIN nə digər istifadəçilərə, nə zal sahibinə, nə admin panelinə görünür. Bu, tətbiqin arzusu deyil, bazanın icazə qaydası ilə bağlanıb.',
+          'Tam dürüst olmaq üçün bir istisna: bazanı idarə edən operatorun texniki imkanı bu qaydaları keçməyə çatır — bu, istənilən bulud xidmətində belədir. Ondan yalnız təhlükəsizlik şikayətini araşdırmaq və ya qanunun tələb etdiyi hallarda istifadə olunur.',
           'Zal sahibi: yalnız öz zalının check-in qeydlərini və üzv sayını görür. Üzvün məşqini, yazışmasını və ya yerini görmür.',
           'Müəllim: yalnız onu qəbul etmiş şagirdin ona açdığı məşq datasını görür.',
           'Admin: şikayətlərə baxır. Məşq, foto və yazışma sorğusu admin panelində ümumiyyətlə yoxdur.',
@@ -149,21 +151,21 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
         heading: 'Haradadır',
         body: [
           'Məlumat Supabase üzərində saxlanılır. Server hazırda Avstraliya (Sidney) regionundadır; Avropa regionuna köçürülməsi planlaşdırılır.',
-          'Şifrələr və hesab identifikatorları Supabase Auth tərəfindən idarə olunur.',
+          'Hesab identifikatorları və giriş nişanları Supabase Auth tərəfindən idarə olunur. SPOT-da parol yoxdur: giriş e-poçta gələn kodla, iOS-da Apple hesabı ilə, Android-də Google hesabı ilə olur.',
         ],
       },
       {
         heading: 'Reklam və üçüncü tərəflər',
         body: [
           'Reklam şəbəkəsi yoxdur. Analitika SDK-sı yoxdur. Məlumatın satılmır və reklam məqsədilə heç kimə verilmir.',
-          'Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə OpenStreetMap kafel serverləri və Leaflet kitabxanasını verən unpkg.com — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür.',
+          'Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə OpenStreetMap kafel serverləri və Leaflet kitabxanasını verən unpkg.com — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür; giriş düyməsini basdıqda isə Apple (iOS) və ya Google (Android), yalnız o an və yalnız kimliyini təsdiqləmək üçün.',
         ],
       },
       {
         heading: 'Sənin hüquqların',
         body: [
           'Profilini istənilən vaxt redaktə edə bilərsən.',
-          'Hesabını tətbiqin içindən silə bilərsən: Profil → Məxfilik → Hesabı sil. Bu, profilini, məşqlərini, proqramlarını, videolarını, şərhlərini və yüklədiyin faylları silir; yazdığın zal rəyi qalır, amma adın onun üstündən götürülür.',
+          'Hesabını tətbiqin içindən silə bilərsən: Profil → Parametrlər → Məxfilik → «Hesabı tamamilə sil». Bu, profilini, məşqlərini, proqramlarını, videolarını, şərhlərini və yüklədiyin faylları silir; yazdığın zal rəyi qalır, amma adın onun üstündən götürülür.',
           'Görünürlüyünü söndürə bilərsən — bu halda kəşf siyahılarında və «indi zalda» siyahısında görünmürsən.',
           'Sualın varsa: {contact}.',
         ],
@@ -218,7 +220,7 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
         body: [
           'Şikayət edilən məzmun moderator baxana qədər gizlədilə bilər.',
           'Ciddi pozuntuda hesab birbaşa dayandırılır.',
-          'Səhv olduğunu düşünürsənsə, Profil → Ayarlar → Kömək və dəstək bölməsindən yaz.',
+          'Səhv olduğunu düşünürsənsə, Profil → Parametrlər → Kömək və dəstək bölməsindən yaz.',
         ],
       },
     ],

@@ -10079,5 +10079,50 @@
   "key": "{name} blokla",
   "ru": "Заблокировать {name}",
   "en": "Block {name}"
+ },
+ {
+  "key": "Hesab identifikatorları və giriş nişanları Supabase Auth tərəfindən idarə olunur. SPOT-da parol yoxdur: giriş e-poçta gələn kodla, iOS-da Apple hesabı ilə, Android-də Google hesabı ilə olur.",
+  "ru": "Идентификаторами аккаунта и токенами входа управляет Supabase Auth. Пароля в SPOT нет: вход — по коду из письма, на iOS через аккаунт Apple, на Android через аккаунт Google.",
+  "en": "Account identifiers and sign-in tokens are handled by Supabase Auth. SPOT has no password: you sign in with a code sent to your e-mail, with your Apple account on iOS, or with your Google account on Android."
+ },
+ {
+  "key": "Hesabını istənilən vaxt tətbiqin içindən silə bilərsən: Profil → Parametrlər → Məxfilik → «Hesabı tamamilə sil». Silinmə geri qaytarılmır.",
+  "ru": "Аккаунт можно удалить в любой момент прямо в приложении: Профиль → Настройки → Конфиденциальность → «Удалить аккаунт полностью». Удаление необратимо.",
+  "en": "You can delete your account at any time from inside the app: Profile → Settings → Privacy → «Delete account completely». Deletion cannot be undone."
+ },
+ {
+  "key": "Hesabını tətbiqin içindən silə bilərsən: Profil → Parametrlər → Məxfilik → «Hesabı tamamilə sil». Bu, profilini, məşqlərini, proqramlarını, videolarını, şərhlərini və yüklədiyin faylları silir; yazdığın zal rəyi qalır, amma adın onun üstündən götürülür.",
+  "ru": "Аккаунт можно удалить прямо в приложении: Профиль → Настройки → Конфиденциальность → «Удалить аккаунт полностью». Удаляются профиль, тренировки, программы, видео, комментарии и загруженные файлы; написанный тобой отзыв о зале остаётся, но твоё имя с него снимается.",
+  "en": "You can delete your account from inside the app: Profile → Settings → Privacy → «Delete account completely». That removes your profile, workouts, programs, videos, comments and uploaded files; a gym review you wrote stays, but your name is taken off it."
+ },
+ {
+  "key": "MƏŞQ TƏFƏRRÜATLARIN, ŞƏXSİ QEYDLƏRİN VƏ YAZIŞMALARIN nə digər istifadəçilərə, nə zal sahibinə, nə admin panelinə görünür. Bu, tətbiqin arzusu deyil, bazanın icazə qaydası ilə bağlanıb.",
+  "ru": "ДЕТАЛИ ТВОИХ ТРЕНИРОВОК, ЛИЧНЫЕ ЗАМЕТКИ И ПЕРЕПИСКА не видны ни другим пользователям, ни владельцу зала, ни админ-панели. Это не пожелание приложения: так закрыто правилами доступа самой базы данных.",
+  "en": "YOUR WORKOUT DETAILS, PRIVATE NOTES AND MESSAGES are not visible to other people, to the gym owner, or to the admin panel. That is not the app's wish: it is closed off by the database's own access rules."
+ },
+ {
+  "key": "Səhv olduğunu düşünürsənsə, Profil → Parametrlər → Kömək və dəstək bölməsindən yaz.",
+  "ru": "Если считаешь, что это ошибка, напиши нам: Профиль → Настройки → Помощь и поддержка.",
+  "en": "If you think it is a mistake, write to us: Profile → Settings → Help & support."
+ },
+ {
+  "key": "Tam dürüst olmaq üçün bir istisna: bazanı idarə edən operatorun texniki imkanı bu qaydaları keçməyə çatır — bu, istənilən bulud xidmətində belədir. Ondan yalnız təhlükəsizlik şikayətini araşdırmaq və ya qanunun tələb etdiyi hallarda istifadə olunur.",
+  "ru": "Одно исключение, чтобы быть честными до конца: у оператора, который управляет базой, технически есть возможность обойти эти правила — так устроен любой облачный сервис. Она используется только для разбора жалобы о безопасности или когда этого требует закон.",
+  "en": "One exception, to be completely honest: the operator who runs the database is technically able to go around these rules — that is true of every hosted service. It is used only to investigate a safety report, or where the law requires it."
+ },
+ {
+  "key": "Tətbiqi ilk açdığın anda serverdə adsız (anonim) hesab yaradılır — məşqini dərhal qeyd edə bilməyin üçün. Onun içində nə ad, nə e-poçt, nə telefon olur. E-poçt, Apple və ya Google ilə girdiyin anda həmin hesab sənin olur; ikinci hesab yaradılmır və qeydlərin yerində qalır.",
+  "ru": "Когда ты впервые открываешь приложение, на сервере создаётся безымянный (анонимный) аккаунт — чтобы можно было сразу записать тренировку. В нём нет ни имени, ни почты, ни телефона. Как только ты входишь по почте, через Apple или Google, этот же аккаунт становится твоим: второй не создаётся, и записи остаются на месте.",
+  "en": "The moment you first open the app, a nameless (anonymous) account is created on the server, so you can record a workout straight away. It holds no name, no e-mail and no phone number. As soon as you sign in by e-mail, with Apple or with Google, that same account becomes yours: no second account is made, and your records stay where they are."
+ },
+ {
+  "key": "Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə OpenStreetMap kafel serverləri və Leaflet kitabxanasını verən unpkg.com — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür; giriş düyməsini basdıqda isə Apple (iOS) və ya Google (Android), yalnız o an və yalnız kimliyini təsdiqləmək üçün.",
+  "ru": "Приложение обращается к следующим сервисам: Supabase (база, вход и файлы); уведомления идут через push-сервис Expo (exp.host) в Google FCM и Apple APNs — текст сообщения, комментария или отзыва внутри уведомления не передаётся, только имя и событие; при открытии карты — тайловые серверы OpenStreetMap и unpkg.com, откуда загружается библиотека Leaflet: они видят твой IP-адрес и координаты области, которую ты смотришь; а когда ты нажимаешь кнопку входа — Apple (iOS) или Google (Android), только в этот момент и только чтобы подтвердить, кто ты.",
+  "en": "These are the services the app talks to: Supabase (database, sign-in and files); notifications go through the Expo push service (exp.host) to Google FCM and Apple APNs — the text of a message, comment or review is never inside the notification, only a name and an event; when the map opens, the OpenStreetMap tile servers and unpkg.com, which serves the Leaflet library: they see your IP address and the coordinates of the area you are looking at; and when you press a sign-in button, Apple (iOS) or Google (Android), only at that moment and only to confirm who you are."
+ },
+ {
+  "key": "«İndi zalda» siyahısı: yalnız check-in-in qüvvədə olduğu müddətdə görünürsən. Vaxtı bitəndən sonra həmin qeyd başqalarına bağlanır. Profil → Parametrlər → Məxfilik-dən tamamilə söndürə bilərsən.",
+  "ru": "Список «сейчас в зале»: ты виден только пока действует твоя отметка. После того как её время истекает, запись закрывается от других. Полностью отключить можно в Профиль → Настройки → Конфиденциальность.",
+  "en": "The «here now» list: you are visible only while your check-in is live. Once it expires, that record is closed to other people. You can switch it off completely in Profile → Settings → Privacy."
  }
 ]
