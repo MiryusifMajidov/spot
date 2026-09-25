@@ -1,0 +1,98 @@
+# Codemagic — iOS build for the App Store.
+#
+# WHY THIS FILE LOOKS LONGER THAN A FLUTTER ONE
+# A Flutter project on Codemagic has its `ios/` folder in the repository, so the
+# build is «checkout → flutter build ipa». SPOT is an Expo app using Continuous
+# Native Generation: there is NO `ios/` folder in git, and the Xcode project is
+# generated from `app.json` on the build machine. That is deliberate — it is what
+# keeps the four permission strings, the Sign in with Apple entitlement and the
+# icons in ONE place instead of drifting inside a checked-in Xcode project. The
+# price is three extra steps here: prebuild, pod install, and finding the
+# generated workspace.
+#
+# ANDROID IS NOT BUILT HERE, on purpose. The Android app is built locally
+# (`cd android && ./gradlew bundleRelease`) because `android/` and the upload
+# keystore are not in the repository, and `google-services.json` is gitignored —
+# an Android CI build would fail on the missing file. See RELEASE.md.
+#
+# BEFORE THE FIRST RUN — two things in the Codemagic UI, both one-time:
+#   1. Teams → Integrations → App Store Connect → add an API key.
+#      Generate it in App Store Connect → Users and Access → Integrations → keys,
+#      role «App Manager», download the .p8 ONCE. Name the integration exactly
+#      `SPOT ASC key`, or change the name below to match.
+#      This is why no Apple ID password is ever typed into a CI service.
+#   2. Create the app record in App Store Connect first (bundle id
+#      com.spot.app), otherwise the TestFlight upload at the end has nothing to
+#      upload to.
+
+workflows:
+  ios-appstore:
+    name: SPOT iOS — App Store
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    integrations:
+      app_store_connect: SPOT ASC key
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.spot.app
+      node: 22
+      xcode: latest
+      cocoapods: default
+
+    triggering:
+      # Manual only. A push should not spend build minutes or push a build to
+      # TestFlight on its own.
+      events: []
+
+    scripts:
+      - name: Install JS dependencies
+        script: npm ci
+
+      - name: Generate the native iOS project from app.json
+        # `prebuild` recreates ios/ from scratch by default (--no-clean opts out),
+        # so every build starts from the config, never from a stale folder.
+        # --no-install skips npm and CocoaPods; both are handled explicitly.
+        script: npx expo prebuild --platform ios --no-install
+
+      - name: Install CocoaPods
+        script: cd ios && pod install
+
+      - name: Find the generated workspace and scheme
+        # Not hardcoded: prebuild names the project after the app, and a rename
+        # in app.json would otherwise break the build with a confusing error.
+        script: |
+          set -e
+          WS=$(ls -d ios/*.xcworkspace | head -1)
+          SCHEME=$(basename "$WS" .xcworkspace)
+          echo "Workspace: $WS  Scheme: $SCHEME"
+          echo "XCODE_WORKSPACE=$WS"  >> $CM_ENV
+          echo "XCODE_SCHEME=$SCHEME" >> $CM_ENV
+
+      - name: Set the build number
+        # Apple refuses a build whose CFBundleVersion is not higher than the last
+        # one uploaded. $BUILD_NUMBER is Codemagic's own counter and only goes up.
+        script: cd ios && agvtool new-version -all $BUILD_NUMBER
+
+      - name: Apply the provisioning profiles
+        script: xcode-project use-profiles
+
+      - name: Build the IPA
+        script: >
+          xcode-project build-ipa
+          --workspace "$XCODE_WORKSPACE"
+          --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        # Uploads to TestFlight. Releasing to the store stays a manual decision
+        # in App Store Connect — a CI job should not publish to the public.
+        submit_to_testflight: true
+        submit_to_app_store: false
