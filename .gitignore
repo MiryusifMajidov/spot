@@ -75,3 +75,6 @@ __pycache__/
 # The public website is assembled by web/build-site.mjs from web/landing
 # and store/legal — never edited by hand, never committed.
 /web/public/
+
+# Firebase CLI deploy cache
+/.firebase/
