@@ -13,6 +13,7 @@ import type { FeedVideo } from '@/data/feed';
 import { displayAuthor, isPlaceholderName } from '@/lib/authorName';
 import { useAuthGate } from '@/lib/authGate';
 import { useFeedVideos, useTrainers } from '@/lib/hooks';
+import { showModerationSheet } from '@/lib/moderation';
 import { followProfile, unfollowProfile } from '@/lib/social';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
@@ -82,7 +83,23 @@ export default function Creator() {
 
   return (
     <Screen edges={['top']}>
-      <NavBar title="" />
+      {/* Report / block on the creator's own page too — the page you land on by
+          swiping left from a clip. Guideline 1.2 asks for it on the profile, and
+          it is where somebody goes when one video was not the problem. Hidden on
+          your own page, and when the route carried no profile id there is
+          nothing the server could act on. */}
+      <NavBar
+        title=""
+        right={
+          !isMe && authorId ? (
+            <PressableScale
+              activeScale={0.9}
+              onPress={() => showModerationSheet(displayAuthor(name), { type: 'user', id: authorId })}>
+              <Icon name="more" size={22} color={palette.textSecondary} />
+            </PressableScale>
+          ) : undefined
+        }
+      />
       <FlatList
         data={videos}
         keyExtractor={(v) => v.id}

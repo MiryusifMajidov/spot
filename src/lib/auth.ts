@@ -91,7 +91,7 @@ export async function enabledProviders(): Promise<Record<string, boolean> | null
  * endpoint means «could not ask»; then everything stays, because a bad
  * connection must not quietly remove the only way in.
  */
-export function useSocialProviders(order: ('google' | 'apple')[]): ('google' | 'apple')[] {
+export function useSocialProviders(order: ('google' | 'apple')[] = SOCIAL_PROVIDERS): ('google' | 'apple')[] {
   const [on, setOn] = useState<Record<string, boolean> | null>(providerCache);
   useEffect(() => {
     if (on) return;
@@ -208,6 +208,27 @@ export async function currentIdentity(): Promise<{ kind: IdentityKind; label: st
  * almost every Android phone already has.
  */
 export const SOCIAL_FIRST: 'google' | 'apple' = Platform.OS === 'ios' ? 'apple' : 'google';
+
+/**
+ * ONE provider per platform: Apple on iOS, Google on Android — the owner's
+ * decision (25.09.2026), and the symmetric one. Android has never been able to
+ * offer Sign in with Apple, so an iPhone does not offer Google either.
+ *
+ * It also settles App Store guideline 4.8 outright instead of depending on a
+ * server switch: 4.8 applies to an app that uses a THIRD-PARTY login service,
+ * and on iOS the only ways in are Apple's own sheet and an e-mail code.
+ *
+ * THE COST, WRITTEN DOWN BECAUSE IT IS REAL: somebody who opened their account
+ * with Google on Android and later installs SPOT on an iPhone has no Google
+ * button to press. The bridge is the E-MAIL CODE, which is offered on both
+ * platforms — `auth.users.email` is unique, so a code sent to the address the
+ * Google account uses lands on the SAME account rather than making a second
+ * one. That is how Supabase behaves by design, but it has NOT been proven on a
+ * real pair of devices here; prove it with one account on two phones before
+ * relying on it. If it ever turns out otherwise, this constant is the one place
+ * to change.
+ */
+export const SOCIAL_PROVIDERS: ('google' | 'apple')[] = Platform.OS === 'ios' ? ['apple'] : ['google'];
 
 /** Kept so existing callers keep working; prefer naming the provider. */
 export async function signInWithSocial(): Promise<void> {

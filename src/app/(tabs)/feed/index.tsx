@@ -22,7 +22,7 @@ import { useAuthGate } from '@/lib/authGate';
 import { useFetchPhase } from '@/lib/focusFetch';
 import { useCommunityPosts, useFeedVideos, useGyms } from '@/lib/hooks';
 import { t } from '@/lib/i18n';
-import { showReportReasons } from '@/lib/moderation';
+import { showModerationSheet, showReportReasons } from '@/lib/moderation';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
@@ -235,7 +235,18 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
      same person to it, a rename silently broke the link, and it was reordering
      a list the server had already returned in an arbitrary order anyway, since
      every row's sort key was `ord: 0`. */
-  const videos = useFeedVideos();
+  const allVideos = useFeedVideos();
+  /* A block has to mean something HERE. Blocking somebody already hid them from
+     Kəşf, the chat and the match deck, but their clips kept coming up in the
+     feed — which is the one place a person cannot avoid them. The server's
+     `blocks` row hides profiles both ways (schema38); the feed reads videos, not
+     profiles, so the filter is applied to the list the same way the community
+     posts below filter hidden ones. */
+  const blocked = useAppStore((s) => s.blocked);
+  const videos = useMemo(
+    () => (blocked.length ? allVideos.filter((v) => !v.authorId || !blocked.includes(v.authorId)) : allVideos),
+    [allVideos, blocked]
+  );
   const videoPhase = useFetchPhase('feed_videos');
   const commentKeys = useMemo(() => videos.map((v) => videoKey(v.id)), [videos]);
   const commentCounts = useCommentCounts(commentKeys);
@@ -678,6 +689,26 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
             }
           />
           <RailBtn icon="share" onPress={share} />
+          {/* Report and block, on the video itself. The feed is the app's main
+              wall of other people's content, and until now it was the ONE such
+              surface with no way to act on it — «...» existed on a gym, a
+              coach, a partner, a chat and a comment, but not here. App Store
+              guideline 1.2 asks for exactly this on user-generated content, and
+              store/listing.md already told Apple it was here. Your own video
+              shows nothing: reporting yourself is noise, and the author already
+              has the delete path. */}
+          {!isMine ? (
+            <RailBtn
+              icon="more"
+              onPress={() =>
+                showModerationSheet(
+                  displayAuthor(v.author),
+                  v.authorId ? { type: 'user', id: v.authorId } : undefined,
+                  { note: ['Feed videosu', v.caption?.slice(0, 180)].filter(Boolean).join(' · '), reportTarget: { type: 'content', id: v.id } }
+                )
+              }
+            />
+          ) : null}
         </View>
       </View>
 
@@ -736,6 +767,7 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
   const gate = useAuthGate();
   const allPosts = useCommunityPosts();
   const postPhase = useFetchPhase('community_posts');
+  const blocked = useAppStore((s) => s.blocked);
   const [hidden, setHidden] = useState<string[]>([]);
   // With a home gym the tab shows THAT gym only — that is what "Zalım" promises.
   // Without one there is nothing to filter by, so we show every gym and the tab
@@ -744,7 +776,11 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
     () => (homeGymName ? allPosts.filter((p) => p.gym && sameText(p.gym, homeGymName)) : allPosts),
     [allPosts, homeGymName]
   );
-  const visible = useMemo(() => posts.filter((p) => !hidden.includes(p.id)), [posts, hidden]);
+  /* Hidden posts AND blocked people — see the note in the video feed. */
+  const visible = useMemo(
+    () => posts.filter((p) => !hidden.includes(p.id) && !(p.authorId && blocked.includes(p.authorId))),
+    [posts, hidden, blocked]
+  );
   const commentKeys = useMemo(() => visible.map((p) => postKey(p.id)), [visible]);
   const commentCounts = useCommentCounts(commentKeys);
 
@@ -875,6 +911,13 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
             }),
         },
         { label: t('Bu postu gizlət'), onPress: () => { onHide(); toast(t('Post gizlədildi'), 'info'); } },
+        /* Hiding one post is not blocking a person. Guideline 1.2 wants both, and
+           the block has to be the real one — the same server row every other
+           screen writes — not a device-only flag. */
+        ...(post.authorId
+          ? [{ label: t('{name} blokla', { name: post.author }), style: 'destructive' as const,
+               onPress: () => showModerationSheet(post.author, { type: 'user', id: post.authorId as string }) }]
+          : []),
         { label: t('Ləğv et'), style: 'cancel' },
       ],
     });

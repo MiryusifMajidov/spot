@@ -10074,5 +10074,10 @@
   "key": "23 sentyabr 2026",
   "ru": "23 сентября 2026",
   "en": "23 September 2026"
+ },
+ {
+  "key": "{name} blokla",
+  "ru": "Заблокировать {name}",
+  "en": "Block {name}"
  }
 ]

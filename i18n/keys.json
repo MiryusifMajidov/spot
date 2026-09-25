@@ -3689,6 +3689,17 @@
   ]
  },
  {
+  "key": "{name} blokla",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/feed/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "name"
+  ]
+ },
+ {
   "key": "İcma",
   "counted": false,
   "files": [

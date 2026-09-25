@@ -152,6 +152,7 @@ export const social: Dict = {
   '{gym} zalında hələ post yoxdur': 'No posts at {gym} yet',
   '{gym} · community feed-də görünəcək': '{gym} · will appear in the community feed',
   '{name} blokdan çıxarıldı': '{name} unblocked',
+  '{name} blokla': 'Block {name}',
   '{name} bloklandı': '{name} blocked',
   '{name} bu təklifi qəbul etmədi.': '{name} didn\'t accept this invite.',
   '{name} göndərdiyin təklifi artıq görməyəcək.': '{name} will no longer see the invite you sent.',

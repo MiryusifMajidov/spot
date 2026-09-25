@@ -80,7 +80,7 @@ export function showReportReasons(opts: {
 /** Report / block. A report writes a real row to `reports` (the admin moderation
  *  queue) and only claims success when the write actually succeeded. Blocking is
  *  persisted locally and filters the person out of discovery and chat. */
-export function showModerationSheet(name: string, target?: Target) {
+export function showModerationSheet(name: string, target?: Target, opts?: { note?: string; reportTarget?: Target }) {
   const blocked = target ? useAppStore.getState().blocked.includes(target.id) : false;
 
   const report = () => {
@@ -100,7 +100,14 @@ export function showModerationSheet(name: string, target?: Target) {
       ]);
       return;
     }
-    showReportReasons({ title: t('{name} — şikayət', { name }), target, note: name });
+    /* A report can name the PIECE OF CONTENT while the block still applies to
+       the person: on a feed video the two are different rows, and a moderator
+       who is only told «this user» has to guess which clip. */
+    showReportReasons({
+      title: t('{name} — şikayət', { name }),
+      target: opts?.reportTarget ?? target,
+      note: [name, opts?.note].filter(Boolean).join(' · '),
+    });
   };
 
   const toggleBlock = () => {

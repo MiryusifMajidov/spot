@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
-import { AuthSetupError, confirmEmailCode, sendEmailCode, signInWithApple, signInWithGoogle, SOCIAL_FIRST, useSocialProviders } from '@/lib/auth';
+import { AuthSetupError, confirmEmailCode, sendEmailCode, signInWithApple, signInWithGoogle, useSocialProviders } from '@/lib/auth';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
@@ -65,10 +65,9 @@ export default function SignIn() {
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
 
-  /* Both providers, both platforms. `SOCIAL_FIRST` only decides which one is on
-     top — Apple first on iOS (App Store rule), Google first elsewhere. */
-  // Only what the server has switched on — see useSocialProviders.
-  const providers = useSocialProviders(SOCIAL_FIRST === 'apple' ? ['apple', 'google'] : ['google', 'apple']);
+  /* Apple on iOS, Google on Android (SOCIAL_PROVIDERS), minus whatever the
+     server says is off — a dead button is worse than one fewer. */
+  const providers = useSocialProviders();
 
   /* From the gate there is nothing to go «back» to — the gate IS the root of the
      stack — so a signed-in person is sent into the app instead. */
