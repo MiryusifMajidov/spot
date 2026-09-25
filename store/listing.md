@@ -432,7 +432,7 @@ Marketing URL : https://[TO FILL: spot-az domain]/
 | 7″ planşet şəkilləri | 1024 × 600+ | isteğe bağlı — tətbiq telefon üçündür, keç |
 | 10″ planşet şəkilləri | 1920 × 1200+ | isteğe bağlı — keç |
 | Promo video (YouTube) | isteğe bağlı | yoxdur, lazım deyil |
-| Məxfilik siyasəti URL-i | **məcburi** | səhifə **hazırdır** — `store/legal/privacy.html`; yayımlanmayıb (domen + `fly deploy`, bax `store/legal/README.md` §3) |
+| Məxfilik siyasəti URL-i | **məcburi** | **YAYIMLANDI** — `https://spot-d7566.web.app/legal/privacy.html` (bütün ünvanlar: `store/URLS.md`) |
 | Hesab silmə URL-i | Play hesab açan tətbiqlərdən **tələb edir** (veb üzərindən sorğu) | səhifə **hazırdır** — `store/legal/delete-account.html`; yayımlanmayıb, üstəlik əlaqə e-poçtu boşdur |
 | İstifadə şərtləri URL-i | isteğe bağlı (Play), Apple üçün faydalı | səhifə **hazırdır** — `store/legal/terms.html` |
 | Data safety forması | Play Console-da doldurulur | cavablar hazırdır — `store/data-safety.md` §3; konsola köçürülməyib |
@@ -449,7 +449,7 @@ Marketing URL : https://[TO FILL: spot-az domain]/
 | iPhone 6.5″ ekran şəkilləri | 1242 × 2688 və ya 1284 × 2778 — tövsiyə | **YOXDUR** |
 | iPad şəkilləri | — | **lazım deyil**: `app.json`-da `ios.supportsTablet: false` |
 | App preview video | 15–30 san, cihaz ölçüsündə | isteğe bağlı |
-| Privacy Policy URL | **məcburi** | səhifə hazırdır (`store/legal/privacy.html`), yayımlanmayıb |
+| Privacy Policy URL | **məcburi** | **YAYIMLANDI** — `https://spot-d7566.web.app/legal/privacy.html` |
 | Support URL | **məcburi** | **YOXDUR** (domen + səhifə + e-poçt lazımdır) |
 | App Privacy («Nutrition label») | App Store Connect-də doldurulur | cavablar hazırdır — `store/data-safety.md` §4 |
 | **Sign in with Apple** | Google girişi olduğu üçün Apple girişi MƏCBURİDİR (Guideline 4.8) | **İŞLƏMİR — BLOKLAYICI.** Kod hazırdır (`usesAppleSignIn: true`, `expo-apple-authentication`, `signInWithApple`), amma **Supabase layihəsində Apple provayderi sönülüdür**: `GET /auth/v1/settings` → `"apple": false`. `useSocialProviders` serverin «sönülü» dediyi düyməni çəkmir (`src/lib/auth.ts`), ona görə bu gün iPhone-da yalnız «Google ilə davam et» + e-poçt görünür. Canlı `auth.identities`-də yalnız `google` var. Bax: «Açıq suallar» №2 |

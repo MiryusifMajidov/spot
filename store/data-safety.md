@@ -12,7 +12,7 @@
 
 SPOT **reklam şəbəkəsi, analitika SDK-sı və crash SDK-sı işlətmir** (`package.json`-da Sentry, Firebase Analytics, Amplitude, Mixpanel, `expo-updates` — heç biri yoxdur). **Heç bir ödəniş qəbul etmir.** İzləmə (tracking) yoxdur, ona görə iOS-da ATT paneli də yoxdur. Toplanan hər şey tətbiqin öz işi üçündür və hamısı bir yerdədir: Supabase. Ən həssas üç şey — **çəki, məşq təfərrüatı və yazışma** — ya ümumiyyətlə serverə getmir, ya da yalnız sahibinin oxuya bildiyi cədvəldədir; bu, arzu deyil, bazanın RLS qaydası ilə bağlanıb (§2.4-də sübut).
 
-İki bloklayıcı var və ikisi də mənlik deyil: **hesab silmə üçün veb ünvan** (Play tələb edir) və **məxfilik siyasəti üçün veb ünvan + əlaqə e-poçtu**. Bax §7. (Səhifələrin özü artıq yazılıb — `store/legal/privacy.html`, `terms.html`, `delete-account.html` — qalan iş domen seçmək, yayımlamaq və e-poçtu doldurmaqdır: `store/legal/README.md` §1 və §3.)
+~~İki bloklayıcı~~ — **hər ikisi 25.09.2026-da bağlandı.** Operator: Miryusif Məcidov, əlaqə: mecidovyusif079@gmail.com. Səhifələr tətbiqin öz Firebase layihəsində yayımlandı və canlı yoxlanıldı; hansı xanaya hansı ünvanın getdiyi `store/URLS.md`-dədir.
 
 Bu sənədin özündən kənar, amma göndərməni kəsən üçüncü bir şey var və onu burada yazmasam, forma doğru, tətbiq isə rədd edilmiş olar: **Supabase layihəsində Apple girişi sönülüdür** (`"apple": false`), yəni iPhone-da «Apple ilə davam et» düyməsi görünmür, halbuki Google girişi var — App Store Guideline 4.8. Təfərrüat §2.3-də, düzəliş addımları `store/listing.md` «Açıq suallar» №2-dədir.
 
