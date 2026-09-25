@@ -35,6 +35,36 @@ Version numbers live in two files that must stay in step —
 `android/app/build.gradle` (`versionName`, `versionCode`). Play refuses a
 `versionCode` it has already seen.
 
+## Android's `android/` folder is NOT generated — read this before trusting app.json
+
+`android/` is in .gitignore and is maintained BY HAND. Gradle builds from
+`android/app/src/main/AndroidManifest.xml` and `android/app/build.gradle` exactly
+as they are on disk; nothing re-runs `expo prebuild`. So a config-plugin option
+added to `app.json` reaches **iOS only** (EAS prebuilds on its macOS worker) and
+changes nothing on Android until the same change is written into the native
+files.
+
+That is not theory — it happened on 25.09.2026. `expo-audio` was given
+`enableBackgroundPlayback: false`, which removes the media-playback foreground
+service and its two permissions; the introspected config agreed, and the built
+AAB still declared `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, which makes Play demand a
+Foreground Service declaration with a demo video for a use case SPOT does not
+have. `android.allowBackup: false` was ignored the same way, leaving
+`android:allowBackup="true"` — and an Android backup carries AsyncStorage, which
+carries the Supabase session token.
+
+So, after any `app.json` change that affects Android:
+
+```bash
+python - <<'EOF'
+import zipfile; m = zipfile.ZipFile('apk/SPOT-<ver>.aab').read('base/manifest/AndroidManifest.xml').decode('latin1')
+print([p for p in ('FOREGROUND_SERVICE','RECORD_AUDIO','READ_MEDIA_IMAGES') if p in m])
+EOF
+```
+
+Read the MERGED manifest out of the AAB, not the source file: libraries add
+permissions of their own, and Play shows the merged list.
+
 ## iOS — App Store, built in the cloud from Windows
 
 There is no `ios/` folder in the repo and there does not need to be: EAS Build
