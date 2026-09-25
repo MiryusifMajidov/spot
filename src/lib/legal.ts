@@ -31,11 +31,20 @@ export interface LegalContent {
   sections: LegalSection[];
 }
 
-/** Filled in by whoever operates SPOT. Until then the documents say so out loud. */
-export const OPERATOR = '[DOLDURULMALI: operator şirkətin/şəxsin adı]';
-export const CONTACT = '[DOLDURULMALI: əlaqə e-poçtu]';
+/**
+ * Who operates SPOT, and where to write.
+ *
+ * A natural person, not a company: there is no registered legal entity behind
+ * SPOT today, and inventing one in the single document that must not contain a
+ * lie was never an option. Both stores accept an individual developer here —
+ * what they refuse is a policy with nobody's name on it and no address to
+ * answer at. If a company is registered later, these two lines are the only
+ * place that changes (then `node store/legal/build.mjs`).
+ */
+export const OPERATOR = 'Miryusif Məcidov';
+export const CONTACT = 'mecidovyusif079@gmail.com';
 
-const UPDATED = '23 sentyabr 2026';
+const UPDATED = '25 sentyabr 2026';
 
 export const LEGAL: Record<LegalDoc, LegalContent> = {
   terms: {
@@ -150,6 +159,10 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
       {
         heading: 'Haradadır',
         body: [
+          // The same sentence the Terms use, so it needs no separate translation
+          // — and a privacy policy that never names who holds the data is one a
+          // store reviewer stops at.
+          'Operator: {operator}. Əlaqə: {contact}.',
           'Məlumat Supabase üzərində saxlanılır. Server hazırda Avstraliya (Sidney) regionundadır; Avropa regionuna köçürülməsi planlaşdırılır.',
           'Hesab identifikatorları və giriş nişanları Supabase Auth tərəfindən idarə olunur. SPOT-da parol yoxdur: giriş e-poçta gələn kodla, iOS-da Apple hesabı ilə, Android-də Google hesabı ilə olur.',
         ],

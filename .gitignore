@@ -71,3 +71,7 @@ __pycache__/
 
 # Play bundles are build output, and 95 MB each.
 /apk/*.aab
+
+# The public website is assembled by web/build-site.mjs from web/landing
+# and store/legal — never edited by hand, never committed.
+/web/public/

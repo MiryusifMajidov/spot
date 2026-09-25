@@ -129,7 +129,7 @@ const LANG_LABEL = { az: 'AZ', ru: 'RU', en: 'EN' };
 /** The update date, formatted in each language. The app interpolates the
  *  Azerbaijani date into every language; on a public page a Russian reader
  *  gets a Russian date. Same day, three spellings — no clause changes. */
-const UPDATED = { az: '23 sentyabr 2026', ru: '23 сентября 2026', en: '23 September 2026' };
+const UPDATED = { az: '25 sentyabr 2026', ru: '25 сентября 2026', en: '25 September 2026' };
 
 /** Exact in-app labels, copied from src/i18n/{ru,en}/system.ts so the
  *  instructions on the delete page name the buttons the user actually sees. */
@@ -552,6 +552,12 @@ function langBlocks(render) {
 const PAGES = [
   { file: 'privacy.html', key: 'privacy' },
   { file: 'terms.html', key: 'terms' },
+  /* The community rules are the third document in the app (LEGAL.rules) and they
+     were the only one with no public page. An app whose main screen is other
+     people's video needs its guidelines READABLE without installing it — that is
+     what App Store guideline 1.2 asks for alongside report and block, and the
+     landing page's «İcma qaydaları» link had nowhere to go. */
+  { file: 'rules.html', key: 'rules' },
   { file: 'delete-account.html', key: 'delete' },
 ];
 
@@ -727,4 +733,17 @@ if (unusedCorrections.length) {
   process.exit(1);
 }
 
-console.log(`\nBlanks still to fill (both are deliberate, see README.md):\n  ${OPERATOR}\n  ${CONTACT}`);
+/* The two lines that used to be blanks. They are printed on every run so a
+   wrong address cannot be published quietly, and the build FAILS while either
+   is still a placeholder — a privacy policy with nobody's name on it is refused
+   by both stores. */
+if (OPERATOR.includes('DOLDURULMALI') || CONTACT.includes('DOLDURULMALI')) {
+  console.error(`
+STILL BLANK — fill src/lib/legal.ts and run again:
+  ${OPERATOR}
+  ${CONTACT}`);
+  process.exit(1);
+}
+console.log(`
+Operator: ${OPERATOR}
+Contact:  ${CONTACT}`);

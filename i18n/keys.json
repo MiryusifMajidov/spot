@@ -16313,7 +16313,7 @@
   "placeholders": []
  },
  {
-  "key": "23 sentyabr 2026",
+  "key": "25 sentyabr 2026",
   "counted": false,
   "files": [
    "src/lib/legal.ts"
@@ -16557,6 +16557,15 @@
  },
  {
   "key": "Lokasiya yalnız iki halda istifadə olunur: xəritədə yaxınlıqdakı zalları sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.",
+  "counted": false,
+  "files": [
+   "src/lib/legal.ts"
+  ],
+  "kind": "data",
+  "placeholders": []
+ },
+ {
+  "key": "Miryusif Məcidov",
   "counted": false,
   "files": [
    "src/lib/legal.ts"
@@ -16984,16 +16993,7 @@
   "placeholders": []
  },
  {
-  "key": "[DOLDURULMALI: operator şirkətin/şəxsin adı]",
-  "counted": false,
-  "files": [
-   "src/lib/legal.ts"
-  ],
-  "kind": "data",
-  "placeholders": []
- },
- {
-  "key": "[DOLDURULMALI: əlaqə e-poçtu]",
+  "key": "mecidovyusif079@gmail.com",
   "counted": false,
   "files": [
    "src/lib/legal.ts"

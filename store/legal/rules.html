@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="az" data-lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SPOT — İcma qaydaları · SPOT — Правила сообщества · SPOT — Community Rules</title>
+<meta name="description" content="SPOT — icma qaydaları / правила сообщества / community rules.">
+<meta name="theme-color" content="#101014">
+<meta name="color-scheme" content="dark">
+<link rel="alternate" hreflang="az" href="?lang=az">
+<link rel="alternate" hreflang="ru" href="?lang=ru">
+<link rel="alternate" hreflang="en" href="?lang=en">
+<style>
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#101014;color:#F4F4F7;
+  font:400 16.5px/1.68 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;
+  -webkit-font-smoothing:antialiased;overflow-wrap:break-word}
+.wrap{max-width:740px;margin:0 auto;padding:0 20px}
+a{color:#C6FF3D;text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---- header ---- */
+.site{position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(255,255,255,.12);
+  background:rgba(16,16,20,.92);-webkit-backdrop-filter:saturate(150%) blur(12px);
+  backdrop-filter:saturate(150%) blur(12px)}
+.site .row{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding-top:12px;padding-bottom:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;color:#F4F4F7}
+.brand:hover{text-decoration:none}
+.mark{width:30px;height:30px;border-radius:9px;background:#1E1E26;flex:none;
+  display:flex;align-items:center;justify-content:center}
+.ring{box-sizing:content-box;width:13px;height:13px;border-radius:50%;
+  border:3px solid #C6FF3D;position:relative}
+.ring i{position:absolute;inset:2px;border-radius:50%;background:#C6FF3D}
+.word{font:700 17px/1 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;
+  letter-spacing:-.4px}
+.langs{display:inline-flex;gap:2px;padding:3px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05)}
+.langbtn{font:600 13px/1 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;
+  -webkit-appearance:none;appearance:none;border:0;background:transparent;color:#9A9AA6;
+  min-height:34px;padding:0 12px;border-radius:9px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.langbtn[aria-selected="true"]{background:#C6FF3D;color:#101014}
+.langbtn:focus-visible{outline:2px solid #C6FF3D;outline-offset:2px}
+
+/* ---- document ---- */
+main{padding:38px 0 8px}
+h1{margin:0 0 10px;letter-spacing:-.9px;
+  font:700 clamp(27px,6.4vw,35px)/1.14 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif}
+.updated{margin:0 0 20px;color:#9A9AA6;font-size:14px}
+.intro{margin:0 0 4px;font-size:17.5px;color:#E7E7EC}
+.note{margin:22px 0 0;padding:13px 15px;border:1px solid rgba(255,255,255,.14);
+  border-radius:14px;background:rgba(255,255,255,.04);color:#9A9AA6;font-size:14.5px;line-height:1.55}
+section{margin-top:30px;padding-top:26px;border-top:1px solid rgba(255,255,255,.12)}
+h2{margin:0 0 13px;letter-spacing:-.35px;
+  font:600 20.5px/1.3 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif}
+p{margin:0 0 13px}
+ul,ol{margin:0 0 13px;padding-left:22px}
+li{margin-bottom:10px}
+li::marker{color:#C6FF3D}
+strong{font-weight:600}
+
+/* ---- the unfilled blanks: impossible to miss ---- */
+.blank{display:inline-block;margin:1px 0;padding:2px 8px;border-radius:7px;
+  border:1px dashed #101014;background:#FFD24A;color:#101014;
+  font:700 13.5px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+/* ---- footer ---- */
+footer{margin-top:44px;padding:26px 0 46px;border-top:1px solid rgba(255,255,255,.12);
+  color:#9A9AA6;font-size:14.5px}
+.flabel{font:600 12px/1 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;
+  letter-spacing:.1em;text-transform:uppercase;color:#7C7C87;margin-bottom:14px}
+.flinks{display:flex;flex-direction:column;gap:11px;margin-bottom:24px}
+.flinks a[aria-current="page"]{color:#9A9AA6;pointer-events:none}
+.copy{color:#7C7C87;font-size:13px}
+
+@media (max-width:420px){
+  .site .row{gap:10px}
+  .word{font-size:16px}
+  .langbtn{padding:0 10px}
+}
+
+/* Only the active language is rendered. Without JavaScript the page shows
+   Azerbaijani, which is the legally binding version. */
+html[data-lang="az"] .L:not(.az){display:none}
+html[data-lang="ru"] .L:not(.ru){display:none}
+html[data-lang="en"] .L:not(.en){display:none}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap row">
+    <a class="brand" href="/">
+      <span class="mark"><span class="ring"><i></i></span></span>
+      <span class="word">SPOT</span>
+    </a>
+    <div class="langs" role="group" aria-label="Dil / Язык / Language">
+      <button type="button" class="langbtn" data-set="az" aria-selected="true" lang="az">AZ</button>
+      <button type="button" class="langbtn" data-set="ru" aria-selected="false" lang="ru">RU</button>
+      <button type="button" class="langbtn" data-set="en" aria-selected="false" lang="en">EN</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+<div class="L az" lang="az">
+<h1>İcma qaydaları</h1>
+<p class="updated">Son yenilənmə: 25 sentyabr 2026</p>
+<p class="intro">SPOT məşq üçündür. Qaydalar qısadır və hamıya eyni tətbiq olunur.</p>
+<section>
+<h2>Bu tanışlıq tətbiqi deyil</h2>
+<p>Məşq yoldaşı uyğunluğu yalnız məşq parametrlərindən hesablanır: zal, saat, günlər, səviyyə, məqsəd. Foto və cins uyğunluq balına təsir etmir.</p>
+<p>Romantik və ya cinsi məzmunlu mesaj göndərmək, görünüş haqqında şərh yazmaq, təkrar-təkrar yazmaq qadağandır.</p>
+<p>Bu qaydanı pozan hesablar dayandırılır.</p>
+</section>
+<section>
+<h2>Hörmət</h2>
+<p>Təhqir, hədə, nifrət nitqi, irqi/dini/cinsi ayrı-seçkilik yolverilməzdir.</p>
+<p>Başqasının bədəni, çəkisi və ya səviyyəsi haqqında istehzalı şərh yazma. Burada hamı nədənsə başlayır.</p>
+<p>Zalda kiminsə videosunu icazəsiz çəkib paylaşma.</p>
+</section>
+<section>
+<h2>Dürüstlük</h2>
+<p>Real ad və real fotoyla ol. Başqasının fotosunu istifadə etmə.</p>
+<p>Saxta zal, saxta müəllim profili və ya saxta rəy yerləşdirmə.</p>
+<p>Məşq nəticələrini şişirtmə — çağırış və reytinqlər check-in ilə yoxlanılır.</p>
+</section>
+<section>
+<h2>Təhlükəsizlik</h2>
+<p>İlk görüş zalda, gündüz və ya zalın işlək saatında olsun.</p>
+<p>Kimsə səni narahat edirsə: profilində «Blok et» — həmin an qarşılıqlı gizlənirsiniz — və «Şikayət et».</p>
+<p>Təhlükəsizlik şikayətlərinə növbədə birinci baxılır.</p>
+</section>
+<section>
+<h2>Nə baş verir</h2>
+<p>Şikayət edilən məzmun moderator baxana qədər gizlədilə bilər.</p>
+<p>Ciddi pozuntuda hesab birbaşa dayandırılır.</p>
+<p>Səhv olduğunu düşünürsənsə, Profil → Parametrlər → Kömək və dəstək bölməsindən yaz.</p>
+</section>
+</div>
+<div class="L ru" lang="ru">
+<h1>Правила сообщества</h1>
+<p class="updated">Последнее обновление: 25 сентября 2026</p>
+<p class="intro">SPOT — для тренировок. Правила короткие и одинаково применяются ко всем.</p>
+<p class="note">Это перевод. Юридическую силу имеет текст на азербайджанском языке; в случае расхождений за основу принимается он.</p>
+<section>
+<h2>Это не приложение для знакомств</h2>
+<p>Совместимость с напарником по тренировкам рассчитывается только по тренировочным параметрам: зал, время, дни, уровень, цель. Фото и пол не влияют на балл совместимости.</p>
+<p>Запрещено отправлять сообщения романтического или сексуального характера, комментировать внешность, писать снова и снова.</p>
+<p>Аккаунты, нарушающие это правило, приостанавливаются.</p>
+</section>
+<section>
+<h2>Уважение</h2>
+<p>Оскорбления, угрозы, язык вражды, дискриминация по расовому/религиозному/половому признаку недопустимы.</p>
+<p>Не пиши насмешливых комментариев о чужом теле, весе или уровне. Здесь каждый с чего-то начинает.</p>
+<p>Не снимай никого в зале на видео и не публикуй это без разрешения.</p>
+</section>
+<section>
+<h2>Честность</h2>
+<p>Используй настоящее имя и настоящее фото. Не используй чужие фото.</p>
+<p>Не размещай фальшивые залы, фальшивые профили тренеров или фальшивые отзывы.</p>
+<p>Не преувеличивай результаты тренировок — челленджи и рейтинги проверяются по check-in.</p>
+</section>
+<section>
+<h2>Безопасность</h2>
+<p>Первая встреча — в зале, днём или в часы работы зала.</p>
+<p>Если кто-то тебе досаждает: в его профиле — «Заблокировать» (с этой же секунды он не видит тебя, а ты его) и «Пожаловаться».</p>
+<p>Жалобы, связанные с безопасностью, рассматриваются в очереди первыми.</p>
+</section>
+<section>
+<h2>Что происходит</h2>
+<p>Контент, на который поступила жалоба, может быть скрыт до проверки модератором.</p>
+<p>При серьёзном нарушении аккаунт приостанавливается сразу.</p>
+<p>Если считаешь, что это ошибка, напиши нам: Профиль → Настройки → Помощь и поддержка.</p>
+</section>
+</div>
+<div class="L en" lang="en">
+<h1>Community Rules</h1>
+<p class="updated">Last updated: 25 September 2026</p>
+<p class="intro">SPOT is for training. The rules are short and apply equally to everyone.</p>
+<p class="note">This is a translation. The legally binding text is the Azerbaijani version; in case of any discrepancy, it prevails.</p>
+<section>
+<h2>This is not a dating app</h2>
+<p>Workout partner compatibility is calculated only from training parameters: gym, time, days, level, goal. Photos and gender do not affect the compatibility score.</p>
+<p>Sending romantic or sexual messages, commenting on appearance and messaging someone again and again are prohibited.</p>
+<p>Accounts that break this rule are suspended.</p>
+</section>
+<section>
+<h2>Respect</h2>
+<p>Insults, threats, hate speech and racial/religious/sex-based discrimination are not permitted.</p>
+<p>Don't post mocking comments about someone else's body, weight or level. Everyone here starts from somewhere.</p>
+<p>Don't film someone at the gym and share it without permission.</p>
+</section>
+<section>
+<h2>Honesty</h2>
+<p>Use your real name and a real photo. Don't use someone else's photo.</p>
+<p>Don't post fake gyms, fake trainer profiles or fake reviews.</p>
+<p>Don't inflate your workout results — challenges and rankings are verified by check-in.</p>
+</section>
+<section>
+<h2>Safety</h2>
+<p>Make the first meetup at the gym, during the day or during the gym's opening hours.</p>
+<p>If someone is bothering you: on their profile, "Block" — you're hidden from each other that very moment — and "Report".</p>
+<p>Safety reports are reviewed first in the queue.</p>
+</section>
+<section>
+<h2>What happens</h2>
+<p>Reported content may be hidden until a moderator reviews it.</p>
+<p>In case of a serious violation, the account is suspended outright.</p>
+<p>If you think it is a mistake, write to us: Profile → Settings → Help &amp; support.</p>
+</section>
+</div>
+</main>
+
+<footer class="wrap">
+<div class="L az">
+      <div class="flabel">Digər sənədlər</div>
+      <div class="flinks">
+        <a href="privacy.html">Məxfilik siyasəti</a>
+        <a href="terms.html">İstifadə şərtləri</a>
+        <a href="rules.html" aria-current="page">İcma qaydaları</a>
+        <a href="delete-account.html">Hesabın silinməsi</a>
+        <a href="/">Ana səhifə</a>
+      </div></div>
+<div class="L ru">
+      <div class="flabel">Другие документы</div>
+      <div class="flinks">
+        <a href="privacy.html">Политика конфиденциальности</a>
+        <a href="terms.html">Условия использования</a>
+        <a href="rules.html" aria-current="page">Правила сообщества</a>
+        <a href="delete-account.html">Удаление аккаунта</a>
+        <a href="/">Главная</a>
+      </div></div>
+<div class="L en">
+      <div class="flabel">Other documents</div>
+      <div class="flinks">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Use</a>
+        <a href="rules.html" aria-current="page">Community Rules</a>
+        <a href="delete-account.html">Deleting your account</a>
+        <a href="/">Home</a>
+      </div></div>
+  <div class="copy">© 2026 SPOT</div>
+</footer>
+
+<script>
+(function () {
+  var KEY = 'spot-legal-lang', OK = ['az','ru','en'], TITLES = {"az":"SPOT — İcma qaydaları","ru":"SPOT — Правила сообщества","en":"SPOT — Community Rules"};
+  var root = document.documentElement;
+  function set(l, persist) {
+    if (OK.indexOf(l) < 0) l = 'az';
+    root.setAttribute('data-lang', l);
+    root.setAttribute('lang', l);
+    if (TITLES[l]) document.title = TITLES[l];
+    var b = document.getElementsByClassName('langbtn');
+    for (var i = 0; i < b.length; i++) {
+      b[i].setAttribute('aria-selected', b[i].getAttribute('data-set') === l ? 'true' : 'false');
+    }
+    if (persist) { try { localStorage.setItem(KEY, l); } catch (e) {} }
+  }
+  var pick = null;
+  try {
+    var m = /[?&]lang=(az|ru|en)\b/i.exec(location.search);
+    if (m) pick = m[1].toLowerCase();
+  } catch (e) {}
+  if (!pick) { try { pick = localStorage.getItem(KEY); } catch (e) {} }
+  if (!pick) {
+    var n = (navigator.language || '').slice(0, 2).toLowerCase();
+    pick = n === 'ru' ? 'ru' : n === 'en' ? 'en' : 'az';
+  }
+  set(pick, false);
+  document.addEventListener('click', function (e) {
+    var el = e.target;
+    while (el && el !== document && el.className !== undefined) {
+      if (String(el.className).indexOf('langbtn') >= 0) {
+        e.preventDefault();
+        set(el.getAttribute('data-set'), true);
+        return;
+      }
+      el = el.parentNode;
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -10124,5 +10124,10 @@
   "key": "«İndi zalda» siyahısı: yalnız check-in-in qüvvədə olduğu müddətdə görünürsən. Vaxtı bitəndən sonra həmin qeyd başqalarına bağlanır. Profil → Parametrlər → Məxfilik-dən tamamilə söndürə bilərsən.",
   "ru": "Список «сейчас в зале»: ты виден только пока действует твоя отметка. После того как её время истекает, запись закрывается от других. Полностью отключить можно в Профиль → Настройки → Конфиденциальность.",
   "en": "The «here now» list: you are visible only while your check-in is live. Once it expires, that record is closed to other people. You can switch it off completely in Profile → Settings → Privacy."
+ },
+ {
+  "key": "25 sentyabr 2026",
+  "ru": "25 сентября 2026",
+  "en": "25 September 2026"
  }
 ]
