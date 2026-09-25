@@ -1,6 +1,6 @@
 /**
  * SPOT design system — single source of truth for colors, typography, spacing.
- * Derived from the Claude Design handoff (SPOT iOS App). Light mode is primary;
+ * Derived from the design handoff (SPOT iOS App). Light mode is primary;
  * a few screens (welcome, active workout, video feed) are dark and use `dark` tokens.
  *
  * Principle: "simplicity in structure, magnificence in motion."
