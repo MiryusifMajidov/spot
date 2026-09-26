@@ -111,25 +111,42 @@ without fixing anything. Still send yourself one notification from TestFlight
 before submitting: that is the only proof that the whole chain (APNs key →
 Expo → the device) works, and it costs two minutes.
 
-## The two platforms have DIFFERENT ids, on purpose
+## The app id is `app.spot.az` on both platforms — and why it is not `com.spot.app`
 
     iOS      app.spot.az
-    Android  com.spot.app
+    Android  app.spot.az
 
-Do not "fix" this by making them match. On 26.09.2026 Apple refused to register
-`com.spot.app` — «An App ID with Identifier 'com.spot.app' is not available» —
-because an Apple bundle id is unique across every developer account in the
-world and somebody had already taken that one. Android package names are only
-unique within Google Play, where `com.spot.app` is free (checked: the Play
-listing URL returns 404), and it is the id the signed AAB and
-`google-services.json` are already built around. So only iOS moved.
+`com.spot.app` was the original id and it is gone on BOTH stores, for two
+different reasons, on the same day (26.09.2026):
 
-Everything that names the iOS id has to use the new one: the App ID in the
-Apple developer portal, the app record in App Store Connect, `ios_signing` in
-`codemagic.yaml`, and — when Sign in with Apple is switched on — the client id
-Supabase is given.
+- **Apple** refused to register it — «An App ID with Identifier 'com.spot.app'
+  is not available». An Apple bundle id is unique across every developer
+  account in the world, and somebody had already taken that one.
+- **Google Play** refused it too — «This package name is already in use». A Play
+  package name is only unique within Play, and the Play *listing* URL for
+  `com.spot.app` returns 404, which is what made it look free. It is not: a
+  package reserved by an unpublished app in somebody else's account has no
+  public listing and still blocks the name. **Checking the store URL is not a
+  availability check; only the Play Console's «Check availability» is.**
 
-## What the stores will ask for
+Renaming Android was not just a string edit, because `android/` is maintained by
+hand (see the section above). What had to move with it:
+
+    app.json                             android.package
+    android/app/build.gradle             namespace + applicationId
+    android/app/src/main/java/…          com/spot/app/ → app/spot/az/, and the
+                                         `package` line in MainActivity.kt and
+                                         MainApplication.kt
+    google-services.json                 a NEW Firebase Android app had to be
+                                         registered for app.spot.az; the file is
+                                         keyed by package name, and FCM push
+                                         would have silently stopped working
+
+Google sign-in was NOT affected: it goes through the system browser and the
+app's own `spot://` scheme (src/lib/auth.ts), so no SHA-1 fingerprint is tied to
+the package name.
+
+## What the stores will ask for## What the stores will ask for
 
 | Item | State |
 |---|---|

@@ -26,8 +26,8 @@
 #      This is also why no Apple ID password is ever typed into a CI service.
 #   2. Create the app record in App Store Connect first (bundle id
 #      app.spot.az), otherwise the TestFlight upload at the end has nothing to
-#      upload to. NOTE the id: iOS is `app.spot.az`, Android is `com.spot.app`.
-#      They differ on purpose — see RELEASE.md.
+#      upload to. Both platforms use app.spot.az — see RELEASE.md for why the
+#      original com.spot.app had to be abandoned on each of them.
 #   3. A variable group named EXACTLY `ios_signing` on THIS app, holding
 #      CERTIFICATE_PRIVATE_KEY (Secure) — the same PEM value as the CheckMate
 #      app. Codemagic variables reach a codemagic.yaml build only through a

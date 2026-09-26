@@ -53,5 +53,5 @@ yol 404 verir (yoxlanıldı) — amma vərdiş yaxşıdır.
 tətbiq hələ mağazalarda yoxdur və 404 verən düymə reviewer ekranında
 görünməməlidir. Yayım olan kimi onları geri linkə çevir:
 
-- Google Play: `https://play.google.com/store/apps/details?id=com.spot.app`
+- Google Play: `https://play.google.com/store/apps/details?id=app.spot.az`
 - App Store: listinq yarananda App Store Connect verir.

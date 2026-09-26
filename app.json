@@ -23,7 +23,7 @@
       }
     },
     "android": {
-      "package": "com.spot.app",
+      "package": "app.spot.az",
       "googleServicesFile": "./google-services.json",
       "versionCode": 13,
       "adaptiveIcon": {

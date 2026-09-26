@@ -1,7 +1,7 @@
 # SPOT — mağaza mətnləri / тексты для магазинов / store listing copy
 
 Hazırlandı: 2026-09-23 · tətbiq versiyası **1.3.9** (`app.json`), Android `versionCode 13`,
-bundle **app.spot.az** (iOS) / package **com.spot.app** (Android).
+bundle / package **app.spot.az** (hər iki platformada).
 
 **Bu faylın qaydası:** burada yazılan hər cümlə tətbiqin BUGÜNKÜ kodundan yoxlanılıb.
 Say, reytinq, istifadəçi sayı və zal kataloqu vəd edilmir — çünki onlar yoxdur.
