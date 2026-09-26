@@ -141,6 +141,13 @@ hand (see the section above). What had to move with it:
                                          registered for app.spot.az; the file is
                                          keyed by package name, and FCM push
                                          would have silently stopped working
+    android/app/google-services.json     the gradle plugin reads THIS copy, not
+                                         the one in the project root. Prebuild
+                                         would place it; this android/ folder is
+                                         hand-maintained, so it has to be copied
+                                         by hand. Forgetting it fails the build
+                                         with «No matching client found for
+                                         package name»
 
 Google sign-in was NOT affected: it goes through the system browser and the
 app's own `spot://` scheme (src/lib/auth.ts), so no SHA-1 fingerprint is tied to
