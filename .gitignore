@@ -58,6 +58,7 @@ example
 # on the machine that builds. If EAS Build (cloud) is ever used, upload it there
 # as a file secret instead of committing it.
 google-services.json
+google-services.json.*
 
 # Built APKs. The folder and its README are tracked; the binaries are not —
 # a release APK is ~70 MB and a new one is produced on every build.
