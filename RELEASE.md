@@ -111,6 +111,24 @@ without fixing anything. Still send yourself one notification from TestFlight
 before submitting: that is the only proof that the whole chain (APNs key →
 Expo → the device) works, and it costs two minutes.
 
+## The two platforms have DIFFERENT ids, on purpose
+
+    iOS      app.spot.az
+    Android  com.spot.app
+
+Do not "fix" this by making them match. On 26.09.2026 Apple refused to register
+`com.spot.app` — «An App ID with Identifier 'com.spot.app' is not available» —
+because an Apple bundle id is unique across every developer account in the
+world and somebody had already taken that one. Android package names are only
+unique within Google Play, where `com.spot.app` is free (checked: the Play
+listing URL returns 404), and it is the id the signed AAB and
+`google-services.json` are already built around. So only iOS moved.
+
+Everything that names the iOS id has to use the new one: the App ID in the
+Apple developer portal, the app record in App Store Connect, `ios_signing` in
+`codemagic.yaml`, and — when Sign in with Apple is switched on — the client id
+Supabase is given.
+
 ## What the stores will ask for
 
 | Item | State |
