@@ -1,6 +1,6 @@
 # SPOT — «Data safety» (Google Play) və «App Privacy» (Apple)
 
-**Tətbiq:** SPOT · `com.spot.app` · versiya 1.3.9 · Android `versionCode` 13 · iOS `buildNumber` 1
+**Tətbiq:** SPOT · iOS `app.spot.az` · Android `com.spot.app` · versiya 1.3.9 · Android `versionCode` 13 · iOS `buildNumber` 1
 **Yoxlanma tarixi:** 23 sentyabr 2026
 **Nəyə əsaslanır:** bu fayldakı hər cavab `D:\spot` kodundan və canlı Supabase bazasından (`oezzgcumwprpoqekmlop`, yalnız oxuma) yoxlanılıb. Təxmin edilən heç nə yoxdur — əmin olmadığım hər şey §8 «Açıq suallar»dadır.
 

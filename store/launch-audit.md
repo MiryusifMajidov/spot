@@ -35,7 +35,7 @@ Sıra elə qurulub ki, heç biri özündən sonrakını gözləmir.
    hesab + 13.11.2023-dən sonra açılıbsa: production üçün 12 test istifadəçisi
    ilə **14 gün fasiləsiz** qapalı test lazımdır. Təşkilat hesabı azaddır.
    «Sabah çıxa bilərəmmi» sualının cavabı budur.
-3. **Apple Developer üzvlüyü + `com.spot.app` boşdurmu — 30 dəq (qeydiyyat
+3. **Apple Developer üzvlüyü + bundle id — 30 dəq (qeydiyyat
    1–2 gün çəkə bilər).** Ən uzun gözləməli maddədir, ona görə erkəndir.
 4. **Hüquqi kimlik — 10 dəq, amma hər şey bundan asılıdır.** İki sətir:
    operatorun hüquqi adı (şəxs və ya şirkət) və real əlaqə e-poçtu. Mənə verən
@@ -169,7 +169,10 @@ Sıra elə qurulub ki, heç biri özündən sonrakını gözləmir.
   `aps-environment`. Yeganə yol: ilk `eas build` logu + TestFlight-dan bir push.
 - **EAS layihəsinin slug-ı** `app.json`-da hələ **"miri"**, owner
   `miri2005s-team` — layihə ID ilə uyğun gəlmirsə `eas build` başlamır.
-- **`com.spot.app` bundle id-nin Apple-da boş olması** — tutulubsa, id hər yerdə
+- ~~**`com.spot.app` bundle id-nin Apple-da boş olması**~~ — **TUTULUB (26.09.2026).**
+  Apple «An App ID with Identifier 'com.spot.app' is not available» dedi. iOS
+  artıq `app.spot.az`-dır; Android `com.spot.app` olaraq qalır (Play-də boşdur).
+  Köhnə qeyd: tutulubsa, id hər yerdə
   dəyişməlidir.
 - **Keystore-un bu diskdən kənarda nüsxəsi** — görə bilmirəm.
 - **Şəkillərdən EXIF-in cihazda həqiqətən silinməsi** — nə təsdiq, nə təkzib.

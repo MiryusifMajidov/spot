@@ -22,8 +22,9 @@
 #      `SPOT ASC key`, or change the name below to match.
 #      This is why no Apple ID password is ever typed into a CI service.
 #   2. Create the app record in App Store Connect first (bundle id
-#      com.spot.app), otherwise the TestFlight upload at the end has nothing to
-#      upload to.
+#      app.spot.az), otherwise the TestFlight upload at the end has nothing to
+#      upload to. NOTE the id: iOS is `app.spot.az`, Android is `com.spot.app`.
+#      They differ on purpose — see RELEASE.md.
 
 workflows:
   ios-appstore:
@@ -37,7 +38,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.spot.app
+        bundle_identifier: app.spot.az
       node: 22
       xcode: latest
       cocoapods: default

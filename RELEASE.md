@@ -81,7 +81,7 @@ The first `eas build` asks for the Apple Developer account and creates the
 bundle id, the distribution certificate and the provisioning profile. That step
 needs the owner: Apple credentials are never entered by anyone else.
 
-What is already in `app.json` for iOS: bundle id `com.spot.app`,
+What is already in `app.json` for iOS: bundle id `app.spot.az`,
 `buildNumber`, `usesAppleSignIn` and the `expo-apple-authentication` plugin (CNG
 needs the plugin, not just the flag — it is what puts
 `com.apple.developer.applesignin` in the entitlements),

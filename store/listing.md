@@ -1,7 +1,7 @@
 # SPOT — mağaza mətnləri / тексты для магазинов / store listing copy
 
 Hazırlandı: 2026-09-23 · tətbiq versiyası **1.3.9** (`app.json`), Android `versionCode 13`,
-bundle / package **com.spot.app**.
+bundle **app.spot.az** (iOS) / package **com.spot.app** (Android).
 
 **Bu faylın qaydası:** burada yazılan hər cümlə tətbiqin BUGÜNKÜ kodundan yoxlanılıb.
 Say, reytinq, istifadəçi sayı və zal kataloqu vəd edilmir — çünki onlar yoxdur.
@@ -578,7 +578,7 @@ Sıra təsadüfi deyil: 1–3 **review-u kəsən** maddələrdir, qalanları is�
    (Google) təklif edən tətbiq Apple girişini də təklif etməlidir.
    **Nə etməli (Apple Developer hesabın var, ona görə hamısı sənlikdir):**
    (a) Apple Developer → Certificates, Identifiers & Profiles → **Services ID** yarat və
-   `com.spot.app` App ID-si üçün «Sign in with Apple»ı aç;
+   `app.spot.az` App ID-si üçün «Sign in with Apple»ı aç;
    (b) **Sign in with Apple key** (.p8) yarat, Key ID və Team ID-ni götür;
    (c) Supabase Dashboard → Authentication → Providers → **Apple** → aç, Services ID +
    Team ID + Key ID + .p8 açarını yaz, redirect URL-i Services ID-yə əlavə et;

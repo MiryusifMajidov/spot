@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.spot.app",
+      "bundleIdentifier": "app.spot.az",
       "supportsTablet": false,
       "buildNumber": "1",
       "usesAppleSignIn": true,
