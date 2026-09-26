@@ -53,7 +53,7 @@
         {
           "locationAlwaysAndWhenInUsePermission": false,
           "locationAlwaysPermission": false,
-          "motionUsagePermission": false
+          "motionUsagePermission": "Məkan xidməti ilə birlikdə hərəkət sensoru da linklənir. Tətbiq hərəkət məlumatını nə toplayır, nə də saxlayır."
         }
       ],
       [
