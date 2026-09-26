@@ -15,7 +15,7 @@
 # keystore are not in the repository, and `google-services.json` is gitignored —
 # an Android CI build would fail on the missing file. See RELEASE.md.
 #
-# BEFORE THE FIRST RUN — two things in the Codemagic UI, both one-time:
+# BEFORE THE FIRST RUN — three things in the Codemagic UI, all one-time:
 #   1. An App Store Connect API key must exist under Personal account settings →
 #      Integrations → Developer Portal → Manage keys, and `app_store_connect`
 #      below must name it EXACTLY as it is named there.
@@ -28,6 +28,13 @@
 #      app.spot.az), otherwise the TestFlight upload at the end has nothing to
 #      upload to. NOTE the id: iOS is `app.spot.az`, Android is `com.spot.app`.
 #      They differ on purpose — see RELEASE.md.
+#   3. A variable group named EXACTLY `ios_signing` on THIS app, holding
+#      CERTIFICATE_PRIVATE_KEY (Secure) — the same PEM value as the CheckMate
+#      app. Codemagic variables reach a codemagic.yaml build only through a
+#      group named under `environment.groups`, so setting the variable without
+#      the group leaves it empty and the build stops on the check below.
+#      Sharing one key across both apps is what keeps them on a single
+#      distribution certificate; the team's three are already spent.
 
 workflows:
   ios-appstore:
@@ -39,9 +46,26 @@ workflows:
       app_store_connect: laptops_az_asc_key
 
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: app.spot.az
+      # Signing is done by the explicit script below, NOT by Codemagic's
+      # declarative `ios_signing:` block. That block was tried first (build 1)
+      # and failed with «No matching profiles found for bundle identifier
+      # "app.spot.az" and distribution type "app_store"»: it looks a profile up
+      # and does not create one, and app.spot.az had none.
+      #
+      # Creating the profile by hand in the portal is not a way out either. All
+      # three distribution certificates on this team were created through the
+      # App Store Connect API, and the portal's profile wizard does not offer
+      # API-created certificates — it says «No Certificates are available» and
+      # the Generate button stays disabled. What the API made, the API manages.
+      #
+      # CERTIFICATE_PRIVATE_KEY is the SAME PEM key the CheckMate app uses, and
+      # that is the point: fetch-signing-files matches an existing certificate
+      # by its private key, so both apps sign with ONE certificate instead of
+      # minting one each. Apple allows three distribution certificates per team
+      # and all three are already spent — without the shared key the next
+      # --create gets HTTP 409 and the build has nothing to sign with.
+      groups:
+        - ios_signing
       node: 22
       xcode: latest
       cocoapods: default
@@ -52,6 +76,33 @@ workflows:
       events: []
 
     scripts:
+      - name: Prepare the keychain
+        script: keychain initialize
+
+      - name: Fetch or create the signing certificate and profile
+        # --create makes BOTH the App Store provisioning profile for
+        # app.spot.az and, if the shared certificate were ever missing, the
+        # certificate itself. With CERTIFICATE_PRIVATE_KEY set it matches the
+        # certificate CheckMate already uses instead of minting a new one.
+        script: |
+          set -e
+          if [ -z "$CERTIFICATE_PRIVATE_KEY" ]; then
+            echo "!! CERTIFICATE_PRIVATE_KEY is empty."
+            echo "   Add it to the 'ios_signing' variable group for THIS app in"
+            echo "   the Codemagic UI, using the same PEM value as CheckMate."
+            echo "   Without it this build would try to create a fourth"
+            echo "   distribution certificate and Apple refuses with 409 —"
+            echo "   this team already has the three it is allowed."
+            exit 1
+          fi
+          app-store-connect fetch-signing-files "app.spot.az" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+
+      - name: Add the certificate to the keychain
+        script: keychain add-certificates
+
       - name: Install JS dependencies
         script: npm ci
 
