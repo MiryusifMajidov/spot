@@ -16,11 +16,14 @@
 # an Android CI build would fail on the missing file. See RELEASE.md.
 #
 # BEFORE THE FIRST RUN — two things in the Codemagic UI, both one-time:
-#   1. Teams → Integrations → App Store Connect → add an API key.
-#      Generate it in App Store Connect → Users and Access → Integrations → keys,
-#      role «App Manager», download the .p8 ONCE. Name the integration exactly
-#      `SPOT ASC key`, or change the name below to match.
-#      This is why no Apple ID password is ever typed into a CI service.
+#   1. An App Store Connect API key must exist under Personal account settings →
+#      Integrations → Developer Portal → Manage keys, and `app_store_connect`
+#      below must name it EXACTLY as it is named there.
+#      The key in use is `laptops_az_asc_key` — named after the first app it was
+#      made for, and reused here on purpose: an ASC API key is ACCOUNT-level, not
+#      app-level, so one key signs and publishes every app in the same Apple
+#      team. Nothing about it is specific to that other app.
+#      This is also why no Apple ID password is ever typed into a CI service.
 #   2. Create the app record in App Store Connect first (bundle id
 #      app.spot.az), otherwise the TestFlight upload at the end has nothing to
 #      upload to. NOTE the id: iOS is `app.spot.az`, Android is `com.spot.app`.
@@ -33,7 +36,7 @@ workflows:
     max_build_duration: 60
 
     integrations:
-      app_store_connect: SPOT ASC key
+      app_store_connect: laptops_az_asc_key
 
     environment:
       ios_signing:
