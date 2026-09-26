@@ -78,3 +78,9 @@ __pycache__/
 
 # Firebase CLI deploy cache
 /.firebase/
+
+# Signing secrets — never in the repository
+*.p8
+*.p12
+*.cer
+*.mobileprovision
