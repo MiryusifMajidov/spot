@@ -35,6 +35,7 @@ import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
+import { t } from './i18n';
 import { unregisterPush } from './push';
 import { supabase } from './supabase';
 
@@ -568,4 +569,98 @@ export async function handleAuthDeepLink(url: string): Promise<AuthLinkResult> {
   } catch {
     return 'failed';
   }
+}
+
+// ------------------------------------------------------------- password --
+/**
+ * E-mail and password — the way in that does not depend on e-mail DELIVERY.
+ *
+ * WHY THIS EXISTS. Every other route was blocked at once. Apple sign-in is off
+ * on the Supabase project, Google is hidden on iOS by `SOCIAL_PROVIDERS`, and
+ * the e-mail code cannot arrive at all: Supabase's built-in SMTP «will refuse
+ * to deliver messages to addresses that are not part of the project's team»
+ * and is capped at 2 messages an hour. So on an iPhone there was NO working
+ * way in — not for a new user, not for App Review. A password is checked by
+ * the auth server itself; nothing is posted, so nothing can fail to arrive.
+ *
+ * ONE SERVER SETTING MAKES OR BREAKS IT: Authentication → Providers → Email →
+ * «Confirm email» must be OFF. With it on, a sign-up is parked until a
+ * confirmation mail arrives — the very mail that cannot be sent — and the
+ * person is left with an account they cannot enter. `signUpWithPassword` below
+ * detects that state and says so in plain words instead of failing silently.
+ *
+ * The anonymous account is UPGRADED, never replaced, exactly like the other
+ * routes: `updateUser` keeps `auth.users.id`, so the workouts, the @username
+ * and the videos recorded before signing up stay attached.
+ */
+
+/** At least this long, before the server is asked. Supabase's own floor is 6;
+ *  8 is not a burden and refusing early saves a round trip and a vague error. */
+export const PASSWORD_MIN = 8;
+
+/** What went wrong, in the person's language — or null when `e` is not one of
+ *  the known auth failures and the caller should show its own fallback. */
+export function passwordErrorText(e: unknown): string | null {
+  const m = String((e as { message?: string })?.message ?? '').toLowerCase();
+  if (!m) return null;
+  if (m.includes('invalid login') || m.includes('invalid credentials'))
+    return t('E-poçt və ya parol yanlışdır');
+  if (m.includes('email not confirmed'))
+    /* The server is set to demand a confirmation mail that its own SMTP cannot
+       deliver. Saying «try again» here would be a lie — nothing the person does
+       on this screen can fix it. */
+    return t('Bu hesab e-poçt təsdiqi gözləyir. Serverin ayarıdır — bizə yaz.');
+  if (m.includes('already registered') || m.includes('already been registered') || m.includes('already exists'))
+    return t('Bu e-poçtla hesab var — parolunla daxil ol');
+  if (m.includes('password') && (m.includes('short') || m.includes('at least') || m.includes('characters')))
+    return t('Parol ən azı {n} simvol olmalıdır', { n: PASSWORD_MIN, count: PASSWORD_MIN });
+  if (m.includes('rate') || m.includes('too many'))
+    return t('Çox tez-tez cəhd edildi — bir neçə dəqiqə gözlə');
+  if (m.includes('weak password')) return t('Parol çox sadədir — daha güclüsünü seç');
+  return null;
+}
+
+function checkPair(email: string, password: string): { email: string; password: string } {
+  const clean = (email ?? '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(clean)) throw new Error('bad-email');
+  if ((password ?? '').length < PASSWORD_MIN) throw new Error('short-password');
+  return { email: clean, password };
+}
+
+/** Come back to an existing account. Replaces whatever session is open — which
+ *  is the point: the anonymous one belongs to this phone, the account belongs
+ *  to the person. */
+export async function signInWithPassword(email: string, password: string): Promise<void> {
+  const pair = checkPair(email, password);
+  await requireProvider('email');
+  const { error } = await supabase.auth.signInWithPassword(pair);
+  if (error) throw error;
+}
+
+/**
+ * Create the account on the anonymous user that is already signed in, so
+ * nothing recorded before this moment is orphaned.
+ *
+ * Returns 'confirm-pending' when the server accepted the sign-up but is waiting
+ * for a confirmation e-mail — with the built-in SMTP that mail never arrives,
+ * so the caller must say so rather than send the person to an empty inbox.
+ */
+export async function signUpWithPassword(email: string, password: string): Promise<'ok' | 'confirm-pending'> {
+  const pair = checkPair(email, password);
+  await requireProvider('email');
+
+  if (await isAnonymous()) {
+    const { data, error } = await supabase.auth.updateUser(pair);
+    if (error) throw error;
+    /* `new_email` still set means the address is parked behind a confirmation
+       link. The password IS already saved, so the account is reachable the
+       moment the address is confirmed — but not before. */
+    if (data?.user?.new_email) return 'confirm-pending';
+    return 'ok';
+  }
+
+  const { data, error } = await supabase.auth.signUp(pair);
+  if (error) throw error;
+  // No session back means the project demands a confirmation mail.
+  return data?.session ? 'ok' : 'confirm-pending';
 }

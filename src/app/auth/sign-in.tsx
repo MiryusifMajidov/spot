@@ -9,7 +9,18 @@ import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
-import { AuthSetupError, confirmEmailCode, sendEmailCode, signInWithApple, signInWithGoogle, useSocialProviders } from '@/lib/auth';
+import {
+  AuthSetupError,
+  confirmEmailCode,
+  PASSWORD_MIN,
+  passwordErrorText,
+  sendEmailCode,
+  signInWithApple,
+  signInWithGoogle,
+  signInWithPassword,
+  signUpWithPassword,
+  useSocialProviders,
+} from '@/lib/auth';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
@@ -58,12 +69,20 @@ export default function SignIn() {
   const profileName = useAppStore((s) => s.profile.name);
   const bootstrap = useAppStore((s) => s.bootstrap);
 
-  const [busy, setBusy] = useState<null | 'google' | 'apple' | 'email'>(null);
+  const [busy, setBusy] = useState<null | 'google' | 'apple' | 'email' | 'password'>(null);
   const [sent, setSent] = useState<{ to: string; linking: boolean } | null>(null);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
+  /* The one-time code is kept as a second route, not the first one: with the
+     project's built-in SMTP it cannot be delivered to anybody outside the
+     Supabase team (2 messages an hour, team addresses only), so leading with
+     it sends most people into a wall. It starts working the day a real SMTP
+     provider is configured — see store/launch-audit.md. */
+  const [byCode, setByCode] = useState(false);
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+  const passwordOk = password.length >= PASSWORD_MIN;
 
   /* Apple on iOS, Google on Android (SOCIAL_PROVIDERS), minus whatever the
      server says is off — a dead button is worse than one fewer. */
@@ -131,6 +150,50 @@ export default function SignIn() {
             : m === 'bad-email'
               ? t('E-poçt ünvanı düzgün deyil')
               : t('Link göndərilmədi — yenidən cəhd et')),
+        'error'
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /* Sign in, or create the account on top of the anonymous one. Both land in
+     the same place, so the only difference the person sees is the button. */
+  const withPassword = async (kind: 'in' | 'up') => {
+    if (!hasSupabaseConfig) return toast(t('Server bağlantısı yoxdur'), 'error');
+    setBusy('password');
+    try {
+      if (kind === 'in') {
+        await signInWithPassword(email, password);
+      } else {
+        const r = await signUpWithPassword(email, password);
+        if (r === 'confirm-pending') {
+          /* The account exists and the password is set, but the project is
+             configured to hold it until a confirmation mail is answered — and
+             that mail cannot be delivered. Sending the person to their inbox
+             would waste their time, so say what is actually true. */
+          errorFeedback();
+          toast(t('Hesab yaradıldı, amma server e-poçt təsdiqi gözləyir — bu, serverin ayarıdır, bizə yaz.'), 'error');
+          return;
+        }
+      }
+      /* Re-read the account: bootstrap() is what finds a profile already on the
+         server and sets `onboarded`, so a returning person goes straight in. */
+      await bootstrap();
+      successFeedback();
+      toast(kind === 'in' ? t('Xoş gəldin') : t('Hesabın hazırdır'));
+      done();
+    } catch (e) {
+      errorFeedback();
+      const m = String((e as Error)?.message ?? '');
+      toast(
+        setupMessage(e) ??
+          passwordErrorText(e) ??
+          (m === 'bad-email'
+            ? t('E-poçt ünvanı düzgün deyil')
+            : m === 'short-password'
+              ? t('Parol ən azı {n} simvol olmalıdır', { n: PASSWORD_MIN, count: PASSWORD_MIN })
+              : t('Alınmadı — yenidən cəhd et')),
         'error'
       );
     } finally {
@@ -283,13 +346,57 @@ export default function SignIn() {
               autoCorrect={false}
               style={styles.input}
             />
-            <Button
-              title={busy === 'email' ? t('Göndərilir…') : t('Link göndər')}
-              full
-              disabled={!emailOk || !!busy}
-              onPress={send}
-              style={{ marginTop: 12 }}
-            />
+
+            {byCode ? (
+              <>
+                <Button
+                  title={busy === 'email' ? t('Göndərilir…') : t('Link göndər')}
+                  full
+                  disabled={!emailOk || !!busy}
+                  onPress={send}
+                  style={{ marginTop: 12 }}
+                />
+                <PressableScale activeScale={0.97} onPress={() => setByCode(false)} style={styles.switchRow}>
+                  <AppText variant="footnote" color={palette.blue}>
+                    {t('Parolla daxil ol')}
+                  </AppText>
+                </PressableScale>
+              </>
+            ) : (
+              <>
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder={t('Parol — ən azı {n} simvol', { n: PASSWORD_MIN, count: PASSWORD_MIN })}
+                  placeholderTextColor={palette.caption}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="password"
+                  style={[styles.input, { marginTop: 10 }]}
+                />
+                <Button
+                  title={busy === 'password' ? t('Yoxlanılır…') : t('Daxil ol')}
+                  full
+                  disabled={!emailOk || !passwordOk || !!busy}
+                  onPress={() => withPassword('in')}
+                  style={{ marginTop: 12 }}
+                />
+                <Button
+                  title={t('Yeni hesab yarat')}
+                  variant="secondary"
+                  full
+                  disabled={!emailOk || !passwordOk || !!busy}
+                  onPress={() => withPassword('up')}
+                  style={{ marginTop: 10 }}
+                />
+                <PressableScale activeScale={0.97} onPress={() => setByCode(true)} style={styles.switchRow}>
+                  <AppText variant="footnote" color={palette.blue}>
+                    {t('Parolsuz — e-poçta kod göndər')}
+                  </AppText>
+                </PressableScale>
+              </>
+            )}
           </>
         )}
 
@@ -304,6 +411,7 @@ export default function SignIn() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 40 },
   orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 22 },
+  switchRow: { alignItems: 'center', paddingVertical: 14 },
   orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: palette.separator },
   hero: {
     flexDirection: 'row',

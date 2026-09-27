@@ -10129,5 +10129,90 @@
   "key": "25 sentyabr 2026",
   "ru": "25 сентября 2026",
   "en": "25 September 2026"
+ },
+ {
+  "key": "Alınmadı — yenidən cəhd et",
+  "ru": "Не получилось — попробуй ещё раз",
+  "en": "It did not work — try again"
+ },
+ {
+  "key": "Hesab yaradıldı, amma server e-poçt təsdiqi gözləyir — bu, serverin ayarıdır, bizə yaz.",
+  "ru": "Аккаунт создан, но сервер ждёт подтверждения по почте — это настройка сервера, напиши нам.",
+  "en": "The account was created, but the server is waiting for e-mail confirmation — that is a server setting, write to us."
+ },
+ {
+  "key": "Parol ən azı {n} simvol olmalıdır",
+  "ru": "Пароль — минимум {n} символов",
+  "en": "The password must be at least {n} characters",
+  "ru_one": "Пароль — минимум {n} символ",
+  "ru_few": "Пароль — минимум {n} символа",
+  "ru_many": "Пароль — минимум {n} символов",
+  "en_one": "The password must be at least {n} character",
+  "en_other": "The password must be at least {n} characters"
+ },
+ {
+  "key": "Parol — ən azı {n} simvol",
+  "ru": "Пароль — минимум {n} символов",
+  "en": "Password — at least {n} characters",
+  "ru_one": "Пароль — минимум {n} символ",
+  "ru_few": "Пароль — минимум {n} символа",
+  "ru_many": "Пароль — минимум {n} символов",
+  "en_one": "Password — at least {n} character",
+  "en_other": "Password — at least {n} characters"
+ },
+ {
+  "key": "Parolla daxil ol",
+  "ru": "Войти по паролю",
+  "en": "Sign in with a password"
+ },
+ {
+  "key": "Parolsuz — e-poçta kod göndər",
+  "ru": "Без пароля — прислать код на почту",
+  "en": "No password — send a code to my e-mail"
+ },
+ {
+  "key": "Xoş gəldin",
+  "ru": "С возвращением",
+  "en": "Welcome back"
+ },
+ {
+  "key": "Yeni hesab yarat",
+  "ru": "Создать аккаунт",
+  "en": "Create an account"
+ },
+ {
+  "key": "Bu e-poçtla hesab var — parolunla daxil ol",
+  "ru": "С этой почтой аккаунт уже есть — войди по паролю",
+  "en": "An account with this e-mail already exists — sign in with your password"
+ },
+ {
+  "key": "Bu hesab e-poçt təsdiqi gözləyir. Serverin ayarıdır — bizə yaz.",
+  "ru": "Этот аккаунт ждёт подтверждения почты. Это настройка сервера — напиши нам.",
+  "en": "This account is waiting for e-mail confirmation. That is a server setting — write to us."
+ },
+ {
+  "key": "E-poçt və ya parol yanlışdır",
+  "ru": "Почта или пароль неверны",
+  "en": "The e-mail or the password is wrong"
+ },
+ {
+  "key": "Parol çox sadədir — daha güclüsünü seç",
+  "ru": "Пароль слишком простой — выбери посложнее",
+  "en": "That password is too simple — pick a stronger one"
+ },
+ {
+  "key": "Hesab identifikatorları, parollar və giriş nişanları Supabase Auth tərəfindən idarə olunur — parol orada şifrələnmiş formada saxlanılır, SPOT-un öz cədvəllərinə heç vaxt düşmür və biz onu görə bilmirik. Giriş dörd yolla olur: e-poçt və parol, e-poçta gələn kod, iOS-da Apple hesabı, Android-də Google hesabı.",
+  "ru": "Идентификаторами аккаунта, паролями и токенами входа управляет Supabase Auth — пароль хранится там в зашифрованном виде, в собственные таблицы SPOT он никогда не попадает, и мы его не видим. Войти можно четырьмя способами: по почте и паролю, по коду из письма, через аккаунт Apple на iOS и через аккаунт Google на Android.",
+  "en": "Account identifiers, passwords and sign-in tokens are handled by Supabase Auth — the password is stored there in encrypted form, it never reaches SPOT’s own tables, and we cannot see it. There are four ways in: e-mail and password, a code sent to your e-mail, an Apple account on iOS, and a Google account on Android."
+ },
+ {
+  "key": "Miryusif Məcidov",
+  "ru": "Miryusif Məcidov",
+  "en": "Miryusif Məcidov"
+ },
+ {
+  "key": "mecidovyusif079@gmail.com",
+  "ru": "mecidovyusif079@gmail.com",
+  "en": "mecidovyusif079@gmail.com"
  }
 ]

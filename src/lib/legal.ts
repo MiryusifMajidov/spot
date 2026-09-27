@@ -164,7 +164,7 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
           // store reviewer stops at.
           'Operator: {operator}. Əlaqə: {contact}.',
           'Məlumat Supabase üzərində saxlanılır. Server hazırda Avstraliya (Sidney) regionundadır; Avropa regionuna köçürülməsi planlaşdırılır.',
-          'Hesab identifikatorları və giriş nişanları Supabase Auth tərəfindən idarə olunur. SPOT-da parol yoxdur: giriş e-poçta gələn kodla, iOS-da Apple hesabı ilə, Android-də Google hesabı ilə olur.',
+          'Hesab identifikatorları, parollar və giriş nişanları Supabase Auth tərəfindən idarə olunur — parol orada şifrələnmiş formada saxlanılır, SPOT-un öz cədvəllərinə heç vaxt düşmür və biz onu görə bilmirik. Giriş dörd yolla olur: e-poçt və parol, e-poçta gələn kod, iOS-da Apple hesabı, Android-də Google hesabı.',
         ],
       },
       {

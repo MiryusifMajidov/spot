@@ -9387,6 +9387,15 @@
   "placeholders": []
  },
  {
+  "key": "Alınmadı — yenidən cəhd et",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Apple girişi",
   "counted": false,
   "files": [
@@ -9459,10 +9468,29 @@
   "placeholders": []
  },
  {
+  "key": "Hesab yaradıldı, amma server e-poçt təsdiqi gözləyir — bu, serverin ayarıdır, bizə yaz.",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Hesabın",
   "counted": false,
   "files": [
    "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Hesabın hazırdır",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx",
+   "src/app/onboarding/trainers.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -9560,6 +9588,47 @@
   "placeholders": []
  },
  {
+  "key": "Parol ən azı {n} simvol olmalıdır",
+  "counted": true,
+  "files": [
+   "src/app/auth/sign-in.tsx",
+   "src/lib/auth.ts"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "Parol — ən azı {n} simvol",
+  "counted": true,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "Parolla daxil ol",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Parolsuz — e-poçta kod göndər",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Server bağlantısı yoxdur",
   "counted": false,
   "files": [
@@ -9585,6 +9654,24 @@
  },
  {
   "key": "VƏ YA MƏKTUBDAKI KODU YAZ",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Xoş gəldin",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Yeni hesab yarat",
   "counted": false,
   "files": [
    "src/app/auth/sign-in.tsx"
@@ -9705,7 +9792,8 @@
   "key": "Çox tez-tez cəhd edildi — bir neçə dəqiqə gözlə",
   "counted": false,
   "files": [
-   "src/app/auth/sign-in.tsx"
+   "src/app/auth/sign-in.tsx",
+   "src/lib/auth.ts"
   ],
   "kind": "ui",
   "placeholders": []
@@ -12586,15 +12674,6 @@
  },
  {
   "key": "1 müəllimi izlə",
-  "counted": false,
-  "files": [
-   "src/app/onboarding/trainers.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Hesabın hazırdır",
   "counted": false,
   "files": [
    "src/app/onboarding/trainers.tsx"
@@ -15927,6 +16006,42 @@
   "placeholders": []
  },
  {
+  "key": "Bu e-poçtla hesab var — parolunla daxil ol",
+  "counted": false,
+  "files": [
+   "src/lib/auth.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Bu hesab e-poçt təsdiqi gözləyir. Serverin ayarıdır — bizə yaz.",
+  "counted": false,
+  "files": [
+   "src/lib/auth.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "E-poçt və ya parol yanlışdır",
+  "counted": false,
+  "files": [
+   "src/lib/auth.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Parol çox sadədir — daha güclüsünü seç",
+  "counted": false,
+  "files": [
+   "src/lib/auth.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Bu funksiya üçün",
   "counted": false,
   "files": [
@@ -16475,7 +16590,7 @@
   "placeholders": []
  },
  {
-  "key": "Hesab identifikatorları və giriş nişanları Supabase Auth tərəfindən idarə olunur. SPOT-da parol yoxdur: giriş e-poçta gələn kodla, iOS-da Apple hesabı ilə, Android-də Google hesabı ilə olur.",
+  "key": "Hesab identifikatorları, parollar və giriş nişanları Supabase Auth tərəfindən idarə olunur — parol orada şifrələnmiş formada saxlanılır, SPOT-un öz cədvəllərinə heç vaxt düşmür və biz onu görə bilmirik. Giriş dörd yolla olur: e-poçt və parol, e-poçta gələn kod, iOS-da Apple hesabı, Android-də Google hesabı.",
   "counted": false,
   "files": [
    "src/lib/legal.ts"
