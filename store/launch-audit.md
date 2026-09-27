@@ -6,6 +6,28 @@ etməyə çalışan** skeptik. 64 tapıntıdan 62-si yoxlamadan sağ çıxdı. A
 siyahıda **[canlı yoxlandı]** işarəsi olanları bu sənədi yazan bilavasitə
 təkrar yoxlayıb — qalanları auditorun sübutuna əsaslanır.
 
+> ## 27.09.2026 — TƏSDİQLƏNMİŞ BLOKER: e-poçtla giriş heç kimdə işləmir
+>
+> Sahib tətbiqdə «Link göndərilmədi» xətası ilə qarşılaşdı. Səbəb tapıldı və
+> Supabase sənədində hərfi yazılıb: «Unless you configure a custom SMTP server
+> for your project, Supabase Auth will refuse to deliver messages to addresses
+> that are not part of the project's team.» Limit isə **saatda 2 mesajdır**.
+>
+> Yəni daxili poçt xidməti **yalnız layihənin komanda üzvlərinə** göndərir.
+> Real istifadəçi e-poçtla ümumiyyətlə girə bilmir.
+>
+> **iOS üçün bu ölümcüldür:** orada Apple provayderi hələ sönülüdür və Google
+> girişi platformaya görə gizlədilib, yəni e-poçt **yeganə** yoldur. Hazırkı
+> qurulumda iPhone-da heç kim — o cümlədən App Review — tətbiqə girə bilmir.
+>
+> Android sağ qalır, çünki Google girişi işləyir.
+>
+> Həlli sahibin işidir və ikisindən biri kifayət etmir — **hər ikisi lazımdır**:
+> 1. Supabase → Project Settings → Authentication → SMTP Settings: xarici SMTP
+>    qoş (Resend, Brevo, SendGrid, Amazon SES — hamısının pulsuz həddi var).
+>    Bu, həm real istifadəçini, həm də mağaza üçün demo hesabı işlək edir.
+> 2. Apple provayderini aç — iOS-da ikinci giriş yolu olsun.
+
 **Verdikt: bu gün nə Play-ə, nə App Store-a göndərilə bilməz.**
 
 Dörd fərqli səviyyə, qarışdırmaq olmaz:
