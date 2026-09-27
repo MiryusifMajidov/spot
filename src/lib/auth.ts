@@ -586,7 +586,7 @@ export async function handleAuthDeepLink(url: string): Promise<AuthLinkResult> {
  * ONE SERVER SETTING MAKES OR BREAKS IT: Authentication → Providers → Email →
  * «Confirm email» must be OFF. With it on, a sign-up is parked until a
  * confirmation mail arrives — the very mail that cannot be sent — and the
- * person is left with an account they cannot enter. `signUpWithPassword` below
+ * person is left with an account they cannot enter. `continueWithPassword` below
  * detects that state and says so in plain words instead of failing silently.
  *
  * The anonymous account is UPGRADED, never replaced, exactly like the other
@@ -627,40 +627,53 @@ function checkPair(email: string, password: string): { email: string; password: 
   return { email: clean, password };
 }
 
-/** Come back to an existing account. Replaces whatever session is open — which
- *  is the point: the anonymous one belongs to this phone, the account belongs
- *  to the person. */
-export async function signInWithPassword(email: string, password: string): Promise<void> {
-  const pair = checkPair(email, password);
-  await requireProvider('email');
-  const { error } = await supabase.auth.signInWithPassword(pair);
-  if (error) throw error;
-}
+/** What actually happened, so the screen can say the right thing with ONE button. */
+export type PasswordOutcome = 'signed-in' | 'created' | 'wrong-password' | 'confirm-pending';
 
 /**
- * Create the account on the anonymous user that is already signed in, so
- * nothing recorded before this moment is orphaned.
+ * One door for both «I have an account» and «I do not».
  *
- * Returns 'confirm-pending' when the server accepted the sign-up but is waiting
- * for a confirmation e-mail — with the built-in SMTP that mail never arrives,
- * so the caller must say so rather than send the person to an empty inbox.
+ * Two buttons — «sign in» and «create account» — is a choice the person should
+ * not have to make: they know their address and their password, and which of
+ * the two cases they are in is something the SERVER can answer. So this tries
+ * to sign in, and only if the server says those credentials do not match does
+ * it create the account.
+ *
+ * Getting «wrong password» right matters and is not obvious. Supabase answers
+ * «Invalid login credentials» for BOTH a wrong password and an unknown address
+ * — deliberately, so nobody can use the form to discover who has an account. So
+ * a failed sign-in alone cannot tell the two apart. The sign-up attempt is what
+ * separates them: if it comes back «already registered», the address exists and
+ * the password was simply wrong.
  */
-export async function signUpWithPassword(email: string, password: string): Promise<'ok' | 'confirm-pending'> {
+export async function continueWithPassword(email: string, password: string): Promise<PasswordOutcome> {
   const pair = checkPair(email, password);
   await requireProvider('email');
 
+  const { error: signInError } = await supabase.auth.signInWithPassword(pair);
+  if (!signInError) return 'signed-in';
+
+  const m = String(signInError.message ?? '').toLowerCase();
+  const credentialsRejected = m.includes('invalid login') || m.includes('invalid credentials');
+  // Anything else — rate limit, e-mail unconfirmed, provider off — is a real
+  // failure and must not be turned into an attempt to create an account.
+  if (!credentialsRejected) throw signInError;
+
+  const taken = (err: unknown) => {
+    const t2 = String((err as { message?: string })?.message ?? '').toLowerCase();
+    return t2.includes('already registered') || t2.includes('already been registered')
+      || t2.includes('already exists') || t2.includes('in use');
+  };
+
   if (await isAnonymous()) {
+    /* Upgrade the account this phone is already using, so the workouts, the
+       @username and the videos recorded before signing up stay attached. */
     const { data, error } = await supabase.auth.updateUser(pair);
-    if (error) throw error;
-    /* `new_email` still set means the address is parked behind a confirmation
-       link. The password IS already saved, so the account is reachable the
-       moment the address is confirmed — but not before. */
-    if (data?.user?.new_email) return 'confirm-pending';
-    return 'ok';
+    if (error) return taken(error) ? 'wrong-password' : Promise.reject(error);
+    return data?.user?.new_email ? 'confirm-pending' : 'created';
   }
 
   const { data, error } = await supabase.auth.signUp(pair);
-  if (error) throw error;
-  // No session back means the project demands a confirmation mail.
-  return data?.session ? 'ok' : 'confirm-pending';
+  if (error) return taken(error) ? 'wrong-password' : Promise.reject(error);
+  return data?.session ? 'created' : 'confirm-pending';
 }

@@ -2,7 +2,7 @@
   "expo": {
     "name": "SPOT",
     "slug": "miri",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "spot",
@@ -25,7 +25,7 @@
     "android": {
       "package": "app.spot.az",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 14,
+      "versionCode": 15,
       "adaptiveIcon": {
         "backgroundColor": "#101014",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

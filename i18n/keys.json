@@ -6494,7 +6494,8 @@
   "key": "Davam et",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/privacy.tsx"
+   "src/app/(tabs)/profile/privacy.tsx",
+   "src/app/auth/sign-in.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -9468,15 +9469,6 @@
   "placeholders": []
  },
  {
-  "key": "Hesab yaradıldı, amma server e-poçt təsdiqi gözləyir — bu, serverin ayarıdır, bizə yaz.",
-  "counted": false,
-  "files": [
-   "src/app/auth/sign-in.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Hesabın",
   "counted": false,
   "files": [
@@ -9497,6 +9489,15 @@
  },
  {
   "key": "Hesabın qorundu",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Hesabın varsa daxil olacaqsan, yoxdursa elə indi yaradılacaq.",
   "counted": false,
   "files": [
    "src/app/auth/sign-in.tsx"
@@ -9588,6 +9589,15 @@
   "placeholders": []
  },
  {
+  "key": "Parol yanlışdır",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Parol ən azı {n} simvol olmalıdır",
   "counted": true,
   "files": [
@@ -9644,6 +9654,15 @@
   "placeholders": []
  },
  {
+  "key": "Server e-poçt təsdiqi gözləyir — bu, serverin ayarıdır, bizə yaz.",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Təsdiqlə",
   "counted": false,
   "files": [
@@ -9663,15 +9682,6 @@
  },
  {
   "key": "Xoş gəldin",
-  "counted": false,
-  "files": [
-   "src/app/auth/sign-in.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Yeni hesab yarat",
   "counted": false,
   "files": [
    "src/app/auth/sign-in.tsx"

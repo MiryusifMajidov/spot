@@ -10214,5 +10214,20 @@
   "key": "mecidovyusif079@gmail.com",
   "ru": "mecidovyusif079@gmail.com",
   "en": "mecidovyusif079@gmail.com"
+ },
+ {
+  "key": "Hesabın varsa daxil olacaqsan, yoxdursa elə indi yaradılacaq.",
+  "ru": "Если аккаунт уже есть — ты войдёшь, если нет — он создастся прямо сейчас.",
+  "en": "If you already have an account you will be signed in; if not, one is created right now."
+ },
+ {
+  "key": "Parol yanlışdır",
+  "ru": "Неверный пароль",
+  "en": "Wrong password"
+ },
+ {
+  "key": "Server e-poçt təsdiqi gözləyir — bu, serverin ayarıdır, bizə yaz.",
+  "ru": "Сервер ждёт подтверждения по почте — это его настройка, напиши нам.",
+  "en": "The server is waiting for e-mail confirmation — that is a server setting, write to us."
  }
 ]

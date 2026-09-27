@@ -17,8 +17,7 @@ import {
   sendEmailCode,
   signInWithApple,
   signInWithGoogle,
-  signInWithPassword,
-  signUpWithPassword,
+  continueWithPassword,
   useSocialProviders,
 } from '@/lib/auth';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
@@ -157,31 +156,33 @@ export default function SignIn() {
     }
   };
 
-  /* Sign in, or create the account on top of the anonymous one. Both land in
-     the same place, so the only difference the person sees is the button. */
-  const withPassword = async (kind: 'in' | 'up') => {
+  /* ONE button. Whether this address already has an account is something the
+     server knows and the person should not have to declare — see
+     `continueWithPassword`. */
+  const withPassword = async () => {
     if (!hasSupabaseConfig) return toast(t('Server bağlantısı yoxdur'), 'error');
     setBusy('password');
     try {
-      if (kind === 'in') {
-        await signInWithPassword(email, password);
-      } else {
-        const r = await signUpWithPassword(email, password);
-        if (r === 'confirm-pending') {
-          /* The account exists and the password is set, but the project is
-             configured to hold it until a confirmation mail is answered — and
-             that mail cannot be delivered. Sending the person to their inbox
-             would waste their time, so say what is actually true. */
-          errorFeedback();
-          toast(t('Hesab yaradıldı, amma server e-poçt təsdiqi gözləyir — bu, serverin ayarıdır, bizə yaz.'), 'error');
-          return;
-        }
+      const outcome = await continueWithPassword(email, password);
+      if (outcome === 'wrong-password') {
+        errorFeedback();
+        toast(t('Parol yanlışdır'), 'error');
+        return;
+      }
+      if (outcome === 'confirm-pending') {
+        /* The account exists and the password is saved, but the project holds
+           it until a confirmation mail is answered — and that mail cannot be
+           delivered. Sending the person to an empty inbox would waste their
+           time, so say what is actually true. */
+        errorFeedback();
+        toast(t('Server e-poçt təsdiqi gözləyir — bu, serverin ayarıdır, bizə yaz.'), 'error');
+        return;
       }
       /* Re-read the account: bootstrap() is what finds a profile already on the
          server and sets `onboarded`, so a returning person goes straight in. */
       await bootstrap();
       successFeedback();
-      toast(kind === 'in' ? t('Xoş gəldin') : t('Hesabın hazırdır'));
+      toast(outcome === 'signed-in' ? t('Xoş gəldin') : t('Hesabın hazırdır'));
       done();
     } catch (e) {
       errorFeedback();
@@ -376,20 +377,15 @@ export default function SignIn() {
                   style={[styles.input, { marginTop: 10 }]}
                 />
                 <Button
-                  title={busy === 'password' ? t('Yoxlanılır…') : t('Daxil ol')}
+                  title={busy === 'password' ? t('Yoxlanılır…') : t('Davam et')}
                   full
                   disabled={!emailOk || !passwordOk || !!busy}
-                  onPress={() => withPassword('in')}
+                  onPress={withPassword}
                   style={{ marginTop: 12 }}
                 />
-                <Button
-                  title={t('Yeni hesab yarat')}
-                  variant="secondary"
-                  full
-                  disabled={!emailOk || !passwordOk || !!busy}
-                  onPress={() => withPassword('up')}
-                  style={{ marginTop: 10 }}
-                />
+                <AppText variant="caption" color={palette.caption} style={{ textAlign: 'center', marginTop: 10 }}>
+                  {t('Hesabın varsa daxil olacaqsan, yoxdursa elə indi yaradılacaq.')}
+                </AppText>
                 <PressableScale activeScale={0.97} onPress={() => setByCode(true)} style={styles.switchRow}>
                   <AppText variant="footnote" color={palette.blue}>
                     {t('Parolsuz — e-poçta kod göndər')}
