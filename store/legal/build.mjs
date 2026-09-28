@@ -204,6 +204,45 @@ const DEL = {
       ],
     },
     {
+      /* Play's «Delete data URL» must show how to remove data WITHOUT closing
+         the account, and that is a different set of steps from the one above.
+         Everything listed here is a real button in the app, not a request form:
+         src/lib/removeWorkout.ts, src/lib/removeProgram.ts, src/lib/comments.ts
+         and the privacy screen's device wipe. */
+      heading: {
+        az: 'Hesabı silmədən məlumatın bir hissəsini silmək',
+        ru: 'Удалить часть данных, не удаляя аккаунт',
+        en: 'Deleting some of your data without closing the account',
+      },
+      steps: [
+        {
+          az: 'Bir məşq: Profil → Tarixçə → həmin məşqi aç → sil. Setlər, çəkilər və qeydlər onunla birlikdə serverdən silinir.',
+          ru: 'Одна тренировка: Профиль → История → открой её → удали. Подходы, веса и заметки удаляются с сервера вместе с ней.',
+          en: 'One workout: Profile → History → open it → delete. Its sets, weights and notes go from the server with it.',
+        },
+        {
+          az: 'Bir proqram: proqramı aç → sil. Şagirdə təyin edilmişdisə, təyinat da götürülür.',
+          ru: 'Одна программа: открой программу → удали. Если она была назначена ученику, назначение тоже снимается.',
+          en: 'One program: open the program → delete. If it was assigned to a student, the assignment goes too.',
+        },
+        {
+          az: 'Bir şərh: şərhin üstünə uzun bas → sil. Yalnız öz şərhini silə bilirsən.',
+          ru: 'Один комментарий: долгое нажатие на нём → удалить. Удалить можно только свой комментарий.',
+          en: 'One comment: long-press it → delete. You can only delete your own.',
+        },
+        {
+          az: `Yalnız bu telefondakı nüsxə: ${UI_PATH('az')} → «${UI.wipeDevice.az}». Serverdəki hesabın və məlumatın toxunulmur.`,
+          ru: `Только копия на этом телефоне: ${UI_PATH('ru')} → «${UI.wipeDevice.ru}». Аккаунт и данные на сервере не трогаются.`,
+          en: `Only the copy on this phone: ${UI_PATH('en')} → "${UI.wipeDevice.en}". The account and the data on the server are untouched.`,
+        },
+        {
+          az: 'Bunların heç biri sorğu deyil — tətbiqin içində düymədir və dərhal işləyir. Başqa bir şeyin silinməsini istəyirsənsə, aşağıdakı ünvana yaz.',
+          ru: 'Ничего из этого не является запросом — это кнопки в приложении, и они срабатывают сразу. Если нужно удалить что-то ещё, напиши на адрес ниже.',
+          en: 'None of these is a request: they are buttons inside the app and they take effect immediately. If you need something else removed, write to the address below.',
+        },
+      ],
+    },
+    {
       heading: {
         az: 'Silməzdən əvvəl: datanı özünə götür',
         ru: 'Перед удалением: забери свои данные',
