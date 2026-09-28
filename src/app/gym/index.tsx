@@ -103,7 +103,7 @@ export default function GymPanel() {
       settle(getMyGymClaim(gymId)),
     ]);
     // A failed query is reported as a failure below — never as 0 members, 0
-    // check-ins or "bugün check-in yoxdur".
+    // check-ins or "bu gün check-in yoxdur".
     setData({
       members: roster.ok ? roster.value.length : 0,
       now: occ.ok ? occ.value.now : 0,
@@ -212,7 +212,7 @@ export default function GymPanel() {
                 </View>
               ) : loaded ? (
                 <View style={styles.coverBadge}>
-                  <Icon name="plus" size={13} color={palette.white} />
+                  <Icon name="plus" size={15} color={palette.white} />
                   <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>{t('Zalın şəklini əlavə et')}</AppText>
                 </View>
               ) : null}
@@ -234,9 +234,16 @@ export default function GymPanel() {
               </AppText>
             ) : null}
           </View>
-          <PressableScale activeScale={0.94} onPress={() => showAccountSwitcher(router)} style={styles.modePill}>
-            <Icon name="user" size={13} color={palette.volt} />
-            <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>{t('Hesabı dəyiş')}</AppText>
+          {/* 36 pt pill + 4 pt slop above and below = a 44 pt target. The slop
+              stays inside the header row, which the title column makes taller. */}
+          <PressableScale
+            activeScale={0.94}
+            onPress={() => showAccountSwitcher(router)}
+            hitSlop={{ top: 4, bottom: 4 }}
+            accessibilityRole="button"
+            style={styles.modePill}>
+            <Icon name="user" size={16} color={palette.volt} />
+            <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Hesabı dəyiş')}</AppText>
           </PressableScale>
         </View>
 
@@ -246,14 +253,14 @@ export default function GymPanel() {
             yeniləndi», and waited for members who could not find the gym at all. */}
         {!gym.listed ? (
           <PressableScale activeScale={0.98} onPress={() => router.push('/gym/claim')} style={styles.unlisted}>
-            <Icon name="lock" size={18} color="#B25E00" />
+            <Icon name="lock" size={20} color="#B25E00" />
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Zal hələ Kəşfdə görünmür')}</AppText>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 3 }}>
                 {t('Müştərilər zalı axtarışda və xəritədə tapa bilmir. Moderator yoxlayandan və ya sahiblik (VÖEN) təsdiqlənəndən sonra dərc olunur.')}
               </AppText>
             </View>
-            <Icon name="chevR" size={16} color={palette.tertiary} />
+            <Icon name="chevR" size={18} color={palette.tertiary} />
           </PressableScale>
         ) : null}
 
@@ -267,8 +274,8 @@ export default function GymPanel() {
                 : !loaded
                   ? t('yüklənir…')
                   : hasToday
-                    ? t('bugün {n} check-in', { n: data.today, count: data.today })
-                    : t('bugün check-in yoxdur')}
+                    ? t('bu gün {n} check-in', { n: data.today, count: data.today })
+                    : t('bu gün check-in yoxdur')}
             </AppText>
           </View>
           <View style={[styles.statCard, { backgroundColor: palette.white }]}>
@@ -285,7 +292,7 @@ export default function GymPanel() {
           <View style={styles.cardHead}>
             <AppText variant="headline">{t('Saat üzrə doluluq')}</AppText>
             <AppText variant="caption" color={palette.tertiary}>
-              {t('bugün')}
+              {t('bu gün')}
             </AppText>
           </View>
           {errors.occupancy ? (
@@ -332,7 +339,7 @@ export default function GymPanel() {
           ) : (
             <EmptyNote
               inset
-              title={loaded ? t('Bugün hələ check-in yoxdur') : t('Yüklənir…')}
+              title={loaded ? t('Bu gün hələ check-in yoxdur') : t('Yüklənir…')}
               body={
                 loaded
                   ? t('Doluluq üzv öz telefonundan SPOT-un «Check-in» ekranından check-in edəndə dolur. Zal kodu check-in-i işə salmır — SPOT-da zalını seçən üzvlərə check-in etməyi xatırlat.')
@@ -406,7 +413,13 @@ export default function GymPanel() {
         <View style={styles.card}>
           <View style={styles.cardHead}>
             <AppText variant="headline">{t('Zalın yeri')}</AppText>
-            <PressableScale activeScale={0.94} onPress={() => router.push('/gym/edit')}>
+            {/* An 18 pt line of text on its own; the slop makes it a 44 pt target
+                and reaches only into the card's padding and the gap above the map. */}
+            <PressableScale
+              activeScale={0.94}
+              onPress={() => router.push('/gym/edit')}
+              hitSlop={{ top: 13, bottom: 13, left: 12, right: 12 }}
+              accessibilityRole="button">
               <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.blue }}>{t('Yeri dəyiş')}</AppText>
             </PressableScale>
           </View>
@@ -414,7 +427,7 @@ export default function GymPanel() {
             <EmptyNote
               inset
               title={t('Zalın yeri oxuna bilmədi')}
-              body={t('Koordinatlar bazadan gəlmədi — pin qoyulub-qoyulmadığını deyə bilmirik. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.')}
+              body={t('Koordinatlar bazadan gəlmədi — işarə qoyulub-qoyulmadığını deyə bilmirik. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.')}
             />
           ) : media.lat != null && media.lng != null ? (
             <>
@@ -434,7 +447,7 @@ export default function GymPanel() {
               title={loaded ? t('Zalın yeri xəritədə qeyd olunmayıb') : t('Yüklənir…')}
               body={
                 loaded
-                  ? t('Koordinat olmadan zal müştəri xəritəsində görünmür. «Yeri dəyiş» ilə pini zalın üstünə qoy.')
+                  ? t('Koordinat olmadan zal müştəri xəritəsində görünmür. «Yeri dəyiş» ilə işarəni zalın üstünə qoy.')
                   : t('Zalın koordinatları oxunur.')
               }
             />
@@ -449,7 +462,7 @@ export default function GymPanel() {
 
         {gym.claimStatus === 'claimed' ? (
           <View style={[styles.card, styles.claimRow, { marginTop: 14 }]}>
-            <Icon name="verified" size={20} color={palette.voltDeep} />
+            <Icon name="verified" size={22} color={palette.voltDeep} />
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Sahiblik təsdiqlənib')}</AppText>
               <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 3 }}>
@@ -462,7 +475,7 @@ export default function GymPanel() {
             activeScale={0.98}
             onPress={() => router.push('/gym/claim')}
             style={[styles.card, styles.claimRow, { marginTop: 14 }]}>
-            <Icon name="shield" size={20} color={palette.voltDeep} />
+            <Icon name="shield" size={22} color={palette.voltDeep} />
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 14, fontWeight: '600' }}>{claimRow.title}</AppText>
               <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 3 }}>{claimRow.sub}</AppText>
@@ -533,9 +546,9 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function QuickCard({ icon, title, sub, onPress }: { icon: IconName; title: string; sub: string; onPress: () => void }) {
   return (
-    <PressableScale activeScale={0.96} onPress={onPress} style={styles.quick}>
-      <Icon name={icon} size={19} color={palette.textSecondary} />
-      <AppText style={{ fontSize: 13.5, fontWeight: '600', marginTop: 9 }}>{title}</AppText>
+    <PressableScale activeScale={0.96} onPress={onPress} accessibilityRole="button" style={styles.quick}>
+      <Icon name={icon} size={24} color={palette.textSecondary} />
+      <AppText style={{ fontSize: 13.5, fontWeight: '600', marginTop: 10 }}>{title}</AppText>
       <AppText style={{ fontSize: 11.5, color: palette.tertiary, marginTop: 3 }}>{sub}</AppText>
     </PressableScale>
   );
@@ -556,7 +569,7 @@ const styles = StyleSheet.create({
   cover: { width: '100%', height: 148 },
   coverBadge: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(11,11,14,0.72)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
   map: { height: 170, borderRadius: 14 },
-  modePill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: palette.ink, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 8, marginTop: 6 },
+  modePill: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, backgroundColor: palette.ink, borderRadius: 999, paddingHorizontal: 12, marginTop: 6 },
   statRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   statCard: { flex: 1, borderRadius: 18, padding: 15 },
   statCap: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.6, color: palette.tertiary },

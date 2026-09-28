@@ -58,19 +58,38 @@ export function OnboardingScaffold({
   return (
     <Screen edges={['top', 'bottom']}>
       <View style={styles.topBar}>
-        <PressableScale activeScale={0.9} onPress={() => router.back()} style={styles.back}>
-          <Icon name="chevL" size={26} color={palette.blue} />
-        </PressableScale>
+        {/* The first step is usually reached with router.replace (welcome, the auth
+            callback), so there is nothing behind it and the chevron did nothing when
+            tapped. Then a spacer of the same width keeps the progress bar centred. */}
+        {router.canGoBack() ? (
+          <PressableScale
+            activeScale={0.9}
+            onPress={() => router.back()}
+            style={styles.back}
+            accessibilityRole="button"
+            accessibilityLabel={t('Geri')}>
+            <Icon name="chevL" size={26} color={palette.blue} />
+          </PressableScale>
+        ) : (
+          <View style={styles.skipSpacer} />
+        )}
         <View style={styles.progress}>
           {Array.from({ length: totalSteps }).map((_, i) => (
             <View key={i} style={[styles.progressSeg, { backgroundColor: i < step ? palette.ink : palette.separator }]} />
           ))}
         </View>
-        <PressableScale activeScale={0.92} onPress={onSkip} style={styles.skip}>
-          <AppText variant="body" color={onSkip ? palette.blue : 'transparent'}>
-            {t('Keç')}
-          </AppText>
-        </PressableScale>
+        {/* Without onSkip there is no button at all — an invisible «Keç» used to sit
+            here, still tappable and still read out by a screen reader. The spacer takes
+            the same room as the back box, so the progress bar stays centred. */}
+        {onSkip ? (
+          <PressableScale activeScale={0.92} onPress={onSkip} style={styles.skip} accessibilityRole="button">
+            <AppText variant="body" numberOfLines={1} color={palette.blue}>
+              {t('Keç')}
+            </AppText>
+          </PressableScale>
+        ) : (
+          <View style={styles.skipSpacer} />
+        )}
       </View>
 
       {/* «handled»: with the default the ScrollView swallows the first tap while a field
@@ -103,10 +122,16 @@ export function OnboardingScaffold({
 
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.base, height: 44, gap: 10 },
-  back: { width: 30, justifyContent: 'center' },
+  /* 44x44 tap areas, the iOS and Material minimum (the back box was 30 wide, «Keç»
+     only as tall as its text). Same geometry as NavBar: each box grows 10 pt toward
+     the screen edge (negative margin + matching padding), so the glyphs stay at the
+     gutter and each takes 34 pt of the row. */
+  back: { width: 44, height: 44, marginLeft: -10, paddingLeft: 10, justifyContent: 'center' },
   progress: { flex: 1, flexDirection: 'row', gap: 5 },
   progressSeg: { flex: 1, height: 4, borderRadius: 2 },
-  skip: { width: 36, alignItems: 'flex-end' },
+  // minWidth, not width: «Пропустить» is far wider than «Keç» and did not fit in 36 pt.
+  skip: { minWidth: 44, height: 44, marginRight: -10, paddingRight: 10, alignItems: 'flex-end', justifyContent: 'center' },
+  skipSpacer: { width: 34 },
   content: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 24 },
   footer: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 6 },
 });

@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -14,7 +14,7 @@ import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { useAllPrograms } from '@/store/db';
 import { actionSheet, toast } from '@/store/ui';
-import { palette, radius, spacing } from '@/theme';
+import { hitSlop, palette, radius, spacing } from '@/theme';
 
 export default function Share() {
   const t = useT();
@@ -31,6 +31,17 @@ export default function Share() {
     durationSec: null,
     sizeBytes: null,
   });
+  /** «Bağla» and the sheet's swipe-down both stay live during an upload — the
+   *  upload keeps going in the background, which is fine. But its success path
+   *  ends in router.back(): run after this sheet is already gone, that call
+   *  pops whatever screen the person has moved on to. */
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true; // set here too: StrictMode runs cleanup + effect again in dev
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   /** 100 MB is the videos bucket's own limit (schema33); refusing here means the
    *  person is told before a long upload, not after it. */
@@ -153,28 +164,53 @@ export default function Share() {
       return;
     }
     toast(t('Videon feed-ə əlavə olundu'));
-    router.back();
+    if (mounted.current) router.back();
   };
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <View style={styles.grabber} />
+      {/* Only the iOS page sheet can be dragged down; on Android `presentation:
+          'modal'` is a full-screen page, where a grabber promises a gesture that
+          does nothing. */}
+      {Platform.OS === 'ios' && <View style={styles.grabber} />}
+      {/* The buttons take their own width and the title takes the space between
+          them. Two equal flex:1 side slots would centre the title exactly, but they
+          also cap each button at half of what is left: in Russian «Опубликовать»
+          (115 pt) no longer fits beside «Новое видео» on a 360–390 pt phone, so the
+          word broke onto two lines. Each button is a full 44 pt tap target; the bare
+          text used to be ~22 pt tall. */}
       <View style={styles.header}>
-        <PressableScale haptic={false} activeScale={0.94} onPress={() => router.back()}>
+        <PressableScale
+          haptic={false}
+          activeScale={0.94}
+          onPress={() => router.back()}
+          hitSlop={hitSlop}
+          accessibilityRole="button"
+          style={styles.headerBtn}>
           <AppText variant="body" color={palette.blue}>
             {t('Bağla')}
           </AppText>
         </PressableScale>
-        <AppText variant="headline">{t('Paylaş')}</AppText>
-        {uploading ? (
-          <ActivityIndicator color={palette.blue} />
-        ) : (
-          <PressableScale haptic={false} activeScale={0.94} onPress={publish} disabled={!uri}>
-            <AppText variant="headline" color={uri ? palette.blue : palette.tertiary}>
-              {t('Paylaş')}
-            </AppText>
-          </PressableScale>
-        )}
+        <AppText variant="headline" numberOfLines={1} center style={styles.title}>
+          {t('Yeni video')}
+        </AppText>
+        <PressableScale
+          haptic={false}
+          activeScale={0.94}
+          onPress={publish}
+          disabled={!uri || uploading}
+          hitSlop={hitSlop}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !uri || uploading, busy: uploading }}
+          style={[styles.headerBtn, styles.headerBtnEnd]}>
+          {/* While uploading, the label stays in the layout (just invisible) with
+              the spinner over it, so the button keeps its width and the title does
+              not jump sideways. */}
+          <AppText variant="headline" color={uri ? palette.blue : palette.tertiary} style={uploading && styles.hidden}>
+            {t('Paylaş')}
+          </AppText>
+          {uploading && <ActivityIndicator color={palette.blue} style={StyleSheet.absoluteFill} />}
+        </PressableScale>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -219,9 +255,12 @@ export default function Share() {
         </PressableScale>
 
         <View style={styles.note}>
-          <Icon name="users" size={15} color={palette.textSecondary} />
+          {/* 16 px with a 1 px drop centres the glyph on the first 18 px text line. */}
+          <View style={styles.noteIcon}>
+            <Icon name="users" size={16} color={palette.textSecondary} />
+          </View>
           <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 18 }}>
-            {t('Video hər kəsə açıq olur və adınla göstərilir. Yalnız zala görünmə hələ yoxdur — paylaşmadan əvvəl bunu nəzərə al.')}
+            {t('Video hamıya görünür və adınla paylaşılır. Yalnız öz zalına göstərmək hələ mümkün deyil.')}
           </AppText>
         </View>
       </ScrollView>
@@ -231,7 +270,11 @@ export default function Share() {
 
 const styles = StyleSheet.create({
   grabber: { alignSelf: 'center', width: 38, height: 5, borderRadius: 3, backgroundColor: palette.separator, marginTop: 8, marginBottom: 6 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.screen, paddingVertical: 8 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: spacing.screen, paddingVertical: 2 },
+  title: { flex: 1 },
+  headerBtn: { minHeight: 44, minWidth: 44, justifyContent: 'center' },
+  headerBtnEnd: { alignItems: 'flex-end' },
+  hidden: { opacity: 0 },
   content: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 24 },
   videoPick: { height: 200, borderRadius: 18, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
   videoPicked: { borderWidth: 2, borderColor: palette.volt },
@@ -241,4 +284,5 @@ const styles = StyleSheet.create({
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 14 },
   linkIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
   note: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 18, paddingHorizontal: 4 },
+  noteIcon: { marginTop: 1 },
 });

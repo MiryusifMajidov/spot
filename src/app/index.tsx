@@ -1,5 +1,6 @@
-import { Redirect } from 'expo-router';
-import { View } from 'react-native';
+import { Redirect, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
+import { Platform, StatusBar, View } from 'react-native';
 
 import { palette } from '@/theme';
 import { useAppStore } from '@/store/appStore';
@@ -32,15 +33,29 @@ export default function Index() {
   const guest = useAppStore((s) => s.guest);
   const activeMode = useAppStore((s) => s.activeMode);
 
-  const splash = <View style={{ flex: 1, backgroundColor: palette.inkText }} />;
+  // The ambiguous case (neither guest nor onboarded) is the only one that waits
+  // for the server; everything else waits only for the store to load.
+  const waiting = !hydrated || !ready || (!guest && !onboarded && !profileChecked);
 
-  if (!hydrated || !ready) return splash;
+  /* The splash is black, and the root layout's <StatusBar style="dark" /> drew a
+     black clock on it for as long as the server took to answer. A light entry is
+     pushed only while the splash is actually on screen and popped the moment it
+     turns into a redirect (or the gate loses focus), so it never outlives the
+     splash and never sits over the white screen that follows. On iOS the native
+     style is also set directly — same approach and reason as
+     onboarding/welcome.tsx and workout/exercise.tsx. */
+  useFocusEffect(
+    useCallback(() => {
+      if (!waiting) return;
+      if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
+      const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
+      return () => StatusBar.popStackEntry(entry);
+    }, [waiting])
+  );
 
-  if (!guest && !onboarded) {
-    // The ambiguous case, and the only one that waits for the server.
-    if (!profileChecked) return splash;
-    return <Redirect href="/onboarding/welcome" />;
-  }
+  if (waiting) return <View style={{ flex: 1, backgroundColor: palette.inkText }} />;
+
+  if (!guest && !onboarded) return <Redirect href="/onboarding/welcome" />;
 
   /* A guest goes to the catalogue, whatever mode the device last remembered.
      «Qeydiyyatı yenidən keç» does not sign out, so a gym owner who then chose

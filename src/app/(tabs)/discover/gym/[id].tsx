@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Linking, Platform, ScrollView, Share, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Platform, ScrollView, Share, StatusBar, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
@@ -25,7 +25,7 @@ import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { dayAndMonth, reviewerName, tenureLabel } from '@/lib/format';
 import { showModerationSheet } from '@/lib/moderation';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { gymById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
@@ -36,6 +36,11 @@ const hhmm = (iso: string) => {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
+
+/* The hero's height, and how far the white sheet rides up over it. Together they
+   say where the photo ends on screen — which decides the colour of the clock. */
+const HERO_HEIGHT = 250;
+const SHEET_OVERLAP = 20;
 
 type MyReview = { rating: number; text: string; at: string };
 type Seg = 'Haqqında' | 'Müəllimlər' | 'Üzvlər' | 'Rəylər';
@@ -138,6 +143,7 @@ export default function GymDetail() {
   const { id, seg: segParam } = useLocalSearchParams<{ id: string; seg?: string }>();
   const router = useRouter();
   const t = useT();
+  const fmt = useFormat();
   const insets = useSafeAreaInsets();
   const gate = useAuthGate();
   const guest = useIsGuest();
@@ -155,12 +161,20 @@ export default function GymDetail() {
   const checkIns = useDb((s) => s.checkIns);
   /* Android edge-to-edge never resizes the window, so the KeyboardAvoidingView below
      is inert there and the review composer's «Göndər» ended up under the IME. The
-     measured overlap is what works; the tab scene already reserves `insets.bottom`.
+     measured overlap is what works; on Android the tab scene already stops above the
+     tab bar and reserves `insets.bottom`, which useKeyboardLift gives back.
      iOS is left to KeyboardAvoidingView — it measures the same overlap itself and does
      it in sync with the keyboard animation, so adding the lift on top of its padding
      would raise the composer twice. */
   const measuredLift = useKeyboardLift(8);
   const keyboardLift = Platform.OS === 'android' ? measuredLift : 0;
+  /* Where the scroll ends. iOS 26: the Liquid Glass tab bar FLOATS over this scene
+     and reserves no space, so a flat 40 left the review composer and the last
+     review behind the glass. Inside a tab UIKit's safe area already counts the bar,
+     so the inset is exactly what the content has to clear. Android: the Material
+     bar reserves its own strip (the scene is padded above it) and the inset there
+     is not the bar — adding it would leave a gap the size of a navigation bar. */
+  const scrollBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + spacing.xl;
 
   // Local-first: seed immediately, then let the real row win (gyms created in-app
   // have ids that are not in the seed catalogue at all).
@@ -221,6 +235,29 @@ export default function GymDetail() {
   const gym: Gym | null = useMemo(
     () => (base ? { ...base, liveCount: remote ? remote.liveCount : 0 } : null),
     [base, remote]
+  );
+
+  /* The clock. The hero runs up under the status bar and is always dark — the
+     gym's photo under a dark scrim, or the dark branded placeholder — while the
+     app-wide bar is «dark», so the page opened with a black clock on a darkened
+     photo. It is light while the hero is under it and goes back to dark once the
+     white sheet has scrolled up beneath it (the midpoint of the bar is the line);
+     the loading and «not found» states have no hero and keep the dark clock.
+     Pushed on focus and popped on blur, never a mounted <StatusBar>: this page
+     stays mounted under the trainer and member pages it opens, and a mounted
+     entry would keep the clock white over them. On iOS the style is also set
+     directly, because the stack skips the native call when it believes the bar
+     already has that style — same approach as workout/exercise.tsx. */
+  const [pastHero, setPastHero] = useState(false);
+  const heroEdge = HERO_HEIGHT - SHEET_OVERLAP - insets.top / 2;
+  const lightClock = !!gym && !pastHero;
+  useFocusEffect(
+    useCallback(() => {
+      if (!lightClock) return;
+      if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
+      const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
+      return () => StatusBar.popStackEntry(entry);
+    }, [lightClock])
   );
 
   const members = usePartnersForGym(id);
@@ -431,9 +468,12 @@ export default function GymDetail() {
 
   if (!gym) {
     return (
-      /* Pushed inside the discover tab: the scene padding already reserves the
-         floating bar's footprint, bottom inset included — no 'bottom' edge here. */
-      <Screen edges={['top']} padded>
+      /* Pushed inside the discover tab. On Android the tab scene already stops above
+         the Material bar, so a 'bottom' edge would count it twice. On iOS 26 the
+         glass bar floats over the scene and reserves nothing; the bottom edge (whose
+         inset includes the bar inside a tab) centres this block in the part of the
+         screen that is actually visible instead of half a bar too low. */
+      <Screen edges={Platform.OS === 'ios' ? ['top', 'bottom'] : ['top']} padded>
         <View style={styles.missing}>
           <Icon name="pin" size={30} color={palette.tertiary} />
           <AppText variant="headline" style={{ marginTop: 12 }}>
@@ -471,20 +511,30 @@ export default function GymDetail() {
      to «N rəy», which meant the author — and only the author — saw a star figure
      for a review nobody else has. They are still shown below, marked as unsent. */
   const totalReviews = reviews.length;
-  const avgRating = totalReviews
-    ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / totalReviews) * 10) / 10
-    : null;
+  // Shown through fmt.decimal (one decimal, the language's own mark: «4,3»), so
+  // it is not rounded here as well.
+  const avgRating = totalReviews ? reviews.reduce((s, r) => s + r.rating, 0) / totalReviews : null;
   /* One review per person per gym (`reviews_one_per_member`, schema30). Offering
      «Rəy yaz» to somebody who already has one only leads to a refusal, so the
      button is replaced by the reason it is gone. */
   const iAlreadyReviewed = !!myProfileId && reviews.some((r) => r.authorId === myProfileId);
 
+  /* 44 pt circles with 22–24 pt glyphs — the iOS 26 size for a floating glass
+     button, and the minimum touch target on both platforms. They were 34 pt with
+     17–20 pt glyphs and no hit slop: the icons read as too small and a thumb on the
+     edge of one missed it. The circle itself is the target (not hitSlop, which
+     Android clips to the parent row). */
   const heroActions = (
     <View style={[styles.heroTop, { paddingTop: insets.top + 6 }]}>
-      <PressableScale activeScale={0.9} onPress={() => router.back()} style={styles.circleBtn}>
-        <Icon name="chevL" size={20} color={palette.inkText} />
+      <PressableScale
+        activeScale={0.9}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel={t('Geri')}
+        style={styles.circleBtn}>
+        <Icon name="chevL" size={24} color={palette.inkText} />
       </PressableScale>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
+      <View style={styles.heroRight}>
         <PressableScale
           activeScale={0.9}
           onPress={() =>
@@ -495,14 +545,29 @@ export default function GymDetail() {
               }),
             }).catch(() => {})
           }
+          accessibilityRole="button"
+          accessibilityLabel={t('Zalı paylaş')}
           style={styles.circleBtn}>
-          <Icon name="share" size={17} color={palette.inkText} />
+          <Icon name="share" size={22} color={palette.inkText} />
         </PressableScale>
-        <PressableScale activeScale={0.9} onPress={() => toggle(gym.id)} style={styles.circleBtn}>
-          <Icon name="bookmark" size={18} color={saved ? palette.voltDeep : palette.inkText} />
+        {/* Saved = the filled glyph, as on the feed. A colour change alone on an
+            outline was easy to miss on the translucent circle. */}
+        <PressableScale
+          activeScale={0.9}
+          onPress={() => toggle(gym.id)}
+          accessibilityRole="button"
+          accessibilityLabel={t('Yadda saxla')}
+          accessibilityState={{ selected: saved }}
+          style={styles.circleBtn}>
+          <Icon name={saved ? 'bookmarkOn' : 'bookmark'} size={22} color={saved ? palette.voltDeep : palette.inkText} />
         </PressableScale>
-        <PressableScale activeScale={0.9} onPress={() => showModerationSheet(gym.name, { type: 'gym', id: gym.id })} style={styles.circleBtn}>
-          <Icon name="more" size={18} color={palette.inkText} />
+        <PressableScale
+          activeScale={0.9}
+          onPress={() => showModerationSheet(gym.name, { type: 'gym', id: gym.id })}
+          accessibilityRole="button"
+          accessibilityLabel={t('Digər seçimlər')}
+          style={styles.circleBtn}>
+          <Icon name="more" size={22} color={palette.inkText} />
         </PressableScale>
       </View>
     </View>
@@ -521,17 +586,24 @@ export default function GymDetail() {
              box into view. Extra bottom padding alone would only add scroll range the
              user still has to drag by hand while typing blind. */
           style={{ marginBottom: keyboardLift }}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: scrollBottom }}
+          onScroll={(e) => {
+            const past = e.nativeEvent.contentOffset.y > heroEdge;
+            if (past !== pastHero) setPastHero(past);
+          }}
+          scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled">
           {/* Hero — the gym's own cover photo when it has one, else the branded placeholder */}
           {gym.imageUrl ? (
             <View style={styles.hero}>
               <Image source={{ uri: gym.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
-              <LinearGradient colors={['rgba(11,11,14,0.35)', 'transparent']} style={styles.heroScrim} />
+              {/* Carries the light clock and the circle buttons over any photo,
+                  including a bright one. */}
+              <LinearGradient colors={['rgba(11,11,14,0.45)', 'transparent']} style={styles.heroScrim} />
               {heroActions}
             </View>
           ) : (
-            <GymImage name={gym.name} height={250}>
+            <GymImage name={gym.name} height={HERO_HEIGHT}>
               {heroActions}
             </GymImage>
           )}
@@ -542,13 +614,14 @@ export default function GymDetail() {
               <View style={{ flex: 1 }}>
                 <View style={styles.nameRow}>
                   <AppText variant="title">{gym.name}</AppText>
-                  {gym.verified && <Icon name="verified" size={18} color={palette.blue} />}
+                  {/* 20 beside the 27 pt title, as on the trainer page. */}
+                  {gym.verified && <Icon name="verified" size={20} color={palette.blue} />}
                 </View>
                 <View style={styles.ratingRow}>
                   {avgRating !== null ? (
                     <>
                       <Icon name="star" size={14} color={palette.streak} />
-                      <AppText style={styles.rating}>{avgRating}</AppText>
+                      <AppText style={styles.rating}>{fmt.decimal(avgRating, 1)}</AppText>
                       <AppText variant="footnote" color={palette.caption}>
                         · {t('{n} rəy', { n: totalReviews, count: totalReviews })} ·{' '}
                       </AppText>
@@ -560,7 +633,7 @@ export default function GymDetail() {
                   )}
                   <AppText variant="footnote" color={palette.caption}>
                     {gym.district}
-                    {gym.distanceKm > 0 ? t(', {n} km', { n: gym.distanceKm }) : ''}
+                    {gym.distanceKm > 0 ? t(', {n} km', { n: fmt.decimal(gym.distanceKm, 1) }) : ''}
                   </AppText>
                 </View>
               </View>
@@ -676,7 +749,7 @@ export default function GymDetail() {
                   variant="secondary"
                   disabled={passChecking}
                   onPress={() => void loadDayPass()}
-                  style={{ marginTop: 10, height: 42 }}
+                  style={{ marginTop: 10, height: 44 }}
                 />
               </View>
             ) : null}
@@ -934,8 +1007,9 @@ export default function GymDetail() {
                               onPress={() => setRating(s)}
                               accessibilityRole="button"
                               accessibilityLabel={t('{n} ulduz', { n: s, count: s })}
-                              accessibilityState={{ selected: s <= rating }}>
-                              <Icon name="star" size={30} color={s <= rating ? palette.streak : palette.separator} />
+                              accessibilityState={{ selected: s <= rating }}
+                              style={styles.starBtn}>
+                              <Icon name="star" size={32} color={s <= rating ? palette.streak : palette.separator} />
                             </PressableScale>
                           ))}
                         </View>
@@ -1066,7 +1140,9 @@ export default function GymDetail() {
 function EmptyState({ icon, text }: { icon: 'user' | 'users' | 'star' | 'x'; text: string }) {
   return (
     <View style={styles.emptyState}>
-      <Icon name={icon} size={24} color={palette.tertiary} />
+      {/* 28, the empty-state glyph size on the trainer, reserve and saved pages;
+          24 was the smallest in the app and read as a stray bullet over the text. */}
+      <Icon name={icon} size={28} color={palette.tertiary} />
       <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 270, lineHeight: 21 }}>
         {text}
       </AppText>
@@ -1101,7 +1177,7 @@ function InfoCard({ icon, title, sub, onPress }: { icon: 'clock' | 'users' | 'pi
 }
 
 const styles = StyleSheet.create({
-  hero: { height: 250, backgroundColor: palette.element },
+  hero: { height: HERO_HEIGHT, backgroundColor: palette.element },
   heroScrim: { position: 'absolute', top: 0, left: 0, right: 0, height: '45%' },
   photo: { width: 148, height: 106, borderRadius: 14, backgroundColor: palette.element },
   mapCard: { height: 180, borderRadius: 16, overflow: 'hidden', backgroundColor: palette.element },
@@ -1120,14 +1196,18 @@ const styles = StyleSheet.create({
   },
   mapCtaText: { fontSize: 13.5, fontWeight: '600', color: palette.inkText },
   heroTop: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.base },
-  circleBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.82)', alignItems: 'center', justifyContent: 'center' },
-  sheet: { backgroundColor: palette.grouped, borderTopLeftRadius: 20, borderTopRightRadius: 20, marginTop: -20, paddingHorizontal: spacing.screen, paddingTop: 18 },
+  heroRight: { flexDirection: 'row', gap: spacing.sm },
+  circleBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.82)', alignItems: 'center', justifyContent: 'center' },
+  sheet: { backgroundColor: palette.grouped, borderTopLeftRadius: 20, borderTopRightRadius: 20, marginTop: -SHEET_OVERLAP, paddingHorizontal: spacing.screen, paddingTop: 18 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 7, flexWrap: 'wrap' },
   gateCard: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: palette.white, borderRadius: 14, padding: 15, marginBottom: 14 },
   composeCard: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginBottom: 14, gap: 12 },
-  starRow: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
+  // Each star is its own 44 pt target, touching its neighbours. They were bare
+  // 30 pt glyphs with dead 8 pt gaps between them, under the touch minimum.
+  starRow: { flexDirection: 'row', justifyContent: 'center' },
+  starBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   reviewInput: { minHeight: 80, borderRadius: 12, backgroundColor: palette.grouped, padding: 12, fontSize: 15, color: palette.inkText, textAlignVertical: 'top' },
   rating: { fontSize: 13.5, fontWeight: '600' },
   ctaRow: { flexDirection: 'row', gap: 9, marginTop: 15 },

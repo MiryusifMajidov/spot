@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -16,14 +16,15 @@ import { palette, spacing } from '@/theme';
 import { searchKey } from '@/lib/az';
 import { useT } from '@/lib/useT';
 
-const MUSCLES = ['Sinə', 'Bel', 'Ayaq', 'Çiyin', 'Qol', 'Core'];
+// «Qarın», not «Core»: an English word in the Azerbaijani chip row (ru Пресс, en Core).
+const MUSCLES = ['Sinə', 'Bel', 'Ayaq', 'Çiyin', 'Qol', 'Qarın'];
 const MUSCLE_GROUPS: Record<string, string[]> = {
   Sinə: ['Sinə'],
   Bel: ['Kürək'],
   Ayaq: ['Ayaq', 'Arxa ayaq', 'Gluteus', 'Baldır'],
   Çiyin: ['Çiyin'],
   Qol: ['Biseps', 'Triseps'],
-  Core: ['Qarın'],
+  Qarın: ['Qarın'],
 };
 
 /** Which amenity proves a gym has this kind of equipment.
@@ -70,6 +71,10 @@ export default function ExerciseLibrary() {
 
   /** Add an exercise to a day of one of the user's own programs — a real write. */
   const addToProgram = (e: LibExercise) => {
+    /* The list keeps taps while the search keyboard is up, so this can run with
+       the keyboard still open. The action sheet is drawn at the bottom of the
+       app's window and does not lift itself, so it would open behind the keyboard. */
+    Keyboard.dismiss();
     if (!myPrograms.length) {
       confirm(t('Hələ proqramın yoxdur'), t('Hərəkəti proqrama əlavə etmək üçün əvvəlcə öz proqramını yarat.'), [
         { label: t('İndi yox'), style: 'cancel' },
@@ -150,14 +155,34 @@ export default function ExerciseLibrary() {
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7, paddingVertical: 12 }}>
           {MUSCLES.map((m) => (
-            <PressableScale key={m} activeScale={0.95} onPress={() => setMuscle(m)} style={[styles.chip, muscle === m && styles.chipOn]}>
+            <PressableScale
+              key={m}
+              activeScale={0.95}
+              onPress={() => setMuscle(m)}
+              /* The chip is drawn 35 pt tall (7 + the 21 pt line + 7); the slop makes the
+                 target 45 pt. It stays inside the row's 12 pt vertical padding, so
+                 Android honours it too. */
+              hitSlop={{ top: 5, bottom: 5 }}
+              style={[styles.chip, muscle === m && styles.chipOn]}>
               <AppText style={{ fontSize: 12.5, fontWeight: '600', color: muscle === m ? palette.white : palette.inkText }}>{t(m)}</AppText>
             </PressableScale>
           ))}
         </ScrollView>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
+      {/* A TAB screen: iOS 26's Liquid Glass tab bar floats over it, and 40 pt of end
+          padding left the last rows — and their «+» — under the glass. "automatic"
+          insets the list by the safe area, which inside a tab includes the bar;
+          Android ignores it, the tab scene there already stops above the bar.
+          "handled": with the search keyboard up, the first tap on «+» or a thumbnail
+          used to be spent closing the keyboard, so the button seemed dead. Both
+          now close it themselves. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
         <AppText variant="caption" color={palette.tertiary} style={{ marginBottom: 12 }}>
           {q
             ? t('Axtarış · {n} nəticə', { n: list.length, count: list.length })
@@ -177,7 +202,13 @@ export default function ExerciseLibrary() {
             const status = equipmentStatus(e.equipment, gym?.amenities);
             return (
               <View key={e.id} style={styles.row}>
-                <PressableScale activeScale={0.97} onPress={() => router.push({ pathname: '/(tabs)/workout/exercise', params: { id: e.id } })} style={styles.thumb}>
+                <PressableScale
+                  activeScale={0.97}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    router.push({ pathname: '/(tabs)/workout/exercise', params: { id: e.id } });
+                  }}
+                  style={styles.thumb}>
                   <View style={styles.playDot}>
                     <Icon name="play" size={13} color={palette.white} />
                   </View>
@@ -185,7 +216,9 @@ export default function ExerciseLibrary() {
                 <View style={{ flex: 1 }}>
                   <AppText style={{ fontSize: 15, fontWeight: '600' }}>{t(e.name)}</AppText>
                   <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 5 }}>{t(e.muscle)} · {t(e.equipment)}</AppText>
-                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 7 }}>
+                  {/* Wraps: «Avadanlıq lazım deyil» next to the sets tag is wider than
+                      this column on a 375 pt phone, and unwrapped it slid under the «+». */}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 7 }}>
                     <View style={styles.tag}>
                       <AppText style={styles.tagText}>{e.defaultSets}×{t(e.reps)}</AppText>
                     </View>
@@ -198,8 +231,15 @@ export default function ExerciseLibrary() {
                     ) : null}
                   </View>
                 </View>
-                <PressableScale activeScale={0.9} onPress={() => addToProgram(e)} style={styles.addBtn}>
-                  <Icon name="plus" size={16} color={palette.textSecondary} />
+                <PressableScale
+                  activeScale={0.9}
+                  onPress={() => addToProgram(e)}
+                  style={styles.addBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Proqrama əlavə et')}>
+                  <View style={styles.addDot}>
+                    <Icon name="plus" size={20} color={palette.textSecondary} />
+                  </View>
                 </PressableScale>
               </View>
             );
@@ -220,6 +260,13 @@ const styles = StyleSheet.create({
   playDot: { width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(11,11,14,0.6)', alignItems: 'center', justifyContent: 'center' },
   tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: palette.grouped },
   tagText: { fontSize: 10.5, fontWeight: '600', color: '#3A3A42' },
-  addBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#F0F0F3', alignItems: 'center', justifyContent: 'center' },
+  /* «Add to a program». It was a 30 pt circle with a 16 px plus, and the circle was
+     the whole target. The target is now a real 44 x 44 box (the 70 pt thumbnail
+     makes the row taller than that, so it fits without growing it), with a 36 pt
+     circle and a 20 px plus inside. marginRight gives back the box's side room, so
+     the circle stays flush with the row's content edge and the target reaches 4 pt
+     into the row padding. */
+  addBtn: { width: 44, height: 44, marginRight: -4, alignItems: 'center', justifyContent: 'center' },
+  addDot: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F0F0F3', alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 16, padding: 22, marginBottom: 12 },
 });

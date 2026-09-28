@@ -11,13 +11,14 @@ import { HoursField, composeHours, splitHours } from '@/components/HoursField';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
+import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { errorFeedback, successFeedback, tapFeedback } from '@/lib/feedback';
 import { GymGate, updateMyGym, useMyGym } from '@/lib/gymOwner';
 import { addGymPhoto, imageTooLargeMessage, isNotSavedError, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { actionSheet, confirm, toast, useUi, type UiAction } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
@@ -27,6 +28,7 @@ const AMENITIES = ['Sərbəst ağırlıq', 'Kardio', 'Duş', 'Parkinq', 'Hovuz',
 
 export default function GymEdit() {
   const t = useT();
+  const fmt = useFormat();
   const router = useRouter();
   const navigation = useNavigation();
   const keyboardLift = useKeyboardLift();
@@ -261,7 +263,7 @@ export default function GymEdit() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        toast(t('Məkan icazəsi verilmədi — pini xəritədə özün qoy'), 'error');
+        toast(t('Məkan icazəsi verilmədi — işarəni xəritədə özün qoy'), 'error');
       } else {
         const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         setPicked({ lat: pos.coords.latitude, lng: pos.coords.longitude });
@@ -388,13 +390,7 @@ export default function GymEdit() {
   if (!gym) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <View style={styles.nav}>
-          <PressableScale activeScale={0.9} onPress={() => router.back()}>
-            <Icon name="chevL" size={26} color={palette.blue} />
-          </PressableScale>
-          <AppText variant="headline">{t('Zal profili')}</AppText>
-          <View style={{ width: 40 }} />
-        </View>
+        <NavBar title={t('Zal profili')} />
         <GymGate state={state} />
       </Screen>
     );
@@ -403,17 +399,27 @@ export default function GymEdit() {
   return (
     // The tab bar is hidden on this screen, so the bottom inset is ours to keep.
     <Screen edges={['top', 'bottom']}>
-      <View style={styles.nav}>
-        <PressableScale activeScale={0.9} onPress={back}>
-          <Icon name="chevL" size={26} color={palette.blue} />
-        </PressableScale>
-        <AppText variant="headline">{t('Zal profilini redaktə et')}</AppText>
-        <PressableScale activeScale={0.94} disabled={saving} onPress={save}>
-          <AppText style={{ fontSize: 15, fontWeight: '600', color: saving ? palette.tertiary : palette.blue }}>
-            {saving ? t('Saxlanılır…') : t('Saxla')}
-          </AppText>
-        </PressableScale>
-      </View>
+      {/* The shared bar, not a hand-made row: the old chevron here was a bare 26 px
+          glyph — its tap area was the glyph itself — and «Saxla» was a 20 pt strip
+          of text. NavBar's back is a 44x44 box and says «Geri» to a screen reader;
+          `onBack` keeps the unsaved-changes question. */}
+      <NavBar
+        title={t('Zal profilini redaktə et')}
+        onBack={back}
+        right={
+          <PressableScale
+            activeScale={0.94}
+            disabled={saving}
+            onPress={save}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: saving, busy: saving }}
+            style={styles.saveBtn}>
+            <AppText style={{ fontSize: 15, fontWeight: '600', color: saving ? palette.tertiary : palette.blue }}>
+              {saving ? t('Saxlanılır…') : t('Saxla')}
+            </AppText>
+          </PressableScale>
+        }
+      />
 
       {/* Android edge-to-edge never resizes the window, so without extra room at the
           end the last fields cannot be scrolled out from under the keyboard. */}
@@ -459,12 +465,30 @@ export default function GymEdit() {
             {photos.map((url) => (
               <View key={url} style={styles.thumbWrap}>
                 <Image source={{ uri: url }} style={styles.thumb} contentFit="cover" transition={120} />
-                <PressableScale activeScale={0.9} onPress={() => dropPhoto(url)} style={styles.thumbX}>
-                  <Icon name="x" size={12} color={palette.white} />
+                {/* The «x» was a 22 pt dot with a 12 px glyph and nothing around it
+                    to catch a thumb. The pressable is now the tile's 44x44 top-right
+                    corner with a bigger dot in the same spot — the same control as
+                    the gallery in create-gym. Not hitSlop: the tile clips to its
+                    rounded corners, and Android never lets a slop leave the parent. */}
+                <PressableScale
+                  activeScale={0.9}
+                  onPress={() => dropPhoto(url)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Şəkli sil')}
+                  style={styles.thumbX}>
+                  <View style={styles.thumbXDot}>
+                    <Icon name="x" size={16} color={palette.white} />
+                  </View>
                 </PressableScale>
               </View>
             ))}
-            <PressableScale activeScale={0.95} disabled={photoBusy} onPress={addPhotoSheet} style={styles.addTile}>
+            <PressableScale
+              activeScale={0.95}
+              disabled={photoBusy}
+              onPress={addPhotoSheet}
+              accessibilityRole="button"
+              accessibilityLabel={t('Şəkil əlavə et')}
+              style={styles.addTile}>
               {photoBusy ? <ActivityIndicator color={palette.tertiary} /> : <Icon name="plus" size={22} color={palette.tertiary} />}
             </PressableScale>
           </ScrollView>
@@ -547,8 +571,8 @@ export default function GymEdit() {
           </AppText>
           <AppText style={[styles.hint, { marginBottom: 12 }]}>
             {gym.listed
-              ? t('Pini zalın üstünə qoymaq üçün xəritəyə toxun — pini basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal müştəri xəritəsində məhz bu nöqtədə görünür.')
-              : t('Pini zalın üstünə qoymaq üçün xəritəyə toxun — pini basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal Kəşfdə dərc olunanda müştəri xəritəsində bu nöqtədə görünəcək.')}
+              ? t('İşarəni zalın üstünə qoymaq üçün xəritəyə toxun — işarəni basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal müştəri xəritəsində məhz bu nöqtədə görünür.')
+              : t('İşarəni zalın üstünə qoymaq üçün xəritəyə toxun — işarəni basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal Kəşfdə dərc olunanda müştəri xəritəsində bu nöqtədə görünəcək.')}
           </AppText>
           {mediaReady ? (
             <SpotMap
@@ -577,16 +601,18 @@ export default function GymEdit() {
           {picked ? (
             <View style={styles.pinRow}>
               <Icon name="pin" size={14} color={palette.voltDeep} />
+              {/* The language's decimal mark (40,40930 in az/ru), so the two numbers
+                  are split by «;» there — «40,40930, 49,86710» reads as four. */}
               <AppText style={{ fontSize: 12.5, color: palette.textSecondary }}>
-                {t('{lat}, {lng} · «Saxla» ilə yadda saxlanılır', {
-                  lat: picked.lat.toFixed(5),
-                  lng: picked.lng.toFixed(5),
+                {t('{lat}; {lng} · «Saxla» ilə yadda saxlanılır', {
+                  lat: fmt.decimal(picked.lat, 5),
+                  lng: fmt.decimal(picked.lng, 5),
                 })}
               </AppText>
             </View>
           ) : mediaReady && extrasOk ? (
             <AppText style={[styles.hint, { marginTop: 10 }]}>
-              {t('Hələ pin qoyulmayıb — koordinatı olmayan zal müştəri xəritəsində görünmür.')}
+              {t('Hələ işarə qoyulmayıb — koordinatı olmayan zal müştəri xəritəsində görünmür.')}
             </AppText>
           ) : null /* still reading, or the read failed (the warning below says so): «no pin» would be a guess */}
           {!extrasOk ? (
@@ -656,7 +682,8 @@ function PriceRow({ label, value, onChange }: { label: string; value: string; on
 }
 
 const styles = StyleSheet.create({
-  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8 },
+  // 44 pt tall; the -10 / +10 lets the box reach toward the screen edge while the word stays on the gutter.
+  saveBtn: { height: 44, justifyContent: 'center', paddingHorizontal: 10, marginRight: -10 },
   listCard: { backgroundColor: palette.white, borderRadius: 16, overflow: 'hidden', marginBottom: 12 },
   priceRow: { flexDirection: 'row', alignItems: 'center', height: 50, paddingHorizontal: 15, gap: 12 },
   rowDiv: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(60,60,67,0.12)', marginLeft: 15 },
@@ -673,7 +700,9 @@ const styles = StyleSheet.create({
   coverBusy: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(11,11,14,0.45)' },
   thumbWrap: { width: 88, height: 88, borderRadius: 12, overflow: 'hidden', backgroundColor: palette.grouped },
   thumb: { width: '100%', height: '100%' },
-  thumbX: { position: 'absolute', top: 5, right: 5, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(11,11,14,0.7)' },
+  // 44x44 target in the tile's corner; the padding keeps the dot 5 pt in from the edges.
+  thumbX: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, padding: 5, alignItems: 'flex-end' },
+  thumbXDot: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(11,11,14,0.7)' },
   addTile: { width: 88, height: 88, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.grouped, borderWidth: 1, borderColor: palette.separator, borderStyle: 'dashed' },
   map: { height: 240, borderRadius: 14 },
   mapLoading: { alignItems: 'center', justifyContent: 'center', backgroundColor: palette.grouped },

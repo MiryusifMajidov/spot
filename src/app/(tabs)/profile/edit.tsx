@@ -50,8 +50,8 @@ async function syncTrainerListing(name: string, bio: string, photoLocal: string 
     const owned = (data ?? []) as { id: string; name: string | null; bio: string | null }[];
     // No row on the server: nothing public is showing the old name.
     if (!owned.length) return 'ok';
-    // «Haqqında» is one field in this app: «Müəllim profili» edits the same
-    // profile.bio and writes it to the listing. Left out here, a bio edited on
+    // The bio («Haqqımda» here, «Haqqında» on «Müəllim profili») is one field in
+    // this app: «Müəllim profili» edits the same profile.bio and writes it to the listing. Left out here, a bio edited on
     // this screen stayed old in Kəşf — and «Müəllim profili» then (rightly)
     // reported the listing as out of step with the phone.
     if (owned.some((r) => (r.name ?? '').trim() !== name || (r.bio ?? '').trim() !== bio)) {
@@ -289,12 +289,28 @@ export default function EditProfile() {
   const shownHandleErr = usernameError(handle) ?? (taken === handle.trim().toLowerCase() ? USERNAME_TAKEN_MSG : null);
 
   return (
-    <Screen>
+    /* The bottom edge is for iOS 26, where the Liquid Glass tab bar floats over
+       the screen and reserves no space: with only the top edge the form ran to the
+       bottom of the window, and «Haqqımda» and the note under it ended behind the
+       glass — 40 pt of padding could not scroll them out. On iOS this edge is the
+       tab bar's safe area; on Android it adds nothing, because the tab scene
+       already stops above the Material bar. It also keeps the keyboard lift below
+       right: useKeyboardLift subtracts the bottom inset on the assumption that the
+       container stops that far above the window bottom, and now it does. The
+       same as the other profile forms (create-gym, become-trainer, support). */
+    <Screen edges={['top', 'bottom']}>
       <NavBar
         title={t('Profili redaktə et')}
         onBack={leave}
         right={
-          <PressableScale onPress={save} disabled={saving || uploading} haptic={false} activeScale={0.94}>
+          <PressableScale
+            onPress={save}
+            disabled={saving || uploading}
+            haptic={false}
+            activeScale={0.94}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: saving || uploading }}
+            style={styles.navAction}>
             <AppText variant="headline" color={saving || uploading ? palette.tertiary : palette.blue}>
               {saving ? t('Saxlanılır…') : t('Yadda saxla')}
             </AppText>
@@ -321,7 +337,7 @@ export default function EditProfile() {
             style={[styles.avatarWrap, uploading && { opacity: 0.6 }]}>
             <Avatar name={profile.name || t('Sən')} size={88} uri={avatar} />
             <View style={styles.camBadge}>
-              <Icon name="cam" size={14} color={palette.white} />
+              <Icon name="cam" size={16} color={palette.white} />
             </View>
           </PressableScale>
           <View style={{ flex: 1 }}>
@@ -388,7 +404,7 @@ export default function EditProfile() {
         <Label text={t('Əsas zal')} />
         <PressableScale activeScale={0.98} onPress={pickGym} style={styles.pickRow}>
           <View style={styles.pickIcon}>
-            <Icon name="dumbbell" size={18} color={palette.textSecondary} />
+            <Icon name="dumbbell" size={20} color={palette.textSecondary} />
           </View>
           <AppText variant="callout" style={{ flex: 1 }}>
             {gymName}
@@ -430,7 +446,10 @@ export default function EditProfile() {
           ))}
         </View>
 
-        <Label text={t('Bio')} />
+        {/* «Bio» was an English word in the Azerbaijani form. Not «Haqqında»,
+            the trainer form's label: that key is shared with the gym page's tab,
+            so it reads «О зале» in Russian. */}
+        <Label text={t('Haqqımda')} />
         <TextInput
           value={profile.bio}
           onChangeText={(bio) => setProfile({ bio })}
@@ -457,6 +476,9 @@ function Label({ text }: { text: string }) {
 }
 
 const styles = StyleSheet.create({
+  /* «Yadda saxla» was only as tall as its text line, about 22 pt, in a 44 pt bar.
+     Now the full bar height; the word itself is far wider than 44. */
+  navAction: { height: 44, justifyContent: 'center', paddingLeft: spacing.sm },
   content: { paddingHorizontal: spacing.screen, paddingBottom: 40 },
   input: { backgroundColor: palette.white, borderRadius: radius.field, borderWidth: 1, borderColor: palette.separator, paddingHorizontal: 14, height: 52, fontSize: 16, color: palette.inkText },
   handleRow: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: palette.white, borderRadius: radius.field, borderWidth: 1, borderColor: palette.separator, paddingHorizontal: 14, height: 52 },
@@ -480,5 +502,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  photoBtn: { alignSelf: 'flex-start', height: 38, paddingHorizontal: 16, borderRadius: 12, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
+  // 44, not 38: the minimum tap height (the avatar beside it is a second way in).
+  photoBtn: { alignSelf: 'flex-start', height: 44, paddingHorizontal: 16, borderRadius: 12, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
 });

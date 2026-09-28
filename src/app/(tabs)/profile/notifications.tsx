@@ -79,11 +79,14 @@ export default function NotificationSettings() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {perm === 'granted' && regProblem ? (
           <View style={[styles.permCard, { borderColor: palette.red }]}>
-            <Icon name="x" size={18} color={palette.red} />
+            {/* 20, not 18: the glyphs sit inside a 24-unit box with padding, so at
+                18 the «x» drew about 9 pt wide — a speck beside the title. */}
+            <Icon name="x" size={20} color={palette.red} />
             <View style={{ flex: 1 }}>
               <AppText variant="subhead">{t('Bu cihaz bildiriş üçün qeydə alınmadı')}</AppText>
+              {/* «push» is not Azerbaijani; the rest of the screen says «bildiriş». */}
               <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3, lineHeight: 18 }}>
-                {t('Telefon icazə verib, amma cihazın ünvanı alınmadı — aşağıdakı ayarlar saxlanılır, lakin bu telefona push gəlməyəcək. Mesaj və məşq təklifini yalnız tətbiqi açanda görəcəksən.')}
+                {t('Telefon icazə verib, amma cihazın ünvanı alınmadı — aşağıdakı ayarlar saxlanılır, lakin bu telefona bildiriş gəlməyəcək. Mesaj və məşq təklifini yalnız tətbiqi açanda görəcəksən.')}
               </AppText>
             </View>
           </View>
@@ -92,6 +95,7 @@ export default function NotificationSettings() {
         {perm === 'denied' || perm === 'undetermined' ? (
           <PressableScale
             activeScale={0.98}
+            accessibilityRole="button"
             onPress={() => {
               // «undetermined» means the system will still show the dialog;
               // «denied» means only the settings app can change it now.
@@ -99,7 +103,7 @@ export default function NotificationSettings() {
               else void Linking.openSettings();
             }}
             style={styles.permCard}>
-            <Icon name="bell" size={18} color={palette.streak} />
+            <Icon name="bell" size={20} color={palette.streak} />
             <View style={{ flex: 1 }}>
               <AppText variant="subhead">{t('Telefon bildirişləri bağlıdır')}</AppText>
               {/* «Aşağıdaki» put a front-vowel suffix on a back-vowel stem; the
@@ -115,12 +119,16 @@ export default function NotificationSettings() {
           <AppText variant="body" color={palette.textSecondary} style={styles.note}>{t('Yüklənir…')}</AppText>
         ) : state === 'failed' ? (
           <View style={styles.failed}>
-            <Icon name="shield" size={24} color={palette.tertiary} />
-            <AppText variant="headline" style={{ marginTop: 10 }}>{t('Ayarlar yüklənmədi')}</AppText>
+            {/* The size the other empty and failed states use over a headline
+                (28–30: «Belə səhifə yoxdur», the partner cards, the gym, trainer
+                and partner pages); 24 read as an inline glyph. A bell, because
+                this screen is about notifications, not security. */}
+            <Icon name="bell" size={30} color={palette.tertiary} />
+            <AppText variant="headline" style={{ marginTop: 12 }}>{t('Ayarlar yüklənmədi')}</AppText>
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 5, lineHeight: 20 }}>
               {t('Hansı bildirişlərin açıq olduğunu oxuya bilmədik — ona görə açarları göstərmirik.')}
             </AppText>
-            <PressableScale onPress={load} style={styles.retry}>
+            <PressableScale onPress={load} accessibilityRole="button" style={styles.retry}>
               <AppText variant="callout" color={palette.white}>{t('Yenidən cəhd et')}</AppText>
             </PressableScale>
           </View>
@@ -138,6 +146,9 @@ export default function NotificationSettings() {
                   <Switch
                     // A missing key means ON — see notif_prefs in schema35.
                     value={prefs[nt.type] !== false}
+                    // Twelve identical switches: without their row's name a screen
+                    // reader cannot tell which one it is on.
+                    accessibilityLabel={t(nt.label)}
                     disabled={busy === nt.type}
                     onValueChange={(v) => void toggle(nt.type, v)}
                     trackColor={{ false: palette.separator, true: palette.voltDeep }}
@@ -175,7 +186,8 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.lg, paddingBottom: 28 },
   note: { textAlign: 'center', marginTop: 40 },
   failed: { alignItems: 'center', marginTop: 60, paddingHorizontal: 20 },
-  retry: { marginTop: 16, backgroundColor: palette.inkText, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 11 },
+  // minHeight 44: 11 + 20 + 11 left the only way out of this state 2 pt short of a tap target.
+  retry: { marginTop: 16, backgroundColor: palette.inkText, borderRadius: 12, paddingHorizontal: 20, minHeight: 44, justifyContent: 'center' },
   card: { backgroundColor: palette.white, borderRadius: 18, paddingHorizontal: 14, marginTop: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13 },
   rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },

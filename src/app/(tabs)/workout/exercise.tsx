@@ -1,9 +1,8 @@
 import { useEvent } from 'expo';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useState } from 'react';
-import { Dimensions, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Dimensions, Platform, ScrollView, Share, StatusBar, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,11 +11,15 @@ import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { repsText } from '@/lib/duration';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { exerciseById, LibExercise } from '@/store/db';
 import { dark, palette } from '@/theme';
 
 const { width } = Dimensions.get('window');
+/* The pan reports x relative to the track's own hit area, which progressWrap
+   insets by 16 px on each side. Dividing by the full window width meant the last
+   ~8% of a clip could never be reached by dragging. */
+const TRACK_W = width - 32;
 
 function fmt(s: number) {
   const m = Math.floor(s / 60);
@@ -28,6 +31,8 @@ export default function ExerciseVideo() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const t = useT();
+  // Named `num`, not `fmt`: that name is already the clip-time formatter above.
+  const num = useFormat();
   /* `name`/`video`/`sets`/`reps` arrive when the move came from somebody's
      PROGRAM rather than from SPOT's library: a coach may write a move the
      library has never heard of and film it themselves (schema76), and that clip
@@ -68,6 +73,32 @@ export default function ExerciseVideo() {
           isCompound: false,
         }
       : null;
+
+  /* The clock over this dark screen. A mount-time <StatusBar style="light" /> sat
+     here and the iPhone still drew the clock black on black. The screen is a plain
+     push inside the Məşq stack (not a modal), so presentation is not the reason.
+     What can leave the wrong style is React Native's status-bar stack itself:
+     - a component entry is pushed once, when the screen MOUNTS, and tab screens are
+       never unmounted. Its place in the stack is decided by mount order rather than
+       by what is on screen, and it outlives the moment it was meant for — switch
+       tabs from here and the light clock stayed on over the next, white, screen.
+     - on iOS only, the stack skips the native call whenever it believes the bar
+       already has the wanted style, so a bar changed outside the stack is never
+       put right again.
+     So the entry is pushed on every FOCUS (on top while this screen is the one in
+     front), popped on blur, and on iOS the native style is also set directly so
+     that de-duplication cannot swallow it. setBarStyle also rewrites the stack's
+     bottom default; the root layout's own entry always sits above that default, so
+     it never becomes what another screen shows.
+     This path needs UIViewControllerBasedStatusBarAppearance = NO, which is what
+     Expo's prebuild template writes into Info.plist. */
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
+      const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
+      return () => StatusBar.popStackEntry(entry);
+    }, [])
+  );
 
   const [playing, setPlaying] = useState(true);
   const [half, setHalf] = useState(false);
@@ -120,9 +151,9 @@ export default function ExerciseVideo() {
   const scrub = Gesture.Pan()
     .activeOffsetX([-8, 8])
     .failOffsetY([-14, 14])
-    .onStart((e) => runOnJS(setDragRatio)(Math.min(1, Math.max(0, e.x / width))))
-    .onUpdate((e) => runOnJS(setDragRatio)(Math.min(1, Math.max(0, e.x / width))))
-    .onEnd((e) => runOnJS(commitSeek)(Math.min(1, Math.max(0, e.x / width))));
+    .onStart((e) => runOnJS(setDragRatio)(Math.min(1, Math.max(0, e.x / TRACK_W))))
+    .onUpdate((e) => runOnJS(setDragRatio)(Math.min(1, Math.max(0, e.x / TRACK_W))))
+    .onEnd((e) => runOnJS(commitSeek)(Math.min(1, Math.max(0, e.x / TRACK_W))));
 
   /* After the hooks, so their order never changes between renders. An id that
      resolves to nothing used to render the library's first exercise; now it
@@ -130,77 +161,130 @@ export default function ExerciseVideo() {
   if (!ex) {
     return (
       <View style={[styles.root, { alignItems: 'center', justifyContent: 'center', padding: 32 }]}>
-        <StatusBar style="light" />
         <AppText style={{ color: palette.white, fontSize: 17, fontWeight: '600', textAlign: 'center' }}>
           {t('Hərəkət tapılmadı')}
         </AppText>
         <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13.5, lineHeight: 20, textAlign: 'center', marginTop: 8 }}>
           {t('Bu hərəkət SPOT kitabxanasında yoxdur. Proqramın müəllifi onu özü yazıbsa, təfərrüatı proqram səhifəsində görünür.')}
         </AppText>
-        <PressableScale activeScale={0.95} onPress={() => router.back()} style={{ marginTop: 20 }}>
+        <PressableScale activeScale={0.95} onPress={() => router.back()} hitSlop={14} style={{ marginTop: 20 }}>
           <AppText style={{ color: palette.volt, fontSize: 15, fontWeight: '600' }}>{t('Geri')}</AppText>
         </PressableScale>
       </View>
     );
   }
 
+  /* X and share, shared by both states below. 44 pt circles — the old 34 pt ones
+     with 17–18 px glyphs were under the minimum tap size and looked undersized
+     beside the 44 pt video controls. The x glyph only fills half of its 24-unit
+     box and the share glyph most of it, so 24/22 reads as one size. */
+  const circleFill = hasVideo ? styles.circleOnVideo : styles.circlePlain;
+  const headerButtons = (
+    <>
+      <PressableScale
+        activeScale={0.9}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel={t('Bağla')}
+        style={[styles.circle, circleFill]}>
+        <Icon name="x" size={24} color={palette.white} />
+      </PressableScale>
+      <PressableScale
+        activeScale={0.9}
+        onPress={() => Share.share({ message: t('{name} — düzgün texnika. SPOT-da bax.', { name: t(ex.name) }) }).catch(() => {})}
+        accessibilityRole="button"
+        accessibilityLabel={t('Paylaş')}
+        style={[styles.circle, circleFill]}>
+        <Icon name="share" size={22} color={palette.white} />
+      </PressableScale>
+    </>
+  );
+
+  /* A move written into somebody's program arrives with no muscle, «—» for
+     equipment and possibly no reps; joining the fields blindly printed «· — · 3
+     set × » with dangling separators. */
+  const reps = repsText(ex.reps, t);
+  const meta = [
+    ex.muscle ? t(ex.muscle) : '',
+    ex.equipment && ex.equipment !== '—' ? t(ex.equipment) : '',
+    reps
+      ? t('{sets} set × {reps}', { sets: ex.defaultSets, reps, count: ex.defaultSets })
+      : t('{n} set', { n: ex.defaultSets, count: ex.defaultSets }),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
-      {/* Video — or, when there is none, just the header over a plain ground. */}
-      <View style={hasVideo ? styles.video : styles.videoEmpty}>
-        {hasVideo ? (
+      {hasVideo ? (
+        <View style={styles.video}>
           <VideoView player={player} contentFit="contain" nativeControls={false} surfaceType="textureView" style={StyleSheet.absoluteFill} />
-        ) : null}
-        <View style={[styles.videoTop, { paddingTop: insets.top + 4 }]}>
-          <PressableScale activeScale={0.9} onPress={() => router.back()} style={styles.circle}>
-            <Icon name="x" size={18} color={palette.white} />
-          </PressableScale>
-          <PressableScale
-            activeScale={0.9}
-            onPress={() => Share.share({ message: t('{name} — düzgün texnika. SPOT-da bax.', { name: t(ex.name) }) }).catch(() => {})}
-            style={styles.circle}>
-            <Icon name="share" size={17} color={palette.white} />
-          </PressableScale>
-        </View>
-        {hasVideo ? (
-        <View style={styles.controls}>
-          <PressableScale activeScale={0.9} onPress={() => setHalf((h) => !h)} style={[styles.sideCtrl, half && { backgroundColor: palette.volt }]}>
-            <AppText style={{ fontSize: 12, fontWeight: '600', color: half ? palette.inkText : palette.white }}>0.5x</AppText>
-          </PressableScale>
-          <PressableScale activeScale={0.9} onPress={() => setPlaying((p) => !p)} style={styles.playBig}>
-            <Icon name={playing ? 'timer' : 'play'} size={26} color={palette.inkText} />
-          </PressableScale>
-          <PressableScale activeScale={0.9} onPress={() => setMuted((m) => !m)} style={[styles.sideCtrl, !muted && { backgroundColor: palette.volt }]}>
-            <Icon name={muted ? 'mute' : 'sound'} size={18} color={muted ? palette.white : palette.inkText} />
-          </PressableScale>
-        </View>
-        ) : null}
-        {hasVideo ? (
-        <View style={styles.progressWrap}>
-          <GestureDetector gesture={scrub}>
-            <View style={styles.trackHit}>
-              <View style={styles.track}>
-                <View style={[styles.fill, { width: `${progress * 100}%` }]} />
-                <View style={[styles.knob, { left: `${progress * 100}%` }]} />
+          {/* box-none: this layer fills the frame only to centre its buttons. As a
+              plain View it took every touch inside the frame, so X and share could
+              not be pressed whenever a clip was playing. */}
+          <View style={styles.controls} pointerEvents="box-none">
+            <PressableScale activeScale={0.9} onPress={() => setHalf((h) => !h)} style={[styles.sideCtrl, half && { backgroundColor: palette.volt }]}>
+              {/* «0,5x» in Azerbaijani and Russian — a decimal comma, like every other number in the app. */}
+              <AppText style={{ fontSize: 12, fontWeight: '600', color: half ? palette.inkText : palette.white }}>{num.decimal(0.5)}x</AppText>
+            </PressableScale>
+            <PressableScale activeScale={0.9} onPress={() => setPlaying((p) => !p)} style={styles.playBig}>
+              {/* Two bars, not the timer glyph that stood in for «pause» — the icon
+                  set has no pause symbol, and a stopwatch on a play button reads
+                  as something else entirely. */}
+              {playing ? (
+                <View style={styles.pause}>
+                  <View style={styles.pauseBar} />
+                  <View style={styles.pauseBar} />
+                </View>
+              ) : (
+                <Icon name="play" size={26} color={palette.inkText} />
+              )}
+            </PressableScale>
+            <PressableScale activeScale={0.9} onPress={() => setMuted((m) => !m)} style={[styles.sideCtrl, !muted && { backgroundColor: palette.volt }]}>
+              <Icon name={muted ? 'mute' : 'sound'} size={18} color={muted ? palette.white : palette.inkText} />
+            </PressableScale>
+          </View>
+          <View style={styles.progressWrap}>
+            <GestureDetector gesture={scrub}>
+              <View style={styles.trackHit}>
+                <View style={styles.track}>
+                  <View style={[styles.fill, { width: `${progress * 100}%` }]} />
+                  <View style={[styles.knob, { left: `${progress * 100}%` }]} />
+                </View>
               </View>
+            </GestureDetector>
+            <View style={styles.times}>
+              <AppText style={styles.time}>{fmt(currentTime)}</AppText>
+              <AppText style={styles.time}>{fmt(duration)}</AppText>
             </View>
-          </GestureDetector>
-          <View style={styles.times}>
-            <AppText style={styles.time}>{fmt(currentTime)}</AppText>
-            <AppText style={styles.time}>{fmt(duration)}</AppText>
+          </View>
+          {/* Painted last, so no layer of the player sits on top of its buttons. */}
+          <View style={[styles.videoTop, { paddingTop: insets.top + 4 }]} pointerEvents="box-none">
+            {headerButtons}
           </View>
         </View>
-        ) : null}
-      </View>
+      ) : (
+        /* No footage: an ordinary header row on the screen's own ground. This used
+           to be a 128 pt band in a different shade holding only these two buttons,
+           which read as a video player that had failed to load. */
+        <View style={[styles.header, { paddingTop: insets.top + 4 }]}>{headerButtons}</View>
+      )}
 
-      {/* Info */}
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      {/* Info. On iPhone the Liquid Glass tab bar floats over this screen instead of
+          taking space, and inside a tab UIKit's bottom safe area already includes
+          it — so the last row pads by that inset or it ends under the glass.
+          Android's Material bar reserves its own space (expo-router pads the tab
+          scene), while the inset reported here is still the system bar's; adding
+          it there would only leave a dead band. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: hasVideo ? 18 : 6, paddingBottom: 40 + (Platform.OS === 'ios' ? insets.bottom : 0) },
+        ]}>
         <AppText style={styles.title}>{t(ex.name)}</AppText>
         <View style={styles.authorRow}>
-          <AppText style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12.5 }}>
-            {t(ex.muscle)} · {t(ex.equipment)} · {t('{sets} set × {reps}', { sets: ex.defaultSets, reps: repsText(ex.reps, t), count: ex.defaultSets })}
-          </AppText>
+          <AppText style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12.5, flexShrink: 1 }}>{meta}</AppText>
           {ex.isCompound ? (
             <View style={styles.compoundTag}>
               <AppText style={{ color: palette.inkText, fontSize: 10.5, fontWeight: '700' }}>{t('ƏSAS')}</AppText>
@@ -208,39 +292,53 @@ export default function ExerciseVideo() {
           ) : null}
         </View>
 
-        <View style={styles.mistakeCard}>
-          <Icon name="shield" size={18} color={palette.streak} />
-          <View style={{ flex: 1 }}>
-            <AppText style={{ color: '#FFB394', fontSize: 13, fontWeight: '600' }}>{t('Ən çox edilən səhv')}</AppText>
-            <AppText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20, marginTop: 5 }}>{t(ex.commonMistake)}</AppText>
-          </View>
-        </View>
-
-        <View style={styles.subsHead}>
-          <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600' }}>{t('Əvəzedici hərəkətlər')}</AppText>
-        </View>
-        <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-          {ex.substitutes.map((s) => (
-            <View key={s} style={styles.subCard}>
-              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t(s)}</AppText>
+        {/* Both sections are empty for a move the program's author wrote
+            themselves; a heading over nothing looked like content failing to load. */}
+        {ex.commonMistake ? (
+          <View style={styles.mistakeCard}>
+            <Icon name="shield" size={18} color={palette.streak} />
+            <View style={{ flex: 1 }}>
+              <AppText style={{ color: '#FFB394', fontSize: 13, fontWeight: '600' }}>{t('Ən çox edilən səhv')}</AppText>
+              <AppText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20, marginTop: 5 }}>{t(ex.commonMistake)}</AppText>
             </View>
-          ))}
-        </View>
+          </View>
+        ) : null}
+
+        {ex.substitutes.length > 0 ? (
+          <>
+            <View style={styles.subsHead}>
+              <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600' }}>{t('Əvəzedici hərəkətlər')}</AppText>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+              {ex.substitutes.map((s) => (
+                <View key={s} style={styles.subCard}>
+                  <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t(s)}</AppText>
+                </View>
+              ))}
+            </View>
+          </>
+        ) : null}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // No footage: a short header band instead of a tall empty video frame.
-  videoEmpty: { height: 128, backgroundColor: '#17171C' },
   root: { flex: 1, backgroundColor: palette.inkText },
+  // No footage: a normal header row, same ground as the page — no empty stage.
+  header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 4 },
   video: { height: 380, backgroundColor: '#1A1A20' },
   videoTop: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16 },
-  circle: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(11,11,14,0.5)', alignItems: 'center', justifyContent: 'center' },
+  circle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  // Over footage the scrim keeps the glyph readable on any frame; on the plain
+  // ground a scrim is invisible, so the circle takes the dark-screen fill instead.
+  circleOnVideo: { backgroundColor: palette.overlay },
+  circlePlain: { backgroundColor: dark.fill },
   controls: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22 },
   sideCtrl: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(11,11,14,0.4)', alignItems: 'center', justifyContent: 'center' },
   playBig: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center' },
+  pause: { flexDirection: 'row', gap: 6 },
+  pauseBar: { width: 5, height: 20, borderRadius: 1.5, backgroundColor: palette.inkText },
   progressWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingBottom: 14 },
   trackHit: { paddingVertical: 10 },
   track: { height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.25)' },
@@ -248,7 +346,8 @@ const styles = StyleSheet.create({
   knob: { position: 'absolute', top: -4, width: 11, height: 11, borderRadius: 6, backgroundColor: palette.volt, marginLeft: -5 },
   times: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 9 },
   time: { color: 'rgba(255,255,255,0.6)', fontSize: 11.5, fontWeight: '500' },
-  content: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 40 },
+  // paddingTop / paddingBottom are set inline: they depend on the video and the insets.
+  content: { paddingHorizontal: 20 },
   title: { color: palette.white, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 9 },
   compoundTag: { backgroundColor: palette.volt, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },

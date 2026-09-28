@@ -1,6 +1,7 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { COMPAT_UNKNOWN, MISMATCH_COLOR, compatOf, splitReasons } from '@/components/PartnerRow';
@@ -14,7 +15,7 @@ import { getPartner } from '@/lib/api';
 import { useAuthGate } from '@/lib/authGate';
 import { showModerationSheet } from '@/lib/moderation';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { Partner } from '@/data/types';
 import { seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
@@ -31,7 +32,16 @@ function PartnerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const t = useT();
+  const fmt = useFormat();
   const gate = useAuthGate();
+  /* The action row at the bottom is pinned to a TAB screen. On Android the Material
+     bar reserves its own space (expo-router pads the tab scene by the navigation-bar
+     inset, so adding it here would count it twice). On iOS 26 the Liquid Glass bar
+     FLOATS over the content — «Məşq təklif et» sat behind the glass. Inside a tab
+     screen UIKit's safe area already includes that bar, so the row pads by the
+     inset instead of guessing the bar's height. */
+  const insets = useSafeAreaInsets();
+  const footerBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + spacing.sm;
   const match = useDb((s) => s.matches[id]);
   // The block dialog promises this person disappears from the user's lists — the
   // profile must not go on offering «Məşq təklif et» as if nothing happened.
@@ -122,7 +132,12 @@ function PartnerDetail() {
     <Screen>
       <NavBar
         right={
-          <PressableScale activeScale={0.9} onPress={() => showModerationSheet(p.name, { type: 'user', id: p.id })}>
+          <PressableScale
+            activeScale={0.9}
+            onPress={() => showModerationSheet(p.name, { type: 'user', id: p.id })}
+            accessibilityRole="button"
+            accessibilityLabel={t('Digər seçimlər')}
+            style={styles.moreBtn}>
             <Icon name="more" size={22} color={palette.inkText} />
           </PressableScale>
         }
@@ -150,6 +165,10 @@ function PartnerDetail() {
               <PressableScale
                 activeScale={0.97}
                 onPress={() => router.push('/(tabs)/profile/edit')}
+                accessibilityRole="button"
+                // The pill is ~28 pt tall; the slop lifts the touch area toward 44 pt
+                // without changing how it looks (the parent's bounds still clip it).
+                hitSlop={8}
                 style={styles.unknownPill}>
                 <Icon name="sliders" size={14} color={palette.textSecondary} />
                 <AppText style={styles.unknownText}>{t(COMPAT_UNKNOWN)}</AppText>
@@ -191,12 +210,13 @@ function PartnerDetail() {
         {p.prs.length > 0 ? (
           <>
             <AppText variant="overline" color={palette.caption} style={styles.label}>
-              {t('Rekordlar (PR)')}
+              {t('Şəxsi rekordlar')}
             </AppText>
             <View style={styles.prRow}>
               {p.prs.map((pr) => (
                 <View key={pr.lift} style={styles.prCard}>
-                  <AppText variant="title2">{pr.value}</AppText>
+                  {/* 72,5 not 72.5 — Azerbaijani and Russian use a decimal comma. */}
+                  <AppText variant="title2">{fmt.weight(pr.value)}</AppText>
                   <AppText variant="caption" color={palette.caption}>
                     {t('{lift} · kq', { lift: t(pr.lift) })}
                   </AppText>
@@ -218,7 +238,7 @@ function PartnerDetail() {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: footerBottom }]}>
         {isBlocked ? (
           <AppText variant="footnote" color={palette.textSecondary} center style={{ paddingVertical: 6, lineHeight: 18 }}>
             {t(
@@ -276,7 +296,13 @@ const styles = StyleSheet.create({
   prCard: { flex: 1, backgroundColor: palette.grouped, borderRadius: 14, padding: 14, alignItems: 'center' },
   tagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   softTag: { backgroundColor: palette.grouped, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
-  footer: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
+  // paddingBottom is set inline from the safe-area inset (see `footerBottom`).
+  footer: { paddingHorizontal: spacing.screen, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
+  /* A 44 pt hit area around the 22 pt glyph. The negative margin gives back the 11 pt
+     of padding on the edge side, so the glyph stays aligned with the screen gutter —
+     only the touch area grew. (Not hitSlop: on Android a hit slop is clipped to the
+     parent, and NavBar's right slot is only as tall as its content.) */
+  moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -11 },
 });
 
 // Real people on this screen: not reachable as a guest by any route.

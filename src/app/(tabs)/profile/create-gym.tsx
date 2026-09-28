@@ -18,7 +18,7 @@ import { errorFeedback, successFeedback, tapFeedback } from '@/lib/feedback';
 import { t } from '@/lib/i18n';
 import { addGymPhoto, imageTooLargeMessage, isNotSavedError, pickImage, removeGymPhoto, setGymCover, shootImage } from '@/lib/images';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, confirm, toast, type UiAction } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -51,6 +51,7 @@ const coverFailOf = (e: unknown): CoverFail => {
 
 export default function CreateGym() {
   const t = useT();
+  const fmt = useFormat();
   const router = useRouter();
   const setOwnsGym = useAppStore((s) => s.setOwnsGym);
   const setMode = useAppStore((s) => s.setMode);
@@ -165,7 +166,7 @@ export default function CreateGym() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        toast(t('Məkan icazəsi verilmədi — pini xəritədə özün qoy'), 'error');
+        toast(t('Məkan icazəsi verilmədi — işarəni xəritədə özün qoy'), 'error');
       } else {
         const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         setPicked({ lat: pos.coords.latitude, lng: pos.coords.longitude });
@@ -331,7 +332,7 @@ export default function CreateGym() {
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 15, fontWeight: '600' }}>{t('{name} qeydə alındı', { name: name.trim() })}</AppText>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.tertiary, marginTop: 3 }}>
-                {t('Zal panelin açıqdır — amma zal HƏLƏ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, spam və saxta zalların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.')}
+                {t('Zal panelin açıqdır — amma zal HƏLƏ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, saxta və reklam xarakterli elanların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.')}
               </AppText>
             </View>
           </View>
@@ -345,19 +346,21 @@ export default function CreateGym() {
               router.push('/gym/claim');
             }}
             style={styles.claimRow}>
-            <Icon name="shield" size={18} color={palette.inkText} />
+            {/* 22, the same as the check in the card above it: at 18 the shield
+                was the smallest glyph on the page for the next step that matters. */}
+            <Icon name="shield" size={22} color={palette.inkText} />
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Sahiblik təsdiqini göndər')}</AppText>
               <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.tertiary, marginTop: 2 }}>
                 {t('VÖEN və ya qeydiyyat nömrəsini yaz — admin komandası yoxlayacaq.')}
               </AppText>
             </View>
-            <Icon name="chevR" size={16} color={palette.tertiary} />
+            <Icon name="chevR" size={18} color={palette.tertiary} />
           </PressableScale>
 
           {!locSaved ? (
             <AppText style={styles.warn}>
-              {t('Xəritədəki yer saxlanılmadı — zal panelindən «Profil → Zalın yeri» ilə pini yenidən qoy, əks halda zal müştəri xəritəsində görünməyəcək.')}
+              {t('Xəritədəki yer saxlanılmadı — zal panelindən «Profil → Zalın yeri» ilə işarəni yenidən qoy, əks halda zal müştəri xəritəsində görünməyəcək.')}
             </AppText>
           ) : null}
 
@@ -432,7 +435,12 @@ export default function CreateGym() {
         <AppText variant="footnote" color={palette.caption} style={styles.sectionLabel}>
           {t('Zalın şəkli')}
         </AppText>
-        <PressableScale activeScale={0.98} onPress={chooseCover} style={styles.coverWrap}>
+        <PressableScale
+          activeScale={0.98}
+          onPress={chooseCover}
+          accessibilityRole="button"
+          accessibilityLabel={coverUri ? t('Şəkli dəyiş') : t('Şəkil əlavə et')}
+          style={styles.coverWrap}>
           {coverUri ? (
             <Image source={{ uri: coverUri }} style={styles.cover} contentFit="cover" transition={120} />
           ) : (
@@ -465,7 +473,7 @@ export default function CreateGym() {
           {t('Zalın yeri *')}
         </AppText>
         <AppText style={[styles.hint, { marginBottom: 10 }]}>
-          {t('Xəritəyə toxunub pini zalın üstünə qoy — pini basıb sürüşdürərək dəqiqləşdirə bilərsən.')}
+          {t('Xəritəyə toxunub işarəni zalın üstünə qoy — işarəni basıb sürüşdürərək dəqiqləşdirə bilərsən.')}
         </AppText>
         <SpotMap
           key={mapKey}
@@ -491,15 +499,17 @@ export default function CreateGym() {
         {picked ? (
           <View style={styles.pinRow}>
             <Icon name="pin" size={14} color={palette.voltDeep} />
+            {/* In the language's own decimal mark, and «; » between the two: with a
+                decimal comma, «40,40926, 49,86710» reads as four numbers. */}
             <AppText style={{ fontSize: 12.5, color: palette.textSecondary }}>
-              {t('Pin qoyuldu · {lat}, {lng}', { lat: picked.lat.toFixed(5), lng: picked.lng.toFixed(5) })}
+              {t('İşarə qoyuldu · {lat}; {lng}', { lat: fmt.decimal(picked.lat, 5), lng: fmt.decimal(picked.lng, 5) })}
             </AppText>
           </View>
         ) : (
           <AppText style={[styles.hint, { marginTop: 10 }]}>
             {mapStatus === 'failed'
-              ? t('Xəritə açılmadı, ona görə yeri indi seçmək olmur. Zalı indi qeydiyyata ala bilərsən — pini sonra zal panelindən qoyarsan. Pin qoyulana qədər zal müştəri xəritəsində görünməyəcək.')
-              : t('Pin qoyulmadan zalı qeydiyyata almaq olmur — koordinatı olmayan zal müştəri xəritəsində görünmür.')}
+              ? t('Xəritə açılmadı, ona görə yeri indi seçmək olmur. Zalı indi qeydiyyata ala bilərsən — işarəni sonra zal panelindən qoyarsan. İşarə qoyulana qədər zal müştəri xəritəsində görünməyəcək.')
+              : t('İşarə qoyulmadan zalı qeydiyyata almaq olmur — koordinatı olmayan zal müştəri xəritəsində görünmür.')}
           </AppText>
         )}
 
@@ -511,7 +521,17 @@ export default function CreateGym() {
           {AMENITIES.map((a) => {
             const on = amenities.includes(a);
             return (
-              <PressableScale key={a} activeScale={0.95} onPress={() => toggle(a)} style={[styles.chip, on && styles.chipOn]}>
+              /* 41 pt tall (9 + 21 + 9, plus the border); the slop takes it past
+                 44 with no change to the look, and 4 + 4 stays inside the 9 pt
+                 row gap. */
+              <PressableScale
+                key={a}
+                activeScale={0.95}
+                onPress={() => toggle(a)}
+                hitSlop={{ top: 4, bottom: 4 }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+                style={[styles.chip, on && styles.chipOn]}>
                 <AppText style={{ fontSize: 13, fontWeight: '600', color: on ? palette.inkText : palette.textSecondary }}>{t(a)}</AppText>
               </PressableScale>
             );
@@ -552,17 +572,37 @@ function Gallery({
   onAdd: () => void;
   onRemove: (url: string) => void;
 }) {
+  const t = useT();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 2 }}>
       {photos.map((url) => (
         <View key={url} style={styles.thumbWrap}>
           <Image source={{ uri: url }} style={styles.thumb} contentFit="cover" transition={120} />
-          <PressableScale activeScale={0.9} onPress={() => onRemove(url)} style={styles.thumbX}>
-            <Icon name="x" size={12} color={palette.white} />
+          {/* The «x» was a 22 pt dot holding a 12 px glyph — a 6 px cross — and
+              nothing around it to catch a thumb. The pressable is now the tile's
+              44x44 top-right corner, with a bigger dot (26 pt, 16 px glyph) in the
+              same spot. A hitSlop could not do it: the tile clips to its rounded
+              corners (overflow hidden), and Android never lets a slop reach past
+              the parent anyway. */}
+          <PressableScale
+            activeScale={0.9}
+            onPress={() => onRemove(url)}
+            accessibilityRole="button"
+            accessibilityLabel={t('Şəkli sil')}
+            style={styles.thumbX}>
+            <View style={styles.thumbXDot}>
+              <Icon name="x" size={16} color={palette.white} />
+            </View>
           </PressableScale>
         </View>
       ))}
-      <PressableScale activeScale={0.95} disabled={busy} onPress={onAdd} style={styles.addTile}>
+      <PressableScale
+        activeScale={0.95}
+        disabled={busy}
+        onPress={onAdd}
+        accessibilityRole="button"
+        accessibilityLabel={t('Zal şəkli əlavə et')}
+        style={styles.addTile}>
         {busy ? <ActivityIndicator color={palette.tertiary} /> : <Icon name="plus" size={22} color={palette.tertiary} />}
       </PressableScale>
     </ScrollView>
@@ -597,7 +637,9 @@ const styles = StyleSheet.create({
   pinRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10 },
   thumbWrap: { width: 92, height: 92, borderRadius: 12, overflow: 'hidden', backgroundColor: palette.grouped },
   thumb: { width: '100%', height: '100%' },
-  thumbX: { position: 'absolute', top: 5, right: 5, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(11,11,14,0.7)' },
+  // 44x44 target in the tile's corner; the padding keeps the dot 5 pt in from the edges.
+  thumbX: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, padding: 5, alignItems: 'flex-end' },
+  thumbXDot: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(11,11,14,0.7)' },
   addTile: { width: 92, height: 92, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, borderStyle: 'dashed' },
   doneCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginBottom: 18 },
   claimRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginBottom: 18 },

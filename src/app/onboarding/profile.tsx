@@ -205,13 +205,16 @@ export default function ProfileStep() {
         onChange={(i) => setProfile({ gender: i === 0 ? 'kişi' : 'qadın' })}
       />
 
+      {/* The same field, and the same label, as Profil → Redaktə: «Haqqımda».
+          Not «Bio» (English) and not «Haqqında» (that key is the gym page's
+          tab, «О зале» in Russian). */}
       <AppText variant="overline" color={palette.caption} style={styles.label}>
-        {t('Bio')}
+        {t('Haqqımda')}
       </AppText>
       <TextInput
         value={profile.bio}
         onChangeText={(bio) => setProfile({ bio })}
-        placeholder={t('Məsələn: Səhər məşqlərini sevirəm, powerlifting üzərində işləyirəm.')}
+        placeholder={t('Məsələn: Səhər məşqlərini sevirəm, pauerliftinq üzərində işləyirəm.')}
         placeholderTextColor={palette.caption}
         multiline
         style={[styles.input, { height: 92, paddingTop: 12, textAlignVertical: 'top' }]}

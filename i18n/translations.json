@@ -10229,5 +10229,418 @@
   "key": "Server e-poçt təsdiqi gözləyir — bu, serverin ayarıdır, bizə yaz.",
   "ru": "Сервер ждёт подтверждения по почте — это его настройка, напиши нам.",
   "en": "The server is waiting for e-mail confirmation — that is a server setting, write to us."
+ },
+ {
+  "key": "Digər seçimlər",
+  "ru": "Другие действия",
+  "en": "More options"
+ },
+ {
+  "key": "{gym} · «Zalım» bölməsində görünəcək",
+  "ru": "{gym} · появится в разделе «Мой зал»",
+  "en": "{gym} · will appear in the \"My gym\" section"
+ },
+ {
+  "key": "«İcma» bölməsində görünəcək",
+  "ru": "Появится в разделе «Сообщество»",
+  "en": "Will appear in the \"Community\" section"
+ },
+ {
+  "key": "Yeni video",
+  "ru": "Новое видео",
+  "en": "New video"
+ },
+ {
+  "key": "Video hamıya görünür və adınla paylaşılır. Yalnız öz zalına göstərmək hələ mümkün deyil.",
+  "ru": "Видео видят все, и оно публикуется под твоим именем. Показать его только своему залу пока нельзя.",
+  "en": "Everyone can see the video, and it's posted under your name. Showing it only to your gym isn't possible yet."
+ },
+ {
+  "key": "məşq vaxtı",
+  "ru": "время тренировок",
+  "en": "training time"
+ },
+ {
+  "key": "{n} saat",
+  "ru": "{n} ч",
+  "en": "{n} h"
+ },
+ {
+  "key": "Əvvəlki hərəkət",
+  "ru": "Предыдущее упражнение",
+  "en": "Previous exercise"
+ },
+ {
+  "key": "Set {n}",
+  "ru": "Подход {n}",
+  "en": "Set {n}"
+ },
+ {
+  "key": "Seriya bu gün başladı",
+  "ru": "Серия началась сегодня",
+  "en": "Your streak started today"
+ },
+ {
+  "key": "Qeyd olundu — növbəti dəfə çəki artırılmış təklif olunacaq: üst bədən +2,5 kq, ayaq +5 kq.",
+  "ru": "Записано — в следующий раз будет предложен увеличенный вес: верх тела +2,5 кг, ноги +5 кг.",
+  "en": "Noted — next time a heavier weight will be suggested: upper body +2.5 kg, legs +5 kg."
+ },
+ {
+  "key": "Qeyd olundu — bütün setlərdə hədəf təkrarı vurmusansa, növbəti dəfə +2,5 kq təklif olunacaq, yoxsa eyni çəki.",
+  "ru": "Записано — если ты выполнишь целевые повторения во всех подходах, в следующий раз будет предложено +2,5 кг, иначе — тот же вес.",
+  "en": "Noted — if you hit the target reps on every set, next time +2.5 kg will be suggested; otherwise, the same weight."
+ },
+ {
+  "key": "Qeyd olundu — növbəti dəfə eyni çəki təklif olunacaq. İki məşq ardıcıl «Ağır» keçsə, bərpa üçün çəki 5% azaldılaraq təklif olunacaq.",
+  "ru": "Записано — в следующий раз будет предложен тот же вес. Если две тренировки подряд будут отмечены «Тяжело», для восстановления будет предложен вес на 5% меньше.",
+  "en": "Noted — next time the same weight will be suggested. If two workouts in a row are rated \"Hard\", a weight 5% lower will be suggested so you can recover."
+ },
+ {
+  "key": "Keçən dəfə: {set}",
+  "ru": "В прошлый раз: {set}",
+  "en": "Last time: {set}"
+ },
+ {
+  "key": "Axtarışı təmizlə",
+  "ru": "Очистить поиск",
+  "en": "Clear search"
+ },
+ {
+  "key": "Məsələn: Bolqar skvatı",
+  "ru": "Например: болгарские приседания",
+  "en": "e.g. Bulgarian split squat"
+ },
+ {
+  "key": "Bu video lentdə tapılmadı",
+  "ru": "Это видео не найдено в ленте",
+  "en": "This video wasn't found in the feed"
+ },
+ {
+  "key": "Serverlə əlaqə alınmadı — bu, lentin boş olduğu demək deyil. İnterneti yoxlayıb yenidən aç.",
+  "ru": "Не удалось связаться с сервером — это не значит, что лента пуста. Проверь интернет и открой снова.",
+  "en": "Couldn't reach the server — that doesn't mean the feed is empty. Check your internet and open it again."
+ },
+ {
+  "key": "Bu lentdə hələ heç nə paylaşılmayıb. Birinci sən ol — texnika videonu yüklə.",
+  "ru": "В этой ленте пока ничего не опубликовано. Загрузи первое видео — покажи свою технику.",
+  "en": "Nothing's been shared in this feed yet. Be the first — upload your technique video."
+ },
+ {
+  "key": "Ardıcıl iki məşq ağır keçdi — {prev} kq-dan 5% aşağı: {kg} kq ilə bərpa həftəsi",
+  "ru": "Две тренировки подряд были тяжёлыми — на 5% ниже {prev} кг: неделя восстановления с {kg} кг",
+  "en": "Two hard sessions in a row — 5% below {prev} kg: a recovery week at {kg} kg"
+ },
+ {
+  "key": "Keçən dəfə {prev} kq ağır keçdi — eyni çəkidə təkrarla",
+  "ru": "В прошлый раз {prev} кг было тяжело — повтори с тем же весом",
+  "en": "Last time {prev} kg felt hard — repeat the same weight"
+ },
+ {
+  "key": "Keçən dəfə {prev} kq asan keçdi — +{inc} kq artır",
+  "ru": "В прошлый раз {prev} кг далось легко — добавь +{inc} кг",
+  "en": "Last time {prev} kg felt easy — add +{inc} kg"
+ },
+ {
+  "key": "Keçən dəfə {prev} kq × {reps} — bütün setlər hədəfi vurdu, +{inc} kq artır",
+  "ru": "В прошлый раз {prev} кг × {reps} — все подходы выполнены, добавь +{inc} кг",
+  "en": "Last time {prev} kg × {reps} — every set hit the target, add +{inc} kg"
+ },
+ {
+  "key": "Keçən dəfə {prev} kq — bu çəkidə hədəf təkrarları tamamla",
+  "ru": "В прошлый раз {prev} кг — добей целевые повторения с этим весом",
+  "en": "Last time {prev} kg — complete the target reps at this weight"
+ },
+ {
+  "key": "Bildirişlər · {n} yeni",
+  "ru": "Уведомления · новых: {n}",
+  "en": "Notifications · {n} new"
+ },
+ {
+  "key": "Söhbətlər · {n} oxunmamış",
+  "ru": "Чаты · непрочитанных: {n}",
+  "en": "Chats · {n} unread"
+ },
+ {
+  "key": "Bildirişlər, {n} yeni",
+  "ru": "Уведомления, новых: {n}",
+  "en": "Notifications, {n} new"
+ },
+ {
+  "key": "Söhbətlər, {n} oxunmamış",
+  "ru": "Чаты, непрочитанных: {n}",
+  "en": "Chats, {n} unread"
+ },
+ {
+  "key": "Zalı paylaş",
+  "ru": "Поделиться залом",
+  "en": "Share gym"
+ },
+ {
+  "key": "Profili paylaş",
+  "ru": "Поделиться профилем",
+  "en": "Share profile"
+ },
+ {
+  "key": "Sinə pressi · 1RM proqnozu: {n} kq",
+  "ru": "Жим лёжа · прогноз 1RM: {n} кг",
+  "en": "Bench press · 1RM estimate: {n} kg"
+ },
+ {
+  "key": "Balansı qiymətləndirmək üçün hələ məlumat azdır — ən azı 3 fərqli əzələ qrupuna məşq qeyd et.",
+  "ru": "Пока мало данных, чтобы оценить баланс — запиши тренировки хотя бы на 3 разные группы мышц.",
+  "en": "Not enough data to judge balance yet — log workouts for at least 3 different muscle groups."
+ },
+ {
+  "key": "Qeyd etdiyin ən ağır sinə pressi setinə əsaslanır. Daha çox məşq qeyd etdikcə dəqiqləşir.",
+  "ru": "Основано на самом тяжёлом записанном подходе в жиме лёжа. Чем больше тренировок запишешь, тем точнее.",
+  "en": "Based on the heaviest bench press set you've logged. It gets more accurate as you log more workouts."
+ },
+ {
+  "key": "Ştanqla sinə pressi qeyd et — 1RM proqnozun burada görünəcək.",
+  "ru": "Запиши жим штанги лёжа — здесь появится твой прогноз 1RM.",
+  "en": "Log a barbell bench press — your 1RM estimate will show up here."
+ },
+ {
+  "key": "SERİYA",
+  "ru": "СЕРИЯ",
+  "en": "STREAK"
+ },
+ {
+  "key": "Əvvəlki ay",
+  "ru": "Предыдущий месяц",
+  "en": "Previous month"
+ },
+ {
+  "key": "Növbəti ay",
+  "ru": "Следующий месяц",
+  "en": "Next month"
+ },
+ {
+  "key": "Məkan icazəsi verilmədi — işarəni xəritədə özün qoy",
+  "ru": "Доступ к геолокации не разрешён — поставь метку на карте вручную",
+  "en": "Location permission wasn't granted — drop the pin on the map yourself"
+ },
+ {
+  "key": "Zal panelin açıqdır — amma zal HƏLƏ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, saxta və reklam xarakterli elanların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.",
+  "ru": "Панель зала открыта — но зал ПОКА не виден в Обзоре. Залы, созданные в приложении, попадают в список после проверки модератором; это отсекает фейковые и рекламные объявления. Подтверждение владения — отдельный шаг: VÖEN тебе нужно отправить самостоятельно.",
+  "en": "Your gym panel is open — but the gym isn't in Discover YET. Gyms created in the app show up in the list after a moderator reviews them; this keeps out fake and promotional listings. Ownership verification is a separate step — you need to send your VÖEN yourself."
+ },
+ {
+  "key": "Xəritədəki yer saxlanılmadı — zal panelindən «Profil → Zalın yeri» ilə işarəni yenidən qoy, əks halda zal müştəri xəritəsində görünməyəcək.",
+  "ru": "Место на карте не сохранилось — поставь метку заново в панели зала через «Профиль → Расположение зала», иначе зал не будет виден на карте для клиентов.",
+  "en": "The map location wasn't saved — drop the pin again from the gym panel via \"Profile → Gym location\", or the gym won't show on the map customers see."
+ },
+ {
+  "key": "Xəritəyə toxunub işarəni zalın üstünə qoy — işarəni basıb sürüşdürərək dəqiqləşdirə bilərsən.",
+  "ru": "Коснись карты, чтобы поставить метку на зал, — зажми и перетащи её, чтобы уточнить место.",
+  "en": "Tap the map to put the pin on the gym — press and drag it to fine-tune."
+ },
+ {
+  "key": "İşarə qoyuldu · {lat}; {lng}",
+  "ru": "Метка поставлена · {lat}; {lng}",
+  "en": "Pin dropped · {lat}, {lng}"
+ },
+ {
+  "key": "Xəritə açılmadı, ona görə yeri indi seçmək olmur. Zalı indi qeydiyyata ala bilərsən — işarəni sonra zal panelindən qoyarsan. İşarə qoyulana qədər zal müştəri xəritəsində görünməyəcək.",
+  "ru": "Карта не открылась, поэтому выбрать место сейчас нельзя. Зал можно зарегистрировать уже сейчас — метку поставишь позже в панели зала. Пока метки нет, зал не будет виден на карте для клиентов.",
+  "en": "The map didn't open, so you can't pick the location right now. You can register the gym now and drop the pin later from the gym panel. Until the pin is set, the gym won't show on the map customers see."
+ },
+ {
+  "key": "İşarə qoyulmadan zalı qeydiyyata almaq olmur — koordinatı olmayan zal müştəri xəritəsində görünmür.",
+  "ru": "Без метки зал не зарегистрировать — зал без координат не виден на карте для клиентов.",
+  "en": "You can't register the gym without a pin — a gym without coordinates doesn't show on the map customers see."
+ },
+ {
+  "key": "Haqqımda",
+  "ru": "О себе",
+  "en": "About me"
+ },
+ {
+  "key": "Görünürlük və məlumatlar",
+  "ru": "Видимость и данные",
+  "en": "Visibility and data"
+ },
+ {
+  "key": "Qeydiyyat addımları bu cihazda yenidən başlayacaq və cavablarını yenidən verə bilərsən. Serverdəki profilin silinmir — dəyişmədiyin sahələr olduğu kimi qalır. Məşq, çəki və check-in tarixçən də toxunulmur; onları silmək üçün Məxfilik → «Bu cihazdakı nüsxəni sil».",
+  "ru": "Шаги регистрации начнутся заново на этом устройстве, и ты сможешь ответить на них ещё раз. Твой профиль на сервере не удаляется — поля, которые ты не изменишь, останутся как есть. История тренировок, веса и check-in тоже не затрагивается; чтобы удалить её: Конфиденциальность → «Удалить копию на этом устройстве».",
+  "en": "The sign-up steps will start over on this device and you can answer them again. Your profile on the server isn't deleted — fields you don't change stay as they are. Your workout, weight and check-in history isn't touched either; to delete it, go to Privacy → \"Delete the copy on this device\"."
+ },
+ {
+  "key": "Məlumatlar hazırlana bilmədi",
+  "ru": "Не удалось подготовить данные",
+  "en": "Couldn't prepare your data"
+ },
+ {
+  "key": "Sənin məlumatların",
+  "ru": "Твои данные",
+  "en": "Your data"
+ },
+ {
+  "key": "«Bu cihazdakı nüsxəni sil» yalnız telefonundakı nüsxəni təmizləyir — hesabın serverdə qalır. Hesabı tamamilə silmək üçün «Hesabı tamamilə sil» sətrini işlət. Silməzdən əvvəl məlumatlarını özünə göndərməyi məsləhət görürük.",
+  "ru": "«Удалить копию на этом устройстве» очищает только копию на твоём телефоне — аккаунт остаётся на сервере. Чтобы удалить аккаунт полностью, используй строку «Удалить аккаунт полностью». Перед удалением советуем отправить свои данные себе.",
+  "en": "\"Delete the copy on this device\" only clears the copy on your phone — your account stays on the server. To delete your account completely, use the \"Delete account completely\" row. We recommend sending your data to yourself before deleting."
+ },
+ {
+  "key": "Məlumatlarını yüklə",
+  "ru": "Выгрузить данные",
+  "en": "Export your data"
+ },
+ {
+  "key": "Telefon icazə verib, amma cihazın ünvanı alınmadı — aşağıdakı ayarlar saxlanılır, lakin bu telefona bildiriş gəlməyəcək. Mesaj və məşq təklifini yalnız tətbiqi açanda görəcəksən.",
+  "ru": "Телефон дал разрешение, но адрес устройства получить не удалось — настройки ниже сохраняются, но уведомления на этот телефон приходить не будут. Сообщения и предложения тренировок увидишь, только когда откроешь приложение.",
+  "en": "Your phone gave permission, but we couldn't get the device's address — the settings below are saved, but no notifications will reach this phone. You'll only see messages and workout invites when you open the app."
+ },
+ {
+  "key": "Lentdə videonun yanındakı əlfəcin nişanına toxun — video burada toplanacaq.",
+  "ru": "Нажми на значок закладки рядом с видео в Ленте — оно появится здесь.",
+  "en": "Tap the bookmark icon next to a video in the Feed — it'll show up here."
+ },
+ {
+  "key": "Lentə keç",
+  "ru": "Перейти в Ленту",
+  "en": "Go to Feed"
+ },
+ {
+  "key": "«{day}» silinsin?",
+  "ru": "Удалить «{day}»?",
+  "en": "Delete “{day}”?"
+ },
+ {
+  "key": "İçindəki hərəkətlər də silinəcək.",
+  "ru": "Упражнения в нём тоже удалятся.",
+  "en": "Its exercises will be deleted too."
+ },
+ {
+  "key": "Günü sil",
+  "ru": "Удалить день",
+  "en": "Delete day"
+ },
+ {
+  "key": "Hərəkəti sil",
+  "ru": "Удалить упражнение",
+  "en": "Delete exercise"
+ },
+ {
+  "key": "Proqrama əlavə et",
+  "ru": "Добавить в программу",
+  "en": "Add to program"
+ },
+ {
+  "key": "{name} ilə yoldaş oldunuz. İlk mesajı yaz — birgə məşq zalda başlayır.",
+  "ru": "Вы с {name} теперь напарники. Напиши первое сообщение — совместные тренировки начинаются в зале.",
+  "en": "You and {name} are now partners. Write the first message — training together starts at the gym."
+ },
+ {
+  "key": "Mesajı göndər",
+  "ru": "Отправить сообщение",
+  "en": "Send message"
+ },
+ {
+  "key": "{email} ünvanına keçid göndərildi — poçtunu aç və keçidə toxun",
+  "ru": "Ссылка отправлена на {email} — открой почту и нажми на ссылку",
+  "en": "Link sent to {email} — open your inbox and tap the link"
+ },
+ {
+  "key": "Keçid göndərilmədi — yenidən cəhd et",
+  "ru": "Ссылка не отправлена — попробуй ещё раз",
+  "en": "The link wasn't sent — try again"
+ },
+ {
+  "key": "{email} ünvanına keçid göndərdik. Poçtunu aç və keçidə toxun — tətbiq özü açılacaq.",
+  "ru": "Мы отправили ссылку на {email}. Открой почту и нажми на ссылку — приложение откроется само.",
+  "en": "We sent a link to {email}. Open your inbox and tap the link — the app will open on its own."
+ },
+ {
+  "key": "Məktubda yalnız keçid varsa, kod xanasını boş burax — keçidə toxunmaq kifayətdir.",
+  "ru": "Если в письме только ссылка, оставь поле кода пустым — достаточно нажать на ссылку.",
+  "en": "If the email only has a link, leave the code field empty — tapping the link is enough."
+ },
+ {
+  "key": "Keçid göndər",
+  "ru": "Отправить ссылку",
+  "en": "Send link"
+ },
+ {
+  "key": "Keçid işləmədi — köhnəlib və ya artıq istifadə olunub. Yenisini göndər.",
+  "ru": "Ссылка не сработала — она устарела или уже использована. Отправь новую.",
+  "en": "The link didn't work — it has expired or was already used. Send a new one."
+ },
+ {
+  "key": "Bağlantını yoxla. Keçid işləməyibsə, e-poçt ekranından yenisini göndərə bilərsən.",
+  "ru": "Проверь соединение. Если ссылка не сработала, можешь отправить новую с экрана входа по e-mail.",
+  "en": "Check your connection. If the link didn't work, you can send a new one from the email sign-in screen."
+ },
+ {
+  "key": "Özün haqqında",
+  "ru": "О себе",
+  "en": "About you"
+ },
+ {
+  "key": "Məsələn: Səhər məşqlərini sevirəm, pauerliftinq üzərində işləyirəm.",
+  "ru": "Например: люблю тренироваться по утрам, занимаюсь пауэрлифтингом.",
+  "en": "For example: I love morning workouts, I'm working on powerlifting."
+ },
+ {
+  "key": "{lat}; {lng} · «Saxla» ilə yadda saxlanılır",
+  "ru": "{lat}; {lng} · сохранится по кнопке «Сохранить»",
+  "en": "{lat}, {lng} · saved when you tap \"Save\""
+ },
+ {
+  "key": "Sətri sil",
+  "ru": "Удалить запись",
+  "en": "Delete entry"
+ },
+ {
+  "key": "bu gün check-in edib",
+  "ru": "check-in: сегодня",
+  "en": "checked in today"
+ },
+ {
+  "key": "bu gün {n} check-in",
+  "ru_one": "сегодня {n} отметка",
+  "ru_few": "сегодня {n} отметки",
+  "ru_many": "сегодня {n} отметок",
+  "en_one": "{n} check-in today",
+  "en_other": "{n} check-ins today"
+ },
+ {
+  "key": "bu gün check-in yoxdur",
+  "ru": "сегодня отметок нет",
+  "en": "no check-ins today"
+ },
+ {
+  "key": "Bu gün hələ check-in yoxdur",
+  "ru": "Сегодня пока нет отметок",
+  "en": "No check-ins today yet"
+ },
+ {
+  "key": "Parolsuz — e-poçta keçid göndər",
+  "ru": "Без пароля — прислать ссылку на почту",
+  "en": "No password — e-mail me a link"
+ },
+ {
+  "key": "İşarəni zalın üstünə qoymaq üçün xəritəyə toxun — işarəni basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal müştəri xəritəsində məhz bu nöqtədə görünür.",
+  "ru": "Коснись карты, чтобы поставить метку на зал — зажми метку и перетащи, чтобы уточнить. Именно в этой точке зал виден на карте клиентов.",
+  "en": "Tap the map to put the pin on the gym — press and drag the pin to fine-tune it. The gym appears on the customer map at exactly this point."
+ },
+ {
+  "key": "İşarəni zalın üstünə qoymaq üçün xəritəyə toxun — işarəni basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal Kəşfdə dərc olunanda müştəri xəritəsində bu nöqtədə görünəcək.",
+  "ru": "Коснись карты, чтобы поставить метку на зал — зажми метку и перетащи, чтобы уточнить. Когда зал опубликуют в «Обзоре», он появится на карте клиентов в этой точке.",
+  "en": "Tap the map to put the pin on the gym — press and drag the pin to fine-tune it. Once the gym is published in Discover, it will appear on the customer map at this point."
+ },
+ {
+  "key": "Hələ işarə qoyulmayıb — koordinatı olmayan zal müştəri xəritəsində görünmür.",
+  "ru": "Метка ещё не поставлена — зал без координат не виден на карте клиентов.",
+  "en": "No pin yet — a gym without coordinates does not appear on the customer map."
+ },
+ {
+  "key": "Koordinatlar bazadan gəlmədi — işarə qoyulub-qoyulmadığını deyə bilmirik. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.",
+  "ru": "Координаты не пришли из базы — мы не можем сказать, поставлена ли метка. Проверь соединение и потяни страницу вниз, чтобы обновить.",
+  "en": "The coordinates did not come back from the database — we cannot tell whether the pin is placed. Check your connection and pull down to refresh."
+ },
+ {
+  "key": "Koordinat olmadan zal müştəri xəritəsində görünmür. «Yeri dəyiş» ilə işarəni zalın üstünə qoy.",
+  "ru": "Без координат зал не виден на карте клиентов. Поставь метку на зал через «Изменить место».",
+  "en": "Without coordinates the gym does not appear on the customer map. Use «Change location» to put the pin on the gym."
  }
 ]

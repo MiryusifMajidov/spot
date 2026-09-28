@@ -12,12 +12,15 @@ import { createReport } from '@/lib/api';
 import { reviewerName, tenureLabel } from '@/lib/format';
 import { EmptyNote, GymGate, getGymReviews, replyToReview, useMyGym, type GymReviewRow } from '@/lib/gymOwner';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { actionSheet, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 
 export default function GymReviews() {
   const t = useT();
+  // «4,6» in Azerbaijani and Russian, «4.6» in English — via the hook so a
+  // language switch recomputes it.
+  const fmt = useFormat();
   const insets = useSafeAreaInsets();
   // The reply sheet is a Modal — its own window, which Android never resizes for
   // the keyboard. Pad it by the measured overlap so the field and «Yaz» stay above.
@@ -149,7 +152,7 @@ export default function GymReviews() {
         {!loaded || (failed && !reviews.length) ? null : (
           <View style={styles.summary}>
             <AppText style={{ fontSize: 34, fontWeight: '700', letterSpacing: -1 }}>
-              {summary.count ? summary.avg.toFixed(1) : '—'}
+              {summary.count ? fmt.decimal(summary.avg, 1) : '—'}
             </AppText>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', gap: 2 }}>
@@ -218,19 +221,26 @@ export default function GymReviews() {
                   </View>
                 ) : null}
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 12 }}>
+                <View style={styles.actions}>
                   <PressableScale
                     activeScale={0.97}
                     onPress={() => {
                       setReplyTo(r);
                       setReplyText(r.reply ?? '');
                     }}
-                    style={styles.replyBtn}>
-                    <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>
-                      {r.reply ? t('Cavabı redaktə et') : t('Rəsmi cavab yaz')}
-                    </AppText>
+                    style={styles.actionHit}
+                    accessibilityRole="button">
+                    <View style={styles.replyBtn}>
+                      <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>
+                        {r.reply ? t('Cavabı redaktə et') : t('Rəsmi cavab yaz')}
+                      </AppText>
+                    </View>
                   </PressableScale>
-                  <PressableScale activeScale={0.97} onPress={() => report(r)}>
+                  <PressableScale
+                    activeScale={0.97}
+                    onPress={() => report(r)}
+                    style={[styles.actionHit, styles.reportHit]}
+                    accessibilityRole="button">
                     <AppText style={{ fontSize: 12.5, color: palette.tertiary }}>{t('Şikayət et')}</AppText>
                   </PressableScale>
                 </View>
@@ -289,6 +299,20 @@ const styles = StyleSheet.create({
   failCard: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginTop: 10, marginBottom: 14 },
   card: { backgroundColor: palette.white, borderRadius: 18, padding: 16 },
   reply: { backgroundColor: 'rgba(10,132,255,0.06)', borderRadius: 12, padding: 12, marginTop: 12 },
+  /* The pill was the whole press area (~35 pt) and «Şikayət et» only its own
+     12.5 pt line of text (~17 pt). Each now sits in a 44 pt-tall box; the pill
+     looks as it did. The row's top margin drops from 12 to 8 and a -4 bottom
+     margin takes back the extra below, so the pill still sits about 12 pt under
+     the text and 16 pt above the card's edge; the -4 stays inside the card's own
+     padding, so Android still delivers those touches. Gap 6 + the link's 8 pt
+     side padding is the 14 pt that used to separate pill and link.
+     Wraps: in Russian «Написать официальный ответ» + «Пожаловаться» is ~330 pt,
+     wider than the card on any phone narrower than ~400 pt, and without a wrap
+     the link was drawn past the card's edge. No row gap — the 44 pt boxes
+     already space a wrapped link from the pill. */
+  actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6, marginTop: 8, marginBottom: -4 },
+  actionHit: { minHeight: 44, justifyContent: 'center' },
+  reportHit: { paddingHorizontal: 8 },
   replyBtn: { backgroundColor: palette.grouped, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 },
   rule: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', marginTop: 16, paddingHorizontal: 4 },
   modalBg: { flex: 1, backgroundColor: palette.overlay, justifyContent: 'flex-end' },

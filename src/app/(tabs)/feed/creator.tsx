@@ -16,7 +16,7 @@ import { useFeedVideos, useTrainers } from '@/lib/hooks';
 import { showModerationSheet } from '@/lib/moderation';
 import { followProfile, unfollowProfile } from '@/lib/social';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
@@ -26,6 +26,7 @@ const sameText = (a: string, b: string) => azLower(a.trim()) === azLower(b.trim(
 
 export default function Creator() {
   const t = useT();
+  const fmt = useFormat();
   const params = useLocalSearchParams<{ name?: string; authorId?: string; verified?: string; isTrainer?: string }>();
   const name = params.name ?? '';
   const router = useRouter();
@@ -94,17 +95,29 @@ export default function Creator() {
           !isMe && authorId ? (
             <PressableScale
               activeScale={0.9}
-              onPress={() => showModerationSheet(displayAuthor(name), { type: 'user', id: authorId })}>
-              <Icon name="more" size={22} color={palette.textSecondary} />
+              onPress={() => showModerationSheet(displayAuthor(name), { type: 'user', id: authorId })}
+              accessibilityRole="button"
+              accessibilityLabel={t('Digər seçimlər')}
+              style={styles.moreBtn}>
+              <Icon name="more" size={22} color={palette.inkText} />
             </PressableScale>
           ) : undefined
         }
       />
+      {/* iOS 26: the Liquid Glass tab bar floats over this grid. Left at RN's
+          default («never») the last row of videos ended under the glass — 40 pt of
+          padding could not scroll it out. «automatic» lets UIKit add the tab bar's
+          safe area at the bottom; the top is already padded by Screen, so nothing is
+          added there. react-native-screens only switches the scroll view it finds
+          down the first-child chain, and here the first child is the NavBar, so it
+          has to be said explicitly. iOS-only prop; Android's bar reserves its own
+          space. */}
       <FlatList
         data={videos}
         keyExtractor={(v) => v.id}
         numColumns={2}
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
         columnWrapperStyle={{ paddingHorizontal: spacing.screen, gap: 10 }}
         contentContainerStyle={{ paddingBottom: 40 }}
         ListHeaderComponent={
@@ -135,10 +148,11 @@ export default function Creator() {
               <View style={styles.stats}>
                 {/* A client count or rating of 0 means nobody has hired or rated
                     this trainer yet. Printing «0» / «0.0» would state that as a
-                    measured result, so an absent figure shows as «—». */}
+                    measured result, so an absent figure shows as «—». The
+                    rating uses the language's decimal mark: 4,8 in az/ru. */}
                 <Stat value={`${videos.length}`} label={t('video')} />
                 <Stat value={trainer && trainer.clients > 0 ? `${trainer.clients}` : '—'} label={t('şagird')} />
-                <Stat value={trainer && trainer.rating > 0 ? trainer.rating.toFixed(1) : '—'} label={t('reytinq')} />
+                <Stat value={trainer && trainer.rating > 0 ? fmt.decimal(trainer.rating, 1) : '—'} label={t('reytinq')} />
               </View>
               {/* Your own page: you cannot follow yourself, and you cannot book
                   yourself as a trainer — both controls go away, and the honest
@@ -214,6 +228,12 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 14 },
   trainerTag: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(10,132,255,0.1)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 10 },
   stats: { flexDirection: 'row', gap: 30, marginTop: 18 },
+  /* A 44 pt hit area around the 22 pt glyph — it was the bare glyph, so a thumb on
+     its edge hit nothing. The negative margin gives back the 11 pt of padding on the
+     edge side, so the glyph stays on the screen gutter; only the touch area grew.
+     (Not hitSlop: on Android a hit slop is clipped to the parent, and NavBar's right
+     slot is only as tall as its content.) Same box as the partner / trainer pages. */
+  moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -11 },
   tile: { flex: 1, height: 190, borderRadius: 14, overflow: 'hidden', marginBottom: 10, justifyContent: 'flex-end', padding: 10 },
   tilePlay: { position: 'absolute', top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' },
   tileCaption: { color: palette.white, fontSize: 12, fontWeight: '600', lineHeight: 16 },

@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Trainer } from '@/data/types';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { palette } from '@/theme';
 import { Avatar } from './ui/Avatar';
 import { AppText } from './ui/AppText';
@@ -11,6 +11,7 @@ import { Icon } from './Icon';
 /** Trainer list row. Unverified trainers read faded + get an explicit label (transparency, not hiding). */
 export function TrainerRow({ trainer, onPress }: { trainer: Trainer; onPress?: () => void }) {
   const t = useT();
+  const fmt = useFormat();
   // A rating of 0 means nobody has rated this trainer yet — an absence, not a score.
   // Same rule as the detail screen: say "new" instead of printing a zero.
   const rating = trainer.rating ?? 0;
@@ -46,8 +47,10 @@ export function TrainerRow({ trainer, onPress }: { trainer: Trainer; onPress?: (
         <View style={styles.metaRow}>
           {rating > 0 ? (
             <>
-              <Icon name="star" size={12} color={palette.volt} />
-              <AppText style={styles.meta}>{rating}</AppText>
+              {/* voltDeep, as on the trainer page: this row sits on a light screen, where a
+                  volt star is almost invisible (about 1.2:1 against white). */}
+              <Icon name="star" size={12} color={palette.voltDeep} />
+              <AppText style={styles.meta}>{fmt.decimal(rating, 1)}</AppText>
             </>
           ) : null}
           {meta ? <AppText style={styles.metaDim}>{rating > 0 ? `· ${meta}` : meta}</AppText> : null}

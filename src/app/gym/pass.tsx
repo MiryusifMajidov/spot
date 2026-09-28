@@ -8,9 +8,9 @@ import { NavBar } from '@/components/ui/NavBar';
 import { Screen } from '@/components/ui/Screen';
 import { GymGate, useMyGym } from '@/lib/gymOwner';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
-import { t } from '@/lib/i18n';
+import type { t as T } from '@/lib/i18n';
 import { checkDayPass, redeemDayPass, type PassCheck } from '@/lib/roles';
-import { useT } from '@/lib/useT';
+import { useFormat, useT, type Fmt } from '@/lib/useT';
 import { toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 
@@ -29,15 +29,19 @@ import { palette, radius, spacing } from '@/theme';
  * It shows the pass and NOTHING about the person holding it — no name, no
  * profile, no history. Reception needs to know the code is good; the visitor is
  * standing right there and does not need to be introduced by a database.
+ *
+ * `t` and `fmt` are the screen's own (useT / useFormat): with the module-level
+ * `t` the compiler cached this text by `r` alone, and a language switch left
+ * the verdict in the old language.
  */
-const stateText = (r: PassCheck): { title: string; body: string; tone: 'ok' | 'bad' | 'warn' } => {
+const stateText = (r: PassCheck, t: typeof T, fmt: Fmt): { title: string; body: string; tone: 'ok' | 'bad' | 'warn' } => {
   switch (r.state) {
     case 'valid':
       return {
         title: t('Kod keçərlidir'),
         body: r.expires_at
           ? t('Bu gün {h}:{m}-dək. Qonağı içəri burax və aşağıdan təsdiqlə.', {
-              h: new Date(r.expires_at).getHours(),
+              h: String(new Date(r.expires_at).getHours()).padStart(2, '0'),
               m: String(new Date(r.expires_at).getMinutes()).padStart(2, '0'),
             })
           : t('Qonağı içəri burax və aşağıdan təsdiqlə.'),
@@ -49,7 +53,7 @@ const stateText = (r: PassCheck): { title: string; body: string; tone: 'ok' | 'b
       return {
         title: t('Bu kod artıq istifadə olunub'),
         body: r.used_at
-          ? t('{date} tarixində təsdiqlənib. Yenidən keçmir.', { date: new Date(r.used_at).toLocaleString('az-AZ') })
+          ? t('{date} tarixində təsdiqlənib. Yenidən keçmir.', { date: usedAt(new Date(r.used_at), fmt) })
           : t('Daha əvvəl təsdiqlənib. Yenidən keçmir.'),
         tone: 'bad',
       };
@@ -66,8 +70,15 @@ const stateText = (r: PassCheck): { title: string; body: string; tone: 'ok' | 'b
   }
 };
 
+/** «29 sentyabr, 14:05». Not toLocaleString('az-AZ'): Hermes without full ICU
+ *  falls back to an English «9/29/2026, 2:05:00 PM» (see src/lib/format.ts). */
+function usedAt(d: Date, fmt: Fmt): string {
+  return `${fmt.dayAndMonth(d)}, ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 export default function GymPass() {
   const t = useT();
+  const fmt = useFormat();
   const state = useMyGym();
   const gym = state.gym;
   const [code, setCode] = useState('');
@@ -106,7 +117,7 @@ export default function GymPass() {
     }
   };
 
-  const info = result ? stateText(result) : null;
+  const info = result ? stateText(result, t, fmt) : null;
   const toneColor = info?.tone === 'ok' ? palette.voltDeep : palette.red;
 
   return (
@@ -155,8 +166,10 @@ export default function GymPass() {
         {info ? (
           <View style={[styles.card, { borderColor: toneColor }]}>
             <View style={styles.cardHead}>
-              <Icon name={info.tone === 'ok' ? 'check' : 'x'} size={18} color={toneColor} />
-              <AppText variant="headline">{info.title}</AppText>
+              <Icon name={info.tone === 'ok' ? 'check' : 'x'} size={22} color={toneColor} />
+              <AppText variant="headline" style={{ flexShrink: 1 }}>
+                {info.title}
+              </AppText>
             </View>
             <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 4, lineHeight: 19 }}>
               {info.body}
@@ -165,7 +178,7 @@ export default function GymPass() {
               <AppText variant="footnote" color={palette.text3} style={{ marginTop: 8, lineHeight: 19 }}>
                 {t(
                   'Zalın day-pass qiyməti: {price} ₼ — ödəniş zalda alınır. SPOT pul qəbul etmir və komissiya tutmur.',
-                  { price: result.price }
+                  { price: Number.isInteger(result.price) ? String(result.price) : fmt.decimal(result.price, 2) }
                 )}
               </AppText>
             ) : null}
@@ -208,5 +221,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.separator,
   },
-  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 });

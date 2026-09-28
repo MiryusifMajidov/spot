@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Program } from '@/data/types';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { palette, radius, shadow } from '@/theme';
 import { CreatorBadge } from './CreatorBadge';
 import { Icon } from './Icon';
@@ -79,6 +79,7 @@ export function ProgramCard({ program, variant = 'row', onPress }: { program: Pr
  *  (days/week, minutes) carry the row on their own. */
 function Meta({ program, compact }: { program: Program; compact?: boolean }) {
   const t = useT();
+  const fmt = useFormat(); // «4,8» in az/ru — the rating is numeric(2,1), never shown raw
   /* The real number of days the program defines, not the number it advertises.
      «Push Pull Legs» claimed 6 gün/həftə on the card while the detail screen
      listed 3 — the card was quoting a seed field the content does not back up. */
@@ -94,7 +95,7 @@ function Meta({ program, compact }: { program: Program; compact?: boolean }) {
       {program.rating > 0 ? (
         <>
           <Icon name="star" size={12} color={palette.streak} />
-          <AppText style={styles.rating}>{program.rating}</AppText>
+          <AppText style={styles.rating}>{fmt.decimal(program.rating, 1)}</AppText>
           <AppText style={styles.metaDim}>· {parts.join(' · ')}</AppText>
         </>
       ) : (

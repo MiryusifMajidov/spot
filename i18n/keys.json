@@ -78,8 +78,10 @@
    "src/app/(tabs)/discover/partner-filter.tsx",
    "src/app/(tabs)/feed/share.tsx",
    "src/app/(tabs)/profile/become-trainer.tsx",
+   "src/app/(tabs)/workout/exercise.tsx",
    "src/app/(tabs)/workout/exercises.tsx",
    "src/app/(tabs)/workout/program/[id].tsx",
+   "src/app/(tabs)/workout/session.tsx",
    "src/app/trainer/programs.tsx",
    "src/lib/accounts.ts"
   ],
@@ -271,6 +273,17 @@
   "placeholders": []
  },
  {
+  "key": "Zal kodu",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/checkin.tsx",
+   "src/app/gym/index.tsx",
+   "src/app/gym/qr.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Zalın resepsiyasındakı QR kodu oxuyuruq. Kamera yalnız bu ekranda işləyir, şəkil saxlanılmır.",
   "counted": false,
   "files": [
@@ -409,12 +422,36 @@
   ]
  },
  {
+  "key": "Keç",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/cards.tsx",
+   "src/app/(tabs)/workout/session.tsx",
+   "src/app/onboarding/trainers.tsx",
+   "src/components/onboarding/OnboardingScaffold.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Məqsəd",
   "counted": false,
   "files": [
    "src/app/(tabs)/discover/cards.tsx",
    "src/app/(tabs)/discover/partner-filter.tsx",
    "src/app/(tabs)/profile/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Məşq təklif et",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/cards.tsx",
+   "src/app/(tabs)/discover/match.tsx",
+   "src/app/(tabs)/discover/partner/[id].tsx",
+   "src/app/(tabs)/discover/weekly.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -442,6 +479,18 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/discover/cards.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Saxla",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/cards.tsx",
+   "src/app/(tabs)/workout/create.tsx",
+   "src/app/gym/classes.tsx",
+   "src/app/gym/edit.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -507,6 +556,16 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/discover/cards.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Yoldaş filtri",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/cards.tsx",
+   "src/app/(tabs)/discover/partner-filter.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -977,6 +1036,20 @@
   "placeholders": []
  },
  {
+  "key": "Digər seçimlər",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/gym/[id].tsx",
+   "src/app/(tabs)/discover/partner/[id].tsx",
+   "src/app/(tabs)/discover/trainer/[id].tsx",
+   "src/app/(tabs)/feed/creator.tsx",
+   "src/app/(tabs)/workout/program/[id].tsx",
+   "src/app/chat/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Geri",
   "counted": false,
   "files": [
@@ -986,7 +1059,9 @@
    "src/app/(tabs)/discover/trainer/[id].tsx",
    "src/app/(tabs)/workout/exercise.tsx",
    "src/app/(tabs)/workout/program/[id].tsx",
-   "src/app/(tabs)/workout/session.tsx"
+   "src/app/(tabs)/workout/session.tsx",
+   "src/components/onboarding/OnboardingScaffold.tsx",
+   "src/components/ui/NavBar.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -999,6 +1074,7 @@
    "src/app/(tabs)/discover/match.tsx",
    "src/app/(tabs)/discover/reserve/[id].tsx",
    "src/app/(tabs)/profile/create-gym.tsx",
+   "src/app/(tabs)/profile/support.tsx",
    "src/app/auth/sign-in.tsx",
    "src/app/gym/claim.tsx",
    "src/app/gym/index.tsx",
@@ -1012,8 +1088,7 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/discover/gym/[id].tsx",
-   "src/app/(tabs)/discover/trainer/[id].tsx",
-   "src/app/(tabs)/profile/become-trainer.tsx"
+   "src/app/(tabs)/discover/trainer/[id].tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -1292,6 +1367,19 @@
   "placeholders": []
  },
  {
+  "key": "Yadda saxla",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/gym/[id].tsx",
+   "src/app/(tabs)/profile/become-trainer.tsx",
+   "src/app/(tabs)/profile/edit.tsx",
+   "src/app/(tabs)/workout/program/[id].tsx",
+   "src/components/GymCard.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Yalnız bu zalda ən azı 3 dəfə check-in edən rəy yaza bilər — saxta rəylərin qarşısını alır. ({n}/3)",
   "counted": false,
   "files": [
@@ -1375,6 +1463,15 @@
  },
  {
   "key": "Zal yüklənmədi",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/gym/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Zalı paylaş",
   "counted": false,
   "files": [
    "src/app/(tabs)/discover/gym/[id].tsx"
@@ -1589,6 +1686,40 @@
   "placeholders": []
  },
  {
+  "key": "Axtarışı təmizlə",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/index.tsx",
+   "src/app/(tabs)/workout/library.tsx",
+   "src/app/(tabs)/workout/pick-exercises.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Bildirişlər",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/index.tsx",
+   "src/app/(tabs)/profile/notifications.tsx",
+   "src/app/(tabs)/profile/settings.tsx",
+   "src/app/notifications.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Bildirişlər, {n} yeni",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
   "key": "Bu ada uyğun müəllim tapılmadı.",
   "counted": false,
   "files": [
@@ -1754,6 +1885,7 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/discover/index.tsx",
+   "src/app/(tabs)/profile/index.tsx",
    "src/app/(tabs)/profile/saved.tsx",
    "src/app/(tabs)/profile/settings.tsx"
   ],
@@ -1779,6 +1911,28 @@
   ],
   "kind": "ui",
   "placeholders": []
+ },
+ {
+  "key": "Söhbətlər",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/index.tsx",
+   "src/app/(tabs)/workout/index.tsx",
+   "src/app/chat/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Söhbətlər, {n} oxunmamış",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
  },
  {
   "key": "Uyğun yoldaşlar · səbəb etiketləri ilə",
@@ -2121,17 +2275,6 @@
   "placeholders": []
  },
  {
-  "key": "Məşq təklif et",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/discover/match.tsx",
-   "src/app/(tabs)/discover/partner/[id].tsx",
-   "src/app/(tabs)/discover/weekly.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Məşq təklifi: {proposal}",
   "counted": false,
   "files": [
@@ -2462,15 +2605,6 @@
   "placeholders": []
  },
  {
-  "key": "Yoldaş filtri",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/discover/partner-filter.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "qadın",
   "counted": false,
   "files": [
@@ -2569,15 +2703,6 @@
   "placeholders": []
  },
  {
-  "key": "Rekordlar (PR)",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/discover/partner/[id].tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Səviyyə göstərilməyib",
   "counted": false,
   "files": [
@@ -2653,6 +2778,16 @@
   "placeholders": [
    "lift"
   ]
+ },
+ {
+  "key": "Şəxsi rekordlar",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/discover/partner/[id].tsx",
+   "src/app/(tabs)/profile/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
  },
  {
   "key": "1 məşq · məlumat",
@@ -3249,15 +3384,6 @@
   ]
  },
  {
-  "key": "Community feed-də görünəcək",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/feed/compose.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Nə paylaşmaq istəyirsən? Nailiyyət, sual və ya motivasiya…",
   "counted": false,
   "files": [
@@ -3271,7 +3397,8 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/feed/compose.tsx",
-   "src/app/(tabs)/feed/share.tsx"
+   "src/app/(tabs)/feed/share.tsx",
+   "src/app/(tabs)/workout/exercise.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -3313,7 +3440,7 @@
   "placeholders": []
  },
  {
-  "key": "{gym} · community feed-də görünəcək",
+  "key": "{gym} · «Zalım» bölməsində görünəcək",
   "counted": false,
   "files": [
    "src/app/(tabs)/feed/compose.tsx"
@@ -3322,6 +3449,15 @@
   "placeholders": [
    "gym"
   ]
+ },
+ {
+  "key": "«İcma» bölməsində görünəcək",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/feed/compose.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
  },
  {
   "key": "Əvvəlcə profilində adını yaz — post adınla paylaşılır",
@@ -3451,7 +3587,7 @@
   "placeholders": []
  },
  {
-  "key": "Bu feed-də hələ heç nə paylaşılmayıb. Birinci sən ol — texnika videonu yüklə.",
+  "key": "Bu lentdə hələ heç nə paylaşılmayıb. Birinci sən ol — texnika videonu yüklə.",
   "counted": false,
   "files": [
    "src/app/(tabs)/feed/index.tsx"
@@ -3478,7 +3614,7 @@
   "placeholders": []
  },
  {
-  "key": "Bu video feed-də tapılmadı",
+  "key": "Bu video lentdə tapılmadı",
   "counted": false,
   "files": [
    "src/app/(tabs)/feed/index.tsx"
@@ -3604,7 +3740,7 @@
   "placeholders": []
  },
  {
-  "key": "Serverlə əlaqə alınmadı — bu, feed-in boş olduğu demək deyil. İnterneti yoxlayıb yenidən aç.",
+  "key": "Serverlə əlaqə alınmadı — bu, lentin boş olduğu demək deyil. İnterneti yoxlayıb yenidən aç.",
   "counted": false,
   "files": [
    "src/app/(tabs)/feed/index.tsx"
@@ -3891,7 +4027,7 @@
   "placeholders": []
  },
  {
-  "key": "Video hər kəsə açıq olur və adınla göstərilir. Yalnız zala görünmə hələ yoxdur — paylaşmadan əvvəl bunu nəzərə al.",
+  "key": "Video hamıya görünür və adınla paylaşılır. Yalnız öz zalına göstərmək hələ mümkün deyil.",
   "counted": false,
   "files": [
    "src/app/(tabs)/feed/share.tsx"
@@ -3982,6 +4118,15 @@
  },
  {
   "key": "Videon həmin proqramın altında toplanır.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/feed/share.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Yeni video",
   "counted": false,
   "files": [
    "src/app/(tabs)/feed/share.tsx"
@@ -4095,6 +4240,7 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/achievements.tsx",
+   "src/app/(tabs)/profile/index.tsx",
    "src/app/(tabs)/profile/settings.tsx"
   ],
   "kind": "ui",
@@ -4179,27 +4325,7 @@
   "placeholders": []
  },
  {
-  "key": "Balans qiymətləndirmək üçün hələ az datadır — ən azı 3 fərqli əzələ qrupuna məşq qeyd et.",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/analytics.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bench 1RM proqnozu: {n} kq",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/analytics.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
- },
- {
-  "key": "Bench press qeyd et — 1RM proqnozun burada görünəcək.",
+  "key": "Balansı qiymətləndirmək üçün hələ məlumat azdır — ən azı 3 fərqli əzələ qrupuna məşq qeyd et.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/analytics.tsx"
@@ -4270,7 +4396,7 @@
   "placeholders": []
  },
  {
-  "key": "Qeyd etdiyin ən ağır bench setinə əsaslanır. Daha çox məşq qeyd etdikcə dəqiqləşir.",
+  "key": "Qeyd etdiyin ən ağır sinə pressi setinə əsaslanır. Daha çox məşq qeyd etdikcə dəqiqləşir.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/analytics.tsx"
@@ -4288,7 +4414,7 @@
   "placeholders": []
  },
  {
-  "key": "SERIYA",
+  "key": "SERİYA",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/analytics.tsx"
@@ -4313,6 +4439,17 @@
   ],
   "kind": "ui",
   "placeholders": []
+ },
+ {
+  "key": "Sinə pressi · 1RM proqnozu: {n} kq",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/analytics.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
  },
  {
   "key": "gün",
@@ -4450,6 +4587,15 @@
    "n",
    "vol"
   ]
+ },
+ {
+  "key": "Ştanqla sinə pressi qeyd et — 1RM proqnozun burada görünəcək.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/analytics.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
  },
  {
   "key": "ƏZƏLƏ QRUPU ÜZRƏ HƏCM · 4 HƏFTƏ",
@@ -4597,6 +4743,17 @@
   "files": [
    "src/app/(tabs)/profile/become-trainer.tsx",
    "src/app/trainer/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Haqqımda",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/become-trainer.tsx",
+   "src/app/(tabs)/profile/edit.tsx",
+   "src/app/onboarding/profile.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -4938,16 +5095,6 @@
   "placeholders": []
  },
  {
-  "key": "Yadda saxla",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/become-trainer.tsx",
-   "src/app/(tabs)/profile/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Yalnız bu cihazda",
   "counted": false,
   "files": [
@@ -5149,7 +5296,7 @@
   "placeholders": []
  },
  {
-  "key": "Məkan icazəsi verilmədi — pini xəritədə özün qoy",
+  "key": "Məkan icazəsi verilmədi — işarəni xəritədə özün qoy",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/create-gym.tsx",
@@ -5170,27 +5317,6 @@
  },
  {
   "key": "Məs: Titan Fitness",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/create-gym.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Pin qoyuldu · {lat}, {lng}",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/create-gym.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "lat",
-   "lng"
-  ]
- },
- {
-  "key": "Pin qoyulmadan zalı qeydiyyata almaq olmur — koordinatı olmayan zal müştəri xəritəsində görünmür.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/create-gym.tsx"
@@ -5242,6 +5368,7 @@
    "src/app/(tabs)/profile/create-gym.tsx",
    "src/app/(tabs)/profile/history.tsx",
    "src/app/(tabs)/profile/privacy.tsx",
+   "src/app/(tabs)/workout/create.tsx",
    "src/app/(tabs)/workout/program/[id].tsx",
    "src/app/chat/requests.tsx",
    "src/app/gym/classes.tsx",
@@ -5274,7 +5401,7 @@
   "placeholders": []
  },
  {
-  "key": "Xəritə açılmadı, ona görə yeri indi seçmək olmur. Zalı indi qeydiyyata ala bilərsən — pini sonra zal panelindən qoyarsan. Pin qoyulana qədər zal müştəri xəritəsində görünməyəcək.",
+  "key": "Xəritə açılmadı, ona görə yeri indi seçmək olmur. Zalı indi qeydiyyata ala bilərsən — işarəni sonra zal panelindən qoyarsan. İşarə qoyulana qədər zal müştəri xəritəsində görünməyəcək.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/create-gym.tsx"
@@ -5283,7 +5410,7 @@
   "placeholders": []
  },
  {
-  "key": "Xəritədəki yer saxlanılmadı — zal panelindən «Profil → Zalın yeri» ilə pini yenidən qoy, əks halda zal müştəri xəritəsində görünməyəcək.",
+  "key": "Xəritədəki yer saxlanılmadı — zal panelindən «Profil → Zalın yeri» ilə işarəni yenidən qoy, əks halda zal müştəri xəritəsində görünməyəcək.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/create-gym.tsx"
@@ -5292,7 +5419,7 @@
   "placeholders": []
  },
  {
-  "key": "Xəritəyə toxunub pini zalın üstünə qoy — pini basıb sürüşdürərək dəqiqləşdirə bilərsən.",
+  "key": "Xəritəyə toxunub işarəni zalın üstünə qoy — işarəni basıb sürüşdürərək dəqiqləşdirə bilərsən.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/create-gym.tsx"
@@ -5301,7 +5428,7 @@
   "placeholders": []
  },
  {
-  "key": "Zal panelin açıqdır — amma zal HƏLƏ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, spam və saxta zalların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.",
+  "key": "Zal panelin açıqdır — amma zal HƏLƏ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, saxta və reklam xarakterli elanların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/create-gym.tsx"
@@ -5449,6 +5576,27 @@
   "placeholders": []
  },
  {
+  "key": "İşarə qoyuldu · {lat}; {lng}",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/create-gym.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "lat",
+   "lng"
+  ]
+ },
+ {
+  "key": "İşarə qoyulmadan zalı qeydiyyata almaq olmur — koordinatı olmayan zal müştəri xəritəsində görünmür.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/create-gym.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Şəkil silinmədi — yenidən cəhd et",
   "counted": false,
   "files": [
@@ -5498,7 +5646,8 @@
   "key": "Şəkli sil",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/create-gym.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx",
+   "src/app/gym/edit.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5535,16 +5684,6 @@
  },
  {
   "key": "Adın",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/edit.tsx",
-   "src/app/onboarding/profile.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bio",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/edit.tsx",
@@ -5921,6 +6060,15 @@
   "placeholders": []
  },
  {
+  "key": "Növbəti ay",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/history.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Silinir…",
   "counted": false,
   "files": [
@@ -5966,8 +6114,7 @@
   "key": "zalda",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/history.tsx",
-   "src/app/(tabs)/workout/index.tsx"
+   "src/app/(tabs)/profile/history.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5976,8 +6123,7 @@
   "key": "{h}s {m}d",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/history.tsx",
-   "src/app/(tabs)/workout/index.tsx"
+   "src/app/(tabs)/profile/history.tsx"
   ],
   "kind": "ui",
   "placeholders": [
@@ -6002,7 +6148,6 @@
   "counted": true,
   "files": [
    "src/app/(tabs)/profile/history.tsx",
-   "src/app/(tabs)/workout/index.tsx",
    "src/app/(tabs)/workout/summary.tsx"
   ],
   "kind": "ui",
@@ -6039,6 +6184,7 @@
   "counted": true,
   "files": [
    "src/app/(tabs)/profile/history.tsx",
+   "src/app/(tabs)/workout/exercise.tsx",
    "src/app/(tabs)/workout/session.tsx"
   ],
   "kind": "ui",
@@ -6050,7 +6196,8 @@
   "key": "{n} təkrar",
   "counted": true,
   "files": [
-   "src/app/(tabs)/profile/history.tsx"
+   "src/app/(tabs)/profile/history.tsx",
+   "src/app/(tabs)/workout/day.tsx"
   ],
   "kind": "ui",
   "placeholders": [
@@ -6084,13 +6231,23 @@
   "key": "{weight} kq × {reps}",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/history.tsx"
+   "src/app/(tabs)/profile/history.tsx",
+   "src/app/(tabs)/workout/day.tsx"
   ],
   "kind": "ui",
   "placeholders": [
    "reps",
    "weight"
   ]
+ },
+ {
+  "key": "Əvvəlki ay",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/history.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
  },
  {
   "key": "Check-in, həcm, şəxsi rekordlar",
@@ -6151,7 +6308,26 @@
   "placeholders": []
  },
  {
+  "key": "Parametrlər",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/index.tsx",
+   "src/app/(tabs)/profile/settings.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Paylaşdıqların",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Profili paylaş",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/index.tsx"
@@ -6318,15 +6494,6 @@
   ]
  },
  {
-  "key": "Şəxsi rekordlar",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Ayar saxlanılmadı — yenidən cəhd et",
   "counted": false,
   "files": [
@@ -6349,17 +6516,6 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/notifications.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bildirişlər",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/notifications.tsx",
-   "src/app/(tabs)/profile/settings.tsx",
-   "src/app/notifications.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -6410,7 +6566,7 @@
   "placeholders": []
  },
  {
-  "key": "Telefon icazə verib, amma cihazın ünvanı alınmadı — aşağıdakı ayarlar saxlanılır, lakin bu telefona push gəlməyəcək. Mesaj və məşq təklifini yalnız tətbiqi açanda görəcəksən.",
+  "key": "Telefon icazə verib, amma cihazın ünvanı alınmadı — aşağıdakı ayarlar saxlanılır, lakin bu telefona bildiriş gəlməyəcək. Mesaj və məşq təklifini yalnız tətbiqi açanda görəcəksən.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/notifications.tsx"
@@ -6465,24 +6621,6 @@
  },
  {
   "key": "Bu, bütün hesablar üçün eynidir və hazırda ayarlanmır. Mesajlar hələ yalnız bu cihazda saxlanılır.",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/privacy.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Data hazırlana bilmədi",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/privacy.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Datanı yüklə",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/privacy.tsx"
@@ -6547,6 +6685,24 @@
  },
  {
   "key": "Kim yaza bilər",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/privacy.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Məlumatlar hazırlana bilmədi",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/privacy.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Məlumatlarını yüklə",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/privacy.tsx"
@@ -6646,7 +6802,7 @@
   "placeholders": []
  },
  {
-  "key": "Sənin datan",
+  "key": "Sənin məlumatların",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/privacy.tsx"
@@ -6682,7 +6838,7 @@
   "placeholders": []
  },
  {
-  "key": "«Bu cihazdan sil» yalnız telefonundakı nüsxəni təmizləyir — hesabın serverdə qalır. Hesabı tamamilə silmək üçün aşağıdakı sonuncu sətri işlət. Silməzdən əvvəl datanı özünə göndərməyi məsləhət görürük.",
+  "key": "«Bu cihazdakı nüsxəni sil» yalnız telefonundakı nüsxəni təmizləyir — hesabın serverdə qalır. Hesabı tamamilə silmək üçün «Hesabı tamamilə sil» sətrini işlət. Silməzdən əvvəl məlumatlarını özünə göndərməyi məsləhət görürük.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/privacy.tsx"
@@ -6700,7 +6856,7 @@
   "placeholders": []
  },
  {
-  "key": "Feed-də videonun yanındakı 'Saxla' düyməsinə toxun — burada toplanacaq.",
+  "key": "Lentdə videonun yanındakı əlfəcin nişanına toxun — video burada toplanacaq.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/saved.tsx"
@@ -6709,7 +6865,7 @@
   "placeholders": []
  },
  {
-  "key": "Feed-ə keç",
+  "key": "Lentə keç",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/saved.tsx"
@@ -6827,7 +6983,7 @@
   "placeholders": []
  },
  {
-  "key": "Görünürlük və data",
+  "key": "Görünürlük və məlumatlar",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/settings.tsx"
@@ -7022,15 +7178,6 @@
   "placeholders": []
  },
  {
-  "key": "Parametrlər",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/settings.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Problemi komandaya bildir",
   "counted": false,
   "files": [
@@ -7040,7 +7187,7 @@
   "placeholders": []
  },
  {
-  "key": "Qeydiyyat addımları bu cihazda yenidən başlayacaq və cavablarını yenidən verə bilərsən. Serverdəki profilin silinmir — dəyişmədiyin sahələr olduğu kimi qalır. Məşq, çəki və check-in tarixçən də toxunulmur; onları silmək üçün Məxfilik → «Datanı bu cihazdan sil».",
+  "key": "Qeydiyyat addımları bu cihazda yenidən başlayacaq və cavablarını yenidən verə bilərsən. Serverdəki profilin silinmir — dəyişmədiyin sahələr olduğu kimi qalır. Məşq, çəki və check-in tarixçən də toxunulmur; onları silmək üçün Məxfilik → «Bu cihazdakı nüsxəni sil».",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/settings.tsx"
@@ -7477,11 +7624,29 @@
   "placeholders": []
  },
  {
+  "key": "Günü sil",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/create.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Hərəkət əlavə et",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/create.tsx",
    "src/app/(tabs)/workout/program/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Hərəkəti sil",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/create.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -7613,17 +7778,6 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/create.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Saxla",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/workout/create.tsx",
-   "src/app/gym/classes.tsx",
-   "src/app/gym/edit.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -7774,6 +7928,26 @@
   "placeholders": []
  },
  {
+  "key": "«{day}» silinsin?",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/create.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "day"
+  ]
+ },
+ {
+  "key": "İçindəki hərəkətlər də silinəcək.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/create.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Ən azı bir günə hərəkət əlavə et",
   "counted": false,
   "files": [
@@ -7830,15 +8004,14 @@
   "placeholders": []
  },
  {
-  "key": "Keçən dəfə: {weight}kg × {reps}",
-  "counted": false,
+  "key": "Keçən dəfə: {set}",
+  "counted": true,
   "files": [
    "src/app/(tabs)/workout/day.tsx"
   ],
   "kind": "ui",
   "placeholders": [
-   "reps",
-   "weight"
+   "set"
   ]
  },
  {
@@ -8075,6 +8248,15 @@
  },
  {
   "key": "Nəticə tapılmadı",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/exercises.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Proqrama əlavə et",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/exercises.tsx"
@@ -8320,6 +8502,15 @@
   "placeholders": []
  },
  {
+  "key": "məşq vaxtı",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "{name} sənə təyin etdi",
   "counted": false,
   "files": [
@@ -8328,6 +8519,20 @@
   "kind": "ui",
   "placeholders": [
    "name"
+  ]
+ },
+ {
+  "key": "{n} dəq",
+  "counted": true,
+  "files": [
+   "src/app/(tabs)/workout/index.tsx",
+   "src/app/(tabs)/workout/program/[id].tsx",
+   "src/components/ProgramCard.tsx",
+   "src/lib/format.ts"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
   ]
  },
  {
@@ -8352,6 +8557,17 @@
    "min",
    "n",
    "title"
+  ]
+ },
+ {
+  "key": "{n} saat",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
   ]
  },
  {
@@ -8405,6 +8621,16 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/library.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Yeni proqram yarat",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/library.tsx",
+   "src/app/trainer/programs.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -8464,7 +8690,7 @@
   "placeholders": []
  },
  {
-  "key": "Məsələn: Bolqar split skvat",
+  "key": "Məsələn: Bolqar skvatı",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/pick-exercises.tsx"
@@ -8740,19 +8966,6 @@
   "placeholders": []
  },
  {
-  "key": "{n} dəq",
-  "counted": true,
-  "files": [
-   "src/app/(tabs)/workout/program/[id].tsx",
-   "src/components/ProgramCard.tsx",
-   "src/lib/format.ts"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
- },
- {
   "key": "{n} həftə",
   "counted": true,
   "files": [
@@ -8911,17 +9124,6 @@
   "placeholders": []
  },
  {
-  "key": "Keç",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/workout/session.tsx",
-   "src/app/onboarding/trainers.tsx",
-   "src/components/onboarding/OnboardingScaffold.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Keçən dəfə: {prev}. {hint}",
   "counted": false,
   "files": [
@@ -9024,6 +9226,17 @@
   "placeholders": []
  },
  {
+  "key": "Set {n}",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/session.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
   "key": "Set əlavə et",
   "counted": false,
   "files": [
@@ -9120,6 +9333,15 @@
   "placeholders": []
  },
  {
+  "key": "Əvvəlki hərəkət",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/session.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Ağır",
   "counted": false,
   "files": [
@@ -9175,7 +9397,7 @@
   "placeholders": []
  },
  {
-  "key": "Qeyd olundu — bütün setlərdə hədəf təkrarı vurmusansa, növbəti dəfə +2.5 kq təklif olunacaq, yoxsa eyni çəki.",
+  "key": "Qeyd olundu — bütün setlərdə hədəf təkrarı vurmusansa, növbəti dəfə +2,5 kq təklif olunacaq, yoxsa eyni çəki.",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/summary.tsx"
@@ -9184,7 +9406,7 @@
   "placeholders": []
  },
  {
-  "key": "Qeyd olundu — növbəti dəfə eyni çəki təklif olunacaq. İki məşq ardıcıl «Ağır» keçsə, çəki 5% azaldılıb bərpa (deload) təklif olunacaq.",
+  "key": "Qeyd olundu — növbəti dəfə eyni çəki təklif olunacaq. İki məşq ardıcıl «Ağır» keçsə, bərpa üçün çəki 5% azaldılaraq təklif olunacaq.",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/summary.tsx"
@@ -9193,7 +9415,7 @@
   "placeholders": []
  },
  {
-  "key": "Qeyd olundu — növbəti dəfə çəki artırılmış təklif olunacaq: üst bədən +2.5 kq, ayaq +5 kq.",
+  "key": "Qeyd olundu — növbəti dəfə çəki artırılmış təklif olunacaq: üst bədən +2,5 kq, ayaq +5 kq.",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/summary.tsx"
@@ -9211,7 +9433,7 @@
   "placeholders": []
  },
  {
-  "key": "Seriya bugün başladı",
+  "key": "Seriya bu gün başladı",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/summary.tsx"
@@ -9333,7 +9555,7 @@
   "placeholders": []
  },
  {
-  "key": "Bağlantını yoxla. Link işləməyibsə, e-poçt ekranından yenisini göndərə bilərsən.",
+  "key": "Bağlantını yoxla. Keçid işləməyibsə, e-poçt ekranından yenisini göndərə bilərsən.",
   "counted": false,
   "files": [
    "src/app/auth-callback.tsx"
@@ -9379,7 +9601,7 @@
   "placeholders": []
  },
  {
-  "key": "Link işləmədi — köhnəlib və ya artıq istifadə olunub. Yenisini göndər.",
+  "key": "Keçid işləmədi — köhnəlib və ya artıq istifadə olunub. Yenisini göndər.",
   "counted": false,
   "files": [
    "src/app/auth-callback.tsx"
@@ -9535,6 +9757,24 @@
   "placeholders": []
  },
  {
+  "key": "Keçid göndər",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Keçid göndərilmədi — yenidən cəhd et",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Kod düz gəlmədi — yenidən yoxla",
   "counted": false,
   "files": [
@@ -9562,25 +9802,7 @@
   "placeholders": []
  },
  {
-  "key": "Link göndər",
-  "counted": false,
-  "files": [
-   "src/app/auth/sign-in.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Link göndərilmədi — yenidən cəhd et",
-  "counted": false,
-  "files": [
-   "src/app/auth/sign-in.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Məktubda yalnız link varsa, kod xanasını boş burax — linkə toxunmaq kifayətdir.",
+  "key": "Məktubda yalnız keçid varsa, kod xanasını boş burax — keçidə toxunmaq kifayətdir.",
   "counted": false,
   "files": [
    "src/app/auth/sign-in.tsx"
@@ -9630,7 +9852,7 @@
   "placeholders": []
  },
  {
-  "key": "Parolsuz — e-poçta kod göndər",
+  "key": "Parolsuz — e-poçta keçid göndər",
   "counted": false,
   "files": [
    "src/app/auth/sign-in.tsx"
@@ -9708,7 +9930,7 @@
   "placeholders": []
  },
  {
-  "key": "{email} ünvanına link göndərdik. Poçtunu aç və linkə toxun — tətbiq özü açılacaq.",
+  "key": "{email} ünvanına keçid göndərdik. Poçtunu aç və keçidə toxun — tətbiq özü açılacaq.",
   "counted": false,
   "files": [
    "src/app/auth/sign-in.tsx"
@@ -9719,7 +9941,7 @@
   ]
  },
  {
-  "key": "{email} ünvanına link göndərildi — poçtunu aç və linkə toxun",
+  "key": "{email} ünvanına keçid göndərildi — poçtunu aç və keçidə toxun",
   "counted": false,
   "files": [
    "src/app/auth/sign-in.tsx"
@@ -9881,6 +10103,15 @@
   "placeholders": []
  },
  {
+  "key": "Mesajı göndər",
+  "counted": false,
+  "files": [
+   "src/app/chat/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Sabaha keçirək",
   "counted": false,
   "files": [
@@ -9921,17 +10152,6 @@
   ]
  },
  {
-  "key": "{name} ilə match oldunuz. İlk mesajı yaz — yoldaşlıq zalda başlayır.",
-  "counted": false,
-  "files": [
-   "src/app/chat/[id].tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "name"
-  ]
- },
- {
   "key": "{name} ilə söhbət. Qeydlərini burada saxlaya bilərsən.",
   "counted": false,
   "files": [
@@ -9944,6 +10164,17 @@
  },
  {
   "key": "{name} ilə söhbət. İlk mesajı yaz.",
+  "counted": false,
+  "files": [
+   "src/app/chat/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "name"
+  ]
+ },
+ {
+  "key": "{name} ilə yoldaş oldunuz. İlk mesajı yaz — birgə məşq zalda başlayır.",
   "counted": false,
   "files": [
    "src/app/chat/[id].tsx"
@@ -9998,15 +10229,6 @@
    "src/app/chat/index.tsx",
    "src/app/chat/requests.tsx",
    "src/app/trainer/students.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Söhbətlər",
-  "counted": false,
-  "files": [
-   "src/app/chat/index.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -10805,6 +11027,15 @@
   "placeholders": []
  },
  {
+  "key": "Sətri sil",
+  "counted": false,
+  "files": [
+   "src/app/gym/classes.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Sətrə toxun — redaktə et. Uzun bas və ya «×» — sil.",
   "counted": false,
   "files": [
@@ -10895,25 +11126,7 @@
   "placeholders": []
  },
  {
-  "key": "Hələ pin qoyulmayıb — koordinatı olmayan zal müştəri xəritəsində görünmür.",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Pini zalın üstünə qoymaq üçün xəritəyə toxun — pini basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal Kəşfdə dərc olunanda müştəri xəritəsində bu nöqtədə görünəcək.",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Pini zalın üstünə qoymaq üçün xəritəyə toxun — pini basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal müştəri xəritəsində məhz bu nöqtədə görünür.",
+  "key": "Hələ işarə qoyulmayıb — koordinatı olmayan zal müştəri xəritəsində görünmür.",
   "counted": false,
   "files": [
    "src/app/gym/edit.tsx"
@@ -11084,7 +11297,7 @@
   "placeholders": []
  },
  {
-  "key": "{lat}, {lng} · «Saxla» ilə yadda saxlanılır",
+  "key": "{lat}; {lng} · «Saxla» ilə yadda saxlanılır",
   "counted": false,
   "files": [
    "src/app/gym/edit.tsx"
@@ -11106,6 +11319,24 @@
  },
  {
   "key": "«Üzvlər» bölməsini yuxarıdakı açarla bütövlükdə gizlədə bilərsən. Siyahıda görünüb-görünməməyi isə hər üzv özü Məxfilik ayarlarından seçir — zal bunu dəyişə bilmir.",
+  "counted": false,
+  "files": [
+   "src/app/gym/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "İşarəni zalın üstünə qoymaq üçün xəritəyə toxun — işarəni basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal Kəşfdə dərc olunanda müştəri xəritəsində bu nöqtədə görünəcək.",
+  "counted": false,
+  "files": [
+   "src/app/gym/edit.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "İşarəni zalın üstünə qoymaq üçün xəritəyə toxun — işarəni basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal müştəri xəritəsində məhz bu nöqtədə görünür.",
   "counted": false,
   "files": [
    "src/app/gym/edit.tsx"
@@ -11159,6 +11390,15 @@
   "placeholders": []
  },
  {
+  "key": "Bu gün hələ check-in yoxdur",
+  "counted": false,
+  "files": [
+   "src/app/gym/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Bu, «check-in yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.",
   "counted": false,
   "files": [
@@ -11169,15 +11409,6 @@
  },
  {
   "key": "Bu, «day-pass yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bugün hələ check-in yoxdur",
   "counted": false,
   "files": [
    "src/app/gym/index.tsx"
@@ -11332,7 +11563,7 @@
   "placeholders": []
  },
  {
-  "key": "Koordinat olmadan zal müştəri xəritəsində görünmür. «Yeri dəyiş» ilə pini zalın üstünə qoy.",
+  "key": "Koordinat olmadan zal müştəri xəritəsində görünmür. «Yeri dəyiş» ilə işarəni zalın üstünə qoy.",
   "counted": false,
   "files": [
    "src/app/gym/index.tsx"
@@ -11341,7 +11572,7 @@
   "placeholders": []
  },
  {
-  "key": "Koordinatlar bazadan gəlmədi — pin qoyulub-qoyulmadığını deyə bilmirik. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.",
+  "key": "Koordinatlar bazadan gəlmədi — işarə qoyulub-qoyulmadığını deyə bilmirik. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.",
   "counted": false,
   "files": [
    "src/app/gym/index.tsx"
@@ -11494,16 +11725,6 @@
   "placeholders": []
  },
  {
-  "key": "Zal kodu",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx",
-   "src/app/gym/qr.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Zal paneli · admin",
   "counted": false,
   "files": [
@@ -11594,7 +11815,7 @@
   "placeholders": []
  },
  {
-  "key": "bugün",
+  "key": "bu gün check-in yoxdur",
   "counted": false,
   "files": [
    "src/app/gym/index.tsx"
@@ -11603,16 +11824,7 @@
   "placeholders": []
  },
  {
-  "key": "bugün check-in yoxdur",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "bugün {n} check-in",
+  "key": "bu gün {n} check-in",
   "counted": true,
   "files": [
    "src/app/gym/index.tsx"
@@ -11831,7 +12043,7 @@
   "placeholders": []
  },
  {
-  "key": "bugün check-in edib",
+  "key": "bu gün check-in edib",
   "counted": false,
   "files": [
    "src/app/gym/members.tsx"
@@ -12536,7 +12748,7 @@
   "placeholders": []
  },
  {
-  "key": "Məsələn: Səhər məşqlərini sevirəm, powerlifting üzərində işləyirəm.",
+  "key": "Məsələn: Səhər məşqlərini sevirəm, pauerliftinq üzərində işləyirəm.",
   "counted": false,
   "files": [
    "src/app/onboarding/profile.tsx"
@@ -13322,15 +13534,6 @@
  },
  {
   "key": "Yaratdığın proqramlar. Hamısı pulsuzdur.",
-  "counted": false,
-  "files": [
-   "src/app/trainer/programs.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Yeni proqram yarat",
   "counted": false,
   "files": [
    "src/app/trainer/programs.tsx"
@@ -17874,6 +18077,18 @@
   "placeholders": []
  },
  {
+  "key": "Ardıcıl iki məşq ağır keçdi — {prev} kq-dan 5% aşağı: {kg} kq ilə bərpa həftəsi",
+  "counted": false,
+  "files": [
+   "src/store/db.ts"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "kg",
+   "prev"
+  ]
+ },
+ {
   "key": "Ardıcıl məşqçi",
   "counted": false,
   "files": [
@@ -18178,6 +18393,53 @@
   ],
   "kind": "data",
   "placeholders": []
+ },
+ {
+  "key": "Keçən dəfə {prev} kq asan keçdi — +{inc} kq artır",
+  "counted": false,
+  "files": [
+   "src/store/db.ts"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "inc",
+   "prev"
+  ]
+ },
+ {
+  "key": "Keçən dəfə {prev} kq ağır keçdi — eyni çəkidə təkrarla",
+  "counted": false,
+  "files": [
+   "src/store/db.ts"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "prev"
+  ]
+ },
+ {
+  "key": "Keçən dəfə {prev} kq × {reps} — bütün setlər hədəfi vurdu, +{inc} kq artır",
+  "counted": false,
+  "files": [
+   "src/store/db.ts"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "inc",
+   "prev",
+   "reps"
+  ]
+ },
+ {
+  "key": "Keçən dəfə {prev} kq — bu çəkidə hədəf təkrarları tamamla",
+  "counted": false,
+  "files": [
+   "src/store/db.ts"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "prev"
+  ]
  },
  {
   "key": "Maili ştanq press",

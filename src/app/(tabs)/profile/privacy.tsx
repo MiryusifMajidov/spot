@@ -20,8 +20,17 @@ import { palette, spacing } from '@/theme';
  *  wipe below really empties everything this app stores on the device. */
 const LOOSE_KEYS = ['spot-progress-photos'];
 
-function Toggle({ value, onValueChange }: { value: boolean; onValueChange: (v: boolean) => void }) {
-  return <Switch value={value} onValueChange={onValueChange} trackColor={{ true: palette.voltDeep, false: palette.separator }} />;
+/** `label` is what a screen reader says: the switch sits apart from its row's
+ *  title, so without it VoiceOver/TalkBack announce only «switch, on». */
+function Toggle({ value, onValueChange, label }: { value: boolean; onValueChange: (v: boolean) => void; label: string }) {
+  return (
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      accessibilityLabel={label}
+      trackColor={{ true: palette.voltDeep, false: palette.separator }}
+    />
+  );
 }
 
 export default function PrivacyDetails() {
@@ -62,7 +71,7 @@ export default function PrivacyDetails() {
     try {
       await Share.share({ message: JSON.stringify(payload, null, 2) });
     } catch {
-      toast(t('Data hazırlana bilmədi'), 'error');
+      toast(t('Məlumatlar hazırlana bilmədi'), 'error');
     }
   };
 
@@ -208,7 +217,17 @@ export default function PrivacyDetails() {
   return (
     <Screen>
       <NavBar title={t('Məxfilik')} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      {/* Pushed inside the Profil tab: on iOS 26 the floating Liquid Glass tab bar
+          covers the bottom of this list and reserves no space, and the last row
+          here is the destructive «Hesabı tamamilə sil» — it must be fully visible
+          and readable before anyone taps it. NavBar is Screen's first child, so
+          react-native-screens does not adjust this scroll view on its own;
+          «automatic» adds the bar's bottom safe area. iOS-only prop; Android's
+          bar takes its own space. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.content}>
         {/* This used to be a «Yalnız match olanlar» switch. It wrote `profiles.visibility`
             and NOTHING read it back — neither position changed who could message you — and
             the footer advertised a one-off 'sual' channel that does not exist in the app.
@@ -227,16 +246,29 @@ export default function PrivacyDetails() {
         </ListGroup>
 
         <ListGroup header={t('Görünürlük')} footer={t("Yalnız check-in etdiyin müddətdə 'indi zalda' siyahısında görünürsən — daimi lokasiya izləmə yoxdur. Söndürsən, zalın siyahısında heç görünmürsən.")}>
-          <ListRow title={t('Zalda göründüyümü göstər')} chevron={false} right={<Toggle value={showInGymList} onValueChange={(v) => apply({ showInGymList: v })} />} />
+          <ListRow
+            title={t('Zalda göründüyümü göstər')}
+            chevron={false}
+            right={
+              <Toggle
+                value={showInGymList}
+                onValueChange={(v) => apply({ showInGymList: v })}
+                label={t('Zalda göründüyümü göstər')}
+              />
+            }
+          />
         </ListGroup>
 
+        {/* The footer names both rows by their real titles. It used to quote
+            «Bu cihazdan sil» (no row is called that) and point to the «last row
+            below» — but a footer is drawn UNDER the group, so that row is above it. */}
         <ListGroup
-          header={t('Sənin datan')}
-          footer={t('«Bu cihazdan sil» yalnız telefonundakı nüsxəni təmizləyir — hesabın serverdə qalır. Hesabı tamamilə silmək üçün aşağıdakı sonuncu sətri işlət. Silməzdən əvvəl datanı özünə göndərməyi məsləhət görürük.')}>
+          header={t('Sənin məlumatların')}
+          footer={t('«Bu cihazdakı nüsxəni sil» yalnız telefonundakı nüsxəni təmizləyir — hesabın serverdə qalır. Hesabı tamamilə silmək üçün «Hesabı tamamilə sil» sətrini işlət. Silməzdən əvvəl məlumatlarını özünə göndərməyi məsləhət görürük.')}>
           <ListRow
             icon="arrowU"
             iconBg={palette.blue}
-            title={t('Datanı yüklə')}
+            title={t('Məlumatlarını yüklə')}
             subtitle={t('Profil, məşq, check-in və qeydlərin JSON kimi')}
             onPress={exportData}
           />

@@ -204,6 +204,7 @@ function StudentDetailBody() {
               // The label promises the list; router.back() here lands on the
               // Panel (first tab), so go to the list by name.
               onPress={() => router.navigate('/trainer/students')}
+              hitSlop={PRIMARY_SLOP}
               style={[styles.primaryBtn, { marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 }]}>
               <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Şagirdlərə qayıt')}</AppText>
             </PressableScale>
@@ -222,9 +223,9 @@ function StudentDetailBody() {
             activeScale={0.9}
             accessibilityRole="button"
             accessibilityLabel={t('{name} ilə söhbət', { name })}
-            hitSlop={8}
-            onPress={() => router.push({ pathname: '/chat/[id]', params: { id: student.profileId } })}>
-            <Icon name="msg" size={21} color={palette.inkText} />
+            onPress={() => router.push({ pathname: '/chat/[id]', params: { id: student.profileId } })}
+            style={styles.navBtn}>
+            <Icon name="msg" size={22} color={palette.inkText} />
           </PressableScale>
         }
       />
@@ -320,6 +321,7 @@ function StudentDetailBody() {
               accessibilityRole="button"
               accessibilityLabel={t('Proqram yarat')}
               onPress={() => router.push('/(tabs)/workout/create')}
+              hitSlop={PRIMARY_SLOP}
               style={[styles.primaryBtn, { marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 }]}>
               <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Proqram yarat')}</AppText>
             </PressableScale>
@@ -404,7 +406,18 @@ function StudentDetailBody() {
   );
 }
 
+/* styles.primaryBtn is 38 pt tall, like the buttons on the Şagirdlər list; the
+   slop makes the target 44 without changing how it looks. Both buttons sit in a
+   16 pt padded card, so on Android the slop stays inside the parent. */
+const PRIMARY_SLOP = { top: 3, bottom: 3 };
+
 const styles = StyleSheet.create({
+  /* The chat glyph was 21 px with hitSlop 8 — a 37 pt target, and on Android a
+     slop is clipped to NavBar's right slot, which is only as tall as its content.
+     A real 44x44 box instead; marginRight -11 is the empty half beside the 22 px
+     glyph, so the glyph stays on the bar's gutter. Same box as the partner /
+     trainer / chat pages. */
+  navBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -11 },
   card: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 12 },
   tag: { backgroundColor: palette.grouped, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   quote: { backgroundColor: palette.grouped, borderRadius: 12, padding: 12, marginTop: 13 },

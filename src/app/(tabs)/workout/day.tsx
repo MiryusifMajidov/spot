@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -19,6 +20,7 @@ import {
   useDb,
 } from '@/store/db';
 import { estimateDuration, repsText } from '@/lib/duration';
+import { weight as formatWeight } from '@/lib/format';
 import { useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
 
@@ -92,13 +94,26 @@ export default function DayDetail() {
   const start = () =>
     router.replace({ pathname: '/(tabs)/workout/session', params: { programId: params.programId ?? '', dayIndex: String(dayIndex), title } });
 
-  /* No 'bottom' edge: the tab scene is already padded by the floating bar's footprint
-     (the native tab bar reserves it), which folds the home indicator in. The
-     «Məşqə başla» footer sits at the bottom of that padded area. */
+  /* The bottom differs per platform, so it is not a Screen edge. Android's Material
+     tab bar reserves its own space (the tab scene already stops above it), and
+     `insets.bottom` there is the system navigation bar the tab bar covers — adding
+     it would lift the footer twice. iOS 26's Liquid Glass bar FLOATS and reserves
+     nothing: content runs underneath it, and it hid «Məşqə başla». Inside a tab
+     screen UIKit's safe area includes that bar, so `insets.bottom` on iOS is the
+     bar's footprint plus the home indicator — the footer pads by exactly that. */
+  const insets = useSafeAreaInsets();
+  const bottomClearance = Platform.OS === 'ios' ? insets.bottom : 0;
+  const hasFooter = exercises.length > 0;
+
   return (
     <Screen edges={['top']}>
       <NavBar />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      {/* With the footer below it in the layout flow, the list already ends where the
+          footer begins. Without one (an empty day) the content must still clear the
+          floating bar on iOS. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.content, { paddingBottom: (hasFooter ? 0 : bottomClearance) + spacing.lg }]}>
         <AppText variant="title">{t(title)}</AppText>
         <AppText variant="footnote" color={palette.caption} style={{ marginTop: 4 }}>
           {exercises.length
@@ -161,8 +176,8 @@ export default function DayDetail() {
         )}
       </ScrollView>
 
-      {exercises.length ? (
-        <View style={styles.footer}>
+      {hasFooter ? (
+        <View style={[styles.footer, { paddingBottom: bottomClearance + spacing.sm }]}>
           <Button title={t('Məşqə başla')} icon="play" full onPress={start} />
         </View>
       ) : null}
@@ -186,11 +201,21 @@ function ExerciseRow({ ex, last, onPress }: { ex: LibExercise; last: { weight: n
               «3 set × 45 san · » with a dangling separator. */}
           {[t('{sets} set × {reps}', { sets: ex.defaultSets, reps: repsText(ex.reps, t), count: ex.defaultSets }).trim(), t(ex.muscle)].filter(Boolean).join(' · ')}
         </AppText>
-        {last ? (
+        {/* `lastLoggedSet` falls back to the first set when none was ticked done, and
+            that set can be empty — «Keçən dəfə: 0 təkrar» says nothing, so no row. */}
+        {last && (last.weight > 0 || last.reps > 0) ? (
           <View style={styles.lastRow}>
             <Icon name="clock" size={12} color={palette.caption} />
             <AppText variant="caption" color={palette.caption}>
-              {t('Keçən dəfə: {weight}kg × {reps}', { weight: last.weight, reps: last.reps })}
+              {/* The set is written the way the history screen writes it: «22,5 kq × 8»
+                  (the language's decimal mark, the app's own unit), and a bodyweight
+                  move shows its reps alone instead of «0 kq × 15». */}
+              {t('Keçən dəfə: {set}', {
+                set:
+                  last.weight > 0
+                    ? t('{weight} kq × {reps}', { weight: formatWeight(last.weight), reps: last.reps })
+                    : t('{n} təkrar', { n: last.reps, count: last.reps }),
+              })}
             </AppText>
           </View>
         ) : null}
@@ -201,10 +226,11 @@ function ExerciseRow({ ex, last, onPress }: { ex: LibExercise; last: { weight: n
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: spacing.screen, paddingBottom: 24 },
+  content: { paddingHorizontal: spacing.screen },
   row: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: palette.white, borderRadius: 14, padding: 12, marginBottom: 10 },
   thumb: { width: 56, height: 56, borderRadius: 12, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
   lastRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
   empty: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 16, padding: 22, marginTop: 20 },
-  footer: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
+  // paddingBottom is set inline: it carries the iOS floating-bar clearance.
+  footer: { paddingHorizontal: spacing.screen, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
 });

@@ -8,7 +8,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { StatusBarScrim } from '@/components/ui/StatusBarScrim';
 import { EmptyNote, GymGate, getGymRoster, useMyGym, type RosterMember } from '@/lib/gymOwner';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { palette, spacing } from '@/theme';
 
 /*
@@ -23,8 +23,8 @@ import { palette, spacing } from '@/theme';
 /** «SADİQ» = at least this many check-ins here in the last 30 days. Counted. */
 const LOYAL_CHECKINS = 12;
 
-/* Azerbaijan is UTC+4 all year, and «bugün»/«dünən» are the gym's calendar days.
-   A plain 24-hour division called last night's check-in «bugün» at nine the next
+/* Azerbaijan is UTC+4 all year, and «bu gün»/«dünən» are the gym's calendar days.
+   A plain 24-hour division called last night's check-in «bu gün» at nine the next
    morning. Same anchor as the occupancy chart in gymOwner.tsx. */
 const BAKU_OFFSET_MS = 4 * 3_600_000;
 const bakuDay = (ms: number) => Math.floor((ms + BAKU_OFFSET_MS) / 86_400_000);
@@ -33,6 +33,9 @@ const daysAgo = (iso: string) => Math.max(0, bakuDay(Date.now()) - bakuDay(new D
 
 export default function GymMembers() {
   const t = useT();
+  // Through the hook, not a bare `decimal()`: the language decides «2,4» vs «2.4»,
+  // and only `fmt`'s identity tells the compiler to recompute when it changes.
+  const fmt = useFormat();
   const insets = useSafeAreaInsets();
   const state = useMyGym();
   const gym = state.gym;
@@ -69,7 +72,8 @@ export default function GymMembers() {
     const visits = members.reduce((s, m) => s + m.checkIns30d, 0);
     const active = members.filter((m) => m.checkIns30d > 0).length;
     return {
-      avg: (visits / total).toFixed(1),
+      // A number here; formatted at render with the language's decimal mark.
+      avg: visits / total,
       activeShare: `${Math.round((active / total) * 100)}%`,
       enough: total >= 5,
     };
@@ -133,7 +137,7 @@ export default function GymMembers() {
               </AppText>
               {stats && stats.enough ? (
                 <View style={{ flexDirection: 'row', gap: 11 }}>
-                  <Stat value={stats.avg} label={t('üzv başına check-in')} />
+                  <Stat value={fmt.decimal(stats.avg, 1)} label={t('üzv başına check-in')} />
                   <View style={styles.vdiv} />
                   <Stat value={stats.activeShare} label={t('aktiv üzv payı')} />
                 </View>
@@ -167,7 +171,7 @@ export default function GymMembers() {
                            not «never checked in». */
                         t('son 30 gündə check-in yoxdur')
                       : since === 0
-                        ? t('bugün check-in edib')
+                        ? t('bu gün check-in edib')
                         : since === 1
                           ? t('dünən check-in edib')
                           : t('son check-in: {n} gün əvvəl', { n: since, count: since });

@@ -1,6 +1,7 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -10,6 +11,7 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { useAuthGate } from '@/lib/authGate';
+import { decimal } from '@/lib/format';
 import { useTrainer, useTrainerPhase } from '@/lib/hooks';
 import { showModerationSheet } from '@/lib/moderation';
 import { getMyRequestTo, type TrainerRequestRow } from '@/lib/roles';
@@ -42,6 +44,14 @@ export default function TrainerDetail() {
   const gate = useAuthGate();
   const trainer = useTrainer(id);
   const phase = useTrainerPhase(id);
+  /* The action row below is pinned to the bottom of a TAB screen. On Android the
+     Material bar reserves its own space (the tab scene is already padded by the
+     navigation-bar inset, so adding it here would count it twice). On iOS 26 the
+     Liquid Glass bar FLOATS over the content — the two buttons sat behind the glass.
+     Inside a tab screen UIKit's safe area already includes that bar, so the row pads
+     by the inset instead of guessing the bar's height. */
+  const insets = useSafeAreaInsets();
+  const footerBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + spacing.sm;
   const [request, setRequest] = useState<TrainerRequestRow | null>(null);
   /* A null `request` used to mean two things: «you have never written to this
      coach» and «we could not find out». Only the first is a fact about the
@@ -103,7 +113,12 @@ export default function TrainerDetail() {
     <Screen>
       <NavBar
         right={
-          <PressableScale activeScale={0.9} onPress={() => showModerationSheet(trainer.name, { type: 'trainer', id: trainer.id })}>
+          <PressableScale
+            activeScale={0.9}
+            onPress={() => showModerationSheet(trainer.name, { type: 'trainer', id: trainer.id })}
+            accessibilityRole="button"
+            accessibilityLabel={t('Digər seçimlər')}
+            style={styles.moreBtn}>
             <Icon name="more" size={22} color={palette.inkText} />
           </PressableScale>
         }
@@ -140,7 +155,7 @@ export default function TrainerDetail() {
           </View>
         ) : (
           <View style={styles.stats}>
-            <Stat value={`${trainer.rating}`} label={t('reytinq')} />
+            <Stat value={decimal(trainer.rating, 1)} label={t('reytinq')} />
             {trainer.responseTime ? (
               <>
                 <View style={styles.divider} />
@@ -197,7 +212,7 @@ export default function TrainerDetail() {
         </AppText>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: footerBottom }]}>
         {/* A trainer who left the price empty has 0 in the column — that is an
             absent value, not a free session. */}
         <AppText variant="caption" color={palette.caption} style={{ marginBottom: 8 }}>
@@ -240,6 +255,11 @@ const styles = StyleSheet.create({
   sectionLabel: { marginTop: 24, marginBottom: 10 },
   certRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
-  footer: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
+  footer: { paddingHorizontal: spacing.screen, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
   footerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  /* A 44 pt hit area around the 22 pt glyph. The negative margin gives back the 11 pt
+     of padding on the edge side, so the glyph stays where it was, aligned with the
+     screen gutter — only the touch area grew. (Not hitSlop: on Android a hit slop is
+     clipped to the parent, and NavBar's right slot is only as tall as the glyph.) */
+  moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -11 },
 });

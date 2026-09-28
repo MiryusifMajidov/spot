@@ -181,16 +181,36 @@ export default function Discover() {
             /* The only way in. A guest has no Profil tab, so without this button
                there is no visible door back to an account anywhere in the app —
                only the prompts that appear after tapping something. */
-            <PressableScale activeScale={0.96} onPress={() => router.push('/onboarding/welcome')} style={styles.signIn}>
-              <AppText variant="subhead" style={{ color: palette.inkText, fontWeight: '700' }}>
-                {t('Daxil ol')}
-              </AppText>
+            <PressableScale
+              activeScale={0.96}
+              onPress={() => router.push('/onboarding/welcome')}
+              style={styles.signInHit}
+              accessibilityRole="button">
+              <View style={styles.signIn}>
+                <AppText variant="subhead" style={{ color: palette.inkText, fontWeight: '700' }}>
+                  {t('Daxil ol')}
+                </AppText>
+              </View>
             </PressableScale>
           ) : (
             <>
-              <HeaderIcon name="bell" badge={notifUnread ?? undefined} onPress={() => router.push('/notifications')} />
-              <HeaderIcon name="msg" badge={unread > 0 ? unread : undefined} onPress={() => router.push('/chat')} />
-              <HeaderIcon name="pin" onPress={() => router.push('/(tabs)/discover/map')} />
+              {/* The label replaces what a screen reader would read inside the
+                  button, so it has to carry the badge's number too. A comma, not
+                  the visible «·»: it is a spoken pause, and some screen readers
+                  read the dot out. */}
+              <HeaderIcon
+                name="bell"
+                badge={notifUnread ?? undefined}
+                label={notifUnread ? t('Bildirişlər, {n} yeni', { n: notifUnread }) : t('Bildirişlər')}
+                onPress={() => router.push('/notifications')}
+              />
+              <HeaderIcon
+                name="msg"
+                badge={unread > 0 ? unread : undefined}
+                label={unread > 0 ? t('Söhbətlər, {n} oxunmamış', { n: unread }) : t('Söhbətlər')}
+                onPress={() => router.push('/chat')}
+              />
+              <HeaderIcon name="pin" label={t('Xəritə')} onPress={() => router.push('/(tabs)/discover/map')} />
             </>
           )
         }
@@ -207,11 +227,19 @@ export default function Discover() {
             style={styles.searchInput}
             returnKeyType="search"
             autoCorrect={false}
-            clearButtonMode="while-editing"
           />
+          {/* The one clear button, on both platforms. iOS's own
+              clearButtonMode="while-editing" used to draw a second ⓧ right next
+              to this one while typing. */}
           {query.length > 0 ? (
-            <PressableScale haptic={false} activeScale={0.9} onPress={() => setQuery('')}>
-              <Icon name="x" size={15} color={palette.caption} />
+            <PressableScale
+              haptic={false}
+              activeScale={0.9}
+              onPress={() => setQuery('')}
+              style={styles.clearBtn}
+              accessibilityRole="button"
+              accessibilityLabel={t('Axtarışı təmizlə')}>
+              <Icon name="x" size={17} color={palette.caption} />
             </PressableScale>
           ) : null}
         </View>
@@ -300,7 +328,18 @@ export default function Discover() {
         ) : null}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      {/* iOS 26: the Liquid Glass tab bar floats over this list, and at RN's
+          default («never») the last gym card ended under the glass. «automatic»
+          lets UIKit add the tab bar's safe area at the bottom. react-native-screens
+          only switches the scroll view it finds down the FIRST-child chain, and
+          this one sits after the header and the controls, so it has to say it
+          itself. Nothing is added at the top: the list starts below the header, clear
+          of the status bar. iOS-only prop; Android's bar reserves its own space. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled">
         {segment === 0 &&
           (visibleGyms.length === 0 ? (
             <EmptyBlock
@@ -532,6 +571,13 @@ function EmptyBlock({
 }
 
 const styles = StyleSheet.create({
+  /* A 44 pt tap target around the 34 pt pill. LargeHeader's action row pulls its
+     content 9.5 pt past the gutter and 3.5 pt below the title's bottom so a
+     HeaderIcon's GLYPH lands where it used to; a pill has no empty half to give.
+     marginRight hands the 9.5 back, so the pill's edge stays on the gutter like the
+     title's, and paddingBottom 8.5 (3.5 + the row's old 5) keeps the pill's bottom
+     5 pt above the title's, where it sat before — centred, it dropped 3.5 pt. */
+  signInHit: { height: 44, justifyContent: 'flex-end', paddingBottom: 8.5, marginRight: 9.5 },
   signIn: {
     height: 34,
     paddingHorizontal: 14,
@@ -543,6 +589,13 @@ const styles = StyleSheet.create({
   controls: { paddingHorizontal: spacing.screen, paddingBottom: 10 },
   search: { backgroundColor: palette.fill, borderRadius: 11, height: 38, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 10 },
   searchInput: { flex: 1, fontSize: 16, color: palette.inkText, paddingVertical: 0 },
+  /* A real 44 x 44 hit area — it was the bare 15 px glyph. The field is 38 pt tall,
+     so the transparent box overhangs it by 3 pt above and below; nothing visible
+     moves. A box and not hitSlop: a slop past the field's edge is not reliably hit.
+     The negative margin gives back the field's 10 pt right padding and paddingRight
+     puts it back inside the box, so the glyph keeps its place (mirroring the search
+     glyph on the left) and only the touch area grows. Same as the Proqramlar search. */
+  clearBtn: { width: 44, height: 44, marginRight: -10, paddingRight: 10, alignItems: 'flex-end', justifyContent: 'center' },
   chips: { paddingHorizontal: spacing.screen, gap: 7 },
   content: { paddingHorizontal: spacing.screen, paddingTop: 14, paddingBottom: 40 },
   liveRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 },

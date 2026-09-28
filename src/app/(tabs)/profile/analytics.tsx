@@ -5,13 +5,16 @@ import { AppText } from '@/components/ui/AppText';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { computeMuscleVolume, estimate1RM, useDb, useStats, useWeekStats } from '@/store/db';
 import { palette, spacing } from '@/theme';
 
 export default function Analytics() {
   const t = useT();
+  // Every fractional number here goes through fmt.decimal: «2,4 t» in Azerbaijani
+  // and Russian, «2.4 t» in English. toFixed() printed the English point for all.
+  const fmt = useFormat();
   const workouts = useDb((s) => s.workouts);
   const stats = useStats();
   const week = useWeekStats();
@@ -28,10 +31,10 @@ export default function Analytics() {
   const nonZero = rawMuscles.filter((m) => m.kg > 0);
   const minMuscle = nonZero.length ? nonZero.reduce((a, b) => (a.kg < b.kg ? a : b)) : null;
   const topMuscle = nonZero.length ? nonZero.reduce((a, b) => (a.kg > b.kg ? a : b)) : null;
-  const imbalance = minMuscle && topMuscle && topMuscle.kg > minMuscle.kg * 2.5 ? { low: minMuscle.name, ratio: (topMuscle.kg / minMuscle.kg).toFixed(1) } : null;
+  const imbalance = minMuscle && topMuscle && topMuscle.kg > minMuscle.kg * 2.5 ? { low: minMuscle.name, ratio: fmt.decimal(topMuscle.kg / minMuscle.kg) } : null;
   const muscles = rawMuscles.map((m) => ({
     name: m.name,
-    vol: t('{n} t', { n: (m.kg / 1000).toFixed(1) }),
+    vol: t('{n} t', { n: fmt.decimal(m.kg / 1000) }),
     pct: Math.round((m.kg / maxVol) * 100),
     warn: imbalance ? m.name === imbalance.low : false,
   }));
@@ -46,17 +49,17 @@ export default function Analytics() {
       t('SPOT · məşq hesabatı'),
       t('Ümumi: {n} məşq · {vol} t həcm · {days} gün seriya', {
         n: stats.count,
-        vol: (stats.volumeKg / 1000).toFixed(1),
+        vol: fmt.decimal(stats.volumeKg / 1000),
         days: stats.streakDays,
         count: stats.count,
       }),
       target > 0
         ? t('Bu həftə: {n} məşq / {target} planlanmış', { n: week.count, target, count: week.count })
         : t('Bu həftə: {n} məşq', { n: week.count, count: week.count }),
-      bench1rm > 0 ? t('Bench 1RM proqnozu: {n} kq', { n: bench1rm }) : null,
+      bench1rm > 0 ? t('Sinə pressi · 1RM proqnozu: {n} kq', { n: bench1rm }) : null,
       nonZero.length > 0
         ? t('Əzələ həcmi: {list}', {
-            list: nonZero.map((m) => t('{muscle} {n} t', { muscle: t(m.name), n: (m.kg / 1000).toFixed(1) })).join(' · '),
+            list: nonZero.map((m) => t('{muscle} {n} t', { muscle: t(m.name), n: fmt.decimal(m.kg / 1000) })).join(' · '),
           })
         : null,
       imbalance ? t('Disbalans: {muscle} ən yüksək qrupdan {ratio} dəfə azdır.', { muscle: t(imbalance.low), ratio: imbalance.ratio }) : null,
@@ -74,7 +77,19 @@ export default function Analytics() {
           kilidli funksiya yoxdur»; both could not be true. Nothing in the app is
           gated by any plan, so the badge was also a status nobody obtained. */}
       <NavBar title={t('Analitika')} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
+      {/* This screen is pushed inside the Profil tab, so iOS 26's floating Liquid
+          Glass tab bar stays over it and reserves no space. At RN's default
+          («never») the last card, «Hesabatı paylaş», ended under the glass — 40 pt
+          of padding cannot scroll it out. react-native-screens only switches the
+          scroll view it finds down the first-child chain, and here the first child
+          is NavBar, so it is said explicitly. «automatic» adds the tab bar's safe
+          area at the bottom; the top is already padded by Screen and the scroll
+          view starts below NavBar, so nothing is added there. iOS-only prop;
+          Android's bar reserves its own space. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 14 }}>
             {t('ƏZƏLƏ QRUPU ÜZRƏ HƏCM · 4 HƏFTƏ')}
@@ -116,7 +131,7 @@ export default function Analytics() {
           ) : (
             <View style={[styles.warn, { backgroundColor: palette.grouped }]}>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary }}>
-                {t('Balans qiymətləndirmək üçün hələ az datadır — ən azı 3 fərqli əzələ qrupuna məşq qeyd et.')}
+                {t('Balansı qiymətləndirmək üçün hələ məlumat azdır — ən azı 3 fərqli əzələ qrupuna məşq qeyd et.')}
               </AppText>
             </View>
           )}
@@ -145,12 +160,16 @@ export default function Analytics() {
                 <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.tertiary }}>{t('Epley düsturu ilə')}</AppText>
               </View>
               <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 8, lineHeight: 19 }}>
-                {t('Qeyd etdiyin ən ağır bench setinə əsaslanır. Daha çox məşq qeyd etdikcə dəqiqləşir.')}
+                {t('Qeyd etdiyin ən ağır sinə pressi setinə əsaslanır. Daha çox məşq qeyd etdikcə dəqiqləşir.')}
               </AppText>
             </>
           ) : (
             <AppText variant="body" color={palette.textSecondary} style={{ lineHeight: 21 }}>
-              {t('Bench press qeyd et — 1RM proqnozun burada görünəcək.')}
+              {/* «Ştanqla», not just «sinə pressi»: bench1rm matches exercise names
+                  containing «bench» — the library's «Ştanqla bench press». «Dumbbell
+                  sinə press» is also a chest press and does not match, so a person
+                  told only «sinə pressi» could log that and still see this empty. */}
+              {t('Ştanqla sinə pressi qeyd et — 1RM proqnozun burada görünəcək.')}
             </AppText>
           )}
         </View>
@@ -160,19 +179,19 @@ export default function Analytics() {
             title={t('ARDICILLIQ')}
             value={consistency == null ? '—' : `${consistency}%`}
             sub={target > 0 ? t('həftədə {n} gün plan', { n: target, count: target }) : t('plan seçilməyib')}
-            subColor={consistency != null && consistency >= 75 ? '#5B7F00' : palette.tertiary}
+            subColor={consistency != null && consistency >= 75 ? palette.voltDeep : palette.tertiary}
           />
-          <MetricCard title={t('SERIYA')} value={`${stats.streakDays}`} sub={t('gün', { count: stats.streakDays })} subColor={palette.tertiary} />
+          <MetricCard title={t('SERİYA')} value={`${stats.streakDays}`} sub={t('gün', { count: stats.streakDays })} subColor={palette.tertiary} />
           <MetricCard
             title={t('ÜMUMİ HƏCM')}
-            value={t('{n}t', { n: (stats.volumeKg / 1000).toFixed(1) })}
+            value={t('{n}t', { n: fmt.decimal(stats.volumeKg / 1000) })}
             sub={t('{n} məşq', { n: stats.count, count: stats.count })}
             subColor={palette.tertiary}
           />
         </View>
 
         {hasData ? (
-          <PressableScale activeScale={0.98} onPress={shareReport} style={styles.sendCard}>
+          <PressableScale activeScale={0.98} onPress={shareReport} style={styles.sendCard} accessibilityRole="button">
             <View style={styles.sendIcon}>
               <Icon name="share" size={20} color={palette.volt} />
             </View>
@@ -202,7 +221,7 @@ function MetricCard({ title, value, sub, subColor }: { title: string; value: str
 const styles = StyleSheet.create({
   card: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 12 },
   muscleHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  barTrack: { height: 8, borderRadius: 4, backgroundColor: '#EFEFF2', overflow: 'hidden' },
+  barTrack: { height: 8, borderRadius: 4, backgroundColor: palette.element2, overflow: 'hidden' },
   barFill: { height: '100%' },
   warn: { backgroundColor: 'rgba(255,107,53,0.12)', borderRadius: 12, padding: 12, marginTop: 14 },
   trendChart: { height: 82, position: 'relative', marginTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(60,60,67,0.1)' },

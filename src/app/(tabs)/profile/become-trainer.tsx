@@ -626,7 +626,7 @@ export default function BecomeTrainer() {
 
         <Field label={t('İxtisas *')} value={specialty} onChangeText={setSpecialty} placeholder={t('Məs: Güc və hipertrofiya, Funksional…')} />
         <Field label={t('Sessiya qiyməti (₼, məlumat üçün)')} value={price} onChangeText={setPrice} placeholder={t('Məs: 30')} keyboardType="numeric" />
-        <Field label={t('Haqqında')} value={bio} onChangeText={setBio} placeholder={t('Təcrübən, yanaşman, kimlərlə işləyirsən…')} multiline />
+        <Field label={t('Haqqımda')} value={bio} onChangeText={setBio} placeholder={t('Təcrübən, yanaşman, kimlərlə işləyirsən…')} multiline />
 
         {alreadyTrainer ? (
           <PressableScale

@@ -19,7 +19,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Partner } from '@/data/types';
 import { useAuthGate } from '@/lib/authGate';
 import { usePartnerDeck, usePartnersPhase } from '@/lib/hooks';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { gymById, seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { applyPartnerFilter, partnerFilterCount, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
@@ -240,7 +240,15 @@ function Cards() {
       <NavBar
         title={t('Kartlar')}
         right={
-          <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/discover/partner-filter')}>
+          /* The bare 22 px glyph used to be the whole tap area. It now sits in a
+             44x44 box; the -11 margin is the box's empty half, so the glyph stays
+             on the bar's right gutter where it was. */
+          <PressableScale
+            activeScale={0.9}
+            onPress={() => router.push('/(tabs)/discover/partner-filter')}
+            accessibilityRole="button"
+            accessibilityLabel={t('Yoldaş filtri')}
+            style={styles.navBtn}>
             <Icon name="sliders" size={22} color={palette.inkText} />
           </PressableScale>
         }
@@ -340,13 +348,29 @@ function Cards() {
       {current ? (
         <>
           <View style={styles.controls}>
-            <PressableScale activeScale={0.9} onPress={flingSkip} style={[styles.ctrl, styles.ctrlSm]}>
+            <PressableScale
+              activeScale={0.9}
+              onPress={flingSkip}
+              accessibilityRole="button"
+              accessibilityLabel={t('Keç')}
+              style={[styles.ctrl, styles.ctrlSm]}>
               <Icon name="x" size={26} color={palette.textSecondary} />
             </PressableScale>
-            <PressableScale activeScale={0.9} onPress={flingPropose} style={[styles.ctrl, styles.ctrlLg]}>
+            <PressableScale
+              activeScale={0.9}
+              onPress={flingPropose}
+              accessibilityRole="button"
+              accessibilityLabel={t('Məşq təklif et')}
+              style={[styles.ctrl, styles.ctrlLg]}>
               <Icon name="dumbbell" size={32} color={palette.volt} />
             </PressableScale>
-            <PressableScale activeScale={0.9} onPress={save} style={[styles.ctrl, styles.ctrlSm]}>
+            <PressableScale
+              activeScale={0.9}
+              onPress={save}
+              accessibilityRole="button"
+              accessibilityLabel={t('Saxla')}
+              accessibilityState={{ selected: savedPartners.includes(current.id) }}
+              style={[styles.ctrl, styles.ctrlSm]}>
               <Icon name="bookmark" size={24} color={savedPartners.includes(current.id) ? palette.voltDeep : palette.textSecondary} />
             </PressableScale>
           </View>
@@ -365,6 +389,7 @@ function Cards() {
 
 function CardFace({ partner }: { partner: Partner }) {
   const t = useT();
+  const fmt = useFormat();
   const score = compatOf(partner);
   const { pros, cons } = splitReasons(partner);
   const cardGym = gymById(partner.gymId);
@@ -397,9 +422,11 @@ function CardFace({ partner }: { partner: Partner }) {
                 carried `distanceKm: 0` and only the `gyms_near` RPC — which this
                 screen never calls — produces a real figure, so «Zal · 0 km» was
                 a measurement nobody took, under a gym nobody could name. Every
-                other consumer already guards with `distanceKm > 0`. */}
+                other consumer already guards with `distanceKm > 0`. The figure is
+                fractional (1.4), so it goes through fmt.decimal: «1,4 km» in
+                az/ru, not the raw «1.4». */}
             {cardGym?.name ?? t('Zal')}
-            {cardGym && cardGym.distanceKm > 0 ? ` · ${t('{km} km', { km: cardGym.distanceKm })}` : ''}
+            {cardGym && cardGym.distanceKm > 0 ? ` · ${t('{km} km', { km: fmt.decimal(cardGym.distanceKm, 1) })}` : ''}
           </AppText>
         </View>
       </View>
@@ -458,6 +485,7 @@ function DataCell({ label, value, volt }: { label: string; value: string; volt?:
 }
 
 const styles = StyleSheet.create({
+  navBtn: { width: 44, height: 44, marginRight: -11, alignItems: 'center', justifyContent: 'center' },
   deck: { flex: 1, paddingHorizontal: 18, paddingTop: 8 },
   cardWrap: { position: 'absolute', left: 18, right: 18, top: 8 },
   behind: { top: 16 },

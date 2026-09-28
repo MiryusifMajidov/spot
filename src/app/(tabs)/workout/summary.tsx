@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { tapFeedback } from '@/lib/feedback';
 import { useState } from 'react';
-import { ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -11,9 +12,9 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { setMyWorkoutRpe } from '@/lib/api';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { useDb, useStats } from '@/store/db';
-import { palette } from '@/theme';
+import { palette, spacing } from '@/theme';
 
 const RPE = ['Asan', 'Normal', 'Ağır'];
 /** The workout ids the server knows are uuids (src/lib/ids.ts). A local-only
@@ -23,6 +24,18 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export default function Summary() {
   const router = useRouter();
   const t = useT();
+  /* Through `fmt`, not a bare `decimal()`: its identity changes with the language,
+     so the compiled component recomputes «1,2 t» after a language switch instead of
+     keeping the separator it cached first (src/lib/useT.ts). */
+  const fmt = useFormat();
+  /* The «Bitir» button is pinned to the bottom of a TAB screen. On iOS 26 the
+     Liquid Glass tab bar FLOATS over the content and reserves no space; inside a
+     tab screen UIKit's safe area already includes that bar, so the button clears it
+     by the inset rather than a guessed height. On Android the Material bar reserves
+     its own space and the inset here is the navigation bar it already covers —
+     adding it would lift the button twice. */
+  const insets = useSafeAreaInsets();
+  const footerBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + spacing.sm;
   const params = useLocalSearchParams<{ title?: string; durationSec?: string; volumeKg?: string; setsDone?: string; maxKg?: string }>();
   const title = params.title || 'Məşq';
   const durationSec = Number(params.durationSec) || 0;
@@ -85,7 +98,7 @@ export default function Summary() {
               title: t(title),
               min: durationMin,
               sets: setsDone,
-              vol: (volumeKg / 1000).toFixed(1),
+              vol: fmt.decimal(volumeKg / 1000, 1),
               count: setsDone,
             })
           : t('{title} — {min} dəq · {sets} set. SPOT ilə.', { title: t(title), min: durationMin, sets: setsDone, count: setsDone }),
@@ -94,7 +107,7 @@ export default function Summary() {
   const finish = () => router.replace('/(tabs)/workout');
 
   return (
-    /* No 'bottom' edge — see the note on the «Bitir» button below. */
+    /* No 'bottom' edge — the «Bitir» footer below pads itself (`footerBottom`). */
     <Screen edges={['top']} padded>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
         <Animated.View entering={FadeInDown.duration(300)} style={styles.hero}>
@@ -111,7 +124,7 @@ export default function Summary() {
 
         <View style={styles.stats}>
           <Stat value={t('{m}d', { m: durationMin, count: durationMin })} label={t('müddət')} />
-          <Stat value={volumeKg > 0 ? t('{n} t', { n: (volumeKg / 1000).toFixed(1) }) : '—'} label={t('həcm')} />
+          <Stat value={volumeKg > 0 ? t('{n} t', { n: fmt.decimal(volumeKg / 1000, 1) }) : '—'} label={t('həcm')} />
           <Stat value={`${setsDone}`} label={t('set')} />
         </View>
 
@@ -126,7 +139,7 @@ export default function Summary() {
             <AppText variant="callout">
               {stats.streakDays > 0
                 ? t('{n} günlük seriya', { n: stats.streakDays, count: stats.streakDays })
-                : t('Seriya bugün başladı')}
+                : t('Seriya bu gün başladı')}
             </AppText>
             <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2 }}>
               {t('Ümumi {n} məşq qeyd olunub', { n: stats.count, count: stats.count })}
@@ -142,7 +155,7 @@ export default function Summary() {
             <View style={{ flex: 1 }}>
               <AppText variant="callout">{t('Bu məşqin ən ağır seti')}</AppText>
               <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2 }}>
-                {t('{n} kq', { n: maxKg })}
+                {t('{n} kq', { n: fmt.weight(maxKg) })}
               </AppText>
             </View>
           </View>
@@ -168,10 +181,10 @@ export default function Summary() {
             {!stored
               ? t('Qiymətləndirmə yazılmadı — bu məşq artıq bağlanıb, ona görə növbəti çəki təklifinə təsir etməyəcək.')
               : rpe === 0
-                ? t('Qeyd olundu — növbəti dəfə çəki artırılmış təklif olunacaq: üst bədən +2.5 kq, ayaq +5 kq.')
+                ? t('Qeyd olundu — növbəti dəfə çəki artırılmış təklif olunacaq: üst bədən +2,5 kq, ayaq +5 kq.')
                 : rpe === 1
-                  ? t('Qeyd olundu — bütün setlərdə hədəf təkrarı vurmusansa, növbəti dəfə +2.5 kq təklif olunacaq, yoxsa eyni çəki.')
-                  : t('Qeyd olundu — növbəti dəfə eyni çəki təklif olunacaq. İki məşq ardıcıl «Ağır» keçsə, çəki 5% azaldılıb bərpa (deload) təklif olunacaq.')}
+                  ? t('Qeyd olundu — bütün setlərdə hədəf təkrarı vurmusansa, növbəti dəfə +2,5 kq təklif olunacaq, yoxsa eyni çəki.')
+                  : t('Qeyd olundu — növbəti dəfə eyni çəki təklif olunacaq. İki məşq ardıcıl «Ağır» keçsə, bərpa üçün çəki 5% azaldılaraq təklif olunacaq.')}
           </AppText>
         ) : null}
 
@@ -187,11 +200,11 @@ export default function Summary() {
         </PressableScale>
       </ScrollView>
 
-      {/* The Məşq tab scene is already clear of the native tab bar in
-          (tabs)/_layout — the floating pill's footprint with the home indicator folded in,
-          and its 10pt breathing gap sits between this button and the pill. Adding the
-          bottom safe-area inset on top of that only left a dead strip under the button. */}
-      <Button title={t('Bitir')} full onPress={finish} />
+      {/* Pinned under the scroll, clear of the tab bar on both platforms — see
+          `footerBottom` above. */}
+      <View style={[styles.footer, { paddingBottom: footerBottom }]}>
+        <Button title={t('Bitir')} full onPress={finish} />
+      </View>
     </Screen>
   );
 }
@@ -220,4 +233,5 @@ const styles = StyleSheet.create({
   rpe: { flex: 1, height: 52, borderRadius: 14, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
   rpeOn: { backgroundColor: palette.ink, borderColor: palette.ink },
   shareRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 16, marginTop: 24 },
+  footer: { paddingTop: spacing.sm },
 });

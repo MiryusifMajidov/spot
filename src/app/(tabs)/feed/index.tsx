@@ -1,10 +1,9 @@
 import { useEvent } from 'expo';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, Share, StyleSheet, useWindowDimensions, View, ViewToken } from 'react-native';
+import { FlatList, Platform, Pressable, Share, StatusBar, StyleSheet, useWindowDimensions, View, ViewToken } from 'react-native';
 import { afterTransition } from '@/lib/afterTransition';
 import { displayAuthor } from '@/lib/authorName';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -127,11 +126,22 @@ function useHomeGymName(): string | null {
 /** Height of the scrub strip that sits between the caption and the bottom edge. */
 const SCRUB_H = 34;
 
-/* The native tab bar reserves its own space, so the feed scene already stops above
-   it — this is only the small breathing room under the scrubber. (Do NOT add
-   `insets.bottom` here: under NativeTabs this device reports ~220px for it, which
-   would shove the whole overlay into the middle of the screen.) */
+/* Clearance between the bottom of a video page and the scrubber — ANDROID only.
+   There the Material tab bar reserves its own space (NativeTabs pads the tab scene's
+   bottom edge), so the feed scene already stops above it and this is only the small
+   breathing room under the scrubber. (Do NOT add `insets.bottom` on Android: under
+   NativeTabs the test device reports ~220px for it, which would shove the whole
+   overlay into the middle of the screen.)
+   iOS 26 is different: the tab bar is the Liquid Glass FLOATING bar and reserves no
+   space — the scene runs to the bottom of the window and the bar is drawn over it,
+   so with only this gap the author row, the caption, the program card, the lower
+   rail buttons and the scrubber all sat behind the glass. NativeTabs wraps every
+   iOS tab in its own SafeAreaProvider, whose bottom inset counts the bar, so on iOS
+   that inset IS the clearance (see `bottomGap` in VideoFeed). */
 const BOTTOM_GAP = 10;
+
+/** Height of the dark shade under the caption, measured up from the stage's bottom edge. */
+const SCRIM_H = 300;
 
 /** Trimmed, case-insensitive text match. Used for gym names, and as the
  *  fallback identity check on author display names (see useMyIdentity). */
@@ -191,10 +201,24 @@ function Toggle({
   // "Zalım" only when there really is a gym behind the tab; otherwise the tab shows
   // every gym's posts, so it must not call itself "my gym".
   const communityLabel = homeGymName ? t('Zalım') : t('İcma');
+  /* Each tab is a 44pt-tall box: the label + bar were ~30pt, and the 22pt gap between
+     them was dead space. The gap now lives inside the boxes as horizontal padding (11 +
+     11), so the labels sit exactly as far apart as before, and the whole word is the
+     target. The vertical padding is taken back by a negative margin in each header
+     (styles.toggleOverlay here, the wrapper in CommunityFeed) so the labels do not
+     move. Real padding, not hitSlop: on Android a slop outside the parent's bounds
+     receives nothing. */
   return (
-    <View style={styles.toggle}>
+    <View style={[styles.toggle, isDark && styles.toggleOverlay]}>
       {(['community', 'video'] as const).map((m) => (
-        <PressableScale key={m} haptic activeScale={0.94} onPress={() => setMode(m)} style={{ alignItems: 'center', gap: 6 }}>
+        <PressableScale
+          key={m}
+          haptic
+          activeScale={0.94}
+          onPress={() => setMode(m)}
+          style={styles.toggleItem}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: mode === m }}>
           <AppText style={{ fontSize: 16, fontWeight: mode === m ? '700' : '600', color: mode === m ? on : off }}>
             {m === 'video' ? t('Videolar') : communityLabel}
           </AppText>
@@ -227,6 +251,49 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
       };
     }, [])
   );
+
+  /* Light clock over this dark screen — only while it is the screen in front.
+     A mount-time <StatusBar style="light" /> sat here, and this screen is never
+     unmounted: it stays mounted under the creator page (router.push) and behind
+     every other tab, so its light entry stayed on top of React Native's status-bar
+     stack and the clock went white over the white creator, Kəşf and Profil screens.
+     The entry is now pushed on every focus and popped on blur (and when the toggle
+     swaps this component for the community list). On iOS the native style is also
+     set directly, because the stack skips the native call whenever it believes the
+     bar already has that style — same approach as workout/exercise.tsx and
+     workout/session.tsx.
+     One blur keeps the entry: on iOS «Video paylaş» opens as a page sheet, and the
+     clock then sits over the black backdrop behind the sheet, where a dark one
+     would vanish. On Android that route is a full-screen light page, so there the
+     entry is dropped like on any other blur. The held entry is released on the
+     next focus (the sheet always ends in router.back()), or on unmount. */
+  const navigation = useNavigation();
+  const heldBarEntry = useRef<ReturnType<typeof StatusBar.pushStackEntry> | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      if (heldBarEntry.current) {
+        StatusBar.popStackEntry(heldBarEntry.current);
+        heldBarEntry.current = null;
+      }
+      if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
+      const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
+      return () => {
+        const state = navigation.getState();
+        const front = state?.routes[state.index]?.name;
+        if (Platform.OS === 'ios' && front === 'share') heldBarEntry.current = entry;
+        else StatusBar.popStackEntry(entry);
+      };
+    }, [navigation])
+  );
+  useEffect(() => {
+    const held = heldBarEntry;
+    return () => {
+      if (held.current) StatusBar.popStackEntry(held.current);
+    };
+  }, []);
+
+  /* See BOTTOM_GAP: the floating Liquid Glass bar on iOS, a small gap on Android. */
+  const bottomGap = Platform.OS === 'ios' ? insets.bottom : BOTTOM_GAP;
   /* Ordering is done in `useFeedVideos` now: followed authors first (by profile
      id, from the `follows` table), then newest first.
 
@@ -297,7 +364,7 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
     if (i < 0) {
       // The clip is not in the list we have — deleted, hidden, or not loaded.
       // Saying so beats silently leaving the reader on somebody else's video.
-      toast(t('Bu video feed-də tapılmadı'), 'error');
+      toast(t('Bu video lentdə tapılmadı'), 'error');
       return;
     }
     /* One frame later: the list has to have laid out its first page before it can
@@ -308,7 +375,7 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
       setActiveIndex(i);
     });
     return () => cancelAnimationFrame(raf);
-  }, [wantedId, h, playersReady, videos, router]);
+  }, [wantedId, h, playersReady, videos, router, t]);
 
   /* Every page is exactly the stage height, so the offsets are known without
      measuring — which is what lets the jump above land on a clip the list has
@@ -349,7 +416,6 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
   return (
     <GestureDetector gesture={swipe}>
       <View style={{ flex: 1, backgroundColor: palette.inkText }} onLayout={(e) => setH(e.nativeEvent.layout.height)}>
-        <StatusBar style="light" />
         {h > 0 && playersReady && (
           <FlatList
             ref={listRef}
@@ -361,7 +427,7 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
             getItemLayout={getItemLayout}
             renderItem={({ item, index }) => (
               <VideoPage
-                bottomInset={BOTTOM_GAP}
+                bottomInset={bottomGap}
                 v={item}
                 height={h}
                 topInset={insets.top}
@@ -389,8 +455,8 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
                 </AppText>
                 <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 8, maxWidth: 260 }}>
                   {videoPhase === 'failed'
-                    ? t('Serverlə əlaqə alınmadı — bu, feed-in boş olduğu demək deyil. İnterneti yoxlayıb yenidən aç.')
-                    : t('Bu feed-də hələ heç nə paylaşılmayıb. Birinci sən ol — texnika videonu yüklə.')}
+                    ? t('Serverlə əlaqə alınmadı — bu, lentin boş olduğu demək deyil. İnterneti yoxlayıb yenidən aç.')
+                    : t('Bu lentdə hələ heç nə paylaşılmayıb. Birinci sən ol — texnika videonu yüklə.')}
                 </AppText>
                 {videoPhase === 'failed' ? null : (
                   <Button title={t('Video paylaş')} variant="volt" icon="cam" onPress={openShare} style={{ marginTop: 20 }} />
@@ -399,12 +465,15 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
             }
           />
         )}
+        {/* 24px glyphs with a 10pt hitSlop each side: a 44pt target without a
+            bigger icon. The header's paddingBottom keeps that slop inside its
+            bounds — React Native drops touches that land outside the parent. */}
         <View style={[styles.videoHeader, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
-          <PressableScale activeScale={0.9} onPress={openShare}>
+          <PressableScale activeScale={0.9} onPress={openShare} hitSlop={10}>
             <Icon name="cam" size={24} color={palette.white} />
           </PressableScale>
           <Toggle mode={mode} setMode={setMode} homeGymName={homeGymName} dark />
-          <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/discover')}>
+          <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/discover')} hitSlop={10}>
             <Icon name="search" size={24} color={palette.white} />
           </PressableScale>
         </View>
@@ -519,8 +588,9 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
     player.muted = muted;
   }, [muted, player]);
 
-  /* The stage is the page minus the floating tab bar's footprint. Nothing visual
-     is allowed under the bar: not the video, not the scrubber, not the caption. */
+  /* The stage is the page minus the bottom clearance — the floating tab bar's
+     footprint on iOS, a small gap on Android (see BOTTOM_GAP). No content is
+     allowed under the bar: not the video, not the scrubber, not the caption. */
   const stage = { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: bottomInset };
 
   return (
@@ -557,13 +627,21 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
         ) : null}
       </Pressable>
 
-      <PressableScale activeScale={0.85} onPress={onToggleMute} style={[styles.muteBtn, { top: topInset + 52 }]}>
-        <Icon name={muted ? 'mute' : 'sound'} size={17} color={palette.white} />
+      {/* 40pt disc + 2pt hitSlop = a 44pt target; the glyph was 17px in a 34pt
+          disc, too small to read or hit over a moving picture. */}
+      <PressableScale activeScale={0.85} onPress={onToggleMute} hitSlop={2} style={[styles.muteBtn, { top: topInset + 52 }]}>
+        <Icon name={muted ? 'mute' : 'sound'} size={20} color={palette.white} />
       </PressableScale>
 
+      {/* The shade is the one layer that runs on under the bar: it is not content,
+          and stopping it at the stage edge would leave a hard seam under the iOS
+          glass wherever a clip's own gradient is light. It reaches full strength
+          at the stage edge and stays flat below it, so the caption above reads
+          exactly as it did. */}
       <LinearGradient
-        colors={['transparent', 'rgba(11,11,14,0.85)']}
-        style={[styles.bottomScrim, { bottom: bottomInset }]}
+        colors={['transparent', 'rgba(11,11,14,0.85)', 'rgba(11,11,14,0.85)']}
+        locations={[0, SCRIM_H / (SCRIM_H + bottomInset), 1]}
+        style={[styles.bottomScrim, { height: SCRIM_H + bottomInset }]}
         pointerEvents="none"
       />
 
@@ -606,6 +684,8 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
                     });
                   }, t('İzləmək üçün'))
                 }
+                // ~30pt pill + 7pt slop: a 44pt target inside the 36pt author row.
+                hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}
                 style={[styles.follow, following && { backgroundColor: palette.volt, borderColor: palette.volt }]}>
                 <AppText style={{ fontSize: 12, fontWeight: '600', color: following ? palette.inkText : palette.white }}>{following ? t('İzlənir') : t('İzlə')}</AppText>
               </PressableScale>
@@ -761,8 +841,14 @@ function RailBtn({
 
 function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mode) => void; homeGymName: string | null }) {
   const t = useT();
-  // The floating tab bar takes no layout space, so the list clears it itself.
+  /* Room under the last post. On iOS 26 the tab bar is the Liquid Glass FLOATING
+     bar: it takes no layout space and this list runs on under it, so the list
+     clears it itself with the tab scene's bottom inset (NativeTabs' per-tab
+     SafeAreaProvider counts the bar) — otherwise the last post's actions end up
+     behind the glass. On Android the Material bar reserves its own space and that
+     inset is not the bar (see BOTTOM_GAP), so only the breathing room applies. */
   const insets = useSafeAreaInsets();
+  const listBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + 40;
   const router = useRouter();
   const gate = useAuthGate();
   const allPosts = useCommunityPosts();
@@ -808,11 +894,13 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
   return (
     <Screen>
       <View style={styles.communityTop}>
-        <View style={{ flex: 1 }}>
+        {/* -2: the 44pt toggle inside the 40pt row, labels where they were. */}
+        <View style={{ flex: 1, marginVertical: -2 }}>
           <Toggle mode={mode} setMode={setMode} homeGymName={homeGymName} />
         </View>
-        <PressableScale activeScale={0.9} onPress={openCompose} style={styles.composeBtn}>
-          <Icon name="plus" size={18} color={palette.inkText} />
+        {/* 40pt disc + 4pt hitSlop: at least 44pt to hit. */}
+        <PressableScale activeScale={0.9} onPress={openCompose} hitSlop={4} style={styles.composeBtn}>
+          <Icon name="plus" size={20} color={palette.inkText} />
         </PressableScale>
       </View>
       {!homeGymName ? (
@@ -832,7 +920,7 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
           data={visible}
           keyExtractor={(p) => p.id}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40, flexGrow: 1 }}
+          contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: listBottom, flexGrow: 1 }}
           renderItem={({ item }) => (
             <PostCard
               post={item}
@@ -984,13 +1072,19 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
 }
 
 const styles = StyleSheet.create({
-  toggle: { flexDirection: 'row', justifyContent: 'center', gap: 22, alignItems: 'flex-start' },
+  toggle: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' },
+  // Over the video: -7 gives back the items' paddingVertical, so the labels line up
+  // with the 24px icons as before; the boxes reach into videoHeader's own padding.
+  toggleOverlay: { marginVertical: -7 },
+  toggleItem: { alignItems: 'center', gap: 6, paddingVertical: 7, paddingHorizontal: 11 },
   toggleBar: { width: 22, height: 3, borderRadius: 2, backgroundColor: palette.volt },
-  videoHeader: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: spacing.screen },
+  // paddingBottom: room for the header buttons' 10pt hitSlop below their 24px glyphs
+  // and for the toggle's 7pt below its labels — touches outside the header are dropped.
+  videoHeader: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: spacing.screen, paddingBottom: 7 },
   videoEmpty: { alignItems: 'center', paddingHorizontal: 30 },
-  bottomScrim: { position: 'absolute', left: 0, right: 0, height: 300 },
+  bottomScrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   playBadge: { width: 68, height: 68, borderRadius: 999, backgroundColor: 'rgba(11,11,14,0.42)', alignItems: 'center', justifyContent: 'center' },
-  muteBtn: { position: 'absolute', right: spacing.screen, width: 34, height: 34, borderRadius: 999, backgroundColor: 'rgba(11,11,14,0.4)', alignItems: 'center', justifyContent: 'center' },
+  muteBtn: { position: 'absolute', right: spacing.screen, width: 40, height: 40, borderRadius: 999, backgroundColor: 'rgba(11,11,14,0.4)', alignItems: 'center', justifyContent: 'center' },
   scrubHit: { position: 'absolute', left: 0, right: 0, height: SCRUB_H, justifyContent: 'flex-end', paddingBottom: 6 },
   scrubTrack: { height: 3, backgroundColor: 'rgba(255,255,255,0.28)', justifyContent: 'center' },
   scrubTrackActive: { height: 5 },
@@ -1001,7 +1095,7 @@ const styles = StyleSheet.create({
   authorTap: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   authorNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   authorHandle: { color: 'rgba(255,255,255,0.62)', fontSize: 12, marginTop: 1 },
-  follow: { borderWidth: 1.2, borderColor: 'rgba(255,255,255,0.5)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
+  follow: { borderWidth: 1.2, borderColor: 'rgba(255,255,255,0.5)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
   caption: { color: 'rgba(255,255,255,0.92)', fontSize: 14.5, lineHeight: 21, marginTop: 11 },
   hashtags: { flexDirection: 'row', gap: 7, marginTop: 11, flexWrap: 'wrap' },
   hashtag: { backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
@@ -1021,7 +1115,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.screen,
     marginBottom: 10,
   },
-  composeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
+  composeBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
   post: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 12 },
   postHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   postActions: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 14 },

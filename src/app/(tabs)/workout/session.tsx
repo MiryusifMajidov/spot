@@ -1,14 +1,14 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { successFeedback, tapFeedback } from '@/lib/feedback';
 import { useProgram } from '@/lib/hooks';
 import { LIFTS } from '@/lib/lifts';
 import { parseDecimal } from '@/lib/az';
-import { StatusBar } from 'expo-status-bar';
+import { decimalSeparator } from '@/lib/format';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useKeepAwake } from 'expo-keep-awake';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StatusBar, StyleSheet, TextInput, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -51,6 +51,12 @@ function fmt(s: number) {
   const r = s % 60;
   return `${m}:${r.toString().padStart(2, '0')}`;
 }
+
+/* A logged load, written back EXACTLY, only with the language's decimal mark
+   («61,25», not «61.25»). `weight()` in src/lib/format.ts rounds to one decimal — fine for a label, wrong
+   for a figure that is prefilled into a kq field and saved again: a 61,25 kq set came
+   back as «61,3» and was logged as 61,3. `save` reads it with `parseDecimal`. */
+const kgExact = (n: number) => String(n).replace('.', decimalSeparator());
 
 /* Both read the digit runs (src/lib/duration.ts repRange). They used to split
    on the en dash only, so a hand-typed «8-10» became 810 — see repRange. */
@@ -121,7 +127,10 @@ export default function Session() {
       // vurulubsa, Ağır → eyni çəki, ardıcıl iki Ağır → −5% deload) lives in
       // `suggestNext`; the muscle group decides the upper/lower step.
       const suggestion = timed ? null : suggestNext(workouts, ex.name, top, { muscle: ex.muscle });
-      let kg = suggestion ? String(autoApply ? suggestion.weight : suggestion.prevWeight) : last ? String(last.weight) : '';
+      /* Written with the language's decimal mark («62,5», not «62.5») — the same
+         figure the «qəbul et» button shows. Exact, not rounded (see kgExact):
+         `suggestion.weight` is the raw logged load whenever the rule keeps it. */
+      let kg = suggestion ? kgExact(autoApply ? suggestion.weight : suggestion.prevWeight) : last ? kgExact(last.weight) : '';
       let hint = suggestion?.note ?? '';
       if (suggestion && hasTrainer === true) {
         hint = t('{note}. Məşqçin var — SPOT çəkini özü dəyişmir, təklifi sən qəbul edirsən.', { note: suggestion.note });
@@ -130,7 +139,7 @@ export default function Session() {
       if (!hint) hint = timed ? t('Hədəf {reps}', { reps: repsText(ex.reps, t) }) : bw ? t('Öz çəkinlə işlə — əlavə ağırlıq varsa kq-a yaz') : t('Hədəf {reps} təkrar', { reps: repsText(ex.reps, t) });
       return {
         ex,
-        prev: last ? `${last.weight}×${last.reps}` : '—',
+        prev: last ? `${kgExact(last.weight)}×${last.reps}` : '—',
         hint,
         timed,
         bodyweight: bw,
@@ -220,15 +229,47 @@ export default function Session() {
      rep gets miscounted. */
   useKeepAwake();
 
+  /* Light clock over this dark screen, only while it is the one in front.
+     A mount-time <StatusBar style="light" /> pushed its entry onto React Native's
+     status-bar stack once and kept it for as long as the session stayed mounted —
+     and a workout in progress stays mounted while the person switches tabs, so the
+     white clock carried over onto the white Kəşf and Profil screens. The entry is
+     now pushed on every focus and popped on blur (a tab switch, or opening the
+     exercise card, which pushes its own). On iOS the style is also set directly,
+     because the stack skips the native call when it believes the bar already has
+     that style; that also rewrites the stack's bottom default, which never shows
+     because the root layout's own «dark» entry always sits above it. Same approach
+     as the exercise card (workout/exercise.tsx). */
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
+      const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
+      return () => StatusBar.popStackEntry(entry);
+    }, [])
+  );
+
+  /* Clearance under the exercise nav / «Məşqi bitir» row.
+     iOS 26: the tab bar is the Liquid Glass FLOATING bar. It reserves no layout
+     space — this scene runs to the bottom of the window and the bar is drawn over
+     it, so «Məşqi bitir» sat under the bar. The tab scene's own SafeAreaProvider
+     (NativeTabs wraps every iOS tab in one) counts the bar in its bottom inset,
+     so that inset is exactly what the row has to clear.
+     Android: the Material bar DOES reserve its space (NativeTabs pads the scene's
+     bottom edge), and useSafeAreaInsets().bottom there is not the bar — the test
+     device reports ~220px under NativeTabs (see feed/index.tsx BOTTOM_GAP) — so
+     adding it would float the row into the middle of the screen. */
+  const insets = useSafeAreaInsets();
+  const navBottom = Platform.OS === 'ios' ? insets.bottom + 8 : 6;
+
   const clearDraft = () => AsyncStorage.removeItem(draftKey).catch(() => {});
   useEffect(() => () => { if (restRef.current) clearInterval(restRef.current); }, []);
 
   /* The set list is where the workout is actually logged, and Android edge-to-edge does
      not resize the window when the numeric keyboard opens: on a 4–5 set exercise the
      lower rows ended up behind it, so the weight being entered was invisible while it
-     was typed. Shrink the scroller by the overlap (which also lifts the rest bar and the
-     «Məşqi bitir» row with it), then push the content up by the same amount so the row
-     just tapped stays where it was. */
+     was typed. Shrink the scroller by the overlap (the rest bar and the «Məşqi bitir»
+     row stay at the bottom, under the keyboard, while it is open), then push the content
+     up by the same amount so the row just tapped stays where it was. */
   const lift = useKeyboardLift();
   const scroller = useRef<ScrollView>(null);
   const scrollY = useRef(0);
@@ -273,7 +314,7 @@ export default function Session() {
     tapFeedback();
     touched.current = true;
     setLogs((prev) =>
-      prev.map((e, ei) => (ei === ci ? { ...e, sets: e.sets.map((st) => (st.done ? st : { ...st, kg: String(s.weight) })) } : e))
+      prev.map((e, ei) => (ei === ci ? { ...e, sets: e.sets.map((st) => (st.done ? st : { ...st, kg: kgExact(s.weight) })) } : e))
     );
   };
 
@@ -419,7 +460,6 @@ export default function Session() {
   if (!current) {
     return (
       <View style={styles.root}>
-        <StatusBar style="light" />
         <SafeAreaView edges={['top']} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 }}>
           <Icon name="dumbbell" size={26} color={dark.textTertiary} />
           <AppText style={{ color: palette.white, fontSize: 17, fontWeight: '600', marginTop: 12, textAlign: 'center' }}>
@@ -444,14 +484,15 @@ export default function Session() {
      most common mistake, substitutes), so the tap stays — the play icon goes. */
   /* Offer the «qəbul et» tap only while the suggestion is genuinely unapplied:
      it changes the load, it was not prefilled, and the open sets do not already
-     carry it. */
+     carry it. Compared as a number: «62,5» typed on the keypad and «62.5» are the
+     same load. */
   const openSet = current.sets.find((s) => !s.done);
   const showAccept =
     !!current.suggestion &&
     !autoApply &&
     current.suggestion.weight !== current.suggestion.prevWeight &&
     !!openSet &&
-    openSet.kg !== String(current.suggestion.weight);
+    parseDecimal(openSet.kg) !== current.suggestion.weight;
 
   const libraryEntry = exerciseById(current.ex.id);
   /* `current.ex` already carries the author's clip when they filmed one
@@ -464,20 +505,23 @@ export default function Session() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
-      {/* No 'bottom' edge: this screen lives inside the Məşq tab scene, which (tabs)/_layout
-          already pads by the native tab bar's own reserved space,
-          home indicator included. Taking the bottom inset again here pushed «Məşqi bitir»
-          up by another inset's worth and left a dead band under it. */}
+      {/* No 'bottom' edge, on purpose — the nav row below pads itself (`navBottom`).
+          On Android the Material tab bar reserves its own space and the Məşq tab scene
+          already stops above it, so the bottom inset taken again here pushed «Məşqi bitir»
+          up by another inset's worth and left a dead band under it. On iOS 26 the floating
+          Liquid Glass bar reserves nothing, and only the row itself needs to clear it —
+          the scroller above may keep running to the row. */}
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <PressableScale activeScale={0.9} onPress={quit} style={styles.iconBtn}>
+          <PressableScale activeScale={0.9} onPress={quit} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t('Bağla')}>
             <Icon name="x" size={22} color={palette.white} />
           </PressableScale>
-          <View style={{ alignItems: 'center' }}>
+          {/* flex: 1 — a long day title («Sinə, çiyin və triseps…») is truncated by
+              numberOfLines instead of pushing the timer off the screen edge. */}
+          <View style={{ flex: 1, alignItems: 'center', marginHorizontal: 8 }}>
             <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>{t(title)}</AppText>
-            <AppText style={{ color: dark.textTertiary, fontSize: 12, marginTop: 2 }}>
+            <AppText style={{ color: dark.textTertiary, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
               {t('Hərəkət {n} / {total}', { n: ci + 1, total: logs.length })}{partner ? ` · ${t('{name} ilə', { name: partner.name })}` : ''}
             </AppText>
           </View>
@@ -536,10 +580,10 @@ export default function Session() {
               </AppText>
             </View>
             {showAccept ? (
-              <PressableScale activeScale={0.97} onPress={acceptSuggestion} style={styles.accept}>
+              <PressableScale activeScale={0.97} onPress={acceptSuggestion} style={styles.accept} hitSlop={{ top: 4, bottom: 4 }}>
                 <Icon name="check" size={14} color={palette.volt} />
                 <AppText style={{ color: palette.volt, fontSize: 12.5, fontWeight: '700' }}>
-                  {t('Təklifi qəbul et — {kg} kq', { kg: current.suggestion!.weight })}
+                  {t('Təklifi qəbul et — {kg} kq', { kg: kgExact(current.suggestion!.weight) })}
                 </AppText>
               </PressableScale>
             ) : null}
@@ -576,7 +620,16 @@ export default function Session() {
                   placeholder={String(baseRepOf(current.ex.reps))}
                   placeholderTextColor={dark.textTertiary}
                 />
-                <PressableScale activeScale={0.85} onPress={() => toggleSet(i)} style={[styles.check, s.done && { backgroundColor: palette.volt, borderColor: palette.volt }]}>
+                {/* The box stays 40 so the set grid keeps its columns on a narrow phone;
+                    hitSlop takes the touch area to 48 (the row is 52 tall). */}
+                <PressableScale
+                  activeScale={0.85}
+                  onPress={() => toggleSet(i)}
+                  hitSlop={4}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: s.done }}
+                  accessibilityLabel={t('Set {n}', { n: i + 1 })}
+                  style={[styles.check, s.done && { backgroundColor: palette.volt, borderColor: palette.volt }]}>
                   <Icon name="check" size={16} color={s.done ? palette.inkText : dark.textTertiary} />
                 </PressableScale>
               </View>
@@ -592,15 +645,24 @@ export default function Session() {
         {rest !== null ? (
           <View style={styles.restBar}>
             <AppText style={{ color: palette.volt, fontSize: 14, fontWeight: '700' }}>{t('Fasilə {time}', { time: fmt(rest) })}</AppText>
-            <PressableScale activeScale={0.94} onPress={() => setRest(null)}>
+            {/* A bare word is an 18pt-tall target; the slop matches the bar's own
+                padding so the whole right end of the bar skips the rest. */}
+            <PressableScale activeScale={0.94} onPress={() => setRest(null)} hitSlop={{ top: 14, bottom: 14, left: 16, right: 16 }} accessibilityRole="button">
               <AppText style={{ color: dark.textSecondary, fontSize: 14, fontWeight: '600' }}>{t('Keç')}</AppText>
             </PressableScale>
           </View>
         ) : null}
 
         {/* Exercise nav + finish */}
-        <View style={styles.navRow}>
-          <PressableScale activeScale={0.94} onPress={() => setCi((c) => Math.max(0, c - 1))} disabled={ci === 0} style={[styles.navBtn, ci === 0 && { opacity: 0.4 }]}>
+        <View style={[styles.navRow, { paddingBottom: navBottom }]}>
+          <PressableScale
+            activeScale={0.94}
+            onPress={() => setCi((c) => Math.max(0, c - 1))}
+            disabled={ci === 0}
+            accessibilityRole="button"
+            accessibilityLabel={t('Əvvəlki hərəkət')}
+            accessibilityState={{ disabled: ci === 0 }}
+            style={[styles.navBtn, ci === 0 && { opacity: 0.4 }]}>
             <Icon name="chevL" size={20} color={palette.white} />
           </PressableScale>
           {ci < logs.length - 1 ? (
@@ -612,7 +674,7 @@ export default function Session() {
               <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '700' }}>{t('Məşqi bitir')}</AppText>
             </PressableScale>
           )}
-          <PressableScale activeScale={0.94} onPress={finish} style={styles.navBtn}>
+          <PressableScale activeScale={0.94} onPress={finish} style={styles.navBtn} accessibilityRole="button" accessibilityLabel={t('Məşqi bitir')}>
             <Icon name="check" size={20} color={palette.volt} />
           </PressableScale>
         </View>
@@ -624,7 +686,8 @@ export default function Session() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.inkText },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 48 },
-  iconBtn: { width: 40, height: 40, justifyContent: 'center' },
+  // 44×44 hit area; the glyph stays left-aligned with the content column below.
+  iconBtn: { width: 44, height: 44, justifyContent: 'center' },
   timer: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: dark.fill, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
   exercise: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingVertical: 16 },
   thumb: { width: 56, height: 56, borderRadius: 14, backgroundColor: dark.surface, alignItems: 'center', justifyContent: 'center' },
@@ -640,7 +703,8 @@ const styles = StyleSheet.create({
   check: { width: 40, height: 40, borderRadius: 12, borderWidth: 1.5, borderColor: dark.hairline, alignItems: 'center', justifyContent: 'center' },
   addSet: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, marginTop: 2 },
   restBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 20, marginBottom: 10, backgroundColor: dark.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14 },
-  navRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingBottom: 6 },
+  // paddingBottom is per platform — see `navBottom` in the component.
+  navRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20 },
   navBtn: { width: 52, height: 52, borderRadius: 15, backgroundColor: dark.surface, alignItems: 'center', justifyContent: 'center' },
   nextBtn: { flex: 1, height: 52, borderRadius: 15, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
 });

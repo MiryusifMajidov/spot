@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreatorBadge } from '@/components/CreatorBadge';
 import { Icon } from '@/components/Icon';
@@ -11,7 +12,7 @@ import { Tag } from '@/components/ui/Tag';
 import { useProgram, useProgramPhase } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { removeProgram } from '@/lib/removeProgram';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { seedById, useAllPrograms, useDb } from '@/store/db';
 import { actionSheet, confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
@@ -21,6 +22,20 @@ export default function ProgramDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const t = useT();
+  const fmt = useFormat();
+  /* This screen draws its own header in a plain View, so nothing pads it.
+     Android is edge-to-edge: without `insets.top` the back chevron sat on the
+     clock and the bookmark on the battery. On iOS the same inset clears the
+     Dynamic Island.
+     The bottom differs per platform. iOS 26's Liquid Glass tab bar FLOATS and
+     reserves no layout space, but each tab's content has its own
+     SafeAreaProvider inside the tab controller, so `insets.bottom` here is the
+     bar's footprint plus the home indicator. Android's Material bar does reserve
+     its space (expo-router wraps the tab content in a bottom-edged SafeAreaView),
+     and `insets.bottom` there is the system navigation bar, which the tab bar
+     already covers — adding it would lift the footer twice. */
+  const insets = useSafeAreaInsets();
+  const bottomClearance = Platform.OS === 'ios' ? insets.bottom : 0;
   const remote = useProgram(id);
   const all = useAllPrograms();
   const saved = useDb((s) => s.savedPrograms);
@@ -68,7 +83,7 @@ export default function ProgramDetail() {
             ? t('Bu proqram serverə yüklənməyib — məzmunu yalnız onu yazan adamın cihazındadır. Ondan yenidən yadda saxlamasını xahiş et.')
             : t('Bu proqram silinib və ya ünvan səhvdir.');
     return (
-      <View style={{ flex: 1, backgroundColor: palette.grouped }}>
+      <View style={{ flex: 1, backgroundColor: palette.grouped, paddingTop: insets.top }}>
         <NavBar />
         <View style={styles.missing}>
           <Icon
@@ -192,14 +207,24 @@ export default function ProgramDetail() {
       ],
     });
 
+  const hasFooter = hasDays || mine;
+
   return (
-    <View style={{ flex: 1, backgroundColor: palette.grouped }}>
+    <View style={{ flex: 1, backgroundColor: palette.grouped, paddingTop: insets.top }}>
       <NavBar
         right={
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          /* Each icon sits in a 44×44 target: the bare 20 px glyphs used to be
+             the whole hit area. The -11 margin keeps the last glyph on the bar's
+             usual right gutter. */
+          <View style={styles.headerActions}>
             {mine ? (
-              <PressableScale activeScale={0.9} onPress={manage}>
-                <Icon name="more" size={20} color={palette.inkText} />
+              <PressableScale
+                activeScale={0.9}
+                onPress={manage}
+                accessibilityRole="button"
+                accessibilityLabel={t('Digər seçimlər')}
+                style={styles.headerBtn}>
+                <Icon name="more" size={22} color={palette.inkText} />
               </PressableScale>
             ) : null}
             <PressableScale
@@ -207,13 +232,22 @@ export default function ProgramDetail() {
               onPress={() => {
                 toggleSaved(p.id);
                 toast(isSaved ? t('Yadda saxlanılanlardan çıxarıldı') : t('Proqram yadda saxlanıldı'));
-              }}>
-              <Icon name="bookmark" size={20} color={isSaved ? palette.voltDeep : palette.inkText} />
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Yadda saxla')}
+              accessibilityState={{ selected: isSaved }}
+              style={styles.headerBtn}>
+              <Icon name="bookmark" size={22} color={isSaved ? palette.voltDeep : palette.inkText} />
             </PressableScale>
           </View>
         }
       />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      {/* The footer is in the layout flow below this list, so the list already
+          ends where the footer begins — it only needs a breathing gap. Without a
+          footer the last card must still clear the floating bar on iOS. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: (hasFooter ? 0 : bottomClearance) + spacing.lg }}>
         <View style={{ paddingHorizontal: spacing.screen }}>
           {/* No image slot: a Program carries no cover, so the grey "video" block
               that used to sit here only announced that something was missing. */}
@@ -270,7 +304,7 @@ export default function ProgramDetail() {
                 <>
                   <View style={styles.statItem}>
                     <Icon name="star" size={14} color={palette.streak} />
-                    <AppText variant="headline">{p.rating}</AppText>
+                    <AppText variant="headline">{fmt.decimal(p.rating, 1)}</AppText>
                   </View>
                   <View style={styles.vsep} />
                 </>
@@ -359,13 +393,15 @@ export default function ProgramDetail() {
         </View>
       </ScrollView>
 
+      {/* The footer's surface runs to the screen edge; its padding lifts the
+          buttons above the glass bar on iOS (see `bottomClearance`). */}
       {hasDays ? (
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: bottomClearance + spacing.md }]}>
           <Button title={t('Yoldaşımla başla')} variant="secondary" icon="users" onPress={startWithPartner} style={{ flex: 1 }} />
           <Button title={t('Başla')} onPress={() => start()} style={{ flex: 1 }} />
         </View>
       ) : mine ? (
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: bottomClearance + spacing.md }]}>
           <Button title={t('Hərəkət əlavə et')} icon="plus" full onPress={() => router.push('/(tabs)/workout/exercises')} />
         </View>
       ) : null}
@@ -384,5 +420,8 @@ const styles = StyleSheet.create({
   dayRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 14, marginBottom: 10 },
   dayIndex: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(198,255,61,0.22)', alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 16, padding: 22 },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 10, paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 30, backgroundColor: 'rgba(244,244,246,0.96)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
+  headerActions: { flexDirection: 'row', alignItems: 'center', marginRight: -11 },
+  headerBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  // paddingBottom is set inline: it depends on the platform's bottom inset.
+  footer: { flexDirection: 'row', gap: 10, paddingHorizontal: spacing.screen, paddingTop: spacing.md, backgroundColor: palette.grouped, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
 });

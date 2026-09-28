@@ -88,13 +88,16 @@ export default function RootLayout() {
     };
   }, []);
 
+  // Font loading has SETTLED either way — see the render below.
+  const fontsSettled = Boolean(fontsLoaded || fontError);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         {/* Render once font loading has SETTLED either way — a font failure must
             never leave the user staring at a permanently blank screen; the system
             face is a fine fallback. */}
-        {fontsLoaded || fontError ? (
+        {fontsSettled ? (
           /* Nothing caught a render error before this. React unmounts the whole
              tree when one escapes, so a single bad row anywhere turned the app
              into a white screen with no tab bar and no way back — force-quit was
@@ -130,7 +133,13 @@ export default function RootLayout() {
         <AppErrorBoundary label={t('Bu pəncərə açılmadı')}>
           <UiHost />
         </AppErrorBoundary>
-        <StatusBar style="dark" />
+        {/* The app's base clock colour: dark, for the light screens. While the
+            fonts load, though, what is on screen is the near-black placeholder
+            above (it carries on the dark splash), and a dark clock on it was
+            black on black. This entry is the first one on React Native's status
+            bar stack and a prop change replaces it IN PLACE, so flipping it here
+            never overrides the light entries a dark screen pushes on focus. */}
+        <StatusBar style={fontsSettled ? 'dark' : 'light'} />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

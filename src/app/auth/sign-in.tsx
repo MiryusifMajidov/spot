@@ -138,7 +138,7 @@ export default function SignIn() {
       const r = await sendEmailCode(to);
       setSent({ to, linking: r.linking });
       setCode('');
-      toast(t('{email} ünvanına link göndərildi — poçtunu aç və linkə toxun', { email: to }));
+      toast(t('{email} ünvanına keçid göndərildi — poçtunu aç və keçidə toxun', { email: to }));
     } catch (e) {
       errorFeedback();
       const m = String((e as Error)?.message ?? '');
@@ -148,7 +148,7 @@ export default function SignIn() {
             ? t('Çox tez-tez cəhd edildi — bir neçə dəqiqə gözlə')
             : m === 'bad-email'
               ? t('E-poçt ünvanı düzgün deyil')
-              : t('Link göndərilmədi — yenidən cəhd et')),
+              : t('Keçid göndərilmədi — yenidən cəhd et')),
         'error'
       );
     } finally {
@@ -263,14 +263,14 @@ export default function SignIn() {
                 SMTP is configured later. Saying «kod gözlə» while a link arrives
                 would be the app describing something that is not happening. */}
             <View style={styles.hero}>
-              <Icon name="msg" size={20} color={palette.voltDeep} />
+              <Icon name="msg" size={22} color={palette.voltDeep} />
               {/* Translated whole, with the address as a bold placeholder — in
                   Russian and English it does not come first in the sentence.
                   «hesabın qorunacaq» is also gone: this screen is where a NEW
                   account starts too, and there is nothing to «protect» yet. */}
               <Trans
                 style={{ lineHeight: 22, flex: 1, color: palette.text3 }}
-                text={t('{email} ünvanına link göndərdik. Poçtunu aç və linkə toxun — tətbiq özü açılacaq.')}
+                text={t('{email} ünvanına keçid göndərdik. Poçtunu aç və keçidə toxun — tətbiq özü açılacaq.')}
                 parts={{ email: <AppText style={{ fontWeight: '700' }}>{sent.to}</AppText> }}
               />
             </View>
@@ -295,7 +295,7 @@ export default function SignIn() {
               style={{ marginTop: 14 }}
             />
             <AppText variant="caption" color={palette.caption} style={{ marginTop: 10, lineHeight: 18 }}>
-              {t('Məktubda yalnız link varsa, kod xanasını boş burax — linkə toxunmaq kifayətdir.')}
+              {t('Məktubda yalnız keçid varsa, kod xanasını boş burax — keçidə toxunmaq kifayətdir.')}
             </AppText>
             <PressableScale haptic={false} onPress={() => setSent(null)} style={styles.backLink}>
               <AppText variant="subhead" color={palette.blue}>
@@ -351,7 +351,7 @@ export default function SignIn() {
             {byCode ? (
               <>
                 <Button
-                  title={busy === 'email' ? t('Göndərilir…') : t('Link göndər')}
+                  title={busy === 'email' ? t('Göndərilir…') : t('Keçid göndər')}
                   full
                   disabled={!emailOk || !!busy}
                   onPress={send}
@@ -388,7 +388,7 @@ export default function SignIn() {
                 </AppText>
                 <PressableScale activeScale={0.97} onPress={() => setByCode(true)} style={styles.switchRow}>
                   <AppText variant="footnote" color={palette.blue}>
-                    {t('Parolsuz — e-poçta kod göndər')}
+                    {t('Parolsuz — e-poçta keçid göndər')}
                   </AppText>
                 </PressableScale>
               </>
@@ -439,6 +439,15 @@ const styles = StyleSheet.create({
     borderColor: palette.separator,
   },
   codeInput: { textAlign: 'center', letterSpacing: 6, fontSize: 22, fontWeight: '700' },
-  backLink: { alignSelf: 'center', marginTop: 16 },
+  /* A 44 pt tap row around a one-line link: the subhead line alone is 18 pt
+     tall. The margin shrinks by the padding, so the words sit where they did. */
+  backLink: {
+    alignSelf: 'center',
+    minHeight: spacing.xxl,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    marginTop: spacing.xs,
+  },
   footer: { marginTop: 26, lineHeight: 18 },
 });

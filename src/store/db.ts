@@ -13,8 +13,10 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { programs as seedPrograms } from '@/data/mock';
+import { decimalSeparator } from '@/lib/format';
 import { cachedGym } from '@/lib/gymCache';
 import { Gym, Level, Partner, Program } from '@/data/types';
+import { t } from '@/lib/i18n';
 import { newId, uniqueTail } from '@/lib/ids';
 
 export const LEVEL_ORDER: Level[] = ['Başlanğıc', 'Orta', 'İrəli'];
@@ -720,6 +722,12 @@ export interface OverloadSuggestion {
 
 const halfKg = (n: number) => Math.round(n * 2) / 2;
 
+/* The load as the note prints it: exact (a logged 62.25 stays 62,25) and with the
+   language's decimal mark — the same figure session.tsx prefills and the «qəbul et»
+   button shows. The notes were hand-built Azerbaijani with a dot («+2.5kq»), so a
+   Russian or English user got Azerbaijani, and nobody got a comma. */
+const kgText = (n: number) => String(n).replace('.', decimalSeparator());
+
 /**
  * Progressive overload, exactly as the product rule states it.
  *
@@ -766,7 +774,7 @@ export function suggestNext(
         prevWeight,
         reason: 'deload',
         deload: true,
-        note: `Ardıcıl iki məşq ağır keçdi — ${prevWeight}kq-dan 5% aşağı: ${weight}kq ilə bərpa (deload) həftəsi`,
+        note: t('Ardıcıl iki məşq ağır keçdi — {prev} kq-dan 5% aşağı: {kg} kq ilə bərpa həftəsi', { prev: kgText(prevWeight), kg: kgText(weight) }),
       };
     }
     return {
@@ -774,7 +782,7 @@ export function suggestNext(
       prevWeight,
       reason: 'hard',
       deload: false,
-      note: `Keçən dəfə ${prevWeight}kq ağır keçdi — eyni çəkidə təkrarla`,
+      note: t('Keçən dəfə {prev} kq ağır keçdi — eyni çəkidə təkrarla', { prev: kgText(prevWeight) }),
     };
   }
 
@@ -786,7 +794,7 @@ export function suggestNext(
       prevWeight,
       reason: 'easy',
       deload: false,
-      note: `Keçən dəfə ${prevWeight}kq asan keçdi — +${inc}kq artır`,
+      note: t('Keçən dəfə {prev} kq asan keçdi — +{inc} kq artır', { prev: kgText(prevWeight), inc: kgText(inc) }),
     };
   }
 
@@ -803,7 +811,7 @@ export function suggestNext(
       prevWeight,
       reason: 'ok-hit',
       deload: false,
-      note: `Keçən dəfə ${prevWeight}kq × ${top.reps} — bütün setlər hədəfi vurdu, +2.5kq artır`,
+      note: t('Keçən dəfə {prev} kq × {reps} — bütün setlər hədəfi vurdu, +{inc} kq artır', { prev: kgText(prevWeight), reps: top.reps, inc: kgText(2.5) }),
     };
   }
   return {
@@ -811,7 +819,7 @@ export function suggestNext(
     prevWeight,
     reason: 'ok-miss',
     deload: false,
-    note: `Keçən dəfə ${prevWeight}kq — bu çəkidə hədəf təkrarları tamamla`,
+    note: t('Keçən dəfə {prev} kq — bu çəkidə hədəf təkrarları tamamla', { prev: kgText(prevWeight) }),
   };
 }
 

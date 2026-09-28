@@ -103,17 +103,43 @@ export default function History() {
       <View style={{ paddingHorizontal: spacing.screen, paddingBottom: 12 }}>
         <Segmented options={[t('Siyahı'), t('Təqvim')]} value={seg} onChange={setSeg} />
       </View>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
+      {/* iOS 26: the Liquid Glass tab bar floats over this list and reserves no
+          space, so at RN's default («never») the last session or «Daha çox
+          göstər» ended under the glass — 40 pt of padding cannot scroll it out.
+          «automatic» lets UIKit add the tab bar's safe area at the bottom; the top
+          is already padded by Screen and the NavBar, so nothing is added there.
+          iOS-only prop; on Android the tab already sits above its own bar. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
         {seg === 1 ? (
         <View style={styles.calCard}>
           <View style={styles.calHead}>
             <AppText variant="headline">{fmt.monthAndYear(month, year)}</AppText>
-            <View style={{ flexDirection: 'row', gap: 16 }}>
-              <PressableScale haptic={false} activeScale={0.85} hitSlop={10} onPress={() => setOffset((o) => o - 1)}>
-                <Icon name="chevL" size={17} color={palette.inkText} />
+            {/* The month arrows were 17 px glyphs with a 10 pt slop — about 37 pt
+                to aim at, and on Android a slop does not reach past the parent's
+                edge. Each is now a real 44x44 box with a 22 px glyph. */}
+            <View style={styles.monthNav}>
+              <PressableScale
+                haptic={false}
+                activeScale={0.85}
+                onPress={() => setOffset((o) => o - 1)}
+                style={styles.monthBtn}
+                accessibilityRole="button"
+                accessibilityLabel={t('Əvvəlki ay')}>
+                <Icon name="chevL" size={22} color={palette.inkText} />
               </PressableScale>
-              <PressableScale haptic={false} activeScale={0.85} hitSlop={10} disabled={offset >= 0} onPress={() => setOffset((o) => Math.min(0, o + 1))}>
-                <Icon name="chevR" size={17} color={offset >= 0 ? palette.tertiary : palette.inkText} />
+              <PressableScale
+                haptic={false}
+                activeScale={0.85}
+                disabled={offset >= 0}
+                onPress={() => setOffset((o) => Math.min(0, o + 1))}
+                style={styles.monthBtn}
+                accessibilityRole="button"
+                accessibilityLabel={t('Növbəti ay')}
+                accessibilityState={{ disabled: offset >= 0 }}>
+                <Icon name="chevR" size={22} color={offset >= 0 ? palette.tertiary : palette.inkText} />
               </PressableScale>
             </View>
           </View>
@@ -132,7 +158,7 @@ export default function History() {
           <View style={styles.calStats}>
             <CalStat value={`${monthStats.count}`} label={t('məşq')} />
             <View style={styles.vdiv} />
-            <CalStat value={t('{n} t', { n: (monthStats.volumeKg / 1000).toFixed(1) })} label={t('həcm')} />
+            <CalStat value={t('{n} t', { n: fmt.decimal(monthStats.volumeKg / 1000, 1) })} label={t('həcm')} />
             <View style={styles.vdiv} />
             <CalStat value={fmtDur(monthStats.durationMin, t)} label={t('zalda')} />
           </View>
@@ -162,19 +188,21 @@ export default function History() {
                     activeScale={0.99}
                     onPress={() => setOpen((o) => ({ ...o, [s.id]: !o[s.id] }))}
                     style={styles.sessionHead}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: isOpen }}
                   >
                     <View style={[styles.sessionIcon, { backgroundColor: 'rgba(198,255,61,0.3)' }]}>
-                      <Icon name="dumbbell" size={19} color="#5B7F00" />
+                      <Icon name="dumbbell" size={22} color="#5B7F00" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{s.title}</AppText>
                       <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
                         {d.getDate()} {t(AZ_MON_SHORT[d.getMonth()])} · {fmtDur(s.durationMin || 0, t)} ·{' '}
-                        {t('{n} t', { n: (s.volumeKg / 1000).toFixed(1) })} · {t('{n} set', { n: setsN, count: setsN })}
+                        {t('{n} t', { n: fmt.decimal(s.volumeKg / 1000, 1) })} · {t('{n} set', { n: setsN, count: setsN })}
                       </AppText>
                     </View>
                     <View style={isOpen ? styles.chevOpen : undefined}>
-                      <Icon name="chevD" size={17} color={palette.tertiary} />
+                      <Icon name="chevD" size={18} color={palette.tertiary} />
                     </View>
                   </PressableScale>
                   {partner ? (
@@ -215,6 +243,7 @@ export default function History() {
  *  the record with it and that is not obvious from the word «sil». */
 function DeleteWorkout({ workout }: { workout: Workout }) {
   const t = useT();
+  const fmt = useFormat();
   const [busy, setBusy] = useState(false);
   const ask = () => {
     const bests = bestsInWorkout(workout);
@@ -223,7 +252,7 @@ function DeleteWorkout({ workout }: { workout: Workout }) {
       bests.length
         ? t('{title} — həmişəlik silinir. Bu məşqin yazdığı şəxsi rekord ({records}) da geri götürülür.', {
             title: workout.title,
-            records: bests.map((b) => t('{lift} {n} kq', { lift: t(b.lift), n: b.value })).join(', '),
+            records: bests.map((b) => t('{lift} {n} kq', { lift: t(b.lift), n: fmt.weight(b.value) })).join(', '),
           })
         : t('{title} — həmişəlik silinir.', { title: workout.title }),
       [
@@ -253,8 +282,14 @@ function DeleteWorkout({ workout }: { workout: Workout }) {
     );
   };
   return (
-    <PressableScale activeScale={0.97} disabled={busy} onPress={ask} style={styles.deleteRow}>
-      <Icon name="x" size={14} color={palette.red} />
+    <PressableScale
+      activeScale={0.97}
+      disabled={busy}
+      onPress={ask}
+      style={styles.deleteRow}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: busy }}>
+      <Icon name="x" size={16} color={palette.red} />
       <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.red }}>
         {busy ? t('Silinir…') : t('Məşqi sil')}
       </AppText>
@@ -273,6 +308,7 @@ function DeleteWorkout({ workout }: { workout: Workout }) {
  *     quietly dropped or quietly included. */
 function SessionDetail({ workout }: { workout: Workout }) {
   const t = useT();
+  const fmt = useFormat();
   const withSets = workout.exercises.filter((e) => e.sets.length > 0);
   if (!withSets.length) {
     return (
@@ -297,7 +333,7 @@ function SessionDetail({ workout }: { workout: Workout }) {
          * filter here could never remove anything a current build wrote — but
          * on a row persisted by an older version it could remove a set that the
          * stored volume above was still counting, and the detail would then
-         * contradict its own «0.7 t». What is written is what is shown. */
+         * contradict its own «0,7 t». What is written is what is shown. */
         return (
           <View key={`${e.name}-${i}`} style={i > 0 ? { marginTop: 12 } : undefined}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
@@ -314,12 +350,14 @@ function SessionDetail({ workout }: { workout: Workout }) {
                         `bodyweight ?? 0` for every set when the person has never
                         logged a weight. «0 kq × 10» states a load nobody entered;
                         the rep count is the part we actually know. */}
-                    {x.weight > 0 ? t('{weight} kq × {reps}', { weight: x.weight, reps: x.reps }) : t('{n} təkrar', { n: x.reps, count: x.reps })}
+                    {/* fmt.weight: «22,5 kq» in az/ru, «22.5 kg» in en, and 70
+                        rather than «70,0» — the raw number printed «22.5». */}
+                    {x.weight > 0 ? t('{weight} kq × {reps}', { weight: fmt.weight(x.weight), reps: x.reps }) : t('{n} təkrar', { n: x.reps, count: x.reps })}
                     {/* Per-set RPE, if a writer ever records one. Today «Necə
                         keçdi?» on the summary screen rates the whole session,
                         so this stays empty rather than inventing a number for
                         each set. */}
-                    {x.rpe ? ` · RPE ${x.rpe}` : ''}
+                    {x.rpe ? ` · RPE ${fmt.weight(x.rpe)}` : ''}
                   </AppText>
                 </View>
               ))}
@@ -343,7 +381,15 @@ function CalStat({ value, label }: { value: string; label: string }) {
 
 const styles = StyleSheet.create({
   calCard: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 14 },
-  calHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  /* The row is now as tall as the 44 pt arrow boxes, and the 21 pt headline sits
+     11.5 pt down inside it. -11.5 above and 2.5 below (was 14) keep the month
+     title and the grid exactly where they were; the row only reaches into the
+     card's own 16 pt padding. */
+  calHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: -11.5, marginBottom: 2.5 },
+  // -11 puts the right arrow's 22 px glyph box back at the card's content edge
+  // (the 44 pt box is wider than the glyph); still inside the card's 16 pt padding.
+  monthNav: { flexDirection: 'row', marginRight: -11 },
+  monthBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   calGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   calCell: { width: '12.7%', aspectRatio: 1, borderRadius: 8 },
   calToday: { borderWidth: 2, borderColor: palette.ink },
@@ -354,7 +400,11 @@ const styles = StyleSheet.create({
   detail: { marginTop: 12, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(60,60,67,0.12)' },
   setRows: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 7 },
   setChip: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 7, backgroundColor: palette.grouped },
-  deleteRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 14, paddingVertical: 4 },
+  /* «Məşqi sil» was a 29 pt tall strip (a 21 pt line + 4 pt padding). A 44 pt
+     box is 15 pt taller, so each margin is pulled in by 7.5 (top 14 → 6.5,
+     bottom 0 → -7.5): the label and the card's bottom edge stay where they were,
+     and the -7.5 reaches only into the session card's 14 pt padding. */
+  deleteRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 44, marginTop: 6.5, marginBottom: -7.5 },
   sessionHead: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   sessionIcon: { width: 40, height: 40, borderRadius: 11, backgroundColor: '#F0F0F3', alignItems: 'center', justifyContent: 'center' },
   tag: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7, backgroundColor: palette.grouped },

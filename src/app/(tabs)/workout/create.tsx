@@ -1,10 +1,11 @@
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
+import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
@@ -120,6 +121,10 @@ export default function CreateProgram() {
       }
     };
 
+    /* The form keeps taps while a field is being typed in, so this can run with
+       the keyboard up. The action sheet is drawn at the bottom of the app's window
+       and does not lift itself, so it would open behind the keyboard. */
+    Keyboard.dismiss();
     actionSheet({
       title: item.name,
       message: t('Bu hərəkətin necə edildiyini göstər — 30 saniyəyə qədər.'),
@@ -138,6 +143,22 @@ export default function CreateProgram() {
         { label: t('Ləğv et'), style: 'cancel' as const },
       ],
     });
+  };
+
+  // ---- days ----------------------------------------------------------------
+  /* A day carries the author's work: every move in it, with its sets, reps and
+     filmed clip. One tap on its «x» used to throw all of that away, and that «x»
+     is now a full 44 pt target, so a slip is likelier — a day with moves in it
+     asks first. An empty day still goes at once. */
+  const removeDay = (dayKey: string, name: string, hasItems: boolean) => {
+    if (!hasItems) {
+      draft.removeDay(dayKey);
+      return;
+    }
+    confirm(t('«{day}» silinsin?', { day: name }), t('İçindəki hərəkətlər də silinəcək.'), [
+      { label: t('Ləğv et'), style: 'cancel' },
+      { label: t('Sil'), style: 'destructive', onPress: () => draft.removeDay(dayKey) },
+    ]);
   };
 
   // ---- save ----------------------------------------------------------------
@@ -203,6 +224,25 @@ export default function CreateProgram() {
      its own `router.back()` is let through without asking. */
   const navigation = useNavigation();
   const leavingRef = useRef(false);
+
+  /* The keyboard covered the reps/set fields of the lower day cards: nothing moved
+     the list. iOS does it natively (automaticallyAdjustKeyboardInsets on the
+     ScrollView). Android edge-to-edge does not resize the window, so there the
+     scroller shrinks by the overlap and scrolls by the same amount, keeping the
+     tapped field where it was — the profile/edit pattern. Android only: on iOS this
+     screen runs under the floating tab bar, so the lift's inset arithmetic does not
+     hold, and the native adjustment already covers it. */
+  const kbLift = useKeyboardLift();
+  const lift = Platform.OS === 'android' ? kbLift : 0;
+  const scroller = useRef<ScrollView>(null);
+  const scrollY = useRef(0);
+  const lifted = useRef(0);
+  useEffect(() => {
+    const delta = lift - lifted.current;
+    lifted.current = lift;
+    if (delta > 0) scroller.current?.scrollTo({ y: scrollY.current + delta, animated: true });
+  }, [lift]);
+
   usePreventRemove(draft.touched && !saving, ({ data }) => {
     if (leavingRef.current) {
       navigation.dispatch(data.action);
@@ -231,14 +271,36 @@ export default function CreateProgram() {
     <Screen>
       <NavBar
         right={
-          <PressableScale onPress={ready ? save : sayWhatIsMissing} haptic={false} activeScale={0.94} disabled={saving}>
+          <PressableScale
+            onPress={ready ? save : sayWhatIsMissing}
+            haptic={false}
+            activeScale={0.94}
+            disabled={saving}
+            accessibilityRole="button"
+            style={styles.navAction}>
             <AppText variant="headline" color={ready && !saving ? palette.blue : palette.tertiary}>
               {saving ? t('Saxlanılır…') : draft.editingId ? t('Saxla') : t('Yarat')}
             </AppText>
           </PressableScale>
         }
       />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      {/* This is a TAB screen and iOS 26's Liquid Glass tab bar floats over it:
+          with only 40 pt of end padding the lock note and the «what is missing»
+          hint stayed under the glass. "automatic" insets the list by the safe area,
+          which inside a tab includes the bar. Android ignores the prop; there the
+          tab scene already stops above the Material bar. */}
+      <ScrollView
+        ref={scroller}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        onScroll={(e) => {
+          scrollY.current = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+        style={{ marginBottom: lift }}>
         <AppText variant="title" style={{ marginBottom: 18 }}>
           {draft.editingId ? t('Proqramı redaktə et') : t('Proqram yarat')}
         </AppText>
@@ -279,8 +341,15 @@ export default function CreateProgram() {
                 style={styles.dayTitleInput}
               />
               {draft.days.length > 1 ? (
-                <PressableScale activeScale={0.9} onPress={() => draft.removeDay(d.key)} style={styles.removeBtn}>
-                  <Icon name="x" size={15} color={palette.textSecondary} />
+                <PressableScale
+                  activeScale={0.9}
+                  onPress={() => removeDay(d.key, d.title.trim() || t('Gün {n}', { n: i + 1 }), d.items.length > 0)}
+                  style={styles.removeBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Günü sil')}>
+                  <View style={styles.removeDot}>
+                    <Icon name="x" size={18} color={palette.textSecondary} />
+                  </View>
                 </PressableScale>
               ) : null}
             </View>
@@ -376,8 +445,15 @@ function ItemEditor({
           maxLength={80}
           style={styles.itemName}
         />
-        <PressableScale activeScale={0.9} onPress={onRemove} style={styles.removeBtn}>
-          <Icon name="x" size={14} color={palette.textSecondary} />
+        <PressableScale
+          activeScale={0.9}
+          onPress={onRemove}
+          style={[styles.removeBtn, styles.removeBtnInItem]}
+          accessibilityRole="button"
+          accessibilityLabel={t('Hərəkəti sil')}>
+          <View style={styles.removeDot}>
+            <Icon name="x" size={18} color={palette.textSecondary} />
+          </View>
         </PressableScale>
       </View>
 
@@ -423,6 +499,16 @@ function ItemEditor({
                 activeScale={0.95}
                 haptic={false}
                 onPress={() => onPatch({ mode: m })}
+                /* The chip is drawn 22 pt tall. The slop takes the 8 pt gap above
+                   and the 5 pt gap below (the value field below keeps its own taps)
+                   for a 35 pt target. A real 44 pt chip would push this column's
+                   field out of line with the «Set» field. The rows around it are
+                   layout-only views that Fabric flattens, so the slop is tested
+                   inside the move's box — on Android too. Giving modeRow or fields
+                   a background would make them real views and cut it off there. */
+                hitSlop={{ top: 8, bottom: 5, left: 3, right: 3 }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: item.mode === m }}
                 style={[styles.mode, item.mode === m ? styles.modeOn : null]}>
                 <AppText variant="caption" color={item.mode === m ? palette.ink : palette.caption}>
                   {m === 'reps' ? t('Təkrar') : t('Müddət')}
@@ -481,7 +567,9 @@ const styles = StyleSheet.create({
     color: palette.inkText,
   },
   dayCard: { backgroundColor: palette.white, borderRadius: 16, padding: 14, marginBottom: 10 },
-  dayHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  // 44 = the «x» box below. Held with or without it, so adding a second day does
+  // not make the first card's header jump by the box's extra height.
+  dayHead: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
   dayIndex: { width: 28, height: 28, borderRadius: 9, backgroundColor: 'rgba(198,255,61,0.22)', alignItems: 'center', justifyContent: 'center' },
   dayTitleInput: { flex: 1, fontSize: 16, fontWeight: '600', color: palette.inkText, paddingVertical: 6 },
   focusInput: { fontSize: 13.5, color: palette.textSecondary, paddingVertical: 6, marginLeft: 38 },
@@ -516,7 +604,26 @@ const styles = StyleSheet.create({
   },
   videoBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10, marginLeft: 24, paddingVertical: 6 },
 
-  removeBtn: { width: 26, height: 26, borderRadius: 13, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
+  /* The «x» that removes a day or a move. It was a 26 pt circle with a 14-15 px
+     glyph — the cross itself drew about 7 px wide — and the circle was the whole
+     tap target. The target is now a real 44 x 44 box (not hitSlop, which React
+     Native never extends past the parent's bounds); the visible circle grows to 30
+     with an 18 px glyph. marginRight gives back the box's side room, so the circle
+     keeps its place at the card's right edge and the target reaches 7 pt into the
+     card padding — both iOS and Android hit-test a child that overflows its row
+     like this. The day header is 44 pt tall instead (dayHead): a negative vertical
+     margin there would push the box over the «Fokus» field right under it, which
+     is drawn later and so would take those taps. */
+  removeBtn: { width: 44, height: 44, marginRight: -7, alignItems: 'center', justifyContent: 'center' },
+  /* A move's header keeps its ~30 pt height: the box overflows 7 pt above (into
+     the row's own top padding) and 7 pt below (into the 8 pt gap before the
+     fields), so it covers nothing else that takes a touch. */
+  removeBtnInItem: { marginVertical: -7 },
+  removeDot: { width: 30, height: 30, borderRadius: 15, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
+  /* «Yarat» / «Saxla» is text, and the press area was only the text's own ~21 pt
+     line. 44 pt tall fills the bar; the side padding is given back by the negative
+     margin, so the word stays where it was and the target reaches toward the edge. */
+  navAction: { height: 44, justifyContent: 'center', paddingHorizontal: spacing.sm, marginRight: -spacing.sm },
   addMove: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 40, marginTop: 12, borderRadius: 11, backgroundColor: palette.grouped },
   addDay: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator },
   note: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: palette.grouped, borderRadius: 14, padding: 14, marginTop: 22 },

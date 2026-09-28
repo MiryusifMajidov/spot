@@ -50,7 +50,7 @@ export default function AuthCallback() {
       if (!alive) return;
       if (r === 'failed') {
         errorFeedback();
-        toast(t('Link işləmədi — köhnəlib və ya artıq istifadə olunub. Yenisini göndər.'), 'error');
+        toast(t('Keçid işləmədi — köhnəlib və ya artıq istifadə olunub. Yenisini göndər.'), 'error');
         router.replace({ pathname: '/auth/sign-in', params: { mode: 'login' } });
         return;
       }
@@ -97,7 +97,7 @@ export default function AuthCallback() {
               {t('Giriş uzun çəkir')}
             </AppText>
             <AppText variant="body" color={palette.textSecondary} center style={styles.body}>
-              {t('Bağlantını yoxla. Link işləməyibsə, e-poçt ekranından yenisini göndərə bilərsən.')}
+              {t('Bağlantını yoxla. Keçid işləməyibsə, e-poçt ekranından yenisini göndərə bilərsən.')}
             </AppText>
             <Button
               title={t('E-poçt ekranına qayıt')}

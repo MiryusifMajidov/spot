@@ -99,8 +99,10 @@ export default function GymClasses() {
           <PressableScale
             activeScale={0.9}
             onPress={() => setEditing({ index: null, time: '', name: '', trainer: '' })}
-            style={styles.fab}>
-            <Icon name="plus" size={20} color={palette.inkText} />
+            style={styles.fab}
+            accessibilityRole="button"
+            accessibilityLabel={t('Cədvələ əlavə et')}>
+            <Icon name="plus" size={22} color={palette.inkText} />
           </PressableScale>
         </View>
         {/* This used to say the schedule «zal profilinə yazılır» — the gym profile.
@@ -140,8 +142,15 @@ export default function GymClasses() {
                     <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>{c.trainer}</AppText>
                   ) : null}
                 </View>
-                <PressableScale activeScale={0.9} onPress={() => remove(i)} style={styles.del}>
-                  <Icon name="x" size={14} color={palette.tertiary} />
+                <PressableScale
+                  activeScale={0.9}
+                  onPress={() => remove(i)}
+                  style={styles.del}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Sətri sil')}>
+                  <View style={styles.delDot}>
+                    <Icon name="x" size={18} color={palette.textSecondary} />
+                  </View>
                 </PressableScale>
               </PressableScale>
             ))}
@@ -230,10 +239,19 @@ function Field({
 
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  fab: { width: 40, height: 40, borderRadius: 20, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
+  fab: { width: 44, height: 44, borderRadius: 22, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
   card: { backgroundColor: palette.white, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   vdiv: { width: StyleSheet.hairlineWidth, height: 32, backgroundColor: 'rgba(60,60,67,0.14)' },
-  del: { width: 28, height: 28, borderRadius: 14, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
+  /* The «×» used to be its own 28 pt circle — the whole press area, and the one
+     control on the row that deletes. Now a 44 pt box around a 30 pt dot (the same
+     remove control as workout/create.tsx). The negative margins give the extra
+     back to the layout: sideways the dot keeps its old place at the card's edge
+     and the text column gives up only the 2 pt the dot grew; vertically the box
+     counts as 32 pt, the divider's height, so a one-line row is no taller. The
+     overflow lands in the card's own 14 pt padding — inside the parent, so
+     Android delivers the touch. */
+  del: { width: 44, height: 44, marginHorizontal: -7, marginVertical: -6, alignItems: 'center', justifyContent: 'center' },
+  delDot: { width: 30, height: 30, borderRadius: 15, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
   modalBg: { flex: 1, backgroundColor: palette.overlay, justifyContent: 'flex-end' },
   sheet: { backgroundColor: palette.grouped, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20 },
   input: { backgroundColor: palette.white, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: palette.inkText, borderWidth: 1, borderColor: palette.separator },

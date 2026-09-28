@@ -1,10 +1,9 @@
+import Constants from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { confirm, toast } from '@/store/ui';
 
-import { Icon } from '@/components/Icon';
-import { AppText } from '@/components/ui/AppText';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { ListGroup, ListRow } from '@/components/ui/ListGroup';
 import { NavBar } from '@/components/ui/NavBar';
@@ -18,6 +17,11 @@ import { releaseSounds, successFeedback, tapFeedback } from '@/lib/feedback';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
+
+/* The version the build was made with (app.json → embedded manifest). The row
+   used to print a hard-coded «v1.0» while the store build was 1.4.x, so the one
+   place someone looks up the version to report a bug told them the wrong one. */
+const APP_VERSION = Constants.expoConfig?.version ?? null;
 
 export default function Settings() {
   const t = useT();
@@ -135,11 +139,13 @@ export default function Settings() {
   /* «Onboarding» is an English word, and the app is Azerbaijani only. The dialog
      body and the row's own footer already called this flow «qeydiyyat», so the
      screen used two names for one thing and one of them was not the language the
-     product ships in. */
+     product ships in.
+     The body names the Privacy row by its real title, «Bu cihazdakı nüsxəni sil»;
+     it used to send people to «Datanı bu cihazdan sil», a row that does not exist. */
   const resetOnboarding = () =>
     confirm(
       t('Qeydiyyatı yenidən keç'),
-      t('Qeydiyyat addımları bu cihazda yenidən başlayacaq və cavablarını yenidən verə bilərsən. Serverdəki profilin silinmir — dəyişmədiyin sahələr olduğu kimi qalır. Məşq, çəki və check-in tarixçən də toxunulmur; onları silmək üçün Məxfilik → «Datanı bu cihazdan sil».'),
+      t('Qeydiyyat addımları bu cihazda yenidən başlayacaq və cavablarını yenidən verə bilərsən. Serverdəki profilin silinmir — dəyişmədiyin sahələr olduğu kimi qalır. Məşq, çəki və check-in tarixçən də toxunulmur; onları silmək üçün Məxfilik → «Bu cihazdakı nüsxəni sil».'),
       [
         { label: t('Ləğv et'), style: 'cancel' },
         {
@@ -156,7 +162,18 @@ export default function Settings() {
   return (
     <Screen>
       <NavBar title={t('Parametrlər')} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      {/* Pushed inside the Profil tab, so on iOS 26 the floating Liquid Glass tab
+          bar sits over the bottom of this list and reserves no space: at RN's
+          default («never») the last group, «Qeydiyyatı yenidən keç», could not be
+          scrolled out from under it. The first child of Screen is NavBar, so
+          react-native-screens does not find this scroll view by itself — it is
+          said here. «automatic» adds the bar's safe area at the bottom only (the
+          top is already Screen's edge). iOS-only prop; Android's bar takes its
+          own space. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.content}>
         {/* There is no subscription tier. The SPOT+ card that used to sit here sold a
             «PULSUZ (hazırda)» plan — a paid tier that was cancelled permanently — and its
             chevron led nowhere. Nothing in the app is gated by a plan, so nothing here
@@ -209,7 +226,7 @@ export default function Settings() {
             />
           )}
           <ListRow icon="user" iconBg={palette.blue} title={t('Profili redaktə et')} onPress={() => router.push('/(tabs)/profile/edit')} />
-          <ListRow icon="lock" iconBg="#8A8A93" title={t('Məxfilik')} subtitle={t('Görünürlük və data')} onPress={() => router.push('/(tabs)/profile/privacy')} />
+          <ListRow icon="lock" iconBg={palette.caption} title={t('Məxfilik')} subtitle={t('Görünürlük və məlumatlar')} onPress={() => router.push('/(tabs)/profile/privacy')} />
           <ListRow icon="bookmark" iconBg={palette.voltDeep} title={t('Saxlanılanlar')} subtitle={t('Videolar və zallar')} onPress={() => router.push('/(tabs)/profile/saved')} />
           <ListRow icon="bell" iconBg={palette.streak} title={t('Bildirişlər')} subtitle={t('Hansı bildirişləri alacağını seç')} onPress={() => router.push('/(tabs)/profile/notifications')} />
         </ListGroup>
@@ -251,31 +268,47 @@ export default function Settings() {
           )}
         </ListGroup>
 
+        {/* Plain ListRows with a switch on the right, like «Zalda göründüyümü göstər»
+            in Məxfilik. These two used to be a hand-made copy of ListRow (glyph 17,
+            12 pt caption subtitle, 56 pt rows), so they never quite matched the rows
+            around them — and a change to ListRow's icon size would have skipped them. */}
         <ListGroup
           header={t('Toxunma və səs')}
           footer={t('Düymələrə basanda titrəmə və qısa səs. İkisini də ayrıca söndürə bilərsən.')}>
-          <FeedbackRow
+          <ListRow
             icon="sliders"
             iconBg={palette.inkText}
             title={t('Titrəmə')}
             subtitle={t('Basanda yüngül titrəmə')}
-            value={haptics}
-            onChange={(v) => {
-              setFeedback({ haptics: v });
-              if (v) tapFeedback();
-            }}
+            chevron={false}
+            right={
+              <FeedbackSwitch
+                label={t('Titrəmə')}
+                value={haptics}
+                onChange={(v) => {
+                  setFeedback({ haptics: v });
+                  if (v) tapFeedback();
+                }}
+              />
+            }
           />
-          <FeedbackRow
+          <ListRow
             icon="sound"
             iconBg={palette.blue}
             title={t('Səs')}
             subtitle={t('Qısa interfeys səsləri')}
-            value={sounds}
-            onChange={(v) => {
-              setFeedback({ sounds: v });
-              if (v) successFeedback();
-              else releaseSounds();
-            }}
+            chevron={false}
+            right={
+              <FeedbackSwitch
+                label={t('Səs')}
+                value={sounds}
+                onChange={(v) => {
+                  setFeedback({ sounds: v });
+                  if (v) successFeedback();
+                  else releaseSounds();
+                }}
+              />
+            }
           />
         </ListGroup>
 
@@ -286,7 +319,7 @@ export default function Settings() {
               so this row advertised a screen by a name that appears nowhere on it. */}
           <ListRow icon="trophy" iconBg={palette.streak} title={t('Nailiyyətlər')} subtitle={t('Nişanlar və seriya')} onPress={() => router.push('/(tabs)/profile/achievements')} />
           <ListRow icon="shield" iconBg={palette.voltDeep} title={t('Kömək və dəstək')} subtitle={t('Problemi komandaya bildir')} onPress={help} />
-          <ListRow icon="star" iconBg={palette.streak} title={t('SPOT haqqında')} value="v1.0" chevron={false} />
+          <ListRow icon="star" iconBg={palette.streak} title={t('SPOT haqqında')} value={APP_VERSION ? `v${APP_VERSION}` : undefined} chevron={false} />
         </ListGroup>
 
         {/* Reachable AFTER onboarding too: the store review checks that a
@@ -324,31 +357,20 @@ export default function Settings() {
   );
 }
 
-/** A settings row whose control is a real switch, styled like the list rows. */
-function FeedbackRow({ icon, iconBg, title, subtitle, value, onChange }: {
-  icon: 'sliders' | 'sound';
-  iconBg: string;
-  title: string;
-  subtitle: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-}) {
+/** The switch at the end of a feedback row. `label` is its row's title: on its
+ *  own a switch is read out as an unlabelled «switch, on», with no hint which of
+ *  the two it is. */
+function FeedbackSwitch({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <View style={styles.fbRow}>
-      <View style={[styles.fbIcon, { backgroundColor: iconBg }]}>
-        <Icon name={icon} size={17} color={palette.white} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <AppText variant="body">{title}</AppText>
-        <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>{subtitle}</AppText>
-      </View>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: palette.voltDeep, false: palette.separator }} />
-    </View>
+    <Switch
+      value={value}
+      onValueChange={onChange}
+      accessibilityLabel={label}
+      trackColor={{ true: palette.voltDeep, false: palette.separator }}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  fbRow: { flexDirection: "row", alignItems: "center", gap: 13, paddingVertical: 10, paddingHorizontal: 14, minHeight: 56 },
-  fbIcon: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 40 },
 });

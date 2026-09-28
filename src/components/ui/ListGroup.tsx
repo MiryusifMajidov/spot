@@ -60,7 +60,11 @@ export function ListRow({
     <View style={styles.row}>
       {icon ? (
         <View style={[styles.iconBox, { backgroundColor: iconBg ?? palette.ink }]}>
-          <Icon name={icon} size={16} color={iconColor} />
+          {/* 20, not 16: the glyphs fill only the middle ~70% of their 24-unit box,
+              so 16 drew a ~10 pt mark in the 30 pt tile — the Settings and Privacy
+              icons owners called «too small». 20 is about half the tile, the
+              proportion of iOS Settings. */}
+          <Icon name={icon} size={20} color={iconColor} />
         </View>
       ) : null}
       <View style={{ flex: 1 }}>

@@ -11,9 +11,9 @@ import { useProgram } from '@/lib/hooks';
 import { t } from '@/lib/i18n';
 import { getMyAssignedProgram, type AssignedProgram } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { useFormat, useT } from '@/lib/useT';
+import { useFormat, useT, type Fmt } from '@/lib/useT';
 import { exerciseLibrary, useAllPrograms, useDb, useWeekStats } from '@/store/db';
-import { palette, spacing } from '@/theme';
+import { hitSlop, palette, spacing } from '@/theme';
 import { estimateDurationMin, resolveDayExercises } from './day';
 
 /**
@@ -34,14 +34,26 @@ import { estimateDurationMin, resolveDayExercises } from './day';
  * gone. There is one exercise library and one session logger.
  */
 
-/* The translator is passed in, not read from the module: the compiler memoises
-   this call by its arguments, and a helper that reads the language on the side
-   would keep the first language forever (see src/lib/useT.ts). */
-const fmtDuration = (sec: number, tr: typeof t) => {
-  const h = Math.floor(sec / 3600);
-  const m = Math.round((sec % 3600) / 60);
-  return h > 0 ? tr('{h}s {m}d', { h, m }) : tr('{m}d', { m, count: m });
+/* The week's training time. It is the sum of each logged session's own clock
+   (session.tsx stores `durationMin` = from start to finish), so it is time spent
+   TRAINING — a home session counts, a check-in does not. It was labelled «zalda»
+   («at the gym»), which it never measured, and printed as «0d» — «d» for
+   dəqiqə, which nobody could read. Minutes up to an hour, then hours with one
+   decimal («1,5 saat»): «1 saat 20 dəq» does not fit a third of the card.
+
+   The translator and formatter are passed in, not read from the module: the
+   compiler memoises this call by its arguments, and a helper that reads the
+   language on the side would keep the first language forever (see src/lib/useT.ts). */
+const fmtTrainingTime = (sec: number, tr: typeof t, fmt: Fmt) => {
+  const min = Math.round(sec / 60);
+  if (min < 60) return tr('{n} dəq', { n: min, count: min });
+  const h = Math.round(min / 6) / 10; // hours, one decimal
+  return tr('{n} saat', { n: Number.isInteger(h) ? String(h) : fmt.decimal(h, 1) });
 };
+
+/* «Hamısı» is one 18 pt line of subhead text: 13 pt above and below makes the
+   44 pt target (the shared 8 pt slop alone gave 34). */
+const linkSlop = { ...hitSlop, top: 13, bottom: 13 };
 
 export default function WorkoutToday() {
   const router = useRouter();
@@ -117,7 +129,19 @@ export default function WorkoutToday() {
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      {/* iOS 26: the Liquid Glass tab bar floats over this list. Left at RN's
+          default («never») the last row («Hərəkət kitabxanası») would end under the
+          glass — 32 pt of padding cannot scroll it out. react-native-screens does
+          switch a tab's scroll view to «automatic», but only the one it finds down
+          the FIRST-child chain at mount; saying it here does not depend on that.
+          «automatic» lets UIKit add the tab bar's safe area at the bottom; the top
+          is already padded by Screen, so nothing is added there (the same pairing
+          as Screen's own `scroll` mode). iOS-only prop; Android's bar reserves its
+          own space. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <AppText variant="footnote" color={palette.caption}>
@@ -127,8 +151,13 @@ export default function WorkoutToday() {
               {t('Məşq')}
             </AppText>
           </View>
-          <PressableScale activeScale={0.9} onPress={() => router.push('/chat')}>
-            <Icon name="msg" size={22} color={palette.inkText} />
+          <PressableScale
+            activeScale={0.9}
+            onPress={() => router.push('/chat')}
+            accessibilityRole="button"
+            accessibilityLabel={t('Söhbətlər')}
+            style={styles.headerBtn}>
+            <Icon name="msg" size={24} color={palette.inkText} />
           </PressableScale>
         </View>
 
@@ -202,11 +231,12 @@ export default function WorkoutToday() {
 
         {/* ---------- 3. the week, in three numbers ---------- */}
         <View style={styles.week}>
-          <Stat value={String(week.count)} label={t('məşq')} />
+          {/* `count` picks the plural: «1 тренировка», not «1 тренировок». */}
+          <Stat value={String(week.count)} label={t('məşq', { count: week.count })} />
           <View style={styles.vdiv} />
-          <Stat value={t('{n} t', { n: (week.volumeKg / 1000).toFixed(1) })} label={t('həcm')} />
+          <Stat value={t('{n} t', { n: fmt.decimal(week.volumeKg / 1000, 1) })} label={t('həcm')} />
           <View style={styles.vdiv} />
-          <Stat value={fmtDuration(week.durationSec, t)} label={t('zalda')} />
+          <Stat value={fmtTrainingTime(week.durationSec, t, fmt)} label={t('məşq vaxtı')} />
         </View>
         <AppText variant="caption" color={palette.caption} style={{ marginTop: 8 }}>
           {t('Bu həftə')}
@@ -215,7 +245,7 @@ export default function WorkoutToday() {
         {/* ---------- 4. programs ---------- */}
         <View style={styles.sectionHead}>
           <AppText variant="title3">{t('Proqramlar')}</AppText>
-          <PressableScale haptic={false} onPress={() => router.push('/(tabs)/workout/library')}>
+          <PressableScale haptic={false} hitSlop={linkSlop} onPress={() => router.push('/(tabs)/workout/library')}>
             <AppText variant="subhead" color={palette.blue}>
               {t('Hamısı')}
             </AppText>
@@ -286,7 +316,10 @@ export default function WorkoutToday() {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <View style={{ flex: 1 }}>
-      <AppText variant="title3">{value}</AppText>
+      {/* A third of the card is ~80 pt on a small phone: shrink, never wrap. */}
+      <AppText variant="title3" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+        {value}
+      </AppText>
       <AppText variant="caption" color={palette.caption} style={{ marginTop: 3 }}>
         {label}
       </AppText>
@@ -297,6 +330,9 @@ function Stat({ value, label }: { value: string; label: string }) {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'flex-end', paddingTop: 8, paddingBottom: 18 },
+  /* A 44 pt target around a 24 px glyph. The negative margin keeps the GLYPH on
+     the cards' right edge; only the invisible target reaches into the gutter. */
+  headerBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
   todayCard: { backgroundColor: palette.ink, borderRadius: 20, padding: 20 },
   startBtn: {
     flexDirection: 'row',
@@ -310,7 +346,9 @@ const styles = StyleSheet.create({
   },
   week: {
     flexDirection: 'row',
-    alignItems: 'center',
+    /* Top, not centre: if one label wraps (large system text, a longer
+       translation) the three numbers must still sit on one line. */
+    alignItems: 'flex-start',
     backgroundColor: palette.white,
     borderRadius: 16,
     padding: 16,

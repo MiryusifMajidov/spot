@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { Icon, IconName } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -10,8 +10,16 @@ import { palette, spacing } from '@/theme';
 
 type Badge = { icon: IconName; label: string; earned: boolean };
 
+const GRID_GAP = 10;
+
 export default function Achievements() {
   const t = useT();
+  /* Three badges to a row, measured. The tile used to be «31.5%» wide, and three
+     of those plus two 10 pt gaps only fit a row at least 364 pt wide — on a
+     393 pt iPhone (353 pt row) or a 360 dp Android (320 dp row) the grid broke
+     into two per row with a third-sized hole on the right. */
+  const { width: windowW } = useWindowDimensions();
+  const badgeW = Math.floor((windowW - spacing.screen * 2 - GRID_GAP * 2) / 3);
   const stats = useStats();
   const checkInCount = useDb((s) => s.checkIns.length);
   const partners = useDb((s) => Object.values(s.matches).filter((m) => m.state === 'accepted').length);
@@ -36,20 +44,34 @@ export default function Achievements() {
     { icon: 'target', label: '10 məşq', earned: stats.count >= 10 },
   ];
   const earned = badges.filter((b) => b.earned);
-  const locked = badges.filter((b) => !b.earned);
 
   const close = [
     { icon: 'target' as IconName, label: '50 məşq', cur: Math.min(stats.count, 50), total: 50 },
     { icon: 'users' as IconName, label: '5 yoldaşla məşq', cur: Math.min(trainedWith, 5), total: 5 },
     { icon: 'dumbbell' as IconName, label: '100 t həcm', cur: Math.min(Math.round(volumeT), 100), total: 100 },
   ];
+  // The section lists only goals still open, so it is gated on those. Gating it on
+  // the locked badges drew a bare «YAXINDIR» heading when every goal here was met
+  // but a badge (100 kq skvat, 21 gün seriya) was still locked — and hid goals
+  // still open (50 məşq) once every badge was earned.
+  const upcoming = close.filter((c) => c.cur < c.total);
 
   const week = Array.from({ length: 7 }).map((_, i) => i < Math.min(stats.streakDays, 7));
 
   return (
     <Screen edges={['top']}>
       <NavBar title={t('Nailiyyətlər')} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
+      {/* iOS 26: this screen is pushed inside the Profil tab, and the Liquid Glass
+          tab bar floats over it without reserving space. At RN's default
+          («never») the closing note ended under the glass — 40 pt of padding
+          cannot scroll it out. «automatic» lets UIKit add the tab bar's safe area
+          at the bottom; the top is already padded by Screen and the scroll view
+          starts below NavBar, so nothing is added there. iOS-only prop; on
+          Android the tab already sits above its bar. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
         <View style={styles.streakCard}>
           <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
             <View style={styles.streakBadge}>
@@ -80,7 +102,7 @@ export default function Achievements() {
         ) : (
           <View style={styles.grid}>
             {earned.map((b) => (
-              <View key={b.label} style={styles.badge}>
+              <View key={b.label} style={[styles.badge, { width: badgeW }]}>
                 <View style={styles.badgeIcon}>
                   <Icon name={b.icon} size={22} color="#5B7F00" />
                 </View>
@@ -90,16 +112,17 @@ export default function Achievements() {
           </View>
         )}
 
-        {locked.length > 0 ? (
+        {upcoming.length > 0 ? (
           <>
             <AppText variant="overline" color={palette.tertiary} style={{ marginTop: 16, marginBottom: 12 }}>
               {t('YAXINDIR')}
             </AppText>
             <View style={{ gap: 10 }}>
-              {close.filter((c) => c.cur < c.total).map((c) => (
+              {upcoming.map((c) => (
                 <View key={c.label} style={styles.closeRow}>
+                  {/* Same 44 box and 22 px glyph as the earned badges above. */}
                   <View style={styles.closeIcon}>
-                    <Icon name={c.icon} size={21} color="#B4B4BB" />
+                    <Icon name={c.icon} size={22} color="#B4B4BB" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t(c.label)}</AppText>
@@ -133,11 +156,12 @@ const styles = StyleSheet.create({
   streakCard: { backgroundColor: palette.ink, borderRadius: 20, padding: 18, marginBottom: 14 },
   streakBadge: { width: 70, height: 70, borderRadius: 20, backgroundColor: 'rgba(255,107,53,0.22)', alignItems: 'center', justifyContent: 'center' },
   weekSeg: { flex: 1, height: 24, borderRadius: 5 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 4 },
-  badge: { width: '31.5%', backgroundColor: palette.white, borderRadius: 16, padding: 14, alignItems: 'center' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP, marginBottom: 4 },
+  // width is set per render from the window (badgeW).
+  badge: { backgroundColor: palette.white, borderRadius: 16, padding: 14, alignItems: 'center' },
   badgeIcon: { width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(198,255,61,0.3)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   closeRow: { backgroundColor: palette.white, borderRadius: 16, padding: 14, flexDirection: 'row', gap: 13, alignItems: 'center' },
-  closeIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#F0F0F3', alignItems: 'center', justifyContent: 'center' },
+  closeIcon: { width: 44, height: 44, borderRadius: 13, backgroundColor: '#F0F0F3', alignItems: 'center', justifyContent: 'center' },
   progressTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: '#EFEFF2', overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: palette.ink },
   note: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', marginTop: 16, paddingHorizontal: 4 },

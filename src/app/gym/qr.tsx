@@ -103,7 +103,16 @@ export default function GymQr() {
       ]
     );
 
-  if (!gym) return <GymGate state={state} />;
+  /* The gate gets the same frame as the screen: bare, it was drawn under the
+     status bar with no way back to the panel. */
+  if (!gym) {
+    return (
+      <Screen edges={['top']}>
+        <NavBar title={t('Zal kodu')} />
+        <GymGate state={state} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen edges={['top']}>
@@ -132,7 +141,7 @@ export default function GymQr() {
             </AppText>
           ) : code.k === 'failed' ? (
             <>
-              <Icon name="x" size={28} color={palette.red} />
+              <Icon name="x" size={32} color={palette.red} />
               <AppText variant="headline" center style={{ marginTop: 12 }}>
                 {t('Kod yüklənmədi')}
               </AppText>
@@ -144,7 +153,7 @@ export default function GymQr() {
             </>
           ) : (
             <>
-              <Icon name="qr" size={30} color={palette.tertiary} />
+              <Icon name="qr" size={34} color={palette.tertiary} />
               <AppText variant="headline" center style={{ marginTop: 12 }}>
                 {t('Hələ kod yoxdur')}
               </AppText>
@@ -162,7 +171,7 @@ export default function GymQr() {
              anywhere — paste it into any QR generator at home — until the owner
              happens to rotate it. The note below tells the owner not to share it;
              the screen should not offer the one button that does. */
-          <PressableScale haptic={false} onPress={askRotate} disabled={busy} style={styles.rotate}>
+          <PressableScale haptic={false} onPress={askRotate} disabled={busy} accessibilityRole="button" style={styles.rotate}>
             <AppText variant="subhead" color={palette.red}>
               {busy ? t('Yenilənir…') : t('Yeni kod yarat')}
             </AppText>
@@ -170,7 +179,7 @@ export default function GymQr() {
         ) : null}
 
         <View style={styles.note}>
-          <Icon name="shield" size={17} color={palette.voltDeep} />
+          <Icon name="shield" size={18} color={palette.voltDeep} />
           <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 19 }}>
             {t(
               'Bu kodu yalnız sən görürsən. Onu kim oxuyursa, zalda olduğunu sübut edir — ona görə şəkildə paylaşma, divara as.'
@@ -195,7 +204,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   qrBox: { padding: 14, backgroundColor: '#FFFFFF', borderRadius: 14 },
-  rotate: { alignSelf: 'center', paddingVertical: 16, marginTop: 6 },
+  rotate: { alignSelf: 'center', paddingVertical: 16, paddingHorizontal: 20, marginTop: 6 },
   note: {
     flexDirection: 'row',
     gap: 10,

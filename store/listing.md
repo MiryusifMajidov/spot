@@ -149,7 +149,7 @@ QONAQ REJİMİ
 Hesabsız da Kəşfə girib zallara və müəllimlərə baxa bilirsən. Qeydiyyat yalnız insanlarla əlaqə, check-in və qeyd üçün lazımdır.
 
 MƏXFİLİK
-Zal sahibi və admin sənin çəkini, məşq detallarını, şəkillərini və söhbətlərini görmür — yalnız öz zalındakı check-in-lərini görür. İstəsən, zalın üzv siyahısında ümumiyyətlə görünmürsən. Məlumatlarını ixrac edə, hesabını tətbiqin içindən silə bilərsən.
+Zal sahibi və admin sənin məşq detallarını, şəxsi rekordlarını və söhbətlərini görmür — yalnız öz zalındakı check-in-lərini görür. İstəsən, zalın üzv siyahısında ümumiyyətlə görünmürsən. Məlumatlarını ixrac edə, hesabını tətbiqin içindən silə bilərsən.
 
 SPOT Azərbaycanda yeni qurulur. Zal siyahısı sıfırdan başlayır: zalını özün əlavə edə və sahibliyini təsdiqə göndərə bilərsən.
 ```
@@ -213,7 +213,7 @@ CHECK-IN И РАЗОВОЕ ПОСЕЩЕНИЕ
 Без аккаунта можно зайти в «Обзор» и посмотреть залы и тренеров. Регистрация нужна только для связи с людьми, check-in и записей.
 
 ПРИВАТНОСТЬ
-Владелец зала и админ не видят твой вес, детали тренировок, фотографии и переписку — только твои check-in в его зале. При желании ты вообще не показываешься в списке членов зала. Свои данные можно выгрузить, а аккаунт — удалить прямо в приложении.
+Владелец зала и админ не видят детали твоих тренировок, личные рекорды и переписку — только твои check-in в его зале. При желании ты вообще не показываешься в списке членов зала. Свои данные можно выгрузить, а аккаунт — удалить прямо в приложении.
 
 SPOT только начинается в Азербайджане. Список залов стартует с нуля: свой зал ты можешь добавить сам и отправить подтверждение владения.
 ```
@@ -277,7 +277,7 @@ GUEST MODE
 Without an account you can still open Discover and look at gyms and trainers. Signing up is only needed to reach people, to check in and to keep records.
 
 PRIVACY
-A gym owner or admin cannot see your weight, your workout details, your photos or your chats — only your check-ins at their gym. If you prefer, you do not appear in the gym's member list at all. You can export your data and delete your account from inside the app.
+A gym owner or admin cannot see your workout details, your personal records or your chats — only your check-ins at their gym. If you prefer, you do not appear in the gym's member list at all. You can export your data and delete your account from inside the app.
 
 SPOT is just starting in Azerbaijan. The gym list starts from zero: you can add your own gym and send it for ownership verification.
 ```
@@ -645,9 +645,11 @@ not a party to those payments and takes no commission. The day-pass screen issue
 the gym's reception verifies; no money moves through the app at any point.
 
 SIGN-IN
-Sign in with Apple, Google, or an e-mail magic link. Account deletion is inside the app:
-Profile -> Privacy -> Delete account (two confirmations, files first, then the server rows,
-then the account itself).
+On iOS: e-mail and password, and Sign in with Apple. Google sign-in is Android-only and is
+deliberately not shown on iOS. On the sign-in screen enter the e-mail and password and press
+the single "Davam et" (Continue) button — no confirmation e-mail, no one-time code.
+Account deletion is inside the app: Profile -> Settings -> Privacy -> "Delete account
+completely" (two confirmations; uploaded files first, then the server rows, then the account).
 
 GUEST MODE
 The app opens without an account. A guest can browse Discover (Gyms and Trainers). Everything
@@ -655,12 +657,12 @@ that involves another person — the partner search, messaging, check-in, the wo
 needs an account, because it writes data attributed to a real profile.
 
 DEMO ACCOUNT
-[DOLDURULMALI: e-mail + password for a review account, or delete this whole block if you
-choose to rely on guest mode only]
+E-mail: test@gmail.com
+Password: [typed ONLY into App Store Connect and Play Console — never into this file]
 
 LANGUAGE
-The app starts in Azerbaijani. To review it in English: first screen -> language picker
-(top right) -> EN. The language can also be changed later in Profile -> Settings.
+The app starts in Azerbaijani and also follows the device language. To review it in English:
+the language chips on the first screen -> EN, or later Profile -> Settings.
 
 USER-GENERATED CONTENT
 Users can post technique clips (max 60 seconds) and short text posts. Report and Block are

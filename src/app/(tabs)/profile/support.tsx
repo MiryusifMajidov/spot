@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
-import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
@@ -93,9 +92,25 @@ export default function Support() {
 
   return (
     <Screen edges={['top', 'bottom']}>
+      {/* A text action, as «Yadda saxla» on the profile editor. It was a full
+          <Button>, 52 pt tall inside the 44 pt bar, so the volt block spilled past
+          the bar's top and bottom. */}
       <NavBar
         title={t('Kömək və dəstək')}
-        right={<Button title={t('Göndər')} variant="volt" disabled={!canSend} onPress={send} />}
+        right={
+          <PressableScale
+            onPress={send}
+            disabled={!canSend}
+            haptic={false}
+            activeScale={0.94}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !canSend }}
+            style={styles.navAction}>
+            <AppText variant="headline" color={canSend ? palette.blue : palette.tertiary}>
+              {sending ? t('Göndərilir…') : t('Göndər')}
+            </AppText>
+          </PressableScale>
+        }
       />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
         <AppText variant="overline" color={palette.caption}>
@@ -105,10 +120,16 @@ export default function Support() {
           {CATEGORIES.map((c) => {
             const on = c.key === cat.key;
             return (
+              /* The pill is 39 pt tall (9 + 21 + 9); the slop takes it past 44
+                 without changing the look. 4 + 4 fills the 8 pt row gap exactly,
+                 so two rows never claim the same point. */
               <PressableScale
                 key={c.key}
                 activeScale={0.97}
                 onPress={() => setCat(c)}
+                hitSlop={{ top: 4, bottom: 4 }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
                 style={[styles.cat, on && styles.catOn]}>
                 <AppText style={[styles.catLabel, on && styles.catLabelOn]}>{t(c.label)}</AppText>
               </PressableScale>
@@ -144,6 +165,8 @@ export default function Support() {
 }
 
 const styles = StyleSheet.create({
+  // The bar's full 44 pt height; the word itself is far wider than 44.
+  navAction: { height: 44, justifyContent: 'center', paddingLeft: spacing.sm },
   body: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 40 },
   cats: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   cat: {

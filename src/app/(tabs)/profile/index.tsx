@@ -8,13 +8,14 @@ import { VideoPoster } from '@/components/VideoPoster';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import { HeaderIcon } from '@/components/ui/LargeHeader';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { getMyProfile } from '@/lib/api';
 import { useIsGuest } from '@/lib/authGate';
 import { useCommunityPosts, useFeedVideos, useGyms } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { useDb, useStats } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
@@ -27,6 +28,7 @@ function avatarOf(row: unknown): string | null {
 
 export default function Profile() {
   const t = useT();
+  const fmt = useFormat();
   const router = useRouter();
   const [avatar, setAvatar] = useState<string | null>(null);
   const isGuest = useIsGuest();
@@ -51,7 +53,11 @@ export default function Profile() {
   const myVideos = myProfileId ? allVideos.filter((v) => v.authorId === myProfileId) : [];
   const myPosts = myProfileId ? allPosts.filter((p) => p.authorId === myProfileId) : [];
 
-  const volumeT = (stats.volumeKg / 1000).toFixed(1);
+  /* Tonnes to one decimal, in the language's own decimal mark («2,4 t» in az/ru,
+     «2.4 t» in en) and without a trailing «,0» — «0 t» for a new account, not
+     «0.0 t». It was toFixed(1), which printed an English point in every language. */
+  const volumeT = fmt.weight(Math.round(stats.volumeKg / 100) / 10);
+  const streakText = stats.streakDays > 0 ? t('{n} gün', { n: stats.streakDays, count: stats.streakDays }) : t('Seriya yoxdur');
 
   // The profile photo lives on the server; if it is not there we simply keep the
   // initials avatar — a missing photo is never an error the user must read about.
@@ -71,11 +77,10 @@ export default function Profile() {
   if (isGuest) {
     return (
       <Screen>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        {/* «automatic»: see the signed-in ScrollView below. */}
+        <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
           <View style={styles.topIcons}>
-            <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/profile/settings')}>
-              <Icon name="sliders" size={24} color={palette.inkText} />
-            </PressableScale>
+            <HeaderIcon name="sliders" label={t('Parametrlər')} onPress={() => router.push('/(tabs)/profile/settings')} />
           </View>
           <View style={styles.guestCard}>
             <View style={styles.guestIcon}>
@@ -114,18 +119,23 @@ export default function Profile() {
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      {/* iOS 26: the Liquid Glass tab bar floats over this list, and at RN's
+          default («never») the last shared video or post ended under the glass —
+          40 pt of padding cannot scroll it out. «automatic» lets UIKit add the tab
+          bar's safe area at the bottom; the top is already padded by Screen, so
+          nothing is added there. iOS-only prop; Android's bar reserves its own space. */}
+      <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <View style={styles.topIcons}>
           {/* «fitness» was English, and this string leaves the app: it is the text
               the person sends to someone else, so the one place the product spoke
               English was the one place strangers read it. «idman» is the word the
               rest of the app uses («idman zalı»). */}
-          <PressableScale activeScale={0.9} onPress={() => Share.share({ message: `${t('{name} — SPOT idman profili.', { name })}${gym ? ` ${gym.name}.` : ''}${profile.level ? ` ${t('{level} səviyyə.', { level: t(profile.level) })}` : ''}` }).catch(() => {})}>
-            <Icon name="share" size={24} color={palette.inkText} />
-          </PressableScale>
-          <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/profile/settings')}>
-            <Icon name="sliders" size={24} color={palette.inkText} />
-          </PressableScale>
+          <HeaderIcon
+            name="share"
+            label={t('Profili paylaş')}
+            onPress={() => Share.share({ message: `${t('{name} — SPOT idman profili.', { name })}${gym ? ` ${gym.name}.` : ''}${profile.level ? ` ${t('{level} səviyyə.', { level: t(profile.level) })}` : ''}` }).catch(() => {})}
+          />
+          <HeaderIcon name="sliders" label={t('Parametrlər')} onPress={() => router.push('/(tabs)/profile/settings')} />
         </View>
 
         <View style={styles.headRow}>
@@ -153,11 +163,20 @@ export default function Profile() {
                   <AppText style={{ fontSize: 11.5, fontWeight: '700', color: palette.blue }}>{t('Müəllim')}</AppText>
                 </View>
               ) : null}
-              <PressableScale activeScale={0.94} onPress={() => router.push('/(tabs)/profile/achievements')} style={[styles.badge, { backgroundColor: 'rgba(255,107,53,0.14)' }]}>
+              {/* A 25 pt chip: the slop brings the target to 45 pt tall without
+                  making the chip bigger than the two beside it. (Fabric counts
+                  hitSlop in the parent's overflow inset, so it reaches past the
+                  badge row on Android too.) The label keeps the streak itself and
+                  adds where the tap goes — «Nailiyyətlər» alone hid the count. */}
+              <PressableScale
+                activeScale={0.94}
+                hitSlop={chipSlop}
+                accessibilityRole="button"
+                accessibilityLabel={`${streakText}, ${t('Nailiyyətlər')}`}
+                onPress={() => router.push('/(tabs)/profile/achievements')}
+                style={[styles.badge, { backgroundColor: 'rgba(255,107,53,0.14)' }]}>
                 <Icon name="flame" size={12} color={palette.streak} />
-                <AppText style={{ fontSize: 11.5, fontWeight: '700', color: '#D14A15' }}>
-                  {stats.streakDays > 0 ? t('{n} gün', { n: stats.streakDays, count: stats.streakDays }) : t('Seriya yoxdur')}
-                </AppText>
+                <AppText style={{ fontSize: 11.5, fontWeight: '700', color: '#D14A15' }}>{streakText}</AppText>
               </PressableScale>
               {partners > 0 ? (
                 <View style={[styles.badge, { backgroundColor: 'rgba(198,255,61,0.30)' }]}>
@@ -177,8 +196,13 @@ export default function Profile() {
 
         <View style={styles.actions}>
           <Button title={t('Profili redaktə et')} onPress={() => router.push('/(tabs)/profile/edit')} style={{ flex: 1, height: 44 }} />
-          <PressableScale activeScale={0.94} onPress={() => router.push('/(tabs)/profile/saved')} style={styles.squareBtn}>
-            <Icon name="bookmark" size={20} color={palette.inkText} />
+          <PressableScale
+            activeScale={0.94}
+            accessibilityRole="button"
+            accessibilityLabel={t('Saxlanılanlar')}
+            onPress={() => router.push('/(tabs)/profile/saved')}
+            style={styles.squareBtn}>
+            <Icon name="bookmark" size={22} color={palette.inkText} />
           </PressableScale>
         </View>
 
@@ -193,7 +217,7 @@ export default function Profile() {
           <View style={styles.prHead}>
             <AppText variant="headline">{t('Şəxsi rekordlar')}</AppText>
             {prs.length > 0 ? (
-              <PressableScale haptic={false} activeScale={0.94} onPress={() => router.push('/(tabs)/profile/analytics')}>
+              <PressableScale haptic={false} activeScale={0.94} accessibilityRole="button" onPress={() => router.push('/(tabs)/profile/analytics')} style={styles.prLink}>
                 <AppText variant="subhead" color={palette.blue}>
                   {t('Hamısı')}
                 </AppText>
@@ -205,7 +229,7 @@ export default function Profile() {
               {prs.slice(0, 3).map((pr) => (
                 <View key={pr.lift} style={styles.pr}>
                   <AppText style={styles.prLabel}>{azUpper(t(pr.lift))}</AppText>
-                  <AppText style={{ fontSize: 17, fontWeight: '700', marginTop: 8 }}>{t('{n} kq', { n: pr.value })}</AppText>
+                  <AppText style={{ fontSize: 17, fontWeight: '700', marginTop: 8 }}>{t('{n} kq', { n: fmt.weight(pr.value) })}</AppText>
                   {pr.delta ? <AppText style={{ fontSize: 10.5, fontWeight: '500', color: palette.voltDeep, marginTop: 6 }}>{pr.delta}</AppText> : null}
                 </View>
               ))}
@@ -277,6 +301,10 @@ export default function Profile() {
   );
 }
 
+/* Vertical only, plus under half of the 7 pt gap sideways, so two chips never
+   claim the same point. */
+const chipSlop = { top: 10, bottom: 10, left: 3, right: 3 };
+
 function StatCard({ value, label }: { value: string; label: string }) {
   return (
     <View style={styles.statCard}>
@@ -288,7 +316,12 @@ function StatCard({ value, label }: { value: string; label: string }) {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingTop: 4, paddingBottom: 40 },
-  topIcons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 16, marginBottom: 8 },
+  /* Two 44 pt HeaderIcon boxes edge to edge (glyph centres 44 apart, as in
+     LargeHeader). marginRight -9.5 is the empty half of the last box, so its glyph
+     stays on the gutter. The boxes are 20 pt taller than the bare 24 px glyphs
+     they replaced; the -4/-2 margins plus the dropped 8 pt gap take back 14 of
+     that, so the avatar sits 6 pt lower than before. */
+  topIcons: { flexDirection: 'row', justifyContent: 'flex-end', marginRight: -9.5, marginTop: -4, marginBottom: -2 },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: 15 },
   badges: { flexDirection: 'row', gap: 7, marginTop: 9 },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8 },
@@ -296,8 +329,13 @@ const styles = StyleSheet.create({
   squareBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
   stats: { flexDirection: 'row', gap: 10, marginTop: 14 },
   statCard: { flex: 1, backgroundColor: palette.white, borderRadius: 16, padding: 14, alignItems: 'center' },
-  prCard: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginTop: 12 },
-  prHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 },
+  /* The head row is a 44 pt band so «Hamısı» can be a real 44 pt box inside it,
+     not an invisible slop that could reach down over the tiles. The 5 pt top
+     padding and 2 pt gap below keep the title and the tiles within a point of
+     where 16 pt padding and a 13 pt gap around the 21 pt headline put them. */
+  prCard: { backgroundColor: palette.white, borderRadius: 16, paddingHorizontal: 16, paddingTop: 5, paddingBottom: 16, marginTop: 12 },
+  prHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44, marginBottom: 2 },
+  prLink: { height: 44, justifyContent: 'center', paddingLeft: 16, paddingRight: 8, marginRight: -8 },
   pr: { flex: 1, backgroundColor: palette.grouped, borderRadius: 13, padding: 12 },
   prLabel: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.6, color: palette.caption },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },

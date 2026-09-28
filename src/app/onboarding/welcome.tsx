@@ -1,8 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
@@ -41,6 +40,22 @@ export default function Welcome() {
   const enterGuest = useAppStore((s) => s.enterGuest);
   const bootstrap = useAppStore((s) => s.bootstrap);
   const [busy, setBusy] = useState<null | 'google' | 'apple'>(null);
+
+  /* Light clock over this dark screen — only while it is the screen in front.
+     A mount-time <StatusBar style="light" /> sat here, and this screen stays
+     mounted under everything it pushes (the e-poçt sign-in and the two legal
+     pages), so its light entry stayed on top of React Native's status-bar stack
+     and the clock went white over those white screens. The entry is now pushed
+     on every focus and popped on blur. On iOS the native style is also set
+     directly, because the stack skips the native call whenever it believes the
+     bar already has that style — same approach as workout/exercise.tsx. */
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
+      const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
+      return () => StatusBar.popStackEntry(entry);
+    }, [])
+  );
 
   const browseAsGuest = () => {
     enterGuest();
@@ -87,7 +102,6 @@ export default function Welcome() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
       <LinearGradient
         colors={['rgba(198,255,61,0.18)', 'transparent']}
         style={styles.glow}
@@ -146,7 +160,11 @@ export default function Welcome() {
 
           <PressableScale haptic={false} onPress={browseAsGuest} disabled={!!busy} style={styles.guestBtn}>
             <AppText style={{ fontSize: 15, fontWeight: '600', color: palette.volt }}>{t('Qonaq kimi bax')}</AppText>
-            <Icon name="chevR" size={16} color={palette.volt} />
+            {/* 18, not 16: the chevron's path fills only 14 of the icon's 24
+                units, so at 16 it drew ~9 pt tall with a hairline stroke, shorter
+                and lighter than the 15 pt semibold capitals beside it. At 18 it
+                matches their cap height and weight, like the app's row chevrons. */}
+            <Icon name="chevR" size={18} color={palette.volt} />
           </PressableScale>
           {/* Both were plain words over documents that did not exist, so the
               consent was consent to nothing — and both app stores require a

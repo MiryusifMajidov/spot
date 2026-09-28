@@ -1,7 +1,8 @@
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GymCard } from '@/components/GymCard';
 import { Icon } from '@/components/Icon';
@@ -17,7 +18,7 @@ import { getGymsNear } from '@/lib/api';
 import { tapFeedback } from '@/lib/feedback';
 import { useGyms } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { applyGymFilter, useDiscoverPrefs } from '@/store/discoverPrefs';
 import { palette, radius, shadow, spacing } from '@/theme';
@@ -42,6 +43,18 @@ const hasCoords = (g: Gym): g is Gym & { lat: number; lng: number } =>
 export default function GymMap() {
   const router = useRouter();
   const t = useT();
+  const fmt = useFormat();
+  /* This screen is pushed inside the Kəşf TAB, and the gym card, the footer pill
+     and the end of the list all sit at its bottom. On Android the Material bar
+     reserves its own space (the inset here is the navigation bar it already
+     covers — adding it would count it twice). On iOS 26 the Liquid Glass bar
+     FLOATS over the content: «Zala bax» sat behind the glass, and so did the
+     map's own zoom buttons and the «© OpenStreetMap» credit, which Leaflet pins
+     to the map's bottom-right corner inside the WebView. Inside a tab screen
+     UIKit's safe area already includes that bar, so the map area stops at it and
+     the list pads by it — by the inset, not a guessed bar height. */
+  const insets = useSafeAreaInsets();
+  const iosBottom = Platform.OS === 'ios' ? insets.bottom : 0;
   /* The marker list is memoized, and its text is translated: without the active
      language in the deps the pins would keep the language they were built in. */
   const gymFilter = useDiscoverPrefs((s) => s.gymFilter);
@@ -147,7 +160,7 @@ export default function GymMap() {
       </View>
 
       {tab === 0 ? (
-        <View style={styles.mapWrap}>
+        <View style={[styles.mapWrap, { marginBottom: iosBottom }]}>
           {/* remount once the real position arrives so the map recentres on the user */}
           <SpotMap
             key={me ? `me:${me.lat.toFixed(3)},${me.lng.toFixed(3)}` : 'default'}
@@ -168,7 +181,8 @@ export default function GymMap() {
                 {notice}
               </AppText>
               {status === 'denied' || status === 'error' ? (
-                <PressableScale activeScale={0.94} onPress={locate} hitSlop={10}>
+                // 17 pt line (AppText: 13 × 1.3) + 14 + 14 = a 45 pt tall target
+                <PressableScale activeScale={0.94} onPress={locate} hitSlop={{ top: 14, bottom: 14, left: 10, right: 10 }}>
                   <AppText style={styles.retry}>{t('Yenidən')}</AppText>
                 </PressableScale>
               ) : null}
@@ -177,20 +191,11 @@ export default function GymMap() {
 
           {selected ? (
             <View style={[styles.card, shadow.floating as object]}>
-              <PressableScale
-                haptic={false}
-                activeScale={0.9}
-                onPress={() => setSelectedId(null)}
-                style={styles.close}
-                accessibilityRole="button"
-                accessibilityLabel={t('Bağla')}>
-                <Icon name="x" size={14} color={palette.textSecondary} />
-              </PressableScale>
-
               <View style={styles.cardHead}>
-                <View style={{ flex: 1, paddingRight: 28 }}>
+                <View style={{ flex: 1 }}>
                   <View style={styles.nameRow}>
-                    <AppText variant="title3" numberOfLines={1}>
+                    {/* shrinks, so a long name ends in «…» instead of pushing the tick out */}
+                    <AppText variant="title3" numberOfLines={1} style={{ flexShrink: 1 }}>
                       {selected.name}
                     </AppText>
                     {selected.verified ? <Icon name="verified" size={15} color={palette.blue} /> : null}
@@ -198,8 +203,9 @@ export default function GymMap() {
                   <AppText variant="footnote" color={palette.caption} style={{ marginTop: 4 }}>
                     {[
                       selected.district,
-                      selected.distanceKm > 0 ? t('{km} km', { km: selected.distanceKm }) : null,
-                      selected.reviewCount > 0 ? `★ ${selected.rating}` : null,
+                      // decimal comma in az/ru: the API rounds to 0.1, raw it read «1.3 km»
+                      selected.distanceKm > 0 ? t('{km} km', { km: fmt.decimal(selected.distanceKm, 1) }) : null,
+                      selected.reviewCount > 0 ? `★ ${fmt.decimal(selected.rating, 1)}` : null,
                     ]
                       .filter(Boolean)
                       .join(' · ')}
@@ -211,6 +217,20 @@ export default function GymMap() {
                     {t('aylıq')}
                   </AppText>
                 </View>
+                {/* In the row, not floated over the corner: absolutely placed it sat
+                    on top of the price. A 30 pt circle inside a 44 pt target — see
+                    styles.closeHit for why the ring is padding and not hitSlop. */}
+                <PressableScale
+                  haptic={false}
+                  activeScale={0.9}
+                  onPress={() => setSelectedId(null)}
+                  style={styles.closeHit}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Bağla')}>
+                  <View style={styles.close}>
+                    <Icon name="x" size={16} color={palette.textSecondary} />
+                  </View>
+                </PressableScale>
               </View>
 
               {selected.liveCount > 0 ? (
@@ -237,7 +257,7 @@ export default function GymMap() {
           ) : null}
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: 40 + iosBottom }]}>
           {list.length === 0 ? (
             <View style={styles.empty}>
               <Icon name="pin" size={26} color={palette.tertiary} />
@@ -279,7 +299,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   pillTop: { top: 10 },
-  pillBottom: { bottom: 12 },
+  /* Leaflet's zoom buttons live in the map's bottom-right corner (10 margin +
+     34 wide). A full-width pill here covered the «−» button, so it stops short
+     of that column. */
+  pillBottom: { bottom: 12, right: 56 },
   pillText: { flex: 1, lineHeight: 18 },
   retry: { fontSize: 13, fontWeight: '600', color: palette.blue },
   card: {
@@ -291,12 +314,21 @@ const styles = StyleSheet.create({
     borderRadius: radius.cardLg,
     padding: 15,
   },
-  close: { position: 'absolute', top: 10, right: 10, width: 26, height: 26, borderRadius: 13, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  /* The 7 pt ring around the circle is PADDING, not hitSlop. The button sits in
+     cardHead's top-right corner, and with the New Architecture a hitSlop that
+     pokes outside the parent row is never hit-tested (a parent whose children do
+     not overflow it acts as if it clipped), so a hitSlop of 7 only added 7 pt on
+     the left and bottom — a 37 pt target. The negative margins cancel the padding
+     in layout, so the circle sits exactly where a plain 30 pt circle would, 12 pt
+     after the price (row gap 8 + 4). */
+  closeHit: { padding: 7, margin: -7, marginLeft: -3 },
+  close: { width: 30, height: 30, borderRadius: 15, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
   cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   price: { fontSize: 17, fontWeight: '700', color: palette.inkText },
   live: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(198,255,61,0.22)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, marginTop: 11, alignSelf: 'flex-start' },
   liveText: { fontSize: 12.5, fontWeight: '600', color: '#3F5500' },
-  content: { paddingHorizontal: spacing.screen, paddingTop: 4, paddingBottom: 40 },
+  // paddingBottom is set inline: 40 plus the floating tab bar on iOS.
+  content: { paddingHorizontal: spacing.screen, paddingTop: 4 },
   empty: { alignItems: 'center', paddingVertical: 50 },
 });

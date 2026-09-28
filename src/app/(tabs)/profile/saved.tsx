@@ -19,9 +19,9 @@ import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
 
-/** Everything the user actually saved — the feed's "Saxla" rail and the gym bookmark
- *  both wrote here; until now nothing displayed them. No placeholders: an empty list
- *  says so and points at where saving happens. */
+/** Everything the user actually saved — the bookmark on the feed's rail and the one
+ *  on a gym's page both write here. No placeholders: an empty list says so and
+ *  points at where saving happens. */
 export default function Saved() {
   const t = useT();
   const router = useRouter();
@@ -58,7 +58,14 @@ export default function Saved() {
       <View style={{ paddingHorizontal: spacing.screen, paddingBottom: 12 }}>
         <Segmented options={[t('Videolar'), t('Zallar')]} value={seg} onChange={setSeg} />
       </View>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      {/* iOS 26: this screen is pushed inside the Profil tab, and the Liquid Glass
+          tab bar floats over it without reserving space. At RN's default
+          («never») the last row of tiles or gyms ended under the glass — 40 pt
+          of padding cannot scroll it out. «automatic» lets UIKit add the tab
+          bar's safe area at the bottom; the top is already padded by Screen and
+          the scroll view starts below the segmented control, so nothing is added
+          there. iOS-only prop; on Android the tab already sits above its bar. */}
+      <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         {seg === 0 ? (
           savesFailed ? (
             <Empty
@@ -67,11 +74,15 @@ export default function Saved() {
               text={t('Siyahı serverdən gəlmədi. Bu, siyahının boş olduğu demək deyil — bağlantını yoxlayıb yenidən aç.')}
             />
           ) : videos.length === 0 ? (
+            /* «Feed-də ... 'Saxla' düyməsinə» was wrong twice: «Feed» is English
+               inside Azerbaijani, and the rail no longer carries a «Saxla» caption
+               — it is a bare bookmark icon (feed/index.tsx, RailBtn). Name the
+               icon, the way the gym empty state below does. */
             <Empty
               icon="bookmark"
               title={t('Saxlanılmış video yoxdur')}
-              text={t("Feed-də videonun yanındakı 'Saxla' düyməsinə toxun — burada toplanacaq.")}
-              action={<Button title={t('Feed-ə keç')} onPress={() => router.push('/(tabs)/feed')} style={{ marginTop: 18 }} />}
+              text={t('Lentdə videonun yanındakı əlfəcin nişanına toxun — video burada toplanacaq.')}
+              action={<Button title={t('Lentə keç')} onPress={() => router.push('/(tabs)/feed')} style={{ marginTop: 18 }} />}
             />
           ) : (
             <View style={styles.grid}>
@@ -87,7 +98,7 @@ export default function Saved() {
                   style={styles.tile}>
                   <VideoPoster id={v.id} videoUrl={v.videoUrl} gradient={v.gradient} />
                   <View style={styles.tilePlay}>
-                    <Icon name="play" size={15} color="rgba(255,255,255,0.9)" />
+                    <Icon name="play" size={16} color="rgba(255,255,255,0.9)" />
                   </View>
                   <AppText numberOfLines={2} style={styles.tileCaption}>
                     {v.caption}

@@ -74,7 +74,16 @@ function Weekly() {
   return (
     <Screen>
       <NavBar title={t('Həftəlik təkliflər')} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      {/* iOS 26: the Liquid Glass tab bar floats over this list and reserves no
+          space, so at RN's default («never») the last partner row ended under the
+          glass — the 40 pt of padding cannot scroll it out. «automatic» lets UIKit
+          add the tab bar's safe area at the bottom; the top is already padded by
+          Screen and the NavBar, so nothing is added there. iOS-only prop; on
+          Android the tab already sits above its own bar. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.content}>
         <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 14, lineHeight: 18 }}>
           {t(
             'Həftədə ən çox 3 təklif — az, ona görə dəyərli. Alqoritm zal, saat, səviyyə və məqsədə görə seçir; siyahı bazar ertəsi yenilənir.'
@@ -181,8 +190,16 @@ function Weekly() {
                     </AppText>
                   ) : null}
                 </View>
-                <PressableScale activeScale={0.95} onPress={() => open(p)} style={styles.smallBtn}>
-                  <Icon name={stateLabel(p.id) ? 'chevR' : 'dumbbell'} size={16} color={palette.white} />
+                {/* The box was always 44x44; the glyph in it was 16 px — about a third
+                    of the button, which is what read as «too small». 22 px is what
+                    the same 44 square button carries on the profile page. */}
+                <PressableScale
+                  activeScale={0.95}
+                  onPress={() => open(p)}
+                  accessibilityRole="button"
+                  accessibilityLabel={stateLabel(p.id) ? p.name : t('Məşq təklif et')}
+                  style={styles.smallBtn}>
+                  <Icon name={stateLabel(p.id) ? 'chevR' : 'dumbbell'} size={22} color={palette.white} />
                 </PressableScale>
               </View>
               );

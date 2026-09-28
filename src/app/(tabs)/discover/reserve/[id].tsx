@@ -1,6 +1,7 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -39,17 +40,37 @@ export default function Reserve() {
   const gate = useAuthGate();
   const trainer = useTrainer(id);
   const phase = useTrainerPhase(id);
+  /* The footer is pinned to the bottom of a TAB screen, and the two tab bars differ.
+     Android: the Material bar reserves its own space — the tab scene already stops
+     above it and folds the navigation-bar inset in — so adding `insets.bottom` here
+     would count that strip twice. iOS 26: the Liquid Glass bar FLOATS over the
+     content and reserves nothing, so «Sorğu göndər» sat behind the glass. Inside a
+     tab screen UIKit's safe area already includes that bar, so the footer pads by
+     the inset instead of guessing the bar's height. */
+  const insets = useSafeAreaInsets();
+  const footerClearance = Platform.OS === 'ios' ? insets.bottom : 0;
   /* Android edge-to-edge (SDK 54+) never resizes the window, so `adjustResize` and
      KeyboardAvoidingView both do nothing here — the note field and the «Sorğu göndər»
      footer used to sit under the IME with no way to scroll them out. The measured
-     overlap is the only figure that works; the tab scene already reserves
+     overlap is the only figure that works; on Android the tab scene already reserves
      `insets.bottom`, and the keyboard eats that strip first.
 
-     iOS is left to KeyboardAvoidingView, which measures the same overlap itself and
-     in sync with the keyboard animation — adding the lift on top of its padding would
-     raise the footer a second time and leave it floating mid-screen. */
+     iOS is left to KeyboardAvoidingView, which animates in sync with the keyboard —
+     adding the lift on top of its padding would raise the footer a second time and
+     leave it floating mid-screen. */
   const measuredLift = useKeyboardLift(8);
   const lift = Platform.OS === 'android' ? measuredLift : 0;
+  /* iOS only (Android's KeyboardAvoidingView has no `behavior`, so it ignores this).
+     KeyboardAvoidingView measures itself with onLayout, which is relative to its
+     PARENT, not the screen: its bottom edge comes out `insets.top` short — the status
+     bar strip `Screen` pads above the NavBar — and a flat offset under-lifts by that
+     much, leaving the footer partly under the keys. The offset is exactly that
+     correction (the distance from the top of the screen to the parent) plus 8pt of air.
+     It also hands back `footerClearance`: with the keyboard open the glass bar is
+     behind it, and the footer must not still stand one bar-height above the keys. So
+     the footer rests at whichever is higher — the tab bar, or 8pt above the keyboard
+     — inside KeyboardAvoidingView's own animation, with no keyboard listener here. */
+  const keyboardOffset = insets.top + spacing.sm - footerClearance;
   const [day, setDay] = useState(0);
   const [slot, setSlot] = useState<string | null>('19:00');
   const [note, setNote] = useState('');
@@ -95,12 +116,13 @@ export default function Reserve() {
 
   if (!trainer) {
     return (
-      /* No 'bottom' edge: this screen lives inside the tab scene, whose padding
-         already carries the floating bar's footprint — and that footprint includes
-         the bottom safe-area inset. Adding it again would push the CTA up twice. */
+      /* No 'bottom' edge: on Android the tab scene already stops above the Material
+         bar (and carries the navigation-bar inset), so a bottom edge would count it
+         twice. On iOS 26 the glass bar floats over this screen, so the message pads by
+         `footerClearance` and is centred in the space above the bar, not behind it. */
       <Screen edges={['top']}>
         <NavBar title={t('Rezervasiya')} />
-        <View style={styles.missing}>
+        <View style={[styles.missing, { paddingBottom: footerClearance }]}>
           <Icon name={phase === 'failed' ? 'x' : 'user'} size={28} color={phase === 'failed' ? palette.red : palette.tertiary} />
           <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, lineHeight: 21 }}>
             {phase === 'loading'
@@ -152,11 +174,13 @@ export default function Reserve() {
   };
 
   return (
-    /* 'top' only — the tab scene's padding already clears the floating bar and the
-       home indicator (the native tab bar folds the bottom inset in). */
+    /* 'top' only — the bottom is the footer's job. Android's tab scene already stops
+       above the Material bar; on iOS 26 the glass bar floats over the content and the
+       footer pads by `footerClearance` itself. A bottom edge here would also move the
+       frame KeyboardAvoidingView measures against and break `keyboardOffset`. */
     <Screen edges={['top']}>
       <NavBar title={t('Müəllimlə məşq')} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={8}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardOffset}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, { paddingBottom: 24 + lift }]}
@@ -169,12 +193,16 @@ export default function Reserve() {
                 {trainer.specialty}
               </AppText>
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <AppText variant="title3">{trainer.priceFrom} ₼</AppText>
-              <AppText variant="caption" color={palette.caption}>
-                {t('1 məşq · məlumat')}
-              </AppText>
-            </View>
+            {/* A trainer who left the price empty has 0 in the column — an absent
+                value, not a free session, so «0 ₼» is not shown (as on the profile). */}
+            {trainer.priceFrom > 0 ? (
+              <View style={{ alignItems: 'flex-end' }}>
+                <AppText variant="title3">{trainer.priceFrom} ₼</AppText>
+                <AppText variant="caption" color={palette.caption}>
+                  {t('1 məşq · məlumat')}
+                </AppText>
+              </View>
+            ) : null}
           </View>
 
           {request ? (
@@ -271,7 +299,7 @@ export default function Reserve() {
           )}
         </ScrollView>
 
-        <View style={[styles.footer, { marginBottom: lift }]}>
+        <View style={[styles.footer, { paddingBottom: spacing.sm + footerClearance, marginBottom: lift }]}>
           {request && request.status !== 'declined' && request.status !== 'ended' ? (
             <Button title={t('Müəllimə mesaj yaz')} icon="msg" full onPress={() => router.push({ pathname: '/chat/[id]', params: { id: trainer.id } })} />
           ) : requestFailed ? (
@@ -312,6 +340,7 @@ const styles = StyleSheet.create({
   slotOn: { backgroundColor: palette.ink, borderColor: palette.ink },
   noteInput: { minHeight: 80, borderRadius: 12, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, padding: 12, fontSize: 15, color: palette.inkText, textAlignVertical: 'top' },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
-  footer: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
+  // paddingBottom is set inline: spacing.sm plus the iOS tab-bar clearance.
+  footer: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: spacing.screen, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
   footerInfo: { flex: 0 },
 });

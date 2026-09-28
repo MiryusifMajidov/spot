@@ -36,12 +36,10 @@ export function LanguagePicker({ compact, tone = 'light' }: { compact?: boolean;
             accessibilityState={{ selected: on }}
             accessibilityLabel={LANG_NAMES[code]}
             onPress={() => setLang(code)}
-            style={[
-              styles.item,
-              compact ? styles.itemCompact : null,
-              tone === 'dark' ? styles.itemDark : null,
-              on ? styles.itemOn : null,
-            ]}>
+            style={compact ? styles.hitCompact : [styles.item, tone === 'dark' ? styles.itemDark : null, on ? styles.itemOn : null]}>
+            {/* Compact: the 32 pt pill is drawn inside a 44 pt pressable box, so the
+                target meets the minimum without the pill growing (see rowCompact). */}
+            <View style={compact ? [styles.item, styles.itemCompact, tone === 'dark' ? styles.itemDark : null, on ? styles.itemOn : null] : styles.fill}>
             <AppText
               variant={compact ? 'footnote' : 'subhead'}
               color={on ? palette.ink : tone === 'dark' ? 'rgba(255,255,255,0.72)' : palette.textSecondary}
@@ -50,6 +48,7 @@ export function LanguagePicker({ compact, tone = 'light' }: { compact?: boolean;
               minimumFontScale={0.8}>
               {LANG_NAMES[code]}
             </AppText>
+            </View>
             {/* No check mark: on a third of a phone's width it cut the chosen
                 language's own name to «Azərbayca…». The volt fill marks the
                 choice; accessibilityState says it to a screen reader. */}
@@ -62,14 +61,17 @@ export function LanguagePicker({ compact, tone = 'light' }: { compact?: boolean;
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 8 },
-  rowCompact: { gap: 6 },
+  // -6: the 44 pt boxes take the 32 pt pills' old room, so nothing around them moves.
+  rowCompact: { gap: 6, marginVertical: -6 },
+  hitCompact: { height: 44, justifyContent: 'center' },
+  fill: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   item: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 42,
+    height: 44,
     borderRadius: radius.field,
     borderWidth: 1,
     borderColor: palette.separator,

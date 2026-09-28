@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { ProgramCard } from '@/components/ProgramCard';
@@ -41,6 +42,16 @@ export default function Library() {
   const mine = useDb((s) => s.myPrograms);
   const [filter, setFilter] = useState('Hamısı');
   const [q, setQ] = useState('');
+  /* The FAB is pinned to the bottom of a tab screen, so it has to clear the tab bar.
+     Android's Material bar reserves its own space (the tab scene already stops above
+     it), and `insets.bottom` there is the system navigation bar the tab bar covers —
+     adding it would lift the button twice. iOS 26's Liquid Glass bar FLOATS and
+     reserves nothing: the FAB sat underneath it. Inside a tab screen UIKit's safe
+     area includes that bar, so `insets.bottom` on iOS is the bar's footprint plus the
+     home indicator. The list pads by the same amount so its last card can still be
+     scrolled clear of both the bar and the FAB. */
+  const insets = useSafeAreaInsets();
+  const bottomClearance = Platform.OS === 'ios' ? insets.bottom : 0;
 
   // The user's own programs always come first and are never hidden by a fetch.
   const all = useMemo(() => {
@@ -77,8 +88,14 @@ export default function Library() {
             returnKeyType="search"
           />
           {q ? (
-            <PressableScale activeScale={0.9} haptic={false} onPress={() => setQ('')}>
-              <Icon name="x" size={15} color={palette.caption} />
+            <PressableScale
+              activeScale={0.9}
+              haptic={false}
+              onPress={() => setQ('')}
+              style={styles.clearBtn}
+              accessibilityRole="button"
+              accessibilityLabel={t('Axtarışı təmizlə')}>
+              <Icon name="x" size={17} color={palette.caption} />
             </PressableScale>
           ) : null}
         </View>
@@ -89,7 +106,10 @@ export default function Library() {
         </ScrollView>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.content, { paddingBottom: 100 + bottomClearance }]}
+        keyboardShouldPersistTaps="handled">
         {list.length === 0 ? (
           <View style={styles.empty}>
             <Icon name={loading ? 'timer' : 'search'} size={22} color={palette.tertiary} />
@@ -116,7 +136,11 @@ export default function Library() {
         ))}
       </ScrollView>
 
-      <PressableScale onPress={() => router.push('/(tabs)/workout/create')} style={[styles.fab, shadow.floating as object]}>
+      <PressableScale
+        onPress={() => router.push('/(tabs)/workout/create')}
+        style={[styles.fab, { bottom: 28 + bottomClearance }, shadow.floating as object]}
+        accessibilityRole="button"
+        accessibilityLabel={t('Yeni proqram yarat')}>
         <Icon name="plus" size={26} color={palette.volt} />
       </PressableScale>
     </Screen>
@@ -128,7 +152,18 @@ const styles = StyleSheet.create({
   search: { backgroundColor: palette.fill, borderRadius: 11, height: 38, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 10 },
   searchInput: { flex: 1, fontSize: 15, color: palette.inkText },
   chips: { paddingHorizontal: spacing.screen, gap: 7 },
-  content: { paddingHorizontal: spacing.screen, paddingTop: 16, paddingBottom: 100 },
+  // paddingBottom is set inline: 100 clears the FAB, plus `bottomClearance` on iOS.
+  content: { paddingHorizontal: spacing.screen, paddingTop: 16 },
   empty: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 16, padding: 24 },
-  fab: { position: 'absolute', right: spacing.screen, bottom: 28, width: 54, height: 54, borderRadius: 27, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
+  /* A real 44 x 44 hit area. The field is 38 pt tall, so the button — centred by the
+     row — overhangs it by 3 pt above and below; it is transparent, so nothing visible
+     moves. A box and not hitSlop: React Native never extends a touch area past the
+     parent's bounds (iOS Fabric drops a touch outside a view whose children do not
+     overflow it), so a 3 pt slop would have stopped at the field's edge. The negative
+     margin gives back the field's 10 pt right padding and paddingRight puts it back
+     inside the button, so the glyph keeps its place (mirroring the search glyph on
+     the left) — only the touch area grew, reaching into the input side. */
+  clearBtn: { width: 44, height: 44, marginRight: -10, paddingRight: 10, alignItems: 'flex-end', justifyContent: 'center' },
+  // `bottom` is set inline: 28 above the tab bar, plus `bottomClearance` on iOS.
+  fab: { position: 'absolute', right: spacing.screen, width: 54, height: 54, borderRadius: 27, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
 });

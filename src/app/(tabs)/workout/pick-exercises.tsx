@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -38,7 +39,7 @@ const GROUPS: { label: string; muscles: string[] }[] = [
   { label: 'Ayaq', muscles: ['Ayaq', 'Arxa ayaq', 'Gluteus', 'Baldır'] },
   { label: 'Çiyin', muscles: ['Çiyin'] },
   { label: 'Qol', muscles: ['Biseps', 'Triseps'] },
-  { label: 'Core', muscles: ['Qarın'] },
+  { label: 'Qarın', muscles: ['Qarın'] },
   { label: 'Tam bədən', muscles: ['Tam bədən'] },
 ];
 
@@ -58,6 +59,15 @@ export default function PickExercises() {
   /* Set by done() just before its own router.back(), so the guard below lets
      the one intended exit through without asking. */
   const leavingRef = useRef(false);
+  /* The «add» footer is pinned to the bottom of a TAB screen, and `Screen` pads
+     only the top edge. On iOS 26 the Liquid Glass tab bar FLOATS over the content
+     and reserves no space, so the button sat behind the glass. Inside a tab screen
+     UIKit's safe area already includes that bar, so the footer pads by the inset
+     rather than a guessed bar height. On Android the Material bar reserves its own
+     space (the tab scene is already padded by the navigation-bar inset), so adding
+     it here would lift the footer twice. */
+  const insets = useSafeAreaInsets();
+  const footerBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + 10;
 
   const list = useMemo(() => {
     const key = searchKey(q.trim());
@@ -120,8 +130,14 @@ export default function PickExercises() {
           autoCorrect={false}
         />
         {q ? (
-          <PressableScale activeScale={0.9} haptic={false} onPress={() => setQ('')}>
-            <Icon name="x" size={16} color={palette.caption} />
+          <PressableScale
+            activeScale={0.9}
+            haptic={false}
+            onPress={() => setQ('')}
+            accessibilityRole="button"
+            accessibilityLabel={t('Axtarışı təmizlə')}
+            style={styles.clear}>
+            <Icon name="x" size={18} color={palette.caption} />
           </PressableScale>
         ) : null}
       </View>
@@ -133,6 +149,9 @@ export default function PickExercises() {
               key={g.label}
               activeScale={0.95}
               onPress={() => setGroup(i)}
+              /* The chip is drawn 34 pt tall; the slop makes the target 44 pt. It stays
+                 inside the row's 12 pt vertical padding, so Android honours it too. */
+              hitSlop={{ top: 5, bottom: 5 }}
               style={[styles.chip, i === group ? styles.chipOn : null]}>
               <AppText variant="subhead" color={i === group ? palette.white : palette.textSecondary}>
                 {t(g.label)}
@@ -142,7 +161,18 @@ export default function PickExercises() {
         </ScrollView>
       ) : null}
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      {/* The «Öz hərəkətini yaz» field is the LAST thing in this list, so on iOS the
+          keyboard opened straight on top of it and the move was typed blind.
+          automaticallyAdjustKeyboardInsets (iOS only) insets the list by the keyboard
+          and scrolls the focused field into view; it also keeps search results
+          scrollable above the keyboard. Android ignores the prop: edge-to-edge does not
+          resize the window for the keyboard, so the field is still covered there until
+          this screen gets the useKeyboardLift treatment session.tsx has. */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets>
         {list.map((e) => {
           const on = picked.includes(e.id);
           return (
@@ -177,7 +207,7 @@ export default function PickExercises() {
           <TextInput
             value={own}
             onChangeText={setOwn}
-            placeholder={t('Məsələn: Bolqar split skvat')}
+            placeholder={t('Məsələn: Bolqar skvatı')}
             placeholderTextColor={palette.caption}
             maxLength={80}
             style={styles.ownInput}
@@ -188,7 +218,7 @@ export default function PickExercises() {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: footerBottom }]}>
         <Button
           title={count === 0 ? t('Hərəkət seç') : count === 1 ? t('1 hərəkət əlavə et') : t('{n} hərəkət əlavə et', { n: count, count })}
           full
@@ -212,6 +242,10 @@ const styles = StyleSheet.create({
     backgroundColor: palette.grouped,
   },
   search: { flex: 1, fontSize: 16, color: palette.inkText, padding: 0 },
+  /* A 44 pt target for the clear «x», not the bare glyph. The negative margin
+     spends the field's own right padding, so the glyph stays where it was and the
+     target reaches the field's edge. */
+  clear: { width: 44, height: 44, marginRight: -13, alignItems: 'center', justifyContent: 'center' },
   chips: { paddingHorizontal: spacing.screen, gap: 8, paddingVertical: 12 },
   chip: { paddingHorizontal: 14, height: 34, borderRadius: 17, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
   chipOn: { backgroundColor: palette.ink },
@@ -248,5 +282,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: palette.inkText,
   },
-  footer: { paddingHorizontal: spacing.screen, paddingTop: 10, paddingBottom: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
+  // paddingBottom is set inline: it depends on the platform and the bottom inset.
+  footer: { paddingHorizontal: spacing.screen, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
 });

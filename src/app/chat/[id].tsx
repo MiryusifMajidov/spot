@@ -239,7 +239,10 @@ export default function Conversation() {
         right={
           <PressableScale
             activeScale={0.9}
-            onPress={() => showModerationSheet(resolvedName ?? t('Bu istifadəçi'), { type: trainer ? 'trainer' : 'user', id })}>
+            onPress={() => showModerationSheet(resolvedName ?? t('Bu istifadəçi'), { type: trainer ? 'trainer' : 'user', id })}
+            accessibilityRole="button"
+            accessibilityLabel={t('Digər seçimlər')}
+            style={styles.moreBtn}>
             <Icon name="more" size={22} color={palette.inkText} />
           </PressableScale>
         }
@@ -276,7 +279,7 @@ export default function Conversation() {
                   ? t('Bu söhbətin qarşı tərəfini tapa bilmədik. Yazdıqların yalnız bu cihazda qalır.')
                   : isPartner
                     ? match?.state === 'accepted'
-                      ? t('{name} ilə match oldunuz. İlk mesajı yaz — yoldaşlıq zalda başlayır.', { name })
+                      ? t('{name} ilə yoldaş oldunuz. İlk mesajı yaz — birgə məşq zalda başlayır.', { name })
                       : match
                         ? t('{name} hələ təklifə cavab verməyib. Cavab gələndə söhbət burada davam edəcək.', { name })
                         : t('{name} ilə söhbət. İlk mesajı yaz.', { name })
@@ -326,7 +329,12 @@ export default function Conversation() {
               onSubmitEditing={() => send(text)}
               returnKeyType="send"
             />
-            <PressableScale activeScale={0.9} onPress={() => send(text)} style={styles.sendBtn}>
+            <PressableScale
+              activeScale={0.9}
+              onPress={() => send(text)}
+              accessibilityRole="button"
+              accessibilityLabel={t('Mesajı göndər')}
+              style={styles.sendBtn}>
               <Icon name="arrowU" size={20} color={palette.inkText} />
             </PressableScale>
           </View>
@@ -337,6 +345,12 @@ export default function Conversation() {
 }
 
 const styles = StyleSheet.create({
+  /* The «···» was a bare 22 px glyph, so the glyph was the whole tap area. It now
+     sits in a 44x44 box; -11 (the box's empty half) keeps the glyph on the bar's
+     right gutter. Not hitSlop: on Android a hit slop is clipped to the parent, and
+     NavBar's right slot is only as tall as its content. Same box as the partner /
+     trainer / creator pages. */
+  moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -11 },
   content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 16 },
   privacyNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: palette.white, borderRadius: 12, padding: 11, marginBottom: 12 },
   startNote: { paddingVertical: 24, paddingHorizontal: 20 },

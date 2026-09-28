@@ -5,7 +5,7 @@ import { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Gym } from '@/data/types';
-import { useT } from '@/lib/useT';
+import { useFormat, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { palette, radius, shadow } from '@/theme';
 import { AppText } from './ui/AppText';
@@ -16,6 +16,8 @@ import { GymImage } from './GymImage';
 
 export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?: 'hero' | 'compact'; onPress?: () => void }) {
   const t = useT();
+  // Through fmt, not raw: «1,3 km» and «★ 4,8» in az/ru, «1.3» only in English.
+  const fmt = useFormat();
   const bookmarks = useAppStore((s) => s.bookmarks);
   const toggle = useAppStore((s) => s.toggleBookmark);
   const saved = bookmarks.includes(gym.id);
@@ -33,7 +35,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
             <Price value={gym.priceMonth} />
           </View>
           <AppText variant="footnote" color={palette.caption} style={{ marginTop: 5 }}>
-            {[gym.district, gym.distanceKm > 0 ? t('{n} km', { n: gym.distanceKm }) : null, gym.hours].filter(Boolean).join(" · ")}
+            {[gym.district, gym.distanceKm > 0 ? t('{n} km', { n: fmt.decimal(gym.distanceKm, 1) }) : null, gym.hours].filter(Boolean).join(" · ")}
           </AppText>
           {gym.listed === false ? (
             // Only its owner can see an unlisted gym at all (gyms_read).
@@ -55,7 +57,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
             {gym.rating > 0 ? (
               <BlurView intensity={30} tint="dark" style={styles.ratingBadge}>
                 <Icon name="star" size={11} color={palette.volt} />
-                <AppText style={styles.ratingText}>{gym.rating}</AppText>
+                <AppText style={styles.ratingText}>{fmt.decimal(gym.rating, 1)}</AppText>
               </BlurView>
             ) : null}
             {gym.liveCount > 0 ? (
@@ -65,11 +67,20 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
             ) : null}
           </View>
         ) : null}
+        {/* A real 44x44 tap box (a 32 pt circle was the whole target before) holding
+            the 36 pt visual circle, so the circle keeps its 12 pt inset from the corner.
+            Saved = the filled glyph, as on the gym page — a colour change alone on an
+            outline was easy to miss on a photo. */}
         <PressableScale
           haptic
           onPress={() => toggle(gym.id)}
-          style={styles.bookmark}>
-          <Icon name="bookmark" size={17} color={saved ? palette.volt : palette.white} />
+          style={styles.bookmark}
+          accessibilityRole="button"
+          accessibilityLabel={t('Yadda saxla')}
+          accessibilityState={{ selected: saved }}>
+          <View style={styles.bookmarkCircle}>
+            <Icon name={saved ? 'bookmarkOn' : 'bookmark'} size={20} color={saved ? palette.volt : palette.white} />
+          </View>
         </PressableScale>
       </Cover>
 
@@ -84,7 +95,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
         <AppText variant="footnote" color={palette.caption} style={{ marginTop: 5 }}>
           {[
             gym.district,
-            gym.distanceKm > 0 ? t('{n} km', { n: gym.distanceKm }) : null,
+            gym.distanceKm > 0 ? t('{n} km', { n: fmt.decimal(gym.distanceKm, 1) }) : null,
             gym.hours,
             gym.members > 0 ? t('{n} üzv', { n: gym.members, count: gym.members }) : null,
           ]
@@ -159,7 +170,8 @@ const styles = StyleSheet.create({
   ratingText: { color: palette.white, fontSize: 11.5, fontWeight: '600' },
   liveBadge: { backgroundColor: 'rgba(198,255,61,0.92)', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8, justifyContent: 'center' },
   liveText: { color: palette.inkText, fontSize: 11.5, fontWeight: '600' },
-  bookmark: { position: 'absolute', top: 12, right: 12, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(11,11,14,0.55)', alignItems: 'center', justifyContent: 'center' },
+  bookmark: { position: 'absolute', top: 8, right: 8, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  bookmarkCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: palette.overlay, alignItems: 'center', justifyContent: 'center' },
   tags: { flexDirection: 'row', gap: 6, marginTop: 11, flexWrap: 'wrap' },
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, height: '52%' },
 });
