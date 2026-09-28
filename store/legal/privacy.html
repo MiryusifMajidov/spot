@@ -129,7 +129,7 @@ html[data-lang="en"] .L:not(.en){display:none}
 </section>
 <section>
 <h2>Lokasiya</h2>
-<p>Lokasiya yalnız iki halda istifadə olunur: xəritədə yaxınlıqdakı zalları sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.</p>
+<p>Lokasiya yalnız üç halda istifadə olunur: xəritədə harada olduğunu sənə göstərmək (mavi nöqtə, yalnız telefonunda), yaxınlıqdakı zalları məsafəyə görə sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.</p>
 <p>Fon rejimində izləmə yoxdur. Tətbiq bağlıdırsa yerin oxunmur.</p>
 <p>Dəqiq koordinatın heç kimə göstərilmir və serverdə saxlanılmır — yalnız zalın öz koordinatı saxlanılır, onu isə zal sahibi özü qoyur.</p>
 <p>Yüklədiyin video və şəkillərdən çəkiliş yeri (GPS) telefonda, fayl serverə getməzdən əvvəl silinir — kamera onu faylın içinə yazsa da.</p>
@@ -143,7 +143,7 @@ html[data-lang="en"] .L:not(.en){display:none}
 <section>
 <h2>Reklam və üçüncü tərəflər</h2>
 <p>Reklam şəbəkəsi yoxdur. Analitika SDK-sı yoxdur. Məlumatın satılmır və reklam məqsədilə heç kimə verilmir.</p>
-<p>Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə OpenStreetMap kafel serverləri və Leaflet kitabxanasını verən unpkg.com — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür; giriş düyməsini basdıqda isə Apple (iOS) və ya Google (Android), yalnız o an və yalnız kimliyini təsdiqləmək üçün.</p>
+<p>Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə xəritə kafellərini verən OpenFreeMap (tiles.openfreemap.org) və MapLibre xəritə kitabxanasını verən unpkg.com (əlçatan olmasa, cdn.jsdelivr.net) — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür, sənin öz yerini isə görmür; giriş düyməsini basdıqda isə Apple (iOS) və ya Google (Android), yalnız o an və yalnız kimliyini təsdiqləmək üçün.</p>
 </section>
 <section>
 <h2>Sənin hüquqların</h2>
@@ -182,7 +182,7 @@ html[data-lang="en"] .L:not(.en){display:none}
 </section>
 <section>
 <h2>Местоположение</h2>
-<p>Местоположение используется только в двух случаях: чтобы показать на карте ближайшие залы и когда владелец зала отмечает место своего зала на карте.</p>
+<p>Геолокация используется только в трёх случаях: чтобы показать тебе на карте, где ты находишься (синяя точка, только на твоём телефоне), чтобы отсортировать ближайшие залы по расстоянию и когда владелец зала отмечает на карте место своего зала.</p>
 <p>Фонового отслеживания нет. Если приложение закрыто, твоё местоположение не считывается.</p>
 <p>Твои точные координаты никому не показываются и на сервере не хранятся — хранятся только координаты самого зала, и их ставит его владелец.</p>
 <p>Место съёмки (GPS) удаляется из загружаемых тобой видео и фотографий прямо на телефоне, до того как файл уйдёт на сервер, — даже если камера записала его внутрь файла.</p>
@@ -196,7 +196,7 @@ html[data-lang="en"] .L:not(.en){display:none}
 <section>
 <h2>Реклама и третьи стороны</h2>
 <p>Рекламной сети нет. SDK аналитики нет. Твои данные не продаются и никому не передаются в рекламных целях.</p>
-<p>Приложение обращается к следующим сервисам: Supabase (база, вход и файлы); уведомления идут через push-сервис Expo (exp.host) в Google FCM и Apple APNs — текст сообщения, комментария или отзыва внутри уведомления не передаётся, только имя и событие; при открытии карты — тайловые серверы OpenStreetMap и unpkg.com, откуда загружается библиотека Leaflet: они видят твой IP-адрес и координаты области, которую ты смотришь; а когда ты нажимаешь кнопку входа — Apple (iOS) или Google (Android), только в этот момент и только чтобы подтвердить, кто ты.</p>
+<p>Приложение обращается к следующим сервисам: Supabase (база, вход и файлы); уведомления идут через push-сервис Expo (exp.host) в Google FCM и Apple APNs — текст сообщения, комментария или отзыва внутри уведомления не передаётся, только имя и событие; при открытии карты — OpenFreeMap (tiles.openfreemap.org), откуда загружаются тайлы карты, и unpkg.com (если он недоступен — cdn.jsdelivr.net), откуда загружается картографическая библиотека MapLibre: они видят твой IP-адрес и координаты области, которую ты смотришь, но не твоё собственное местоположение; а когда ты нажимаешь кнопку входа — Apple (iOS) или Google (Android), только в этот момент и только чтобы подтвердить, кто ты.</p>
 </section>
 <section>
 <h2>Твои права</h2>
@@ -235,7 +235,7 @@ html[data-lang="en"] .L:not(.en){display:none}
 </section>
 <section>
 <h2>Location</h2>
-<p>Location is used in two cases only: to rank nearby gyms on the map, and when a gym owner pins their own gym on the map.</p>
+<p>Location is used in only three cases: to show you where you are on the map (a blue dot, only on your phone), to sort nearby gyms by distance, and when a gym owner marks their gym's location on the map.</p>
 <p>There is no background tracking. If the app is closed, your location is not read.</p>
 <p>Your exact coordinates are shown to nobody and are not stored on the server — only the gym's own coordinates are stored, and its owner sets them.</p>
 <p>The filming location (GPS) is taken out of the videos and photos you upload on the phone itself, before the file leaves for the server — even when the camera wrote it inside the file.</p>
@@ -249,7 +249,7 @@ html[data-lang="en"] .L:not(.en){display:none}
 <section>
 <h2>Advertising and third parties</h2>
 <p>There is no ad network. There is no analytics SDK. Your data is not sold and is not given to anyone for advertising purposes.</p>
-<p>These are the services the app talks to: Supabase (database, sign-in and files); notifications go through the Expo push service (exp.host) to Google FCM and Apple APNs — the text of a message, comment or review is never inside the notification, only a name and an event; when the map opens, the OpenStreetMap tile servers and unpkg.com, which serves the Leaflet library: they see your IP address and the coordinates of the area you are looking at; and when you press a sign-in button, Apple (iOS) or Google (Android), only at that moment and only to confirm who you are.</p>
+<p>These are the services the app talks to: Supabase (database, sign-in and files); notifications go through the Expo push service (exp.host) to Google FCM and Apple APNs — the text of a message, comment or review is never inside the notification, only a name and an event; when the map opens, OpenFreeMap (tiles.openfreemap.org), which serves the map tiles, and unpkg.com (or cdn.jsdelivr.net if it is unreachable), which serves the MapLibre map library: they see your IP address and the coordinates of the area you are looking at, but not your own location; and when you press a sign-in button, Apple (iOS) or Google (Android), only at that moment and only to confirm who you are.</p>
 </section>
 <section>
 <h2>Your rights</h2>

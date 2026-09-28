@@ -148,7 +148,7 @@ Konsol: **Play Console → App content → Data safety**.
 | Sual | Cavab | Əsas |
 |---|---|---|
 | Does your app collect or share any of the required user data types? | **Yes** | §2.2 |
-| Is all of the user data collected by your app encrypted in transit? | **Yes** | Supabase REST/Realtime/Storage — HTTPS; `exp.host` — HTTPS; xəritə tayl və Leaflet — HTTPS |
+| Is all of the user data collected by your app encrypted in transit? | **Yes** | Supabase REST/Realtime/Storage — HTTPS; `exp.host` — HTTPS; xəritə taylları (OpenFreeMap) və MapLibre — HTTPS |
 | Do you provide a way for users to request that their data is deleted? | **Yes** | Tətbiqdaxili «Hesabı sil» + veb ünvan (§6) |
 | Does your app collect data from children? | **No** | Şərtlər 16+ tələb edir (`src/lib/legal.ts`) |
 
@@ -306,8 +306,8 @@ Nəticə: aşağıdakı hər sətirdə **«Used for Tracking» = No**.
 | **Supabase** (Postgres, Auth, Storage) | §2.2-dəki hər şey | Emal edən (processor / service provider) | «Shared» deyil |
 | **Expo push service** (`exp.host`) | Push tokeni + bildirişin **başlığı və mətni** | Emal edən | «Shared» deyil |
 | **FCM (Google)** / **APNs (Apple)** | Expo-nun ötürdüyü bildiriş | Emal edən | «Shared» deyil |
-| **OpenStreetMap** (`tile.openstreetmap.org`) | Xəritə taylları istənərkən: IP + baxılan sahənin koordinatları | Müstəqil xidmət | bax §7, açıq sual №3 |
-| **unpkg.com** | Leaflet JS/CSS yüklənərkən: IP | CDN | bax §7, açıq sual №3 |
+| **OpenFreeMap** (`tiles.openfreemap.org`) | Xəritə stili, taylları və şriftləri istənərkən: IP + baxılan sahənin koordinatları (istifadəçinin öz yeri yox) | Müstəqil xidmət | bax §7, açıq sual №3 |
+| **unpkg.com** / **cdn.jsdelivr.net** (ehtiyat) | MapLibre JS/CSS yüklənərkən: IP | CDN | bax §7, açıq sual №3 |
 
 **Bildirişin içində nə gedir:** `schema61_push.sql` bunu qəsdən məhdudlaşdırıb — «Carries a name and an event, never content: no message text, no comment, no review body. A lock screen is read by whoever holds the phone.» Yəni Expo/FCM/APNs **mesajın mətnini görmür**, yalnız «X sənə mesaj yazdı» tipli bildirişi görür.
 
@@ -380,7 +380,7 @@ Səhifədə olmalıdır (üç dildə — az/ru/en):
 
 2. **Məxfilik siyasəti üçün veb ünvan.** Hər iki mağaza **URL** istəyir; tətbiqdaxili ekran (`src/app/legal`) buna əvəz deyil. Səhifələr artıq yaradılıb (`store/legal/privacy.html` və §6.2-dəki `delete-account.html`, üçü də üç dildə) — qalan iş domen seçmək və `web/landing` ilə birlikdə yayımlamaqdır (`store/legal/README.md` §3). Diqqət: landing-in nginx konfiqurasiyası mövcud olmayan yola **200 ilə landing səhifəsini** qaytarır, ona görə yayımdan sonra üç URL-in hər birini açıb yoxlamaq lazımdır, yoxsa yoxlayıcı məxfilik siyasəti əvəzinə reklam səhifəsi görər.
 
-3. **Xəritə üçüncü tərəfləri.** Xəritə `WebView` içində **unpkg.com**-dan Leaflet, **tile.openstreetmap.org**-dan tayl yükləyir (`src/components/SpotMap.tsx:102–111`). Bu o deməkdir ki, insan xəritəni açanda IP-si və baxdığı sahənin koordinatları həmin serverlərə gedir. (a) **Edildi:** hər ikisi (və Expo push xidməti) məxfilik siyasətinə yazıldı — həm tətbiqdə, həm saytda. (b) Play formasında «Shared» kimi bəyan edək, yoxsa yox — bu hələ səndən asılıdır. Mənim oxuduğuma görə bu, tətbiqin **göndərdiyi** data deyil, brauzerin adi resurs sorğusudur və adətən bəyan edilmir — amma bu, hüquqi qərardır, kod qərarı deyil. Əlavə qeyd: unpkg.com sıradan çıxsa, xəritə ümumiyyətlə açılmır.
+3. **Xəritə üçüncü tərəfləri.** Xəritə `WebView` içində **unpkg.com**-dan (əlçatan olmasa **cdn.jsdelivr.net**-dən) MapLibre, **tiles.openfreemap.org**-dan stil, tayl və şrift yükləyir (`src/components/spotMapHtml.ts`). 29.09.2026-dan əvvəl bu Leaflet + `tile.openstreetmap.org` idi. İstifadəçinin öz yeri (mavi nöqtə) səhifəyə telefonun içində ötürülür, heç bir serverə getmir. Bu o deməkdir ki, insan xəritəni açanda IP-si və baxdığı sahənin koordinatları həmin serverlərə gedir. (a) **Edildi:** hər ikisi (və Expo push xidməti) məxfilik siyasətinə yazıldı — həm tətbiqdə, həm saytda. (b) Play formasında «Shared» kimi bəyan edək, yoxsa yox — bu hələ səndən asılıdır. Mənim oxuduğuma görə bu, tətbiqin **göndərdiyi** data deyil, brauzerin adi resurs sorğusudur və adətən bəyan edilmir — amma bu, hüquqi qərardır, kod qərarı deyil. Əlavə qeyd: unpkg.com və jsDelivr ikisi də sıradan çıxsa və ya OpenFreeMap cavab verməsə, xəritənin yerinə «Xəritə yüklənmədi» və «Yenidən cəhd et» görünür.
 
 4. ~~**Video metadatası.**~~ **HƏLL OLUNDU (23.09.2026)** — həm lentdəki, həm proqrama bağlanan videodan çəkiliş yeri telefonda, fayl serverə getməzdən əvvəl silinir (§2.7). Formada `Videos` altında lokasiya bəyan etməyə ehtiyac yoxdur.
 

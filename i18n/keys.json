@@ -1145,6 +1145,7 @@
    "src/app/(tabs)/profile/settings.tsx",
    "src/app/(tabs)/workout/create.tsx",
    "src/app/(tabs)/workout/program/[id].tsx",
+   "src/app/(tabs)/workout/session.tsx",
    "src/app/gym/classes.tsx",
    "src/app/gym/edit.tsx",
    "src/app/gym/index.tsx",
@@ -5370,6 +5371,7 @@
    "src/app/(tabs)/profile/privacy.tsx",
    "src/app/(tabs)/workout/create.tsx",
    "src/app/(tabs)/workout/program/[id].tsx",
+   "src/app/(tabs)/workout/session.tsx",
    "src/app/chat/requests.tsx",
    "src/app/gym/classes.tsx",
    "src/app/gym/edit.tsx",
@@ -9199,6 +9201,15 @@
   "placeholders": []
  },
  {
+  "key": "Qeyd olunmuş set silinsin?",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/session.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Qeydiyyatsız bağla",
   "counted": false,
   "files": [
@@ -9238,6 +9249,33 @@
  },
  {
   "key": "Set əlavə et",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/session.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Seti sil",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/session.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Setlər",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/session.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Son seti sil",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/session.tsx"
@@ -9292,6 +9330,28 @@
   "kind": "ui",
   "placeholders": [
    "note"
+  ]
+ },
+ {
+  "key": "{n} nömrəli seti sil",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/session.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "{n} nömrəli setin nəticəsi silinəcək.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/session.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
   ]
  },
  {
@@ -15065,7 +15125,43 @@
   "placeholders": []
  },
  {
+  "key": "Məkan icazəsi yoxdur — onu telefonun ayarlarında SPOT üçün aç.",
+  "counted": false,
+  "files": [
+   "src/components/SpotMap.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Mənim yerim",
+  "counted": false,
+  "files": [
+   "src/components/SpotMap.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Telefonda məkan xidməti söndürülüb — onu ayarlardan yandır.",
+  "counted": false,
+  "files": [
+   "src/components/SpotMap.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Xəritə yüklənmədi",
+  "counted": false,
+  "files": [
+   "src/components/SpotMap.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Yerin alınmadı — bir az sonra yenidən yoxla.",
   "counted": false,
   "files": [
    "src/components/SpotMap.tsx"
@@ -16650,6 +16746,15 @@
   "placeholders": []
  },
  {
+  "key": "29 sentyabr 2026",
+  "counted": false,
+  "files": [
+   "src/lib/legal.ts"
+  ],
+  "kind": "data",
+  "placeholders": []
+ },
+ {
   "key": "Admin: şikayətlərə baxır. Məşq, foto və yazışma sorğusu admin panelində ümumiyyətlə yoxdur.",
   "counted": false,
   "files": [
@@ -16884,7 +16989,7 @@
   "placeholders": []
  },
  {
-  "key": "Lokasiya yalnız iki halda istifadə olunur: xəritədə yaxınlıqdakı zalları sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.",
+  "key": "Lokasiya yalnız üç halda istifadə olunur: xəritədə harada olduğunu sənə göstərmək (mavi nöqtə, yalnız telefonunda), yaxınlıqdakı zalları məsafəyə görə sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.",
   "counted": false,
   "files": [
    "src/lib/legal.ts"
@@ -17240,7 +17345,7 @@
   "placeholders": []
  },
  {
-  "key": "Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə OpenStreetMap kafel serverləri və Leaflet kitabxanasını verən unpkg.com — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür; giriş düyməsini basdıqda isə Apple (iOS) və ya Google (Android), yalnız o an və yalnız kimliyini təsdiqləmək üçün.",
+  "key": "Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə xəritə kafellərini verən OpenFreeMap (tiles.openfreemap.org) və MapLibre xəritə kitabxanasını verən unpkg.com (əlçatan olmasa, cdn.jsdelivr.net) — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür, sənin öz yerini isə görmür; giriş düyməsini basdıqda isə Apple (iOS) və ya Google (Android), yalnız o an və yalnız kimliyini təsdiqləmək üçün.",
   "counted": false,
   "files": [
    "src/lib/legal.ts"

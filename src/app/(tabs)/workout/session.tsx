@@ -8,7 +8,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StatusBar, StyleSheet, TextInput, View } from 'react-native';
+import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -30,10 +32,16 @@ import {
   useDb,
 } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
-import { dark, palette } from '@/theme';
+import { dark, palette, radius, spacing } from '@/theme';
 import { resolveDayExercises } from './day';
 
-type SetState = { kg: string; reps: string; done: boolean };
+/* `id` is the set's identity for its whole life on this screen — the React key of
+   its row and what every edit, tick and removal addresses. Rows used to be keyed
+   by position, which was harmless while sets could only be appended; once a
+   middle set can be removed, a positional key hands the removed row's component
+   (its swiped-open offset, a focused field) to the set that slides into its
+   place. */
+type SetState = { id: string; kg: string; reps: string; done: boolean };
 type ExLog = {
   ex: LibExercise;
   prev: string;
@@ -57,6 +65,28 @@ function fmt(s: number) {
    for a figure that is prefilled into a kq field and saved again: a 61,25 kq set came
    back as «61,3» and was logged as 61,3. `save` reads it with `parseDecimal`. */
 const kgExact = (n: number) => String(n).replace('.', decimalSeparator());
+
+/** The load a fresh set of this exercise starts with: the progressive-overload
+ *  verdict (applied, or last time's load when it must not be applied for them),
+ *  else simply what was lifted last time. */
+const planKg = (s: OverloadSuggestion | null, lastWeight: number | undefined, apply: boolean) =>
+  s ? kgExact(apply ? s.weight : s.prevWeight) : lastWeight != null ? kgExact(lastWeight) : '';
+
+let setSeq = 0;
+/** Unique within the app's lifetime and across a restored draft (the time part). */
+/* The program editor and the database allow 1–20 sets (program_item_sets_range); a
+   session keeps to the same ceiling, so rapid taps on + cannot pile up rows. */
+const MAX_SETS = 20;
+const newSetId = () => `s${Date.now().toString(36)}${(setSeq++).toString(36)}`;
+
+/** A minus drawn exactly like the icon set's plus (src/components/Icon.tsx has none). */
+function MinusGlyph({ size, color }: { size: number; color: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M5 12h14" fill="none" stroke={color} strokeWidth={2.1} strokeLinecap="round" />
+    </Svg>
+  );
+}
 
 /* Both read the digit runs (src/lib/duration.ts repRange). They used to split
    on the en dash only, so a hand-typed «8-10» became 810 — see repRange. */
@@ -118,7 +148,7 @@ export default function Session() {
   // Build the exercise plan + prefill each set with a progressive-overload target.
   const initial = useMemo<ExLog[]>(() => {
     const exs = resolveDayExercises(program, dayIndex, title, !!programId);
-    return exs.map((ex) => {
+    return exs.map((ex, ei) => {
       const timed = isTimed(ex.reps);
       const bw = isBodyweight(ex.equipment);
       const top = topRepOf(ex.reps);
@@ -130,7 +160,7 @@ export default function Session() {
       /* Written with the language's decimal mark («62,5», not «62.5») — the same
          figure the «qəbul et» button shows. Exact, not rounded (see kgExact):
          `suggestion.weight` is the raw logged load whenever the rule keeps it. */
-      let kg = suggestion ? kgExact(autoApply ? suggestion.weight : suggestion.prevWeight) : last ? kgExact(last.weight) : '';
+      let kg = planKg(suggestion, last?.weight, autoApply);
       let hint = suggestion?.note ?? '';
       if (suggestion && hasTrainer === true) {
         hint = t('{note}. Məşqçin var — SPOT çəkini özü dəyişmir, təklifi sən qəbul edirsən.', { note: suggestion.note });
@@ -144,7 +174,12 @@ export default function Session() {
         timed,
         bodyweight: bw,
         suggestion,
-        sets: Array.from({ length: ex.defaultSets }, () => ({ kg, reps: '', done: false })),
+        /* Positional ids for the PLAN, not newSetId(): this memo is rebuilt when
+           the trainer lookup resolves, and an untouched plan is then swapped in
+           (below). Fresh random ids there changed every row's key and remounted
+           the whole list — a kg field tapped in the first second lost its focus
+           and keyboard. `p…` never meets newSetId()'s `s…`. */
+        sets: Array.from({ length: ex.defaultSets }, (_, si) => ({ id: `p${ei}.${si}`, kg, reps: '', done: false })),
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -161,6 +196,12 @@ export default function Session() {
   const [ci, setCi] = useState(0);
   const [rest, setRest] = useState<number | null>(null);
   const restRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** The set whose tick started the running rest — removing that set ends it. */
+  const restFor = useRef<string | null>(null);
+  /** The swipe-to-delete handle of every set row on screen, by set id. */
+  const swipeRows = useRef(new Map<string, SwipeableMethods>());
+  /** Whether a row may be standing open (set when one swipes open, cleared by closeRows). */
+  const rowOpen = useRef(false);
 
   /* Duration from a START TIMESTAMP, not from counting ticks.
      `setInterval(() => setElapsed(e => e + 1), 1000)` only fires while the JS
@@ -202,7 +243,9 @@ export default function Session() {
             return;
           }
           touched.current = true;
-          setLogs(d.logs);
+          /* A draft written before sets carried an id (see SetState) gets them
+             now — every edit, tick and removal addresses a set by it. */
+          setLogs(d.logs.map((e) => ({ ...e, sets: (e.sets ?? []).map((s) => (s.id ? s : { ...s, id: newSetId() })) })));
           setCi(Math.min(d.ci ?? 0, d.logs.length - 1));
           setStartedAt(d.startedAt);
           toast(t('Yarımçıq məşqin bərpa olundu'), 'info');
@@ -285,8 +328,18 @@ export default function Session() {
 
   const current = logs[ci];
 
-  const startRest = () => {
+  /* «Keç» used to only hide the bar: the interval kept firing, once a second,
+     until the next tick or the end of the session. */
+  const stopRest = () => {
     if (restRef.current) clearInterval(restRef.current);
+    restRef.current = null;
+    restFor.current = null;
+    setRest(null);
+  };
+
+  const startRest = (setId: string) => {
+    if (restRef.current) clearInterval(restRef.current);
+    restFor.current = setId;
     setRest(90);
     restRef.current = setInterval(() => {
       setRest((r) => {
@@ -301,9 +354,9 @@ export default function Session() {
     }, 1000);
   };
 
-  const update = (si: number, key: 'kg' | 'reps', val: string) => {
+  const update = (id: string, key: 'kg' | 'reps', val: string) => {
     touched.current = true;
-    setLogs((prev) => prev.map((e, ei) => (ei === ci ? { ...e, sets: e.sets.map((s, i) => (i === si ? { ...s, [key]: val } : s)) } : e)));
+    setLogs((prev) => prev.map((e, ei) => (ei === ci ? { ...e, sets: e.sets.map((s) => (s.id === id ? { ...s, [key]: val } : s)) } : e)));
   };
 
   /* The suggestion the rule produced, offered instead of applied — see the
@@ -318,16 +371,18 @@ export default function Session() {
     );
   };
 
-  const toggleSet = (si: number) => {
+  const toggleSet = (id: string) => {
+    const target = current.sets.find((s) => s.id === id);
+    if (!target) return;
     touched.current = true;
-    const nowDone = !current.sets[si].done;
+    const nowDone = !target.done;
     setLogs((prev) =>
       prev.map((e, ei) =>
         ei === ci
           ? {
               ...e,
-              sets: e.sets.map((s, i) =>
-                i === si
+              sets: e.sets.map((s) =>
+                s.id === id
                   ? {
                       ...s,
                       done: !s.done,
@@ -344,13 +399,84 @@ export default function Session() {
     );
     if (nowDone) {
       successFeedback();
-      startRest();
+      startRest(id);
     }
   };
 
+  /* A new set carries the last set's load — the working weight they are on right
+     now, the progressive-overload prefill unless they changed it. With no set to
+     copy from (a move planned with 0 sets) it starts from the plan itself. */
   const addSet = () => {
     touched.current = true;
-    setLogs((prev) => prev.map((e, ei) => (ei === ci ? { ...e, sets: [...e.sets, { kg: e.sets[e.sets.length - 1]?.kg ?? '', reps: '', done: false }] } : e)));
+    // Minted once, outside the updater: React may run an updater more than once
+    // (Strict Mode, a rebased render) and each run would give the row a new key.
+    const id = newSetId();
+    setLogs((prev) =>
+      prev.map((e, ei) => {
+        if (ei !== ci || e.sets.length >= MAX_SETS) return e;
+        const last = e.sets[e.sets.length - 1];
+        const kg = last ? last.kg : planKg(e.suggestion, lastLoggedSet(workouts, e.ex.name)?.weight, autoApply);
+        return { ...e, sets: [...e.sets, { id, kg, reps: '', done: false }] };
+      })
+    );
+  };
+
+  /** Slide every swiped-open row shut, except `keep`. */
+  const closeRows = (keep?: string) => {
+    rowOpen.current = false;
+    swipeRows.current.forEach((row, key) => {
+      if (key !== keep) row.close();
+    });
+  };
+  /* A row left showing «Sil» shuts as soon as the hand moves on — a scroll, a
+     touch on another set's field or tick, the set-count stepper — as swipe rows
+     do in Mail. Only when one may be open, so an ordinary tap on a field does not
+     send a close to every row. */
+  const closeOpenRow = () => {
+    if (rowOpen.current) closeRows();
+  };
+
+  /* Removing sets. «Setlər» − takes the last one; swiping a row left reveals
+     «Sil» for that one. An exercise always keeps one set: with none left there
+     is no row to tick, and the exercise would silently vanish from the log.
+     Addressed by id and looked up in whichever exercise holds it, so the
+     confirm dialog's late callback cannot remove from the wrong exercise. The
+     rows below renumber from their position; each keeps its own values and tick
+     because it is keyed by that id. */
+  const dropSet = (id: string) => {
+    touched.current = true;
+    // A row left open elsewhere would keep showing «Sil» — possibly on the one
+    // set that is now the last and may not be removed.
+    closeRows(id);
+    setLogs((prev) =>
+      prev.map((e) => (e.sets.length > 1 && e.sets.some((s) => s.id === id) ? { ...e, sets: e.sets.filter((s) => s.id !== id) } : e))
+    );
+    // The rest that set's tick started belongs to a set that no longer exists.
+    if (restFor.current === id) stopRest();
+  };
+
+  /* An open set holds nothing yet, so it goes at once. A ticked one holds a
+     logged result — that is asked about first. Rows close before the question:
+     dismissing the dialog by its backdrop runs no action, and a row must not be
+     left open showing «Sil». */
+  const requestRemove = (id: string) => {
+    if (current.sets.length <= 1) return;
+    const idx = current.sets.findIndex((s) => s.id === id);
+    if (idx < 0) return;
+    if (!current.sets[idx].done) {
+      dropSet(id);
+      return;
+    }
+    closeRows();
+    confirm(t('Qeyd olunmuş set silinsin?'), t('{n} nömrəli setin nəticəsi silinəcək.', { n: idx + 1 }), [
+      { label: t('Ləğv et'), style: 'cancel' },
+      { label: t('Sil'), style: 'destructive', onPress: () => dropSet(id) },
+    ]);
+  };
+
+  const removeLastSet = () => {
+    const last = current.sets[current.sets.length - 1];
+    if (last) requestRemove(last.id);
   };
 
   const doneCount = logs.reduce((a, e) => a + e.sets.filter((s) => s.done).length, 0);
@@ -494,6 +620,10 @@ export default function Session() {
     !!openSet &&
     parseDecimal(openSet.kg) !== current.suggestion.weight;
 
+  const setCount = current.sets.length;
+  const canRemove = setCount > 1;
+  const canAdd = setCount < MAX_SETS;
+
   const libraryEntry = exerciseById(current.ex.id);
   /* `current.ex` already carries the author's clip when they filmed one
      (store/db.ts programDayExercises). Reading the library entry instead meant a
@@ -538,6 +668,7 @@ export default function Session() {
           keyboardShouldPersistTaps="handled"
           style={{ marginBottom: lift }}
           onScroll={onScroll}
+          onScrollBeginDrag={closeOpenRow}
           scrollEventThrottle={16}>
           {/* Exercise + form video */}
           <View style={styles.exercise}>
@@ -601,43 +732,123 @@ export default function Session() {
           {/* Sets */}
           <View style={{ paddingHorizontal: 20 }}>
             {current.sets.map((s, i) => (
-              <View key={i} style={[styles.setRow, s.done && styles.setRowDone]}>
-                <AppText style={[styles.setIndex, { width: 34 }]}>{i + 1}</AppText>
-                <AppText style={{ flex: 1, color: dark.textTertiary, fontSize: 13 }}>{current.prev}</AppText>
-                <TextInput
-                  value={s.kg}
-                  onChangeText={(v) => update(i, 'kg', v)}
-                  keyboardType="numeric"
-                  style={styles.input}
-                  placeholder={current.bodyweight ? t('öz') : '—'}
-                  placeholderTextColor={dark.textTertiary}
-                />
-                <TextInput
-                  value={s.reps}
-                  onChangeText={(v) => update(i, 'reps', v)}
-                  keyboardType="numeric"
-                  style={styles.input}
-                  placeholder={String(baseRepOf(current.ex.reps))}
-                  placeholderTextColor={dark.textTertiary}
-                />
-                {/* The box stays 40 so the set grid keeps its columns on a narrow phone;
-                    hitSlop takes the touch area to 48 (the row is 52 tall). */}
+              /* Swipe left → «Sil» for this one set. It only opens on a clearly
+                 sideways drag (20 pt either way before it claims the touch): a
+                 vertical drag stays the ScrollView's, a tap stays the field's or
+                 the tick's. No full-swipe delete — a sweaty overshoot must not
+                 remove a set; «Sil» is a deliberate second tap. Off while this is
+                 the only set. */
+              <ReanimatedSwipeable
+                key={s.id}
+                ref={(row: SwipeableMethods | null) => {
+                  if (row) swipeRows.current.set(s.id, row);
+                  else swipeRows.current.delete(s.id);
+                }}
+                enabled={canRemove}
+                friction={1}
+                overshootRight={false}
+                dragOffsetFromRightEdge={20}
+                dragOffsetFromLeftEdge={20}
+                onSwipeableWillOpen={() => {
+                  closeRows(s.id);
+                  rowOpen.current = true;
+                }}
+                containerStyle={styles.swipeBox}
+                childrenContainerStyle={styles.swipeFace}
+                renderRightActions={() => (
+                  /* activeScale 1: the block is flush with the row's edge, and
+                     shrinking it would open a gap. The press still buzzes.
+                     Hidden from screen readers: it sits (invisible) UNDER the row
+                     while the row is shut, so VoiceOver's activation tap would land
+                     on the row's tick instead; the same removal is offered to them
+                     as the tick's «Seti sil» action below. */
+                  <PressableScale
+                    activeScale={1}
+                    onPress={() => requestRemove(s.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('{n} nömrəli seti sil', { n: i + 1 })}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                    style={styles.swipeDelete}>
+                    <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '700' }}>{t('Sil')}</AppText>
+                  </PressableScale>
+                )}>
+                <View style={[styles.setRow, s.done && styles.setRowDone]} onTouchStart={closeOpenRow}>
+                  <AppText style={[styles.setIndex, { width: 34 }]}>{i + 1}</AppText>
+                  <AppText style={{ flex: 1, color: dark.textTertiary, fontSize: 13 }}>{current.prev}</AppText>
+                  <TextInput
+                    value={s.kg}
+                    onChangeText={(v) => update(s.id, 'kg', v)}
+                    keyboardType="numeric"
+                    style={styles.input}
+                    placeholder={current.bodyweight ? t('öz') : '—'}
+                    placeholderTextColor={dark.textTertiary}
+                  />
+                  <TextInput
+                    value={s.reps}
+                    onChangeText={(v) => update(s.id, 'reps', v)}
+                    keyboardType="numeric"
+                    style={styles.input}
+                    placeholder={String(baseRepOf(current.ex.reps))}
+                    placeholderTextColor={dark.textTertiary}
+                  />
+                  {/* The box stays 40 so the set grid keeps its columns on a narrow phone;
+                      hitSlop takes the touch area to 48 (the row is 52 tall).
+                      A swipe is invisible to a screen reader, so the same removal
+                      is offered as this element's «Seti sil» action. */}
+                  <PressableScale
+                    activeScale={0.85}
+                    onPress={() => toggleSet(s.id)}
+                    hitSlop={4}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: s.done }}
+                    accessibilityLabel={t('Set {n}', { n: i + 1 })}
+                    accessibilityActions={canRemove ? [{ name: 'delete', label: t('Seti sil') }] : undefined}
+                    onAccessibilityAction={(e) => {
+                      if (e.nativeEvent.actionName === 'delete') requestRemove(s.id);
+                    }}
+                    style={[styles.check, s.done && { backgroundColor: palette.volt, borderColor: palette.volt }]}>
+                    <Icon name="check" size={16} color={s.done ? palette.inkText : dark.textTertiary} />
+                  </PressableScale>
+                </View>
+              </ReanimatedSwipeable>
+            ))}
+
+            {/* Set count: − N +. A stepper rather than two word buttons because the
+                complaint is about a NUMBER («standart 4 set, azaltmaq olmur»): the
+                count sits between the two controls, so each tap shows its result
+                where the thumb already is, and − / + read at a glance mid-set with
+                no words to parse. It is one compact row, the height of a set row,
+                so the list does not grow. − takes the LAST set (a specific one:
+                swipe its row left) and is dimmed and disabled at one set. */}
+            <View style={styles.setCount} onTouchStart={closeOpenRow}>
+              <AppText style={styles.setCountLabel}>{t('Setlər')}</AppText>
+              <View style={styles.stepper}>
                 <PressableScale
-                  activeScale={0.85}
-                  onPress={() => toggleSet(i)}
-                  hitSlop={4}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: s.done }}
-                  accessibilityLabel={t('Set {n}', { n: i + 1 })}
-                  style={[styles.check, s.done && { backgroundColor: palette.volt, borderColor: palette.volt }]}>
-                  <Icon name="check" size={16} color={s.done ? palette.inkText : dark.textTertiary} />
+                  activeScale={0.88}
+                  onPress={removeLastSet}
+                  disabled={!canRemove}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Son seti sil')}
+                  accessibilityState={{ disabled: !canRemove }}
+                  style={[styles.stepBtn, !canRemove && styles.stepBtnOff]}>
+                  <MinusGlyph size={18} color={palette.white} />
+                </PressableScale>
+                <AppText style={styles.stepCount} accessibilityLabel={t('{n} set', { n: setCount, count: setCount })}>
+                  {String(setCount)}
+                </AppText>
+                <PressableScale
+                  activeScale={0.88}
+                  onPress={addSet}
+                  disabled={!canAdd}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Set əlavə et')}
+                  accessibilityState={{ disabled: !canAdd }}
+                  style={[styles.stepBtn, !canAdd && styles.stepBtnOff]}>
+                  <Icon name="plus" size={18} color={palette.white} />
                 </PressableScale>
               </View>
-            ))}
-            <PressableScale activeScale={0.97} onPress={addSet} style={styles.addSet}>
-              <Icon name="plus" size={16} color={dark.textSecondary} />
-              <AppText style={{ color: dark.textSecondary, fontSize: 13.5, fontWeight: '600' }}>{t('Set əlavə et')}</AppText>
-            </PressableScale>
+            </View>
           </View>
         </ScrollView>
 
@@ -647,7 +858,7 @@ export default function Session() {
             <AppText style={{ color: palette.volt, fontSize: 14, fontWeight: '700' }}>{t('Fasilə {time}', { time: fmt(rest) })}</AppText>
             {/* A bare word is an 18pt-tall target; the slop matches the bar's own
                 padding so the whole right end of the bar skips the rest. */}
-            <PressableScale activeScale={0.94} onPress={() => setRest(null)} hitSlop={{ top: 14, bottom: 14, left: 16, right: 16 }} accessibilityRole="button">
+            <PressableScale activeScale={0.94} onPress={stopRest} hitSlop={{ top: 14, bottom: 14, left: 16, right: 16 }} accessibilityRole="button">
               <AppText style={{ color: dark.textSecondary, fontSize: 14, fontWeight: '600' }}>{t('Keç')}</AppText>
             </PressableScale>
           </View>
@@ -696,12 +907,27 @@ const styles = StyleSheet.create({
   accept: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 38, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(198,255,61,0.45)' },
   cols: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingBottom: 10 },
   colH: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.6, color: dark.textTertiary },
-  setRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: dark.surface, borderRadius: 12, paddingHorizontal: 12, height: 52, marginBottom: 8 },
+  /* The swipeable's outer box clips the red «Sil» to the row's rounded shape and
+     carries the gap between rows (the row itself slides, so it cannot). */
+  swipeBox: { borderRadius: 12, marginBottom: spacing.sm },
+  /* An opaque base under the row: a ticked row's volt tint is translucent, and
+     while it slides the red action behind it would show through. Same colour as
+     the screen, so at rest nothing changes. */
+  swipeFace: { backgroundColor: palette.inkText, borderRadius: 12 },
+  swipeDelete: { width: 84, backgroundColor: palette.red, alignItems: 'center', justifyContent: 'center' },
+  setRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: dark.surface, borderRadius: 12, paddingHorizontal: 12, height: 52 },
   setRowDone: { backgroundColor: 'rgba(198,255,61,0.14)' },
   setIndex: { color: palette.white, fontSize: 15, fontWeight: '700' },
   input: { width: 64, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)', color: palette.white, textAlign: 'center', fontSize: 15, fontWeight: '600' },
   check: { width: 40, height: 40, borderRadius: 12, borderWidth: 1.5, borderColor: dark.hairline, alignItems: 'center', justifyContent: 'center' },
-  addSet: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, marginTop: 2 },
+  // The label lines up with the set numbers above (the rows' own 12 pt inset).
+  setCount: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: spacing.md, marginTop: spacing.xs },
+  setCountLabel: { color: dark.textSecondary, fontSize: 13.5, fontWeight: '600' },
+  // 52 tall in all — a set row's height; the buttons inside are 44 × 44 boxes.
+  stepper: { flexDirection: 'row', alignItems: 'center', backgroundColor: dark.surface, borderRadius: radius.field, padding: spacing.xs },
+  stepBtn: { width: 44, height: 44, borderRadius: radius.input, backgroundColor: dark.fill, alignItems: 'center', justifyContent: 'center' },
+  stepBtnOff: { opacity: 0.35 },
+  stepCount: { minWidth: 40, textAlign: 'center', color: palette.white, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
   restBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 20, marginBottom: 10, backgroundColor: dark.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14 },
   // paddingBottom is per platform — see `navBottom` in the component.
   navRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20 },

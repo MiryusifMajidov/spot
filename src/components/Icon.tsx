@@ -11,7 +11,7 @@ export type IconName =
   | 'flame' | 'users' | 'user' | 'cal' | 'clock' | 'cam' | 'lock' | 'shield'
   | 'share' | 'more' | 'trophy' | 'target' | 'bookmark' | 'bookmarkOn' | 'verified' | 'apple'
   | 'scale' | 'meal' | 'timer' | 'video' | 'grid' | 'edit' | 'qr' | 'arrowU'
-  | 'sound' | 'mute';
+  | 'sound' | 'mute' | 'locate' | 'locateOn';
 
 const paths: Record<IconName, (c: string) => ReactNode> = {
   search: (c) => (
@@ -209,6 +209,9 @@ const paths: Record<IconName, (c: string) => ReactNode> = {
     </G>
   ),
   arrowU: (c) => <Path d="M12 20V5m-5.5 5.5L12 4.5l5.5 6" fill="none" stroke={c} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />,
+  // The map's «where am I» arrow; the filled twin means the map is following you.
+  locate: (c) => <Path d="M20 4 4.2 10.6l6.9 2.3 2.3 6.9z" fill="none" stroke={c} strokeWidth={1.9} strokeLinejoin="round" />,
+  locateOn: (c) => <Path d="M20 4 4.2 10.6l6.9 2.3 2.3 6.9z" fill={c} stroke={c} strokeWidth={1.9} strokeLinejoin="round" />,
 };
 
 export function Icon({

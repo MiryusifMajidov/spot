@@ -861,6 +861,7 @@ export default function GymDetail() {
                             markers={[{ id: gym.id, lat: coords.lat, lng: coords.lng, title: gym.name, subtitle: gym.district, active: true }]}
                             center={coords}
                             zoom={15}
+                            preview
                             style={styles.mapFill}
                           />
                         </View>

@@ -1,12 +1,12 @@
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GymCard } from '@/components/GymCard';
 import { Icon } from '@/components/Icon';
-import { SpotMap, type MapMarker } from '@/components/SpotMap';
+import { SpotMap, type MapMarker, type UserLocation } from '@/components/SpotMap';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
@@ -29,13 +29,24 @@ type Status = 'asking' | 'loading' | 'ok' | 'denied' | 'error';
 const hasCoords = (g: Gym): g is Gym & { lat: number; lng: number } =>
   typeof g.lat === 'number' && typeof g.lng === 'number' && Number.isFinite(g.lat) && Number.isFinite(g.lng);
 
+/* Outside the component: a `??` inside the try in `locate` would make the
+   React Compiler skip the whole screen. */
+const fixOf = (pos: Location.LocationObject): UserLocation => ({
+  lat: pos.coords.latitude,
+  lng: pos.coords.longitude,
+  accuracy: pos.coords.accuracy ?? null,
+});
+
 /**
  * «Xəritə» — real gyms on a real map.
  *
- * The map is OpenStreetMap tiles (SpotMap), one pin per gym that has coordinates,
- * the user's own gym highlighted. Location permission only improves the screen — it
- * centres the map on the user and lets the `gyms_near` RPC return real distances;
- * without it the map still renders and stays usable.
+ * The map is SpotMap (MapLibre + OpenFreeMap vector tiles in SPOT's colours), one
+ * marker per gym that has coordinates, the user's own gym in volt. Location
+ * permission only improves the screen — it flies the map to the user, draws the
+ * live blue dot and lets the `gyms_near` RPC return real distances; without it
+ * the map still renders and stays usable. The position is watched only while
+ * this screen is focused, and it never leaves the device except as the one
+ * `gyms_near` query (which stores nothing).
  *
  * Nothing is invented: a gym whose location was never recorded is not given a
  * made-up pin — it is counted out loud in the footer and stays in the list tab.
@@ -48,11 +59,11 @@ export default function GymMap() {
      and the end of the list all sit at its bottom. On Android the Material bar
      reserves its own space (the inset here is the navigation bar it already
      covers — adding it would count it twice). On iOS 26 the Liquid Glass bar
-     FLOATS over the content: «Zala bax» sat behind the glass, and so did the
-     map's own zoom buttons and the «© OpenStreetMap» credit, which Leaflet pins
-     to the map's bottom-right corner inside the WebView. Inside a tab screen
-     UIKit's safe area already includes that bar, so the map area stops at it and
-     the list pads by it — by the inset, not a guessed bar height. */
+     FLOATS over the content: «Zala bax» sat behind the glass, and so would the
+     map's locate button and its credit, which sit in the map's bottom corners.
+     Inside a tab screen UIKit's safe area already includes that bar, so the map
+     area stops at it and the list pads by it — by the inset, not a guessed bar
+     height. */
   const insets = useSafeAreaInsets();
   const iosBottom = Platform.OS === 'ios' ? insets.bottom : 0;
   /* The marker list is memoized, and its text is translated: without the active
@@ -61,7 +72,11 @@ export default function GymMap() {
   const homeGymId = useAppStore((s) => s.profile.homeGymId);
   const fallback = useGyms();
   const [near, setNear] = useState<Gym[] | null>(null);
-  const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
+  const [me, setMe] = useState<UserLocation | null>(null);
+  /* The live position for the blue dot — watched only while this screen is
+     focused and only once permission is known to be granted. */
+  const [live, setLive] = useState<UserLocation | null>(null);
+  const [granted, setGranted] = useState(false);
   /* «asking» from the very first render, because the request below is started
      during mount and there is no moment at which we are not asking. The screen
      used to start at an 'idle' status that no notice described, so the first
@@ -70,6 +85,10 @@ export default function GymMap() {
   const [status, setStatus] = useState<Status>('asking');
   const [tab, setTab] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /* Heights of what lies over the map's bottom edge (the gym card, the footer
+     pill), so the locate button, the credit and the camera stay above it. */
+  const [cardH, setCardH] = useState(0);
+  const [pillH, setPillH] = useState(0);
 
   const locate = useCallback(async () => {
     setStatus('asking');
@@ -79,9 +98,10 @@ export default function GymMap() {
         setStatus('denied');
         return;
       }
+      setGranted(true);
       setStatus('loading');
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      const here = fixOf(pos);
       setMe(here);
       // Distances are a bonus — if the backend is absent or fails, the map still works.
       if (hasSupabaseConfig) {
@@ -103,6 +123,32 @@ export default function GymMap() {
       await locate();
     })();
   }, [locate]);
+
+  /* Balanced accuracy, a new fix every ~10 m: enough for a dot on a city map,
+     and the watch stops the moment another screen covers this one — or the
+     «Siyahı» tab replaces the map (the dot is the only thing it feeds). */
+  const mapShown = tab === 0;
+  useFocusEffect(
+    useCallback(() => {
+      if (!granted || !mapShown) return undefined;
+      let alive = true;
+      let sub: Location.LocationSubscription | null = null;
+      Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (pos) =>
+        setLive(fixOf(pos))
+      )
+        .then((s) => {
+          if (alive) sub = s;
+          else s.remove();
+        })
+        .catch(() => {
+          /* the one-off fix above still centres the map; the dot just stops moving */
+        });
+      return () => {
+        alive = false;
+        sub?.remove();
+      };
+    }, [granted, mapShown])
+  );
 
   const list = useMemo(() => applyGymFilter(near ?? fallback, gymFilter), [near, fallback, gymFilter]);
   const plottable = useMemo(() => list.filter(hasCoords), [list]);
@@ -152,6 +198,9 @@ export default function GymMap() {
           ? t('{n} zalın yeri hələ qeyd olunmayıb — onlar «Siyahı»dadır.', { n: missing, count: missing })
           : null;
 
+  // the card sits 12 pt above the map's bottom edge, the pill too
+  const bottomInset = selected ? cardH + 12 : footer ? pillH + 12 : 0;
+
   return (
     <Screen edges={['top']}>
       <NavBar title={t('Zallar xəritəsi')} />
@@ -161,16 +210,28 @@ export default function GymMap() {
 
       {tab === 0 ? (
         <View style={[styles.mapWrap, { marginBottom: iosBottom }]}>
-          {/* remount once the real position arrives so the map recentres on the user */}
+          {/* Never remounted: new markers, the selection and the position are
+              pushed into the live map, so a refreshed list keeps the user's
+              pan/zoom. The first fix flies the map to the user (zoom 13) unless
+              they have already moved it themselves. */}
           <SpotMap
-            key={me ? `me:${me.lat.toFixed(3)},${me.lng.toFixed(3)}` : 'default'}
             markers={markers}
-            center={me ?? undefined}
-            zoom={me ? 13 : 12}
+            zoom={12}
+            selectedId={selected ? selected.id : null}
             onMarkerPress={(id) => {
               tapFeedback();
               setSelectedId(id);
             }}
+            onMapPress={() => setSelectedId(null)}
+            userLocation={live ?? me}
+            centerOnFirstFix={13}
+            locateButton
+            onLocate={() => {
+              // permission was just granted from the map's own button: fetch
+              // the distances and start the live dot, as a normal start would
+              if (status === 'denied' || status === 'error') void locate();
+            }}
+            bottomInset={bottomInset}
             style={styles.map}
           />
 
@@ -190,7 +251,9 @@ export default function GymMap() {
           ) : null}
 
           {selected ? (
-            <View style={[styles.card, shadow.floating as object]}>
+            <View
+              style={[styles.card, shadow.floating as object]}
+              onLayout={(e) => setCardH(Math.round(e.nativeEvent.layout.height))}>
               <View style={styles.cardHead}>
                 <View style={{ flex: 1 }}>
                   <View style={styles.nameRow}>
@@ -248,7 +311,9 @@ export default function GymMap() {
               />
             </View>
           ) : footer ? (
-            <View style={[styles.pill, styles.pillBottom, shadow.card as object]}>
+            <View
+              style={[styles.pill, styles.pillBottom, shadow.card as object]}
+              onLayout={(e) => setPillH(Math.round(e.nativeEvent.layout.height))}>
               <Icon name="pin" size={15} color={palette.tertiary} />
               <AppText variant="footnote" color={palette.textSecondary} style={styles.pillText}>
                 {footer}
@@ -299,10 +364,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   pillTop: { top: 10 },
-  /* Leaflet's zoom buttons live in the map's bottom-right corner (10 margin +
-     34 wide). A full-width pill here covered the «−» button, so it stops short
-     of that column. */
-  pillBottom: { bottom: 12, right: 56 },
+  /* Full width: the map's locate button and its credit are lifted above the
+     pill through SpotMap's bottomInset instead of sharing the row with it. */
+  pillBottom: { bottom: 12 },
   pillText: { flex: 1, lineHeight: 18 },
   retry: { fontSize: 13, fontWeight: '600', color: palette.blue },
   card: {

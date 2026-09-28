@@ -73,8 +73,8 @@ export default function CreateGym() {
 
   // Location — required: a gym with no coordinates cannot appear on the customer map.
   const [picked, setPicked] = useState<Coords | null>(null);
-  /* A pin is required — but only while the map can actually be used. If Leaflet or
-     the OSM tiles never load, refusing to register the gym would leave the owner
+  /* A pin is required — but only while the map can actually be used. If MapLibre or
+     the map tiles never load, refusing to register the gym would leave the owner
      with no way in at all, so the requirement lifts and the pin is set later from
      the panel. */
   const [mapStatus, setMapStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
@@ -482,6 +482,9 @@ export default function CreateGym() {
           center={picked ?? undefined}
           zoom={picked ? 16 : 12}
           onPick={setPicked}
+          trackUser
+          locateButton
+          centerOnFirstFix={15}
           onStatus={setMapStatus}
           style={styles.map}
         />

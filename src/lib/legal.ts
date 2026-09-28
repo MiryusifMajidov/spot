@@ -45,6 +45,9 @@ export const OPERATOR = 'Miryusif Məcidov';
 export const CONTACT = 'mecidovyusif079@gmail.com';
 
 const UPDATED = '25 sentyabr 2026';
+/* The privacy policy moved on alone: the map's third parties changed (OpenFreeMap +
+   MapLibre instead of OSM tiles + Leaflet) and the map now shows your own position. */
+const PRIVACY_UPDATED = '29 sentyabr 2026';
 
 export const LEGAL: Record<LegalDoc, LegalContent> = {
   terms: {
@@ -121,7 +124,7 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
 
   privacy: {
     title: 'Məxfilik siyasəti',
-    updated: UPDATED,
+    updated: PRIVACY_UPDATED,
     intro:
       'Bu sənəd SPOT-un hansı məlumatı topladığını, niyə topladığını və kimin görə bildiyini yazır. Burada yazılmayan heç nə toplanmır.',
     sections: [
@@ -150,7 +153,7 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
       {
         heading: 'Lokasiya',
         body: [
-          'Lokasiya yalnız iki halda istifadə olunur: xəritədə yaxınlıqdakı zalları sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.',
+          'Lokasiya yalnız üç halda istifadə olunur: xəritədə harada olduğunu sənə göstərmək (mavi nöqtə, yalnız telefonunda), yaxınlıqdakı zalları məsafəyə görə sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.',
           'Fon rejimində izləmə yoxdur. Tətbiq bağlıdırsa yerin oxunmur.',
           'Dəqiq koordinatın heç kimə göstərilmir və serverdə saxlanılmır — yalnız zalın öz koordinatı saxlanılır, onu isə zal sahibi özü qoyur.',
           'Yüklədiyin video və şəkillərdən çəkiliş yeri (GPS) telefonda, fayl serverə getməzdən əvvəl silinir — kamera onu faylın içinə yazsa da.',
@@ -171,7 +174,7 @@ export const LEGAL: Record<LegalDoc, LegalContent> = {
         heading: 'Reklam və üçüncü tərəflər',
         body: [
           'Reklam şəbəkəsi yoxdur. Analitika SDK-sı yoxdur. Məlumatın satılmır və reklam məqsədilə heç kimə verilmir.',
-          'Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə OpenStreetMap kafel serverləri və Leaflet kitabxanasını verən unpkg.com — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür; giriş düyməsini basdıqda isə Apple (iOS) və ya Google (Android), yalnız o an və yalnız kimliyini təsdiqləmək üçün.',
+          'Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə xəritə kafellərini verən OpenFreeMap (tiles.openfreemap.org) və MapLibre xəritə kitabxanasını verən unpkg.com (əlçatan olmasa, cdn.jsdelivr.net) — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür, sənin öz yerini isə görmür; giriş düyməsini basdıqda isə Apple (iOS) və ya Google (Android), yalnız o an və yalnız kimliyini təsdiqləmək üçün.',
         ],
       },
       {

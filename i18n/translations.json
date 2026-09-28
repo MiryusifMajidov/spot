@@ -10041,9 +10041,9 @@
   "en": "You can delete your account from inside the app: Profile → Privacy → Delete account. That removes your profile, workouts, programs, videos, comments and uploaded files; a gym review you wrote stays, but your name is taken off it."
  },
  {
-  "key": "Lokasiya yalnız iki halda istifadə olunur: xəritədə yaxınlıqdakı zalları sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.",
-  "ru": "Местоположение используется только в двух случаях: чтобы показать на карте ближайшие залы и когда владелец зала отмечает место своего зала на карте.",
-  "en": "Location is used in two cases only: to rank nearby gyms on the map, and when a gym owner pins their own gym on the map."
+  "key": "Lokasiya yalnız üç halda istifadə olunur: xəritədə harada olduğunu sənə göstərmək (mavi nöqtə, yalnız telefonunda), yaxınlıqdakı zalları məsafəyə görə sıralamaq və zal sahibi öz zalının yerini xəritədə qeyd edəndə.",
+  "ru": "Геолокация используется только в трёх случаях: чтобы показать тебе на карте, где ты находишься (синяя точка, только на твоём телефоне), чтобы отсортировать ближайшие залы по расстоянию и когда владелец зала отмечает на карте место своего зала.",
+  "en": "Location is used in only three cases: to show you where you are on the map (a blue dot, only on your phone), to sort nearby gyms by distance, and when a gym owner marks their gym's location on the map."
  },
  {
   "key": "MƏŞQ TƏFƏRRÜATLARIN, ŞƏXSİ QEYDLƏRİN VƏ YAZIŞMALARIN heç kimə görünmür — nə digər istifadəçilərə, nə zal sahibinə, nə SPOT admininə. Bu, tətbiqin arzusu deyil, bazanın icazə qaydası ilə bağlanıb.",
@@ -10116,9 +10116,9 @@
   "en": "The moment you first open the app, a nameless (anonymous) account is created on the server, so you can record a workout straight away. It holds no name, no e-mail and no phone number. As soon as you sign in by e-mail, with Apple or with Google, that same account becomes yours: no second account is made, and your records stay where they are."
  },
  {
-  "key": "Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə OpenStreetMap kafel serverləri və Leaflet kitabxanasını verən unpkg.com — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür; giriş düyməsini basdıqda isə Apple (iOS) və ya Google (Android), yalnız o an və yalnız kimliyini təsdiqləmək üçün.",
-  "ru": "Приложение обращается к следующим сервисам: Supabase (база, вход и файлы); уведомления идут через push-сервис Expo (exp.host) в Google FCM и Apple APNs — текст сообщения, комментария или отзыва внутри уведомления не передаётся, только имя и событие; при открытии карты — тайловые серверы OpenStreetMap и unpkg.com, откуда загружается библиотека Leaflet: они видят твой IP-адрес и координаты области, которую ты смотришь; а когда ты нажимаешь кнопку входа — Apple (iOS) или Google (Android), только в этот момент и только чтобы подтвердить, кто ты.",
-  "en": "These are the services the app talks to: Supabase (database, sign-in and files); notifications go through the Expo push service (exp.host) to Google FCM and Apple APNs — the text of a message, comment or review is never inside the notification, only a name and an event; when the map opens, the OpenStreetMap tile servers and unpkg.com, which serves the Leaflet library: they see your IP address and the coordinates of the area you are looking at; and when you press a sign-in button, Apple (iOS) or Google (Android), only at that moment and only to confirm who you are."
+  "key": "Tətbiqin danışdığı xidmətlər bunlardır: Supabase (baza, giriş və fayllar); bildirişlər Expo push xidməti (exp.host) üzərindən Google FCM və Apple APNs-ə gedir — bildirişin içində mesajın, şərhin və ya rəyin mətni getmir, yalnız ad və hadisə; xəritə açılanda isə xəritə kafellərini verən OpenFreeMap (tiles.openfreemap.org) və MapLibre xəritə kitabxanasını verən unpkg.com (əlçatan olmasa, cdn.jsdelivr.net) — onlar IP ünvanını və baxdığın ərazinin koordinatlarını görür, sənin öz yerini isə görmür; giriş düyməsini basdıqda isə Apple (iOS) və ya Google (Android), yalnız o an və yalnız kimliyini təsdiqləmək üçün.",
+  "ru": "Приложение обращается к следующим сервисам: Supabase (база, вход и файлы); уведомления идут через push-сервис Expo (exp.host) в Google FCM и Apple APNs — текст сообщения, комментария или отзыва внутри уведомления не передаётся, только имя и событие; при открытии карты — OpenFreeMap (tiles.openfreemap.org), откуда загружаются тайлы карты, и unpkg.com (если он недоступен — cdn.jsdelivr.net), откуда загружается картографическая библиотека MapLibre: они видят твой IP-адрес и координаты области, которую ты смотришь, но не твоё собственное местоположение; а когда ты нажимаешь кнопку входа — Apple (iOS) или Google (Android), только в этот момент и только чтобы подтвердить, кто ты.",
+  "en": "These are the services the app talks to: Supabase (database, sign-in and files); notifications go through the Expo push service (exp.host) to Google FCM and Apple APNs — the text of a message, comment or review is never inside the notification, only a name and an event; when the map opens, OpenFreeMap (tiles.openfreemap.org), which serves the map tiles, and unpkg.com (or cdn.jsdelivr.net if it is unreachable), which serves the MapLibre map library: they see your IP address and the coordinates of the area you are looking at, but not your own location; and when you press a sign-in button, Apple (iOS) or Google (Android), only at that moment and only to confirm who you are."
  },
  {
   "key": "«İndi zalda» siyahısı: yalnız check-in-in qüvvədə olduğu müddətdə görünürsən. Vaxtı bitəndən sonra həmin qeyd başqalarına bağlanır. Profil → Parametrlər → Məxfilik-dən tamamilə söndürə bilərsən.",
@@ -10642,5 +10642,60 @@
   "key": "Koordinat olmadan zal müştəri xəritəsində görünmür. «Yeri dəyiş» ilə işarəni zalın üstünə qoy.",
   "ru": "Без координат зал не виден на карте клиентов. Поставь метку на зал через «Изменить место».",
   "en": "Without coordinates the gym does not appear on the customer map. Use «Change location» to put the pin on the gym."
+ },
+ {
+  "key": "29 sentyabr 2026",
+  "ru": "29 сентября 2026",
+  "en": "29 September 2026"
+ },
+ {
+  "key": "Mənim yerim",
+  "ru": "Моё местоположение",
+  "en": "My location"
+ },
+ {
+  "key": "Məkan icazəsi yoxdur — onu telefonun ayarlarında SPOT üçün aç.",
+  "ru": "Нет доступа к геолокации — открой его для SPOT в настройках телефона.",
+  "en": "No location access — turn it on for SPOT in your phone's settings."
+ },
+ {
+  "key": "Telefonda məkan xidməti söndürülüb — onu ayarlardan yandır.",
+  "ru": "Геолокация на телефоне выключена — включи её в настройках.",
+  "en": "Location services are off — turn them on in Settings."
+ },
+ {
+  "key": "Yerin alınmadı — bir az sonra yenidən yoxla.",
+  "ru": "Не удалось определить местоположение — попробуй чуть позже.",
+  "en": "Couldn't get your location — try again in a moment."
+ },
+ {
+  "key": "Setlər",
+  "ru": "Подходы",
+  "en": "Sets"
+ },
+ {
+  "key": "Son seti sil",
+  "ru": "Удалить последний подход",
+  "en": "Remove last set"
+ },
+ {
+  "key": "{n} nömrəli seti sil",
+  "ru": "Удалить подход {n}",
+  "en": "Delete set {n}"
+ },
+ {
+  "key": "Seti sil",
+  "ru": "Удалить подход",
+  "en": "Delete set"
+ },
+ {
+  "key": "Qeyd olunmuş set silinsin?",
+  "ru": "Удалить отмеченный подход?",
+  "en": "Delete a logged set?"
+ },
+ {
+  "key": "{n} nömrəli setin nəticəsi silinəcək.",
+  "ru": "Результат подхода {n} будет удалён.",
+  "en": "The result logged for set {n} will be deleted."
  }
 ]

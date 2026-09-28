@@ -582,6 +582,9 @@ export default function GymEdit() {
               center={picked ?? undefined}
               zoom={picked ? 16 : 12}
               onPick={movePin}
+              trackUser
+              locateButton
+              centerOnFirstFix={15}
               style={styles.map}
             />
           ) : (
