@@ -15,6 +15,7 @@ export const auth: Dict = {
   'Bu hesab e-poçt təsdiqi gözləyir. Serverin ayarıdır — bizə yaz.': 'Этот аккаунт ждёт подтверждения почты. Это настройка сервера — напиши нам.',
   'Bu parol çox sadədir və ya sızmış parollar siyahısındadır — başqa parol seç': 'Этот пароль слишком простой или есть в списке утёкших паролей — выбери другой',
   'Bu, yeni hesab açmır — indiki hesabına giriş yolu əlavə edir. Heç nə itmir.': 'Это не создаёт новый аккаунт — только добавляет способ входа в твой текущий. Ничего не пропадёт.',
+  'Davam et': 'Продолжить',
   'Davam etməklə {terms} və {privacy} ilə razılaşırsan. SPOT 16 yaşdan yuxarı istifadəçilər üçündür.': 'Продолжая, ты соглашаешься с документами «{terms}» и «{privacy}». SPOT — для пользователей от 16 лет.',
   'Daxil oldun': 'Вход выполнен',
   'Daxil olunur…': 'Входим…',

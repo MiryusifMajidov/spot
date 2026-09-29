@@ -47,6 +47,7 @@ const ICON: Record<NotifType, { name: IconName; tint: string }> = {
   video_like: { name: 'heart', tint: palette.red },
   post_like: { name: 'heart', tint: palette.red },
   follow: { name: 'users', tint: palette.voltDeep },
+  program_assigned: { name: 'dumbbell', tint: palette.voltDeep },
 };
 
 /** «indi» / «5 dəq» / «Dünən», in the language the person chose. The clock is

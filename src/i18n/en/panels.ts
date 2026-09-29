@@ -190,7 +190,6 @@ export const panels: Dict = {
   'SPOT-da bu zalı seçib': 'Chose this gym on SPOT',
   'SPOT-da ödəniş yoxdur — hesablaşmanı şagirdlə özün aparırsan.': 'SPOT has no payments — you settle up with the student yourself.',
   'Saat üzrə doluluq': 'Occupancy by hour',
-  'Saat': 'Time',
   'Sahib rəyi silə bilmir — yalnız cavab yaza və ya şikayət edə bilər. Şikayət rəyi silmir, moderator yoxlayır.': 'The owner can\'t delete a review — only reply to it or report it. A report doesn\'t delete the review; a moderator checks it.',
   'Sahib rəyləri silə BİLMİR — yalnız cavab yaza bilər. Bu qayda dəyişməzdir, əks halda reytinq mənasını itirir.': 'The owner CANNOT delete reviews — only reply to them. This rule never changes; otherwise the rating would lose its meaning.',
   'Sahiblik təsdiqi gözlənilir': 'Ownership verification pending',

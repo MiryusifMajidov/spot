@@ -336,6 +336,13 @@ interface DbState {
   matches: Record<string, Match>;
   threads: Record<string, ChatMessage[]>;
   savedPrograms: string[];
+  /** The program this person is following — the one the Məşq tab's «bugünkü
+   *  məşq» card is built from. Its own field, set by an explicit «Başla» on a
+   *  program (or by finishing one of its days) and cleared by «Proqramı
+   *  dayandır». It used to be inferred: the last program trained, else the
+   *  OLDEST bookmark — so bookmarking meant following, and a newly chosen
+   *  program did not appear on the card until its first session was logged. */
+  activeProgramId: string | null;
   myReviews: Record<string, { rating: number; text: string; at: string }[]>; // gymId → reviews I wrote
   myPrograms: Program[];                       // programs this user/trainer created
   // Comments are NOT here: they live on the server (src/lib/comments.ts). Keeping
@@ -361,6 +368,7 @@ interface DbState {
   /** Adopt the id the server accepted, for a row written before ids were shared. */
   renameWorkout: (oldId: string, newId: string) => void;
   toggleSavedProgram: (id: string) => void;
+  setActiveProgram: (id: string | null) => void;
   sendMatchRequest: (partnerId: string, question?: string) => void;
   /** Bring the device's match state back in line with the server. See the
    *  implementation for why only UUID-keyed entries are touched. */
@@ -391,6 +399,7 @@ export const useDb = create<DbState>()(
       matches: {},
       threads: {},
       savedPrograms: [],
+      activeProgramId: null,
       myReviews: {},
       myPrograms: [],
 
@@ -475,6 +484,8 @@ export const useDb = create<DbState>()(
           };
         }),
 
+      setActiveProgram: (id) => set({ activeProgramId: id }),
+
       toggleSavedProgram: (id) =>
         set((s) => ({
           savedPrograms: s.savedPrograms.includes(id) ? s.savedPrograms.filter((x) => x !== id) : [...s.savedPrograms, id],
@@ -558,7 +569,7 @@ export const useDb = create<DbState>()(
         set((s) => ({ matches: { ...s.matches, [partnerId]: { partnerId, state: 'declined', at: new Date().toISOString() } } })),
 
       resetDomain: () =>
-        set({ checkIns: [], workouts: [], matches: {}, threads: {}, savedPrograms: [] }),
+        set({ checkIns: [], workouts: [], matches: {}, threads: {}, savedPrograms: [], activeProgramId: null }),
     }),
     {
       name: 'spot-db',
@@ -570,6 +581,7 @@ export const useDb = create<DbState>()(
         matches: s.matches,
         threads: s.threads,
         savedPrograms: s.savedPrograms,
+        activeProgramId: s.activeProgramId,
         myReviews: s.myReviews,
         myPrograms: s.myPrograms,
       }),
@@ -678,6 +690,50 @@ function planKey(title: string): keyof typeof DAY_PLANS {
   if (t.includes('hiit') || t.includes('kardio')) return 'hiit';
   return 'full';
 }
+/**
+ * Which day of a program comes next: the day AFTER the last one logged against it.
+ *
+ * It used to be «how many sessions were logged against this program, modulo its
+ * days». That counts sessions, not days: on a 4-day plan, doing Day 3 straight
+ * from the day screen made the next suggestion Day 2 instead of Day 4. Every
+ * session records its `dayIndex`, so the last one says where the person really
+ * is. A workout without one (logged before that field, or restored from a server
+ * row written before schema92) falls back to the old count.
+ */
+export function nextProgramDay(workouts: Workout[], programId: string, dayCount: number): number {
+  if (!programId || dayCount <= 0) return 0;
+  const mine = workouts.filter((w) => w.programId === programId);
+  // Newest first by time, not by array position: a merge from the server can
+  // interleave rows.
+  const last = mine.reduce<Workout | null>((a, w) => (!a || w.at > a.at ? w : a), null);
+  if (last && typeof last.dayIndex === 'number' && last.dayIndex >= 0) return (last.dayIndex + 1) % dayCount;
+  return mine.length % dayCount;
+}
+
+/** A move somebody typed that the library does not know — the same starting
+ *  numbers the program builder gives one (programDraft.itemFromName). */
+export function customExercise(name: string): LibExercise {
+  const clean = name.trim();
+  return {
+    id: `own-${clean.toLowerCase().replace(/\s+/g, '-')}`,
+    name: clean,
+    muscle: '',
+    equipment: '—',
+    defaultSets: 3,
+    reps: '10',
+    videoUrl: NO_VIDEO,
+    commonMistake: '',
+    substitutes: [],
+    isCompound: false,
+  };
+}
+
+/** The moves a person picked for a workout of their own, in the order tapped. */
+export function exercisesFromPicks(ids: string[], typed: string[] = []): LibExercise[] {
+  const known = ids.map((id) => exerciseById(id)).filter((e): e is LibExercise => !!e);
+  return [...known, ...typed.filter((n) => n.trim()).map(customExercise)];
+}
+
 /** The exercises for a given workout day, resolved from the library. */
 export function sessionExercises(dayTitle: string): LibExercise[] {
   return DAY_PLANS[planKey(dayTitle)].map((id) => exerciseById(id)).filter((e): e is LibExercise => !!e);

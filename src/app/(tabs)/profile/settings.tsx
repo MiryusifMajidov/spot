@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, View } from 'react-native';
-import { confirm, toast } from '@/store/ui';
+import { actionSheet, confirm, toast } from '@/store/ui';
 
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { ListGroup, ListRow } from '@/components/ui/ListGroup';
@@ -11,6 +11,8 @@ import { Screen } from '@/components/ui/Screen';
 import { accountCount, showAccountSwitcher } from '@/lib/accounts';
 import { useAuthGate } from '@/lib/authGate';
 import { currentIdentity, signOut } from '@/lib/auth';
+import { confirmDeleteAccount } from '@/lib/deleteAccount';
+import { reminderSummary } from '@/lib/reminders';
 import { wipeDeviceData } from '@/lib/wipe';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { releaseSounds, successFeedback, tapFeedback } from '@/lib/feedback';
@@ -30,7 +32,9 @@ export default function Settings() {
   const haptics = useAppStore((s) => s.haptics);
   const sounds = useAppStore((s) => s.sounds);
   const setFeedback = useAppStore((s) => s.setFeedback);
-  const reset = useAppStore((s) => s.resetOnboarding);
+  const restSeconds = useAppStore((s) => s.restSeconds);
+  const reminder = useAppStore((s) => s.reminder);
+  const setTraining = useAppStore((s) => s.setTraining);
   const role = useAppStore((s) => s.profile.role);
   const ownsGym = useAppStore((s) => s.ownsGym);
 
@@ -132,32 +136,27 @@ export default function Settings() {
      in the same `reports` table the admin panel reads (schema21). */
   const help = () => router.push('/(tabs)/profile/support');
 
-  /** Scope note: this restarts the onboarding FLOW on this device. It does not
-   *  delete anything on the server — `bootstrap()` reads the profile back from
-   *  `profiles` on the next launch, so the name, gym, goals and level return.
-   *  The copy used to promise they would be «silinəcək», which was never true. */
-  /* «Onboarding» is an English word, and the app is Azerbaijani only. The dialog
-     body and the row's own footer already called this flow «qeydiyyat», so the
-     screen used two names for one thing and one of them was not the language the
-     product ships in.
-     The body names the Privacy row by its real title, «Bu cihazdakı nüsxəni sil»;
-     it used to send people to «Datanı bu cihazdan sil», a row that does not exist. */
-  const resetOnboarding = () =>
-    confirm(
-      t('Qeydiyyatı yenidən keç'),
-      t('Qeydiyyat addımları bu cihazda yenidən başlayacaq və cavablarını yenidən verə bilərsən. Serverdəki profilin silinmir — dəyişmədiyin sahələr olduğu kimi qalır. Məşq, çəki və check-in tarixçən də toxunulmur; onları silmək üçün Məxfilik → «Bu cihazdakı nüsxəni sil».'),
-      [
-        { label: t('Ləğv et'), style: 'cancel' },
-        {
-          label: t('Yenidən keç'),
-          style: 'destructive',
-          onPress: () => {
-            reset();
-            router.replace('/onboarding/welcome');
-          },
-        },
-      ]
-    );
+  /* «Qeydiyyatı yenidən keç» lived here — a developer's tool, footed «Bu, test
+     üçün…», shipped to every user. It is gone. What a person actually needs from
+     this group is at the bottom now: sign out and delete, by name. */
+
+  /* The rest a ticked set starts. Four choices cover everything from curls to
+     heavy squats; ±30 s on the running timer covers the rest. */
+  const REST_CHOICES = [60, 90, 120, 180];
+  const restLabel = (s: number) => (s % 60 === 0 ? t('{n} dəq', { n: s / 60, count: s / 60 }) : t('{n} san', { n: s }));
+  const pickRest = () =>
+    actionSheet({
+      title: t('Setlər arası fasilə'),
+      actions: [
+        ...REST_CHOICES.map((s) => ({
+          label: s === restSeconds ? `✓ ${restLabel(s)}` : restLabel(s),
+          onPress: () => setTraining({ restSeconds: s }),
+        })),
+        { label: t('Bağla'), style: 'cancel' as const },
+      ],
+    });
+
+  const linked = ident.phase === 'ready' && ident.kind !== 'anonymous' && ident.kind !== 'none';
 
   return (
     <Screen>
@@ -222,7 +221,6 @@ export default function Settings() {
                 (ident.kind === 'google' ? 'Google' : ident.kind === 'apple' ? 'Apple' : t('Nömrə'))
               }
               chevron={false}
-              onPress={signOutRow}
             />
           )}
           <ListRow icon="user" iconBg={palette.blue} title={t('Profili redaktə et')} onPress={() => router.push('/(tabs)/profile/edit')} />
@@ -238,6 +236,17 @@ export default function Settings() {
           <View style={{ padding: 12 }}>
             <LanguagePicker />
           </View>
+        </ListGroup>
+
+        <ListGroup header={t('Məşq')}>
+          <ListRow
+            icon="clock"
+            iconBg={palette.blue}
+            title={t('Məşq xatırlatması')}
+            value={reminderSummary(reminder, t) ?? t('Söndürülüb')}
+            onPress={() => router.push('/(tabs)/profile/reminders')}
+          />
+          <ListRow icon="timer" iconBg={palette.voltDeep} title={t('Setlər arası fasilə')} value={restLabel(restSeconds)} onPress={pickRest} />
         </ListGroup>
 
         {/* «Kəşf-də», not «Kəşfdə»: the hyphen before a case suffix belongs to
@@ -349,8 +358,13 @@ export default function Settings() {
           />
         </ListGroup>
 
-        <ListGroup footer={t('Bu, test üçün qeydiyyatı yenidən başladır.')}>
-          <ListRow icon="arrowU" iconBg={palette.red} iconColor={palette.white} title={t('Qeydiyyatı yenidən keç')} danger chevron={false} onPress={resetOnboarding} />
+        {/* Sign-out used to hide behind a tap on the «Giriş» row, which reads as
+            information, not as a button. Delete was only inside Məxfilik. Both are
+            named here, last, where every phone's settings keep them. Sign-out only
+            for a linked account: signing out of an anonymous one destroys it. */}
+        <ListGroup footer={t('Hesabı silmək həmişəlikdir: profil, videolar və məşq tarixçəsi serverdən də silinir.')}>
+          {linked ? <ListRow title={t('Hesabdan çıx')} danger chevron={false} onPress={signOutRow} /> : null}
+          <ListRow title={t('Hesabı sil')} danger chevron={false} onPress={() => confirmDeleteAccount(router)} />
         </ListGroup>
       </ScrollView>
     </Screen>

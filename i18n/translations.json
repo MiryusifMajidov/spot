@@ -10727,5 +10727,263 @@
   "key": "Hesab yaradıldı",
   "ru": "Аккаунт создан",
   "en": "Account created"
+ },
+ {
+  "key": "15 dəqiqə gec",
+  "ru": "На 15 минут позже",
+  "en": "15 minutes later"
+ },
+ {
+  "key": "15 dəqiqə tez",
+  "ru": "На 15 минут раньше",
+  "en": "15 minutes earlier"
+ },
+ {
+  "key": "Məşq xatırlatması",
+  "ru": "Напоминание о тренировке",
+  "en": "Workout reminder"
+ },
+ {
+  "key": "Seçdiyin günlərdə, saat {time}",
+  "ru": "В выбранные дни, в {time}",
+  "en": "On the days you chose, at {time}"
+ },
+ {
+  "key": "Söndürülüb",
+  "ru": "Выключено",
+  "en": "Off"
+ },
+ {
+  "key": "Telefon bildirişlərə icazə vermir — xatırlatma üçün ayarlardan aç",
+  "ru": "Телефон не разрешает уведомления — включи их в настройках, чтобы получать напоминания",
+  "en": "Your phone does not allow notifications — turn them on in Settings for the reminder"
+ },
+ {
+  "key": "Xatırlat",
+  "ru": "Напоминать",
+  "en": "Remind me"
+ },
+ {
+  "key": "Xatırlatma gəlməsi üçün SPOT-a bildiriş icazəsi ver. Telefon ayarlarını açmaq üçün toxun.",
+  "ru": "Чтобы получать напоминания, разреши SPOT уведомления. Нажми, чтобы открыть настройки телефона.",
+  "en": "To get the reminder, allow SPOT to send notifications. Tap to open your phone settings."
+ },
+ {
+  "key": "Xatırlatma quruldu",
+  "ru": "Напоминание настроено",
+  "en": "Reminder set"
+ },
+ {
+  "key": "Xatırlatma qurulmadı — yenidən cəhd et",
+  "ru": "Не удалось настроить напоминание — попробуй ещё раз",
+  "en": "Could not set the reminder — try again"
+ },
+ {
+  "key": "Xatırlatma telefonun özündə qurulur — internet tələb etmir və heç yerə göndərilmir. Toxunanda Məşq tabı açılır.",
+  "ru": "Напоминание настраивается на самом телефоне — интернет не нужен, и оно никуда не отправляется. По нажатию открывается вкладка «Тренировки».",
+  "en": "The reminder is set on the phone itself — it needs no internet and is sent nowhere. Tapping it opens the Workout tab."
+ },
+ {
+  "key": "Ən azı bir gün seç",
+  "ru": "Выбери хотя бы один день",
+  "en": "Pick at least one day"
+ },
+ {
+  "key": "Hesabı sil",
+  "ru": "Удалить аккаунт",
+  "en": "Delete account"
+ },
+ {
+  "key": "Hesabı silmək həmişəlikdir: profil, videolar və məşq tarixçəsi serverdən də silinir.",
+  "ru": "Удаление аккаунта необратимо: профиль, видео и история тренировок удаляются и с сервера.",
+  "en": "Deleting your account is permanent: your profile, videos and workout history are removed from the server too."
+ },
+ {
+  "key": "Setlər arası fasilə",
+  "ru": "Отдых между подходами",
+  "en": "Rest between sets"
+ },
+ {
+  "key": "Hamı görsün",
+  "ru": "Видно всем",
+  "en": "Visible to everyone"
+ },
+ {
+  "key": "Proqram kitabxanada hamıya görünəcək və hər kəs ondan istifadə edə biləcək.",
+  "ru": "Программа будет видна всем в библиотеке, и любой сможет ею пользоваться.",
+  "en": "The program will be visible to everyone in the library, and anyone can use it."
+ },
+ {
+  "key": "Proqramlar pulsuzdur — SPOT-da onlayn ödəniş yoxdur.",
+  "ru": "Программы бесплатны — в SPOT нет онлайн-оплаты.",
+  "en": "Programs are free — SPOT has no online payments."
+ },
+ {
+  "key": "Yalnız sən görürsən. Müəllimsənsə, təyin etdiyin şagirdlər də görür.",
+  "ru": "Видишь только ты. Если ты тренер — ещё ученики, которым ты её назначил.",
+  "en": "Only you can see it. If you are a trainer, the students you assign it to can too."
+ },
+ {
+  "key": "Proqramın müəllifi bu günün hərəkətlərini hələ yazmayıb. Hərəkətləri özün seçib başlaya bilərsən.",
+  "ru": "Автор программы ещё не добавил упражнения на этот день. Можешь выбрать их сам и начать.",
+  "en": "The program author has not added this day's exercises yet. You can pick them yourself and start."
+ },
+ {
+  "key": "BUGÜNKÜ MƏŞQ · GÜN {n}/{total}",
+  "ru": "ТРЕНИРОВКА НА СЕГОДНЯ · ДЕНЬ {n}/{total}",
+  "en": "TODAY'S WORKOUT · DAY {n}/{total}"
+ },
+ {
+  "key": "Bu gün nə edirsən?",
+  "ru": "Что делаешь сегодня?",
+  "en": "What are you doing today?"
+ },
+ {
+  "key": "Kitabxanada olmayan hərəkəti buraya yaz — 3 set ilə başlayır, məşqdə artırıb-azalda bilərsən.",
+  "ru": "Впиши сюда упражнение, которого нет в библиотеке — начнётся с 3 подходов, на тренировке можно добавить или убрать.",
+  "en": "Type an exercise that is not in the library here — it starts with 3 sets, and you can add or remove sets during the workout."
+ },
+ {
+  "key": "Seçdiklərinlə başlayaq?",
+  "ru": "Начнём с выбранного?",
+  "en": "Start with what you picked?"
+ },
+ {
+  "key": "Seçdiyin hərəkətlər hələ məşqə əlavə olunmayıb.",
+  "ru": "Выбранные упражнения ещё не добавлены в тренировку.",
+  "en": "The exercises you picked have not been added to the workout yet."
+ },
+ {
+  "key": "Seçdiyin hərəkətlərlə məşq hələ başlamayıb.",
+  "ru": "Тренировка с выбранными упражнениями ещё не началась.",
+  "en": "The workout with the exercises you picked has not started yet."
+ },
+ {
+  "key": "Aktiv proqram",
+  "ru": "Активная программа",
+  "en": "Active program"
+ },
+ {
+  "key": "Aktiv proqram · növbəti: Gün {n}",
+  "ru": "Активная программа · далее: день {n}",
+  "en": "Active program · next: Day {n}"
+ },
+ {
+  "key": "Başla — Gün {n}",
+  "ru": "Начать — день {n}",
+  "en": "Start — Day {n}"
+ },
+ {
+  "key": "Dayandır",
+  "ru": "Остановить",
+  "en": "Stop"
+ },
+ {
+  "key": "Məşq tabı bu proqramın növbəti gününü göstərməyəcək. Tarixçən silinmir — istəsən sonra yenidən başlaya bilərsən.",
+  "ru": "Вкладка «Тренировки» больше не будет показывать следующий день этой программы. История не удаляется — можно начать снова позже.",
+  "en": "The Workout tab will stop showing this program's next day. Your history is kept — you can start again later."
+ },
+ {
+  "key": "Proqram dayandırıldı",
+  "ru": "Программа остановлена",
+  "en": "Program stopped"
+ },
+ {
+  "key": "Proqram dayandırılsın?",
+  "ru": "Остановить программу?",
+  "en": "Stop this program?"
+ },
+ {
+  "key": "Proqramı dayandır",
+  "ru": "Остановить программу",
+  "en": "Stop program"
+ },
+ {
+  "key": "Fasiləni 30 saniyə artır",
+  "ru": "Увеличить отдых на 30 секунд",
+  "en": "Add 30 seconds of rest"
+ },
+ {
+  "key": "Fasiləni 30 saniyə azalt",
+  "ru": "Сократить отдых на 30 секунд",
+  "en": "Cut 30 seconds of rest"
+ },
+ {
+  "key": "Proqramın bu gününə hərəkət əlavə olunmayıb. Hərəkətləri özün seçib məşqə başlaya bilərsən.",
+  "ru": "В этот день программы упражнения не добавлены. Можешь выбрать их сам и начать тренировку.",
+  "en": "No exercises were added to this day of the program. You can pick them yourself and start the workout."
+ },
+ {
+  "key": "Müəllim proqram təyin etdi",
+  "ru": "Тренер назначил программу",
+  "en": "Trainer assigned a program"
+ },
+ {
+  "key": "Müəllimin sənə yeni məşq proqramı göndərir",
+  "ru": "Твой тренер присылает тебе новую программу",
+  "en": "Your trainer sends you a new workout program"
+ },
+ {
+  "key": "{name} sənə məşq proqramı təyin etdi",
+  "ru": "{name} назначил(а) тебе программу тренировок",
+  "en": "{name} assigned you a workout program"
+ },
+ {
+  "key": "Bugünkü məşqin hazırdır — SPOT-u aç və başla.",
+  "ru": "Тренировка на сегодня готова — открой SPOT и начни.",
+  "en": "Today's workout is ready — open SPOT and start."
+ },
+ {
+  "key": "Məşq vaxtıdır",
+  "ru": "Время тренировки",
+  "en": "Workout time"
+ },
+ {
+  "key": "B.e.",
+  "ru": "Пн",
+  "en": "Mon"
+ },
+ {
+  "key": "Ç.a.",
+  "ru": "Вт",
+  "en": "Tue"
+ },
+ {
+  "key": "Ç.",
+  "ru": "Ср",
+  "en": "Wed"
+ },
+ {
+  "key": "C.a.",
+  "ru": "Чт",
+  "en": "Thu"
+ },
+ {
+  "key": "C.",
+  "ru": "Пт",
+  "en": "Fri"
+ },
+ {
+  "key": "Ş.",
+  "ru": "Сб",
+  "en": "Sat"
+ },
+ {
+  "key": "B.",
+  "ru": "Вс",
+  "en": "Sun"
+ },
+ {
+  "key": "Bazar",
+  "ru": "Воскресенье",
+  "en": "Sunday"
+ },
+ {
+  "key": "{n} hərəkətlə başla",
+  "ru_one": "Начать с {n} упражнением",
+  "ru_few": "Начать с {n} упражнениями",
+  "ru_many": "Начать с {n} упражнениями",
+  "en_one": "Start with {n} exercise",
+  "en_other": "Start with {n} exercises"
  }
 ]

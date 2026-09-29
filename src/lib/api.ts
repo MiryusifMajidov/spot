@@ -930,6 +930,8 @@ export async function uploadFeedVideo(input: {
 // -------------------- workouts / stats --------------------
 export interface WorkoutLog {
   programId?: string | null;
+  /** Which day of the program it was — the Məşq tab offers the day after it. */
+  dayIndex?: number | null;
   title: string;
   durationSec: number;
   volumeKg: number;
@@ -959,6 +961,7 @@ export async function logWorkout(w: WorkoutLog & { id?: string; at?: string }): 
       ...(w.id ? { id: w.id } : {}),
       profile_id: me.id,
       program_id: w.programId ?? null,
+      day_index: w.programId && typeof w.dayIndex === 'number' ? w.dayIndex : null,
       title: w.title,
       duration_sec: Math.round(w.durationSec),
       volume_kg: Math.round(w.volumeKg),
@@ -977,6 +980,7 @@ export interface ServerWorkout {
   at: string;
   title: string;
   programId: string | null;
+  dayIndex: number | null;
   volumeKg: number;
   durationMin: number;
   setsDone: number;
@@ -988,19 +992,20 @@ export async function getMyWorkouts(limit = 200): Promise<ServerWorkout[]> {
   if (!me) return [];
   const { data, error } = await supabase
     .from('workouts')
-    .select('id,program_id,title,duration_sec,volume_kg,sets_done,rpe,created_at')
+    .select('id,program_id,day_index,title,duration_sec,volume_kg,sets_done,rpe,created_at')
     .eq('profile_id', me.id)
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw error;
   return ((data ?? []) as {
-    id: string; program_id: string | null; title: string | null; duration_sec: number | null;
+    id: string; program_id: string | null; day_index: number | null; title: string | null; duration_sec: number | null;
     volume_kg: number | null; sets_done: number | null; rpe: string | null; created_at: string;
   }[]).map((r) => ({
     id: r.id,
     at: r.created_at,
     title: r.title ?? 'Məşq',
     programId: r.program_id,
+    dayIndex: r.day_index ?? null,
     volumeKg: Number(r.volume_kg ?? 0),
     durationMin: Math.round(Number(r.duration_sec ?? 0) / 60),
     setsDone: Number(r.sets_done ?? 0),

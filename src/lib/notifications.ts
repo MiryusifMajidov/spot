@@ -40,7 +40,8 @@ export type NotifType =
   | 'message'
   | 'video_like'
   | 'post_like'
-  | 'follow';
+  | 'follow'
+  | 'program_assigned';
 
 /** The types, in the order the settings screen lists them. */
 export const NOTIF_TYPES: { type: NotifType; label: string; hint: string }[] = [
@@ -51,6 +52,7 @@ export const NOTIF_TYPES: { type: NotifType; label: string; hint: string }[] = [
   { type: 'match_accepted', label: 'Təklifim qəbul edildi', hint: 'Göndərdiyin təklifə cavab gəlir' },
   { type: 'trainer_request', label: 'Şagird sorğusu', hint: 'Kimsə səninlə işləmək istəyir (müəllim)' },
   { type: 'trainer_decided', label: 'Müəllim cavab verdi', hint: 'Göndərdiyin sorğuya cavab gəlir' },
+  { type: 'program_assigned', label: 'Müəllim proqram təyin etdi', hint: 'Müəllimin sənə yeni məşq proqramı göndərir' },
   { type: 'review_reply', label: 'Rəyimə cavab', hint: 'Zal yazdığın rəyə cavab verir' },
   { type: 'message', label: 'Yeni mesaj', hint: 'Yoldaşın sənə yazır' },
   { type: 'video_like', label: 'Videomu bəyənəndə', hint: 'Kimsə paylaşdığın videonu bəyənir' },
@@ -214,6 +216,7 @@ export function notifText(n: NotifRow): string {
     case 'video_like': return t('{name} videonu bəyəndi', { name: who });
     case 'post_like': return t('{name} postunu bəyəndi', { name: who });
     case 'follow': return t('{name} səni izləməyə başladı', { name: who });
+    case 'program_assigned': return t('{name} sənə məşq proqramı təyin etdi', { name: who });
     default:
       // A type this build does not know about — a newer trigger against an older
       // app. It is still a real event, so it is shown plainly rather than hidden
@@ -231,6 +234,7 @@ export function notifTarget(
   | { kind: 'chat'; profileId: string }
   | { kind: 'profile'; profileId: string }
   | { kind: 'review'; reviewId: string; gymId: string | null }
+  | { kind: 'workout' }
   | null {
   switch (n.type) {
     case 'comment_like':
@@ -261,6 +265,9 @@ export function notifTarget(
     case 'post_like':
       // The like is on my own content; there is no useful second screen for it.
       return null;
+    case 'program_assigned':
+      // The Məşq tab is where an assigned program is shown and started.
+      return { kind: 'workout' };
     default:
       return null;
   }
@@ -278,6 +285,7 @@ export function openNotifTarget(t: ReturnType<typeof notifTarget>): void {
   else if (t.kind === 'chat') router.push({ pathname: '/chat/[id]', params: { id: t.profileId } });
   else if (t.kind === 'profile') router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: t.profileId } });
   else if (t.kind === 'review') openReview(t.reviewId, t.gymId);
+  else if (t.kind === 'workout') router.push('/(tabs)/workout');
   else router.push('/chat/requests');
 }
 

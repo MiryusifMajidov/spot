@@ -33,6 +33,20 @@ export interface Profile {
   priceFrom: number | null;
 }
 
+/** A weekly workout reminder. `days` are ISO weekdays — 1 = Monday … 7 = Sunday —
+ *  so the settings screen can list them in the order an Azerbaijani week starts. */
+export interface WorkoutReminder {
+  on: boolean;
+  days: number[];
+  hour: number;
+  minute: number;
+}
+
+/* Off until the person turns it on: a reminder nobody asked for is a reason to
+   turn notifications off altogether. Mon/Wed/Fri 19:00 is only what the switch
+   starts from. */
+export const DEFAULT_REMINDER: WorkoutReminder = { on: false, days: [1, 3, 5], hour: 19, minute: 0 };
+
 interface AppState {
   hydrated: boolean; // persisted store rehydrated
   ready: boolean; // supabase session bootstrapped
@@ -66,6 +80,10 @@ interface AppState {
   blocked: string[]; // partner/trainer ids this user blocked — filtered out everywhere
   haptics: boolean;  // vibration feedback on taps
   sounds: boolean;   // short UI sounds on taps/success
+  /** Rest between sets, in seconds — the timer a ticked set starts. */
+  restSeconds: number;
+  /** The weekly «məşq vaxtıdır» reminder (src/lib/reminders.ts schedules it). */
+  reminder: WorkoutReminder;
   /** Why the last saveProfile() returned 'failed'. Lets the screen name the real
    *  reason — a taken handle must never be reported as a connection problem. */
   lastSaveError: 'username-taken' | null;
@@ -87,6 +105,7 @@ interface AppState {
   toggleLikedPost: (id: string) => void;
   toggleBlocked: (id: string) => void;
   setFeedback: (patch: { haptics?: boolean; sounds?: boolean }) => void;
+  setTraining: (patch: { restSeconds?: number; reminder?: WorkoutReminder }) => void;
   isBlocked: (id: string) => boolean;
   enterGuest: () => void;
   completeOnboarding: () => void;
@@ -232,6 +251,8 @@ export const useAppStore = create<AppState>()(
       blocked: [],
       haptics: true,
       sounds: false,
+      restSeconds: 90,
+      reminder: DEFAULT_REMINDER,
       lastSaveError: null,
 
       setProfile: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
@@ -281,6 +302,7 @@ export const useAppStore = create<AppState>()(
         set((s) => ({ blocked: s.blocked.includes(id) ? s.blocked.filter((x) => x !== id) : [...s.blocked, id] })),
       isBlocked: (id) => get().blocked.includes(id),
       setFeedback: (patch) => set(() => ({ ...patch })),
+      setTraining: (patch) => set(() => ({ ...patch })),
       enterGuest: () => set({ guest: true }),
       completeOnboarding: () => set({ onboarded: true, guest: false }),
       /** `profileId` goes with the profile. Keeping the old id after a reset (and
@@ -503,6 +525,8 @@ export const useAppStore = create<AppState>()(
         blocked: s.blocked,
         haptics: s.haptics,
         sounds: s.sounds,
+        restSeconds: s.restSeconds,
+        reminder: s.reminder,
       }),
       onRehydrateStorage: () => (state) => {
         /* `t()` reads a module-level variable, not the store, so that a toast

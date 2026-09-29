@@ -12,7 +12,7 @@ import { t } from '@/lib/i18n';
 import { getMyAssignedProgram, type AssignedProgram } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useFormat, useT, type Fmt } from '@/lib/useT';
-import { exerciseLibrary, useAllPrograms, useDb, useWeekStats } from '@/store/db';
+import { exerciseLibrary, nextProgramDay, useAllPrograms, useDb, useWeekStats } from '@/store/db';
 import { hitSlop, palette, spacing } from '@/theme';
 import { estimateDurationMin, resolveDayExercises } from './day';
 
@@ -61,11 +61,15 @@ export default function WorkoutToday() {
   const fmt = useFormat();
   const programs = useAllPrograms();
   const workouts = useDb((s) => s.workouts);
-  const saved = useDb((s) => s.savedPrograms);
+  const activeProgramId = useDb((s) => s.activeProgramId);
   const week = useWeekStats();
 
-  /* «The program I'm following» = the one I last trained with, else the one I
-     saved. Never an arbitrary catalogue row — with none, the card says so.
+  /* «The program I'm following» = the one chosen with «Başla» on a program
+     (activeProgramId), else — for history from before that existed — the one
+     last trained. It used to fall back to the OLDEST bookmark, so saving a
+     program for later quietly made it «today's workout», and a program just
+     chosen did not show up here until its first session had been logged.
+     Never an arbitrary catalogue row — with none, the card says so.
 
      Resolved through `useProgram`, which reads this phone's own copy first and
      then the server. The list above holds only the person's OWN programs and
@@ -73,20 +77,19 @@ export default function WorkoutToday() {
      is here — was never in it: after Day 1 of a coach's plan the card said
      «Sərbəst məşq», and «Məşqə başla» opened a generic library workout instead
      of the coach's Day 2. */
-  const followingId = useMemo(() => {
-    const lastId = workouts.find((w) => w.programId)?.programId;
-    return lastId ?? saved.find((id) => !!id) ?? '';
-  }, [workouts, saved]);
+  const followingId = useMemo(
+    () => activeProgramId ?? workouts.find((w) => w.programId)?.programId ?? '',
+    [activeProgramId, workouts]
+  );
   const followed = useProgram(followingId);
   const active = useMemo(
-    () => followed ?? programs.find((p) => saved.includes(p.id)) ?? null,
-    [followed, programs, saved]
+    () => followed ?? programs.find((p) => p.id === followingId) ?? null,
+    [followed, programs, followingId]
   );
 
-  // Which day comes next = how many sessions I have logged against this program.
+  // The day after the last one done (nextProgramDay), not a session count.
   const dayCount = active?.days?.length ?? 0;
-  const doneForProgram = active ? workouts.filter((w) => w.programId === active.id).length : 0;
-  const todayDayIndex = dayCount ? doneForProgram % dayCount : 0;
+  const todayDayIndex = active ? nextProgramDay(workouts, active.id, dayCount) : 0;
   const todayTitle = active?.days?.[todayDayIndex]?.title ?? 'Sərbəst məşq';
   const todayExercises = useMemo(
     () => (active ? resolveDayExercises(active, todayDayIndex, todayTitle, true) : []),
@@ -94,11 +97,16 @@ export default function WorkoutToday() {
   );
   const todayMinutes = todayExercises.length ? estimateDurationMin(todayExercises) : 0;
 
+  /* Without a program the person picks the moves: the card has always said
+     «Hərəkətləri özün seçəcəksən», and until now the button opened a fixed
+     full-body list nobody chose. */
   const start = () =>
-    router.push({
-      pathname: '/(tabs)/workout/session',
-      params: { programId: active?.id ?? '', dayIndex: String(todayDayIndex), title: todayTitle },
-    });
+    active
+      ? router.push({
+          pathname: '/(tabs)/workout/session',
+          params: { programId: active.id, dayIndex: String(todayDayIndex), title: todayTitle },
+        })
+      : router.push({ pathname: '/(tabs)/workout/pick-exercises', params: { mode: 'session' } });
 
   /* The program a trainer assigned to this student. `failed` is tracked apart: a
      read that errored must never be shown as «no trainer assigned you anything». */
@@ -164,7 +172,9 @@ export default function WorkoutToday() {
         {/* ---------- 1. today, and the one button ---------- */}
         <View style={styles.todayCard}>
           <AppText variant="overline" style={{ color: palette.volt }}>
-            {t('BUGÜNKÜ MƏŞQ')}
+            {active && dayCount > 1
+              ? t('BUGÜNKÜ MƏŞQ · GÜN {n}/{total}', { n: todayDayIndex + 1, total: dayCount })
+              : t('BUGÜNKÜ MƏŞQ')}
           </AppText>
           <AppText variant="title2" style={{ color: palette.white, marginTop: 8 }}>
             {t(todayTitle)}

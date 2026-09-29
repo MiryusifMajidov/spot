@@ -139,9 +139,25 @@ export default function DayDetail() {
                 ? phase === 'failed'
                   ? t('Bu günün hərəkətlərini oxuya bilmədik — bu, günün boş olduğu demək deyil. Bağlantını yoxla və yenidən aç.')
                   : t('Bir az gözlə.')
-                : t('Proqramın müəllifi bu günün hərəkətlərini hələ yazmayıb. Hərəkət kitabxanasından özün seçib başlaya bilərsən.')}
+                : t('Proqramın müəllifi bu günün hərəkətlərini hələ yazmayıb. Hərəkətləri özün seçib başlaya bilərsən.')}
             </AppText>
-            <Button title={t('Hərəkət kitabxanası')} variant="secondary" onPress={() => router.push('/(tabs)/workout/exercises')} style={{ marginTop: 14 }} />
+            {/* To the picker, which can start a workout — not to the exercise
+                library, which is for browsing and cannot. Only when the day is
+                really empty: a day that failed to load is not an invitation to
+                replace it. */}
+            {programId && !program ? null : (
+              <Button
+                title={t('Hərəkət seç')}
+                variant="secondary"
+                onPress={() =>
+                  router.push({
+                    pathname: '/(tabs)/workout/pick-exercises',
+                    params: { mode: 'session', programId, dayIndex: String(dayIndex), title },
+                  })
+                }
+                style={{ marginTop: 14 }}
+              />
+            )}
           </View>
         ) : (
           <View style={{ marginTop: 20 }}>

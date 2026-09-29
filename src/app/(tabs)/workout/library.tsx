@@ -16,7 +16,10 @@ import { palette, shadow, spacing } from '@/theme';
 import { searchKey } from '@/lib/az';
 import { useT } from '@/lib/useT';
 
-const FILTERS = ['Hamısı', 'Mənimkilər', 'Müəllimlər', 'İcma', 'Evdə'];
+/* Three, not five. «İcma» and «Evdə» were a second and third way to slice a
+   list that holds a handful of programs, and «Evdə» depended on a tag almost
+   nothing carries — so it was usually an empty screen behind a chip. */
+const FILTERS = ['Hamısı', 'Mənimkilər', 'Müəllimlər'];
 
 function matches(p: Program, filter: string, mineIds: string[]) {
   switch (filter) {
@@ -24,12 +27,6 @@ function matches(p: Program, filter: string, mineIds: string[]) {
       return mineIds.includes(p.id);
     case 'Müəllimlər':
       return p.creatorType === 'trainer';
-    // SPOT's own starter plans are neither a trainer's nor the community's, so
-    // they appear under «Hamısı» only — claiming them for either would be false.
-    case 'İcma':
-      return p.creatorType === 'user';
-    case 'Evdə':
-      return p.tags.some((t) => t.toLowerCase().includes('evdə'));
     default:
       return true;
   }

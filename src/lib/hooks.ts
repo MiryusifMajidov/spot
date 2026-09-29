@@ -92,7 +92,10 @@ const mapPost = (r: any): CommunityPost => ({
 export const usePrograms = () => {
   const mine = useDb((s) => s.myPrograms);
   const remote = useFocusFetch<Program[]>('programs', mockPrograms, async () => {
-    const { data, error } = await supabase.from('programs').select('*').is('hidden_at', null).order('saves', { ascending: false });
+    // Public ones only: the server also returns your own and ones assigned to
+    // you (schema92), and those are not library entries — your own are listed
+    // from the device, an assigned one is on the Məşq tab.
+    const { data, error } = await supabase.from('programs').select('*').eq('is_public', true).is('hidden_at', null).order('saves', { ascending: false });
     if (error) throw error;
     return nonEmpty((data ?? []).map(mapProgram));
   });

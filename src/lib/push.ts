@@ -1,11 +1,13 @@
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
+import { router } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { getMyProfile } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { notifTarget, openNotifTarget, type NotifType } from '@/lib/notifications';
+import { REMINDER_KIND } from '@/lib/reminders';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 
 /**
@@ -182,6 +184,12 @@ async function currentToken(): Promise<string | null> {
  *  screen. */
 export function openPush(data: Record<string, unknown> | undefined): void {
   if (!data) return;
+  // The weekly «məşq vaxtıdır» reminder (src/lib/reminders.ts) is local and
+  // has no notification row: it opens the Məşq tab.
+  if (data.kind === REMINDER_KIND) {
+    router.push('/(tabs)/workout');
+    return;
+  }
   const type = typeof data.type === 'string' ? data.type : '';
   if (!type) return;
   openNotifTarget(

@@ -157,5 +157,9 @@ export interface Program {
    *  `programs.description` and the detail screen read it through a cast — so
    *  the only reader that ever saw it was the author's own device copy. */
   desc?: string;
+  /** Listed in everybody's library (schema92). A program written for yourself
+   *  is private unless you turn this on; SPOT's own starters are local and
+   *  leave it unset. */
+  isPublic?: boolean;
   days: { title: string; focus: string; exercises: Exercise[] }[];
 }

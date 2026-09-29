@@ -18,6 +18,7 @@ import { AppErrorBoundary } from '@/components/ui/AppErrorBoundary';
 import { UiHost } from '@/components/ui/UiHost';
 import { loadDictionaries } from '@/i18n';
 import { openPush, registerPush } from '@/lib/push';
+import { applyWorkoutReminder } from '@/lib/reminders';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { palette } from '@/theme';
@@ -69,6 +70,19 @@ export default function RootLayout() {
   useEffect(() => {
     if (onboarded) void registerPush();
   }, [onboarded]);
+
+  /* The weekly workout reminder (Parametrlər → Məşq xatırlatması). Its text is
+     fixed when it is scheduled, so it is scheduled again when the language
+     changes — and on every launch, which also restores it after the OS dropped
+     the schedule (a reinstall, a restored backup). Only once the store has
+     loaded: before that `reminder` is the default, and applying it would cancel
+     the real one. */
+  const hydrated = useAppStore((s) => s.hydrated);
+  const reminder = useAppStore((s) => s.reminder);
+  const lang = useAppStore((s) => s.lang);
+  useEffect(() => {
+    if (hydrated && reminder.on) void applyWorkoutReminder(reminder);
+  }, [hydrated, reminder, lang]);
 
   /* Tapping a notification — from the lock screen, the tray, or while the app is
      open — opens the same screen the notification centre opens for that row. */

@@ -89,6 +89,7 @@ export function mapProgram(r: any): Program {
     hasMealPlan: r.has_meal_plan,
     tags: r.tags ?? [],
     saves: r.saves ?? 0,
+    isPublic: r.is_public ?? true,
     days: (r.days ?? []).map((d: any) => ({ title: d.title, focus: d.focus, exercises: mapDayExercises(d) })),
   };
 }

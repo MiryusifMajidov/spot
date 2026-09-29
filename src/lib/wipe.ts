@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { invalidateFocusCache } from '@/lib/focusFetch';
+import { cancelWorkoutReminders } from '@/lib/reminders';
 import { useAppStore } from '@/store/appStore';
 import { useDb } from '@/store/db';
 
@@ -25,6 +26,9 @@ export async function wipeDeviceData(): Promise<void> {
   useDb.setState(INITIAL_DB, true);
   useAppStore.setState(INITIAL_APP, true);
   invalidateFocusCache();
+  // The OS keeps scheduled reminders after the stores are cleared; the next
+  // person on this phone must not be told it is «their» workout time.
+  void cancelWorkoutReminders();
   try {
     await Promise.all([useDb.persist.clearStorage(), useAppStore.persist.clearStorage()]);
   } catch {

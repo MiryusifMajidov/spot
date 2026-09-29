@@ -22,8 +22,10 @@ import { useAuthGate } from '@/lib/authGate';
 import { getMyAssignedProgram } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
+import { useAppStore } from '@/store/appStore';
 import {
   exerciseById,
+  exercisesFromPicks,
   LibExercise,
   lastLoggedSet,
   OverloadSuggestion,
@@ -31,6 +33,7 @@ import {
   suggestNext,
   useDb,
 } from '@/store/db';
+import { useSessionPick } from '@/store/sessionPick';
 import { confirm, toast } from '@/store/ui';
 import { dark, palette, radius, spacing } from '@/theme';
 import { resolveDayExercises } from './day';
@@ -100,8 +103,19 @@ export default function Session() {
   const router = useRouter();
   const t = useT();
   const gate = useAuthGate();
-  const params = useLocalSearchParams<{ programId?: string; dayIndex?: string; title?: string; partnerId?: string }>();
+  const params = useLocalSearchParams<{
+    programId?: string;
+    dayIndex?: string;
+    title?: string;
+    partnerId?: string;
+    /** A workout of the person's own: the library ids they picked, in order… */
+    exIds?: string;
+    /** …and a move they typed that the library does not have. */
+    own?: string;
+  }>();
   const workouts = useDb((s) => s.workouts);
+  const setActiveProgram = useDb((s) => s.setActiveProgram);
+  const restSeconds = useAppStore((s) => s.restSeconds);
   // Records set on a device whose set detail never left it — see `save` below.
   const serverPRs = useDb((s) => s.serverPRs);
   const logWorkout = useDb((s) => s.logWorkout);
@@ -145,45 +159,58 @@ export default function Session() {
   }, []);
   const autoApply = hasTrainer === false;
 
+  /* One exercise's plan: the sets, prefilled with the progressive-overload
+     target. Shared by the plan below and by «+ Hərəkət əlavə et», so a move added
+     mid-workout gets the same suggestion and hint as a planned one. */
+  const planLog = (ex: LibExercise, setId: (si: number) => string): ExLog => {
+    const timed = isTimed(ex.reps);
+    const bw = isBodyweight(ex.equipment);
+    const top = topRepOf(ex.reps);
+    const last = lastLoggedSet(workouts, ex.name);
+    // The full rule (Asan → +2.5 üst / +5 ayaq, Normal → +2.5 yalnız hədəf
+    // vurulubsa, Ağır → eyni çəki, ardıcıl iki Ağır → −5% deload) lives in
+    // `suggestNext`; the muscle group decides the upper/lower step.
+    const suggestion = timed ? null : suggestNext(workouts, ex.name, top, { muscle: ex.muscle });
+    /* Written with the language's decimal mark («62,5», not «62.5») — the same
+       figure the «qəbul et» button shows. Exact, not rounded (see kgExact):
+       `suggestion.weight` is the raw logged load whenever the rule keeps it. */
+    let kg = planKg(suggestion, last?.weight, autoApply);
+    let hint = suggestion?.note ?? '';
+    if (suggestion && hasTrainer === true) {
+      hint = t('{note}. Məşqçin var — SPOT çəkini özü dəyişmir, təklifi sən qəbul edirsən.', { note: suggestion.note });
+    }
+    if (!kg && bw && bodyweight) kg = String(bodyweight);
+    if (!hint) hint = timed ? t('Hədəf {reps}', { reps: repsText(ex.reps, t) }) : bw ? t('Öz çəkinlə işlə — əlavə ağırlıq varsa kq-a yaz') : t('Hədəf {reps} təkrar', { reps: repsText(ex.reps, t) });
+    return {
+      ex,
+      prev: last ? `${kgExact(last.weight)}×${last.reps}` : '—',
+      hint,
+      timed,
+      bodyweight: bw,
+      suggestion,
+      sets: Array.from({ length: ex.defaultSets }, (_, si) => ({ id: setId(si), kg, reps: '', done: false })),
+    };
+  };
+
+  /* The workout's moves: the ones the person picked (exIds — a workout of their
+     own), else the program's day. */
+  const picks = params.exIds;
+  const ownPick = params.own ?? '';
+
   // Build the exercise plan + prefill each set with a progressive-overload target.
   const initial = useMemo<ExLog[]>(() => {
-    const exs = resolveDayExercises(program, dayIndex, title, !!programId);
-    return exs.map((ex, ei) => {
-      const timed = isTimed(ex.reps);
-      const bw = isBodyweight(ex.equipment);
-      const top = topRepOf(ex.reps);
-      const last = lastLoggedSet(workouts, ex.name);
-      // The full rule (Asan → +2.5 üst / +5 ayaq, Normal → +2.5 yalnız hədəf
-      // vurulubsa, Ağır → eyni çəki, ardıcıl iki Ağır → −5% deload) lives in
-      // `suggestNext`; the muscle group decides the upper/lower step.
-      const suggestion = timed ? null : suggestNext(workouts, ex.name, top, { muscle: ex.muscle });
-      /* Written with the language's decimal mark («62,5», not «62.5») — the same
-         figure the «qəbul et» button shows. Exact, not rounded (see kgExact):
-         `suggestion.weight` is the raw logged load whenever the rule keeps it. */
-      let kg = planKg(suggestion, last?.weight, autoApply);
-      let hint = suggestion?.note ?? '';
-      if (suggestion && hasTrainer === true) {
-        hint = t('{note}. Məşqçin var — SPOT çəkini özü dəyişmir, təklifi sən qəbul edirsən.', { note: suggestion.note });
-      }
-      if (!kg && bw && bodyweight) kg = String(bodyweight);
-      if (!hint) hint = timed ? t('Hədəf {reps}', { reps: repsText(ex.reps, t) }) : bw ? t('Öz çəkinlə işlə — əlavə ağırlıq varsa kq-a yaz') : t('Hədəf {reps} təkrar', { reps: repsText(ex.reps, t) });
-      return {
-        ex,
-        prev: last ? `${kgExact(last.weight)}×${last.reps}` : '—',
-        hint,
-        timed,
-        bodyweight: bw,
-        suggestion,
-        /* Positional ids for the PLAN, not newSetId(): this memo is rebuilt when
-           the trainer lookup resolves, and an untouched plan is then swapped in
-           (below). Fresh random ids there changed every row's key and remounted
-           the whole list — a kg field tapped in the first second lost its focus
-           and keyboard. `p…` never meets newSetId()'s `s…`. */
-        sets: Array.from({ length: ex.defaultSets }, (_, si) => ({ id: `p${ei}.${si}`, kg, reps: '', done: false })),
-      };
-    });
+    const exs =
+      picks !== undefined
+        ? exercisesFromPicks(picks.split(',').filter(Boolean), ownPick ? [ownPick] : [])
+        : resolveDayExercises(program, dayIndex, title, !!programId);
+    /* Positional ids for the PLAN, not newSetId(): this memo is rebuilt when
+       the trainer lookup resolves, and an untouched plan is then swapped in
+       (below). Fresh random ids there changed every row's key and remounted
+       the whole list — a kg field tapped in the first second lost its focus
+       and keyboard. `p…` never meets newSetId()'s `s…`. */
+    return exs.map((ex, ei) => planLog(ex, (si) => `p${ei}.${si}`));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, program?.id, dayIndex, autoApply, hasTrainer]);
+  }, [title, program?.id, dayIndex, autoApply, hasTrainer, picks, ownPick]);
 
   const [logs, setLogs] = useState<ExLog[]>(initial);
   /* The trainer lookup resolves after the first render, so `initial` can be
@@ -223,7 +250,9 @@ export default function Session() {
      away every set of an hour's work with no warning and no way back. The
      draft is written on every change and cleared the moment the workout is
      saved or deliberately abandoned. */
-  const draftKey = `spot-session:${params.programId || 'free'}:${dayIndex}:${title}`;
+  /* A workout of your own is keyed by what was picked too: two different free
+     workouts must not restore each other's sets. */
+  const draftKey = `spot-session:${params.programId || 'free'}:${dayIndex}:${title}${picks ? `:${picks}:${ownPick}` : ''}`;
   const [restored, setRestored] = useState(false);
 
   useEffect(() => {
@@ -328,6 +357,28 @@ export default function Session() {
 
   const current = logs[ci];
 
+  /* «+ Hərəkət əlavə et»: the picker (mode=add) leaves its choice in
+     store/sessionPick and pops back here; on focus the moves are appended with
+     the same plan a planned move gets, and the workout jumps to the first of
+     them. Keyed on the length so the jump index is the one before appending. */
+  useFocusEffect(
+    useCallback(() => {
+      const p = useSessionPick.getState().take();
+      if (!p) return;
+      const added = exercisesFromPicks(p.ids, p.typed).map((ex) => planLog(ex, () => newSetId()));
+      if (!added.length) return;
+      touched.current = true;
+      setLogs((prev) => [...prev, ...added]);
+      setCi(logs.length);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [logs.length])
+  );
+  const addExercise = () => router.push({ pathname: '/(tabs)/workout/pick-exercises', params: { mode: 'add' } });
+
+  /* ±30 s on a running rest. A fixed 90 s was too long between curls and too
+     short between heavy squats; the default itself is set in Parametrlər. */
+  const adjustRest = (delta: number) => setRest((r) => (r === null ? r : Math.max(5, r + delta)));
+
   /* «Keç» used to only hide the bar: the interval kept firing, once a second,
      until the next tick or the end of the session. */
   const stopRest = () => {
@@ -340,7 +391,7 @@ export default function Session() {
   const startRest = (setId: string) => {
     if (restRef.current) clearInterval(restRef.current);
     restFor.current = setId;
-    setRest(90);
+    setRest(restSeconds);
     restRef.current = setInterval(() => {
       setRest((r) => {
         if (r === null) return null;
@@ -511,6 +562,9 @@ export default function Session() {
 
     // The id the engine assigns is the id the server row gets — that shared key
     // is what makes the two copies one history (src/lib/trainingSync.ts).
+    /* Training a program's day is following it: the Məşq tab's card now shows
+       this program's next day. */
+    if (params.programId) setActiveProgram(params.programId);
     const workoutId = logWorkout({
       programId: params.programId || undefined,
       dayIndex,
@@ -523,7 +577,7 @@ export default function Session() {
 
     // Mirror to Supabase (best-effort) so the trainer / gym / admin panels see it.
     if (hasSupabaseConfig) {
-      logWorkoutApi({ id: workoutId, programId: params.programId || null, title, durationSec: elapsed, volumeKg, setsDone }).catch(() => {});
+      logWorkoutApi({ id: workoutId, programId: params.programId || null, dayIndex, title, durationSec: elapsed, volumeKg, setsDone }).catch(() => {});
       for (const { lift, test } of LIFTS) {
         const best = clean
           .filter((e) => test(e.name))
@@ -591,10 +645,15 @@ export default function Session() {
           <AppText style={{ color: palette.white, fontSize: 17, fontWeight: '600', marginTop: 12, textAlign: 'center' }}>
             {t('Bu günə hərəkət təyin olunmayıb')}
           </AppText>
+          {/* It used to send the person to the exercise library to «build their own
+              workout» — a browsing screen that cannot start one. The picker can. */}
           <AppText style={{ color: dark.textSecondary, fontSize: 13.5, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
-            {t('Proqramın bu gününə hərəkət əlavə olunmayıb. Kitabxanadan hərəkət seçib öz məşqini qura bilərsən.')}
+            {t('Proqramın bu gününə hərəkət əlavə olunmayıb. Hərəkətləri özün seçib məşqə başlaya bilərsən.')}
           </AppText>
-          <PressableScale onPress={() => router.back()} style={[styles.nextBtn, { marginTop: 20, paddingHorizontal: 24, flex: undefined }]}>
+          <PressableScale onPress={addExercise} style={[styles.nextBtn, { marginTop: 20, paddingHorizontal: 24, flex: undefined, backgroundColor: palette.volt }]}>
+            <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '700' }}>{t('Hərəkət seç')}</AppText>
+          </PressableScale>
+          <PressableScale onPress={() => router.back()} style={[styles.nextBtn, { marginTop: 10, paddingHorizontal: 24, flex: undefined }]}>
             <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '600' }}>{t('Geri')}</AppText>
           </PressableScale>
         </SafeAreaView>
@@ -849,6 +908,14 @@ export default function Session() {
                 </PressableScale>
               </View>
             </View>
+
+            {/* A move that was not planned — the machine is taken, or there is time
+                for one more. Before this a workout could only ever contain what it
+                started with. */}
+            <PressableScale activeScale={0.97} onPress={addExercise} style={styles.addExercise} accessibilityRole="button">
+              <Icon name="plus" size={16} color={dark.textSecondary} />
+              <AppText style={{ color: dark.textSecondary, fontSize: 13.5, fontWeight: '600' }}>{t('Hərəkət əlavə et')}</AppText>
+            </PressableScale>
           </View>
         </ScrollView>
 
@@ -856,11 +923,27 @@ export default function Session() {
         {rest !== null ? (
           <View style={styles.restBar}>
             <AppText style={{ color: palette.volt, fontSize: 14, fontWeight: '700' }}>{t('Fasilə {time}', { time: fmt(rest) })}</AppText>
-            {/* A bare word is an 18pt-tall target; the slop matches the bar's own
-                padding so the whole right end of the bar skips the rest. */}
-            <PressableScale activeScale={0.94} onPress={stopRest} hitSlop={{ top: 14, bottom: 14, left: 16, right: 16 }} accessibilityRole="button">
-              <AppText style={{ color: dark.textSecondary, fontSize: 14, fontWeight: '600' }}>{t('Keç')}</AppText>
-            </PressableScale>
+            <View style={styles.restActions}>
+              <PressableScale
+                activeScale={0.9}
+                onPress={() => adjustRest(-30)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Fasiləni 30 saniyə azalt')}
+                style={styles.restBtn}>
+                <AppText style={styles.restBtnText}>−30</AppText>
+              </PressableScale>
+              <PressableScale
+                activeScale={0.9}
+                onPress={() => adjustRest(30)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Fasiləni 30 saniyə artır')}
+                style={styles.restBtn}>
+                <AppText style={styles.restBtnText}>+30</AppText>
+              </PressableScale>
+              <PressableScale activeScale={0.94} onPress={stopRest} accessibilityRole="button" style={styles.restSkip}>
+                <AppText style={{ color: dark.textSecondary, fontSize: 14, fontWeight: '600' }}>{t('Keç')}</AppText>
+              </PressableScale>
+            </View>
           </View>
         ) : null}
 
@@ -928,7 +1011,13 @@ const styles = StyleSheet.create({
   stepBtn: { width: 44, height: 44, borderRadius: radius.input, backgroundColor: dark.fill, alignItems: 'center', justifyContent: 'center' },
   stepBtnOff: { opacity: 0.35 },
   stepCount: { minWidth: 40, textAlign: 'center', color: palette.white, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  restBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 20, marginBottom: 10, backgroundColor: dark.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14 },
+  restBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 20, marginBottom: 10, backgroundColor: dark.surface, borderRadius: 14, paddingLeft: 16, paddingRight: 4, paddingVertical: 4 },
+  restActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  // 44 pt boxes: the bar is one row of them, so its own height is the target.
+  restBtn: { minWidth: 52, height: 44, borderRadius: 11, backgroundColor: dark.fill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
+  restBtnText: { color: palette.white, fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  restSkip: { minWidth: 52, height: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
+  addExercise: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, marginTop: spacing.sm },
   // paddingBottom is per platform — see `navBottom` in the component.
   navRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20 },
   navBtn: { width: 52, height: 52, borderRadius: 15, backgroundColor: dark.surface, alignItems: 'center', justifyContent: 'center' },

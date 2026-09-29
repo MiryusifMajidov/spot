@@ -15,6 +15,7 @@ export const auth: Dict = {
   'Bu hesab e-poçt təsdiqi gözləyir. Serverin ayarıdır — bizə yaz.': 'This account is waiting for e-mail confirmation. That is a server setting — write to us.',
   'Bu parol çox sadədir və ya sızmış parollar siyahısındadır — başqa parol seç': 'This password is too simple or appears in a list of leaked passwords — choose another one',
   'Bu, yeni hesab açmır — indiki hesabına giriş yolu əlavə edir. Heç nə itmir.': 'This doesn\'t create a new account — it adds a way to sign in to your current one. Nothing is lost.',
+  'Davam et': 'Continue',
   'Davam etməklə {terms} və {privacy} ilə razılaşırsan. SPOT 16 yaşdan yuxarı istifadəçilər üçündür.': 'By continuing, you agree to the {terms} and {privacy}. SPOT is for users aged 16 and over.',
   'Daxil oldun': 'You\'re signed in',
   'Daxil olunur…': 'Signing in…',

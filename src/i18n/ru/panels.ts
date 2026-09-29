@@ -190,7 +190,6 @@ export const panels: Dict = {
   'SPOT-da bu zalı seçib': 'Выбрали этот зал в SPOT',
   'SPOT-da ödəniş yoxdur — hesablaşmanı şagirdlə özün aparırsan.': 'В SPOT нет платежей — с учеником ты рассчитываешься напрямую.',
   'Saat üzrə doluluq': 'Загруженность по часам',
-  'Saat': 'Время',
   'Sahib rəyi silə bilmir — yalnız cavab yaza və ya şikayət edə bilər. Şikayət rəyi silmir, moderator yoxlayır.': 'Владелец не может удалить отзыв — только ответить на него или пожаловаться. Жалоба не удаляет отзыв, его проверяет модератор.',
   'Sahib rəyləri silə BİLMİR — yalnız cavab yaza bilər. Bu qayda dəyişməzdir, əks halda reytinq mənasını itirir.': 'Владелец НЕ МОЖЕТ удалять отзывы — только отвечать на них. Это правило не меняется, иначе рейтинг теряет смысл.',
   'Sahiblik təsdiqi gözlənilir': 'Ожидается подтверждение владения',

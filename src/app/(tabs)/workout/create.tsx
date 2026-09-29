@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { useEffect, useRef, useState } from 'react';
-import { Keyboard, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, Platform, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -81,7 +81,7 @@ export default function CreateProgram() {
       if (!existing) return;
       draft.startEdit(existing);
     } else {
-      draft.startNew();
+      draft.startNew(profile.role === 'trainer');
     }
     seeded.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,6 +183,7 @@ export default function CreateProgram() {
         editingId: draft.editingId,
         title: draft.title,
         desc: draft.desc,
+        isPublic: draft.isPublic,
         days: draft.days,
         creatorName: profile.name || 'Sən',
         creatorType: profile.role === 'trainer' ? 'trainer' : 'user',
@@ -390,10 +391,30 @@ export default function CreateProgram() {
           <AppText variant="headline">{t('Gün əlavə et')}</AppText>
         </PressableScale>
 
+        {/* It said «bütün proqramlar hər kəsə açıqdır» — and they were: a program
+            written for yourself went into everybody's library on save, while
+            the Məşq tab promised «istəsən paylaş». Now it is a choice, and off
+            unless you are a trainer. */}
+        <View style={styles.publicRow}>
+          <View style={{ flex: 1 }}>
+            <AppText variant="callout">{t('Hamı görsün')}</AppText>
+            <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 3, lineHeight: 18 }}>
+              {draft.isPublic
+                ? t('Proqram kitabxanada hamıya görünəcək və hər kəs ondan istifadə edə biləcək.')
+                : t('Yalnız sən görürsən. Müəllimsənsə, təyin etdiyin şagirdlər də görür.')}
+            </AppText>
+          </View>
+          <Switch
+            value={draft.isPublic}
+            onValueChange={(v) => draft.set({ isPublic: v })}
+            accessibilityLabel={t('Hamı görsün')}
+            trackColor={{ false: palette.separator, true: palette.voltDeep }}
+          />
+        </View>
         <View style={styles.note}>
           <Icon name="lock" size={17} color={palette.caption} />
           <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 18 }}>
-            {t('Bu versiyada bütün proqramlar hər kəsə açıqdır və pulsuzdur. SPOT-da onlayn ödəniş yoxdur.')}
+            {t('Proqramlar pulsuzdur — SPOT-da onlayn ödəniş yoxdur.')}
           </AppText>
         </View>
 
@@ -626,5 +647,6 @@ const styles = StyleSheet.create({
   navAction: { height: 44, justifyContent: 'center', paddingHorizontal: spacing.sm, marginRight: -spacing.sm },
   addMove: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 40, marginTop: 12, borderRadius: 11, backgroundColor: palette.grouped },
   addDay: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator },
-  note: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: palette.grouped, borderRadius: 14, padding: 14, marginTop: 22 },
+  note: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: palette.grouped, borderRadius: 14, padding: 14, marginTop: 10 },
+  publicRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 14, marginTop: 22 },
 });

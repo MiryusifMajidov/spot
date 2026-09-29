@@ -13,7 +13,7 @@ import { useProgram, useProgramPhase } from '@/lib/hooks';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { removeProgram } from '@/lib/removeProgram';
 import { useFormat, useT } from '@/lib/useT';
-import { seedById, useAllPrograms, useDb } from '@/store/db';
+import { nextProgramDay, useAllPrograms, useDb } from '@/store/db';
 import { actionSheet, confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
 import { estimateDurationMin, resolveDayExercises } from '../day';
@@ -39,8 +39,9 @@ export default function ProgramDetail() {
   const remote = useProgram(id);
   const all = useAllPrograms();
   const saved = useDb((s) => s.savedPrograms);
-  const matches = useDb((s) => s.matches);
   const toggleSaved = useDb((s) => s.toggleSavedProgram);
+  const activeProgramId = useDb((s) => s.activeProgramId);
+  const setActiveProgram = useDb((s) => s.setActiveProgram);
   const mine = useDb((s) => s.myPrograms.some((p) => p.id === id));
   const workouts = useDb((s) => s.workouts);
 
@@ -119,90 +120,92 @@ export default function ProgramDetail() {
   const isSaved = saved.includes(p.id);
   const desc = p.desc?.trim();
 
-  /* The NEXT day, not day 1. It always sent dayIndex 0, so somebody on Day 3 of
-     a coach's plan who opened the program and tapped «Başla» redid Day 1 —
-     and logged it against the program, which pushed the Məşq tab's «next day»
-     count out of step as well. Same rule the Məşq tab uses: sessions logged
-     against this program, modulo its days. */
-  const nextDay = days.length ? workouts.filter((w) => w.programId === p.id).length % days.length : 0;
-  const start = (partnerId?: string) => {
+  /* The NEXT day, not day 1 — and the day after the last one DONE, not a count
+     of sessions (see nextProgramDay): somebody on Day 3 of a coach's plan who
+     opened the program and tapped «Başla» used to redo Day 1. */
+  const nextDay = nextProgramDay(workouts, p.id, days.length);
+  const isActive = activeProgramId === p.id;
+
+  /* «Başla» is the one decision on this screen: it makes this the program the
+     Məşq tab follows and opens its next day. It used to bookmark the program as
+     a side effect — «yadda saxla» and «I follow this» were one flag, so a
+     program saved for later could take over the Məşq tab. The bookmark is only
+     a bookmark now.
+     «Yoldaşımla başla» is gone from here. It looked partners up in seed data
+     that no longer exists, so the list showed raw ids and the partner never
+     appeared in the workout or its history — one button, twice broken, on the
+     screen that has to be simplest. */
+  const start = () => {
     if (!hasDays) return;
-    if (!isSaved) toggleSaved(p.id); // following this program from now on
+    setActiveProgram(p.id);
     router.push({
       pathname: '/(tabs)/workout/session',
-      params: {
-        programId: p.id,
-        dayIndex: String(nextDay),
-        title: days[nextDay]?.title ?? p.title,
-        ...(partnerId ? { partnerId } : {}),
-      },
+      params: { programId: p.id, dayIndex: String(nextDay), title: days[nextDay]?.title ?? p.title },
     });
   };
 
-  const startWithPartner = () => {
-    const accepted = Object.values(matches).filter((m) => m.state === 'accepted');
-    if (!accepted.length) {
-      confirm(t('Hələ yoldaşın yoxdur'), t('Birlikdə məşq etmək üçün əvvəlcə yoldaş tap — eyni zalda, eyni cədvəldə.'), [
-        { label: t('İndi yox'), style: 'cancel' },
-        { label: t('Yoldaş tap'), style: 'primary', onPress: () => router.push('/(tabs)/discover') },
-      ]);
-      return;
-    }
-    actionSheet({
-      title: t('Kiminlə məşq edirsən?'),
-      actions: [
-        ...accepted.map((m) => ({
-          label: seedById(m.partnerId)?.name ?? m.partnerId,
-          onPress: () => start(m.partnerId),
-        })),
-        { label: t('Bağla'), style: 'cancel' as const },
-      ],
-    });
-  };
+  const stopFollowing = () =>
+    confirm(t('Proqram dayandırılsın?'), t('Məşq tabı bu proqramın növbəti gününü göstərməyəcək. Tarixçən silinmir — istəsən sonra yenidən başlaya bilərsən.'), [
+      { label: t('Ləğv et'), style: 'cancel' },
+      {
+        label: t('Dayandır'),
+        style: 'destructive',
+        onPress: () => {
+          setActiveProgram(null);
+          toast(t('Proqram dayandırıldı'));
+        },
+      },
+    ]);
 
   const manage = () =>
     actionSheet({
       title: p.title,
       actions: [
-        /* Was «Hərəkət əlavə et», which opened the exercise LIBRARY — a
-           browsing screen that adds nothing to any program. Tapping it from
-           your own program looked like an edit and changed nothing. Real
-           editing goes to the builder that wrote the program, with the
-           program loaded into it. */
-        {
-          label: t('Redaktə et'),
-          onPress: () => router.push({ pathname: '/(tabs)/workout/create', params: { id: p.id } }),
-        },
-        {
-          label: t('Proqramı sil'),
-          style: 'destructive' as const,
-          onPress: () =>
-            setTimeout(
-              () =>
-                confirm(t('Proqram silinsin?'), t('Geri qaytarmaq olmaz.'), [
-                  { label: t('Ləğv et'), style: 'cancel' },
-                  {
-                    label: t('Sil'),
-                    style: 'destructive',
-                    onPress: () => {
-                      void (async () => {
-                        const r = await removeProgram(p.id);
-                        if (!r.ok) {
-                          // It is still published, under this author's name. Saying
-                          // «silindi» and letting the library serve it again a minute
-                          // later is what this whole path was.
-                          toast(t('Proqram silinmədi — serverə çatmadı. Bağlantını yoxla.'), 'error');
-                          return;
-                        }
-                        toast(t('Proqram silindi'));
-                        router.back();
-                      })();
+        ...(isActive
+          ? [{ label: t('Proqramı dayandır'), style: 'destructive' as const, onPress: () => setTimeout(stopFollowing, 250) }]
+          : []),
+        ...(mine ? [
+          /* Was «Hərəkət əlavə et», which opened the exercise LIBRARY — a
+             browsing screen that adds nothing to any program. Tapping it from
+             your own program looked like an edit and changed nothing. Real
+             editing goes to the builder that wrote the program, with the
+             program loaded into it. */
+          {
+            label: t('Redaktə et'),
+            onPress: () => router.push({ pathname: '/(tabs)/workout/create', params: { id: p.id } }),
+          },
+          {
+            label: t('Proqramı sil'),
+            style: 'destructive' as const,
+            onPress: () =>
+              setTimeout(
+                () =>
+                  confirm(t('Proqram silinsin?'), t('Geri qaytarmaq olmaz.'), [
+                    { label: t('Ləğv et'), style: 'cancel' },
+                    {
+                      label: t('Sil'),
+                      style: 'destructive',
+                      onPress: () => {
+                        void (async () => {
+                          const r = await removeProgram(p.id);
+                          if (!r.ok) {
+                            // It is still published, under this author's name. Saying
+                            // «silindi» and letting the library serve it again a minute
+                            // later is what this whole path was.
+                            toast(t('Proqram silinmədi — serverə çatmadı. Bağlantını yoxla.'), 'error');
+                            return;
+                          }
+                          if (isActive) setActiveProgram(null);
+                          toast(t('Proqram silindi'));
+                          router.back();
+                        })();
+                      },
                     },
-                  },
-                ]),
-              250
-            ),
-        },
+                  ]),
+                250
+              ),
+          },
+        ] : []),
         { label: t('Bağla'), style: 'cancel' as const },
       ],
     });
@@ -217,7 +220,7 @@ export default function ProgramDetail() {
              the whole hit area. The -11 margin keeps the last glyph on the bar's
              usual right gutter. */
           <View style={styles.headerActions}>
-            {mine ? (
+            {mine || isActive ? (
               <PressableScale
                 activeScale={0.9}
                 onPress={manage}
@@ -254,6 +257,16 @@ export default function ProgramDetail() {
           <AppText variant="title" style={{ marginTop: 4 }}>
             {t(p.title)}
           </AppText>
+          {isActive ? (
+            <View style={styles.activeRow}>
+              <View style={styles.activeDot} />
+              <AppText variant="footnote" color={palette.voltDeep} style={{ fontWeight: '600' }}>
+                {days.length > 1
+                  ? t('Aktiv proqram · növbəti: Gün {n}', { n: nextDay + 1 })
+                  : t('Aktiv proqram')}
+              </AppText>
+            </View>
+          ) : null}
 
           {desc ? (
             <AppText variant="body" color={palette.textSecondary} style={{ marginTop: 8, lineHeight: 21 }}>
@@ -397,12 +410,25 @@ export default function ProgramDetail() {
           buttons above the glass bar on iOS (see `bottomClearance`). */}
       {hasDays ? (
         <View style={[styles.footer, { paddingBottom: bottomClearance + spacing.md }]}>
-          <Button title={t('Yoldaşımla başla')} variant="secondary" icon="users" onPress={startWithPartner} style={{ flex: 1 }} />
-          <Button title={t('Başla')} onPress={() => start()} style={{ flex: 1 }} />
+          <Button
+            title={days.length > 1 ? t('Başla — Gün {n}', { n: nextDay + 1 }) : t('Başla')}
+            icon="play"
+            full
+            onPress={start}
+          />
         </View>
       ) : mine ? (
+        /* To the builder with this program loaded. It opened the exercise
+           LIBRARY, which is a browsing screen and adds nothing to any program —
+           the empty-state button above was fixed for this long ago, this one was
+           not. */
         <View style={[styles.footer, { paddingBottom: bottomClearance + spacing.md }]}>
-          <Button title={t('Hərəkət əlavə et')} icon="plus" full onPress={() => router.push('/(tabs)/workout/exercises')} />
+          <Button
+            title={t('Hərəkət əlavə et')}
+            icon="plus"
+            full
+            onPress={() => router.push({ pathname: '/(tabs)/workout/create', params: { id: p.id } })}
+          />
         </View>
       ) : null}
     </View>
@@ -421,6 +447,8 @@ const styles = StyleSheet.create({
   dayIndex: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(198,255,61,0.22)', alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 16, padding: 22 },
   headerActions: { flexDirection: 'row', alignItems: 'center', marginRight: -11 },
+  activeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: palette.voltDeep },
   headerBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   // paddingBottom is set inline: it depends on the platform's bottom inset.
   footer: { flexDirection: 'row', gap: 10, paddingHorizontal: spacing.screen, paddingTop: spacing.md, backgroundColor: palette.grouped, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },

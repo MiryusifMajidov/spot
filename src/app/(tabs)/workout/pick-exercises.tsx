@@ -14,6 +14,7 @@ import { searchKey } from '@/lib/az';
 import { useT } from '@/lib/useT';
 import { exerciseLibrary } from '@/store/db';
 import { itemFromLibrary, itemFromName, useProgramDraft } from '@/store/programDraft';
+import { useSessionPick } from '@/store/sessionPick';
 import { confirm, toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
 
@@ -30,6 +31,15 @@ import { palette, radius, spacing } from '@/theme';
  * So: one screen, search, tap to select as many as you like, and one button to
  * put them all in. Plus a field for a move the author names themselves, which
  * is the only reason a real trainer can write a real program here.
+ *
+ * Three callers, one screen (`mode`):
+ *   · (none)  — the program builder: the picks go into the draft day `dayKey`;
+ *   · session — a workout of your own: the picks START a session. «Məşqə başla»
+ *               without a program used to open a hidden fixed list (squat, bench,
+ *               row, ohp, plank) under a card that said «hərəkətləri özün
+ *               seçəcəksən»;
+ *   · add     — a workout already running: the picks are appended to it
+ *               (store/sessionPick.ts carries them back).
  */
 
 const GROUPS: { label: string; muscles: string[] }[] = [
@@ -46,7 +56,14 @@ const GROUPS: { label: string; muscles: string[] }[] = [
 export default function PickExercises() {
   const router = useRouter();
   const t = useT();
-  const { dayKey } = useLocalSearchParams<{ dayKey?: string }>();
+  const params = useLocalSearchParams<{
+    dayKey?: string;
+    mode?: 'session' | 'add';
+    programId?: string;
+    dayIndex?: string;
+    title?: string;
+  }>();
+  const { dayKey, mode } = params;
   const addItems = useProgramDraft((s) => s.addItems);
   const days = useProgramDraft((s) => s.days);
   const day = days.find((d) => d.key === dayKey);
@@ -82,12 +99,37 @@ export default function PickExercises() {
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const done = () => {
+    const typed = own.trim();
+    if (mode === 'session' || mode === 'add') {
+      if (!picked.length && !typed) {
+        toast(t('Ən azı bir hərəkət seç'), 'info');
+        return;
+      }
+      leavingRef.current = true;
+      if (mode === 'add') {
+        useSessionPick.getState().put(picked, typed ? [typed] : []);
+        router.back();
+        return;
+      }
+      // Replace, not push: «back» from the workout returns to where the person
+      // started, not to a picker whose choice has already been used.
+      router.replace({
+        pathname: '/(tabs)/workout/session',
+        params: {
+          programId: params.programId ?? '',
+          dayIndex: params.dayIndex ?? '0',
+          title: params.title || 'Sərbəst məşq',
+          exIds: picked.join(','),
+          ...(typed ? { own: typed } : {}),
+        },
+      });
+      return;
+    }
     if (!dayKey) return;
     // Kept in the order they were TAPPED, not the order the library lists them:
     // the author is writing a sequence, and a program that reorders their day
     // behind their back is the same class of bug as rewriting their sets.
     const items = picked.map(itemFromLibrary).filter((x): x is NonNullable<typeof x> => !!x);
-    const typed = own.trim();
     if (typed) items.push(itemFromName(typed));
     if (!items.length) {
       toast(t('Ən azı bir hərəkət seç'), 'info');
@@ -109,15 +151,23 @@ export default function PickExercises() {
       navigation.dispatch(data.action);
       return;
     }
-    confirm(t('Seçdiklərin əlavə olunsun?'), t('Seçdiyin hərəkətlər hələ günə əlavə olunmayıb.'), [
-      { label: t('Atmaq'), style: 'destructive', onPress: () => navigation.dispatch(data.action) },
-      { label: t('Əlavə et'), style: 'primary', onPress: () => done() },
-    ]);
+    confirm(
+      mode === 'session' ? t('Seçdiklərinlə başlayaq?') : t('Seçdiklərin əlavə olunsun?'),
+      mode === 'session'
+        ? t('Seçdiyin hərəkətlərlə məşq hələ başlamayıb.')
+        : mode === 'add'
+          ? t('Seçdiyin hərəkətlər hələ məşqə əlavə olunmayıb.')
+          : t('Seçdiyin hərəkətlər hələ günə əlavə olunmayıb.'),
+      [
+        { label: t('Atmaq'), style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+        { label: mode === 'session' ? t('Başla') : t('Əlavə et'), style: 'primary', onPress: () => done() },
+      ]
+    );
   });
 
   return (
     <Screen edges={['top']}>
-      <NavBar title={day ? day.title : t('Hərəkət seç')} />
+      <NavBar title={day ? day.title : mode === 'session' ? t('Bu gün nə edirsən?') : t('Hərəkət seç')} />
 
       <View style={styles.searchWrap}>
         <Icon name="search" size={17} color={palette.caption} />
@@ -213,14 +263,24 @@ export default function PickExercises() {
             style={styles.ownInput}
           />
           <AppText variant="caption" color={palette.caption} style={{ marginTop: 6, lineHeight: 17 }}>
-            {t('Kitabxanada olmayan hərəkəti buraya yaz — set və təkrarını növbəti ekranda özün təyin edəcəksən.')}
+            {mode
+              ? t('Kitabxanada olmayan hərəkəti buraya yaz — 3 set ilə başlayır, məşqdə artırıb-azalda bilərsən.')
+              : t('Kitabxanada olmayan hərəkəti buraya yaz — set və təkrarını növbəti ekranda özün təyin edəcəksən.')}
           </AppText>
         </View>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: footerBottom }]}>
         <Button
-          title={count === 0 ? t('Hərəkət seç') : count === 1 ? t('1 hərəkət əlavə et') : t('{n} hərəkət əlavə et', { n: count, count })}
+          title={
+            count === 0
+              ? t('Hərəkət seç')
+              : mode === 'session'
+                ? t('{n} hərəkətlə başla', { n: count, count })
+                : count === 1
+                  ? t('1 hərəkət əlavə et')
+                  : t('{n} hərəkət əlavə et', { n: count, count })
+          }
           full
           disabled={count === 0}
           onPress={done}

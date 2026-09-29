@@ -161,9 +161,10 @@ export default function NotificationSettings() {
               {t('Söndürdüyün növ ümumiyyətlə qeyd olunmur — gizlədilmir, yazılmır. Yenidən açsan, bundan sonrakılar gələcək.')}
             </AppText>
 
-            <AppText variant="footnote" color={palette.caption} style={styles.footer2}>
-              {t('Video və postlara qoyulan bəyənmələr üçün hələ bildiriş yoxdur: bəyənmə hazırda yalnız cihazda saxlanılır, ona görə server kimin nəyi bəyəndiyini bilmir. Uydurma bildiriş göndərməkdənsə, göndərmirik.')}
-            </AppText>
+            {/* A footer here said likes had no notification because «bəyənmə yalnız
+                cihazda saxlanılır» — true once, false since likes moved to the
+                server (video_likes, post_likes, each with a notify trigger). It sat
+                under the very switches for those two types. */}
           </>
         )}
       </ScrollView>

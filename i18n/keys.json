@@ -32,6 +32,7 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/_layout.tsx",
+   "src/app/(tabs)/profile/settings.tsx",
    "src/app/(tabs)/workout/index.tsx",
    "src/app/(tabs)/workout/summary.tsx",
    "src/lib/api.ts"
@@ -78,6 +79,7 @@
    "src/app/(tabs)/discover/partner-filter.tsx",
    "src/app/(tabs)/feed/share.tsx",
    "src/app/(tabs)/profile/become-trainer.tsx",
+   "src/app/(tabs)/profile/settings.tsx",
    "src/app/(tabs)/workout/exercise.tsx",
    "src/app/(tabs)/workout/exercises.tsx",
    "src/app/(tabs)/workout/program/[id].tsx",
@@ -1157,6 +1159,7 @@
    "src/app/trainer/verify.tsx",
    "src/components/CommentsSheet.tsx",
    "src/components/ui/UiHost.tsx",
+   "src/lib/deleteAccount.ts",
    "src/lib/moderation.ts"
   ],
   "kind": "ui",
@@ -3840,8 +3843,7 @@
   "key": "İcma",
   "counted": false,
   "files": [
-   "src/app/(tabs)/feed/index.tsx",
-   "src/app/(tabs)/workout/library.tsx"
+   "src/app/(tabs)/feed/index.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5376,7 +5378,8 @@
    "src/app/gym/classes.tsx",
    "src/app/gym/edit.tsx",
    "src/app/trainer/programs.tsx",
-   "src/components/CommentsSheet.tsx"
+   "src/components/CommentsSheet.tsx",
+   "src/lib/deleteAccount.ts"
   ],
   "kind": "ui",
   "placeholders": []
@@ -6562,22 +6565,14 @@
   "key": "Telefon bildirişləri bağlıdır",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/notifications.tsx"
+   "src/app/(tabs)/profile/notifications.tsx",
+   "src/app/(tabs)/profile/reminders.tsx"
   ],
   "kind": "ui",
   "placeholders": []
  },
  {
   "key": "Telefon icazə verib, amma cihazın ünvanı alınmadı — aşağıdakı ayarlar saxlanılır, lakin bu telefona bildiriş gəlməyəcək. Mesaj və məşq təklifini yalnız tətbiqi açanda görəcəksən.",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/notifications.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Video və postlara qoyulan bəyənmələr üçün hələ bildiriş yoxdur: bəyənmə hazırda yalnız cihazda saxlanılır, ona görə server kimin nəyi bəyəndiyini bilmir. Uydurma bildiriş göndərməkdənsə, göndərmirik.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/notifications.tsx"
@@ -6631,26 +6626,7 @@
   "placeholders": []
  },
  {
-  "key": "Davam et",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/privacy.tsx",
-   "src/app/auth/sign-in.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Görünürlük",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/privacy.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Hesab silinmədi — internet yoxlanılsın, sonra yenidən cəhd et",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/privacy.tsx"
@@ -6662,16 +6638,8 @@
   "key": "Hesabı tamamilə sil",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/privacy.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Hesabın silindi",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/privacy.tsx"
+   "src/app/(tabs)/profile/privacy.tsx",
+   "src/lib/deleteAccount.ts"
   ],
   "kind": "ui",
   "placeholders": []
@@ -6768,33 +6736,6 @@
   "placeholders": []
  },
  {
-  "key": "Profilin, videolarını, postlarını, şərhlərini, şəkillərini, check-inlərini və məşq tarixçəni həm bu telefondan, həm də serverdən silirik. İstifadəçi adın boşalır.\\n\\nZala yazdığın rəylər qalır, amma adın çıxarılır — başqaları həmin rəylərə baxıb qərar verib. Yaratdığın zal və proqramlar da qalır, çünki başqa üzvlər onlardan istifadə edir.\\n\\nBu addım geri qaytarıla bilməz.",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/privacy.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Server bağlantısı yoxdur — hesab silinmədi",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/privacy.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Son təsdiq. «Sil» düyməsindən sonra hesab geri qaytarılmır.",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/privacy.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Söhbət yalnız hər iki tərəf məşq təklifini qəbul edəndə açılır",
   "counted": false,
   "files": [
@@ -6849,10 +6790,134 @@
   "placeholders": []
  },
  {
-  "key": "Əminsən?",
+  "key": "15 dəqiqə gec",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/privacy.tsx"
+   "src/app/(tabs)/profile/reminders.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "15 dəqiqə tez",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Günlər",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx",
+   "src/app/(tabs)/workout/create.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Məşq xatırlatması",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx",
+   "src/app/(tabs)/profile/settings.tsx",
+   "src/lib/reminders.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Saat",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx",
+   "src/app/gym/classes.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Seçdiyin günlərdə, saat {time}",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "time"
+  ]
+ },
+ {
+  "key": "Söndürülüb",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx",
+   "src/app/(tabs)/profile/settings.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Telefon bildirişlərə icazə vermir — xatırlatma üçün ayarlardan aç",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Xatırlat",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Xatırlatma gəlməsi üçün SPOT-a bildiriş icazəsi ver. Telefon ayarlarını açmaq üçün toxun.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Xatırlatma quruldu",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Xatırlatma qurulmadı — yenidən cəhd et",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Xatırlatma telefonun özündə qurulur — internet tələb etmir və heç yerə göndərilmir. Toxunanda Məşq tabı açılır.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Ən azı bir gün seç",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/reminders.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -6950,15 +7015,6 @@
  },
  {
   "key": "Bu telefonda saxlanan məlumatlar silinir. Hesabın serverdə qalır — hansı yolla girmisənsə, eyni yolla yenidən girə bilərsən.",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/settings.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bu, test üçün qeydiyyatı yenidən başladır.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/settings.tsx"
@@ -7077,6 +7133,24 @@
   "placeholders": []
  },
  {
+  "key": "Hesabı sil",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/settings.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Hesabı silmək həmişəlikdir: profil, videolar və məşq tarixçəsi serverdən də silinir.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/settings.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Hesabın yalnız bu telefondadır. Tətbiqi silsən və ya telefonu dəyişsən, məşq tarixçən və @adın qayıtmır.",
   "counted": false,
   "files": [
@@ -7189,24 +7263,6 @@
   "placeholders": []
  },
  {
-  "key": "Qeydiyyat addımları bu cihazda yenidən başlayacaq və cavablarını yenidən verə bilərsən. Serverdəki profilin silinmir — dəyişmədiyin sahələr olduğu kimi qalır. Məşq, çəki və check-in tarixçən də toxunulmur; onları silmək üçün Məxfilik → «Bu cihazdakı nüsxəni sil».",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/settings.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Qeydiyyatı yenidən keç",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/settings.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Qısa interfeys səsləri",
   "counted": false,
   "files": [
@@ -7238,6 +7294,15 @@
  },
  {
   "key": "SPOT tam pulsuzdur — abunə, tətbiqdaxili ödəniş və ya kilidli funksiya yoxdur. Zal və məşqçi qiymətləri yalnız məlumat üçün göstərilir; SPOT bu ödənişlərə qarışmır və heç bir pay götürmür.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/settings.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Setlər arası fasilə",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/settings.tsx"
@@ -7291,15 +7356,6 @@
   "placeholders": []
  },
  {
-  "key": "Yenidən keç",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/settings.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Zal hesabı yarat",
   "counted": false,
   "files": [
@@ -7316,6 +7372,33 @@
   ],
   "kind": "ui",
   "placeholders": []
+ },
+ {
+  "key": "{n} dəq",
+  "counted": true,
+  "files": [
+   "src/app/(tabs)/profile/settings.tsx",
+   "src/app/(tabs)/workout/index.tsx",
+   "src/app/(tabs)/workout/program/[id].tsx",
+   "src/components/ProgramCard.tsx",
+   "src/lib/format.ts"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "{n} san",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/settings.tsx",
+   "src/lib/duration.ts"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
  },
  {
   "key": "Çıx",
@@ -7568,15 +7651,6 @@
   "placeholders": []
  },
  {
-  "key": "Bu versiyada bütün proqramlar hər kəsə açıqdır və pulsuzdur. SPOT-da onlayn ödəniş yoxdur.",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/workout/create.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Dəyişikliklər saxlanıldı",
   "counted": false,
   "files": [
@@ -7617,7 +7691,7 @@
   "placeholders": []
  },
  {
-  "key": "Günlər",
+  "key": "Günü sil",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/create.tsx"
@@ -7626,7 +7700,7 @@
   "placeholders": []
  },
  {
-  "key": "Günü sil",
+  "key": "Hamı görsün",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/create.tsx"
@@ -7639,7 +7713,8 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/create.tsx",
-   "src/app/(tabs)/workout/program/[id].tsx"
+   "src/app/(tabs)/workout/program/[id].tsx",
+   "src/app/(tabs)/workout/session.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -7691,6 +7766,15 @@
  },
  {
   "key": "Məsələn: 3 günlük güc",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/create.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Proqram kitabxanada hamıya görünəcək və hər kəs ondan istifadə edə biləcək.",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/create.tsx"
@@ -7753,6 +7837,15 @@
   "files": [
    "src/app/(tabs)/workout/create.tsx",
    "src/app/(tabs)/workout/day.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Proqramlar pulsuzdur — SPOT-da onlayn ödəniş yoxdur.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/create.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -7885,6 +7978,15 @@
   "placeholders": []
  },
  {
+  "key": "Yalnız sən görürsən. Müəllimsənsə, təyin etdiyin şagirdlər də görür.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/create.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Yarat",
   "counted": false,
   "files": [
@@ -7996,11 +8098,12 @@
   "placeholders": []
  },
  {
-  "key": "Hərəkət kitabxanası",
+  "key": "Hərəkət seç",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/day.tsx",
-   "src/app/(tabs)/workout/index.tsx"
+   "src/app/(tabs)/workout/pick-exercises.tsx",
+   "src/app/(tabs)/workout/session.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -8037,7 +8140,7 @@
   "placeholders": []
  },
  {
-  "key": "Proqramın müəllifi bu günün hərəkətlərini hələ yazmayıb. Hərəkət kitabxanasından özün seçib başlaya bilərsən.",
+  "key": "Proqramın müəllifi bu günün hərəkətlərini hələ yazmayıb. Hərəkətləri özün seçib başlaya bilərsən.",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/day.tsx"
@@ -8382,7 +8485,6 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/exercises.tsx",
-   "src/app/(tabs)/workout/program/[id].tsx",
    "src/app/onboarding/trainers.tsx",
    "src/lib/authGate.ts",
    "src/lib/moderation.ts"
@@ -8419,6 +8521,18 @@
   "placeholders": []
  },
  {
+  "key": "BUGÜNKÜ MƏŞQ · GÜN {n}/{total}",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n",
+   "total"
+  ]
+ },
+ {
   "key": "Bu həftə",
   "counted": false,
   "files": [
@@ -8429,6 +8543,15 @@
  },
  {
   "key": "Günləri yaz, hərəkətləri seç — istəsən paylaş",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Hərəkət kitabxanası",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/index.tsx"
@@ -8498,6 +8621,7 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/index.tsx",
+   "src/app/(tabs)/workout/pick-exercises.tsx",
    "src/app/(tabs)/workout/session.tsx"
   ],
   "kind": "ui",
@@ -8521,20 +8645,6 @@
   "kind": "ui",
   "placeholders": [
    "name"
-  ]
- },
- {
-  "key": "{n} dəq",
-  "counted": true,
-  "files": [
-   "src/app/(tabs)/workout/index.tsx",
-   "src/app/(tabs)/workout/program/[id].tsx",
-   "src/components/ProgramCard.tsx",
-   "src/lib/format.ts"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
   ]
  },
  {
@@ -8577,16 +8687,6 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/library.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Evdə",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/workout/library.tsx",
-   "src/data/mock.ts"
   ],
   "kind": "ui",
   "placeholders": []
@@ -8638,15 +8738,6 @@
   "placeholders": []
  },
  {
-  "key": "evdə",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/workout/library.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "1 hərəkət əlavə et",
   "counted": false,
   "files": [
@@ -8665,6 +8756,25 @@
   "placeholders": []
  },
  {
+  "key": "Başla",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/pick-exercises.tsx",
+   "src/app/(tabs)/workout/program/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Bu gün nə edirsən?",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/pick-exercises.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Hərəkət axtar",
   "counted": false,
   "files": [
@@ -8674,7 +8784,7 @@
   "placeholders": []
  },
  {
-  "key": "Hərəkət seç",
+  "key": "Kitabxanada olmayan hərəkəti buraya yaz — 3 set ilə başlayır, məşqdə artırıb-azalda bilərsən.",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/pick-exercises.tsx"
@@ -8710,6 +8820,15 @@
   "placeholders": []
  },
  {
+  "key": "Seçdiklərinlə başlayaq?",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/pick-exercises.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Seçdiyin hərəkətlər hələ günə əlavə olunmayıb.",
   "counted": false,
   "files": [
@@ -8719,7 +8838,36 @@
   "placeholders": []
  },
  {
+  "key": "Seçdiyin hərəkətlər hələ məşqə əlavə olunmayıb.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/pick-exercises.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Seçdiyin hərəkətlərlə məşq hələ başlamayıb.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/pick-exercises.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "{n} hərəkət əlavə et",
+  "counted": true,
+  "files": [
+   "src/app/(tabs)/workout/pick-exercises.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "{n} hərəkətlə başla",
   "counted": true,
   "files": [
    "src/app/(tabs)/workout/pick-exercises.tsx"
@@ -8768,6 +8916,26 @@
   "placeholders": []
  },
  {
+  "key": "Aktiv proqram",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/program/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Aktiv proqram · növbəti: Gün {n}",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/program/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
   "key": "Bağlantı ilə problem oldu. İnternetini yoxla, geri qayıdıb yenidən aç.",
   "counted": false,
   "files": [
@@ -8777,22 +8945,15 @@
   "placeholders": []
  },
  {
-  "key": "Başla",
+  "key": "Başla — Gün {n}",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/program/[id].tsx"
   ],
   "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Birlikdə məşq etmək üçün əvvəlcə yoldaş tap — eyni zalda, eyni cədvəldə.",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/workout/program/[id].tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
+  "placeholders": [
+   "n"
+  ]
  },
  {
   "key": "Bu proqram serverə yüklənməyib — məzmunu yalnız onu yazan adamın cihazındadır. Ondan yenidən yadda saxlamasını xahiş et.",
@@ -8822,6 +8983,15 @@
   "placeholders": []
  },
  {
+  "key": "Dayandır",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/program/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Geri qaytarmaq olmaz.",
   "counted": false,
   "files": [
@@ -8831,25 +9001,34 @@
   "placeholders": []
  },
  {
-  "key": "Hələ yoldaşın yoxdur",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/workout/program/[id].tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Kiminlə məşq edirsən?",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/workout/program/[id].tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Müəllif günləri yükləyəndə burada görünəcək. O vaxta qədər başqa proqram seç.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/program/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Məşq tabı bu proqramın növbəti gününü göstərməyəcək. Tarixçən silinmir — istəsən sonra yenidən başlaya bilərsən.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/program/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Proqram dayandırıldı",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/program/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Proqram dayandırılsın?",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/program/[id].tsx"
@@ -8914,6 +9093,15 @@
   "placeholders": []
  },
  {
+  "key": "Proqramı dayandır",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/program/[id].tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Proqramı sil",
   "counted": false,
   "files": [
@@ -8933,24 +9121,6 @@
  },
  {
   "key": "Yeni proqram — hələ rəy yoxdur.",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/workout/program/[id].tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Yoldaş tap",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/workout/program/[id].tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Yoldaşımla başla",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/program/[id].tsx"
@@ -9074,6 +9244,24 @@
   ]
  },
  {
+  "key": "Fasiləni 30 saniyə artır",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/session.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Fasiləni 30 saniyə azalt",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/workout/session.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Heç bir set qeyd olunmayıb",
   "counted": false,
   "files": [
@@ -9192,7 +9380,7 @@
   "placeholders": []
  },
  {
-  "key": "Proqramın bu gününə hərəkət əlavə olunmayıb. Kitabxanadan hərəkət seçib öz məşqini qura bilərsən.",
+  "key": "Proqramın bu gününə hərəkət əlavə olunmayıb. Hərəkətləri özün seçib məşqə başlaya bilərsən.",
   "counted": false,
   "files": [
    "src/app/(tabs)/workout/session.tsx"
@@ -9701,6 +9889,16 @@
   "counted": false,
   "files": [
    "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Davam et",
+  "counted": false,
+  "files": [
+   "src/app/auth/sign-in.tsx",
+   "src/lib/deleteAccount.ts"
   ],
   "kind": "ui",
   "placeholders": []
@@ -11060,15 +11258,6 @@
  },
  {
   "key": "Məşqçi (istəyə bağlı)",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Saat",
   "counted": false,
   "files": [
    "src/app/gym/classes.tsx"
@@ -15560,6 +15749,15 @@
   "placeholders": []
  },
  {
+  "key": "Evdə",
+  "counted": false,
+  "files": [
+   "src/data/mock.ts"
+  ],
+  "kind": "data",
+  "placeholders": []
+ },
+ {
   "key": "Evdə başlanğıc — avadanlıqsız",
   "counted": false,
   "files": [
@@ -16515,15 +16713,58 @@
   "placeholders": []
  },
  {
-  "key": "{n} san",
+  "key": "Hesab silinmədi — internet yoxlanılsın, sonra yenidən cəhd et",
   "counted": false,
   "files": [
-   "src/lib/duration.ts"
+   "src/lib/deleteAccount.ts"
   ],
   "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
+  "placeholders": []
+ },
+ {
+  "key": "Hesabın silindi",
+  "counted": false,
+  "files": [
+   "src/lib/deleteAccount.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Profilin, videolarını, postlarını, şərhlərini, şəkillərini, check-inlərini və məşq tarixçəni həm bu telefondan, həm də serverdən silirik. İstifadəçi adın boşalır.\\n\\nZala yazdığın rəylər qalır, amma adın çıxarılır — başqaları həmin rəylərə baxıb qərar verib. Yaratdığın zal və proqramlar da qalır, çünki başqa üzvlər onlardan istifadə edir.\\n\\nBu addım geri qaytarıla bilməz.",
+  "counted": false,
+  "files": [
+   "src/lib/deleteAccount.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Server bağlantısı yoxdur — hesab silinmədi",
+  "counted": false,
+  "files": [
+   "src/lib/deleteAccount.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Son təsdiq. «Sil» düyməsindən sonra hesab geri qaytarılmır.",
+  "counted": false,
+  "files": [
+   "src/lib/deleteAccount.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Əminsən?",
+  "counted": false,
+  "files": [
+   "src/lib/deleteAccount.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
  },
  {
   "key": "Video {size} MB-dır — {limit} MB-a qədər qəbul olunur.",
@@ -16541,7 +16782,8 @@
   "key": "Bazar ertəsi",
   "counted": false,
   "files": [
-   "src/lib/format.ts"
+   "src/lib/format.ts",
+   "src/lib/reminders.ts"
   ],
   "kind": "ui",
   "placeholders": []
@@ -16550,7 +16792,8 @@
   "key": "Cümə",
   "counted": false,
   "files": [
-   "src/lib/format.ts"
+   "src/lib/format.ts",
+   "src/lib/reminders.ts"
   ],
   "kind": "ui",
   "placeholders": []
@@ -16559,7 +16802,8 @@
   "key": "Cümə axşamı",
   "counted": false,
   "files": [
-   "src/lib/format.ts"
+   "src/lib/format.ts",
+   "src/lib/reminders.ts"
   ],
   "kind": "ui",
   "placeholders": []
@@ -16607,7 +16851,8 @@
   "key": "Çərşənbə",
   "counted": false,
   "files": [
-   "src/lib/format.ts"
+   "src/lib/format.ts",
+   "src/lib/reminders.ts"
   ],
   "kind": "ui",
   "placeholders": []
@@ -16616,7 +16861,8 @@
   "key": "Çərşənbə axşamı",
   "counted": false,
   "files": [
-   "src/lib/format.ts"
+   "src/lib/format.ts",
+   "src/lib/reminders.ts"
   ],
   "kind": "ui",
   "placeholders": []
@@ -16643,7 +16889,8 @@
   "key": "Şənbə",
   "counted": false,
   "files": [
-   "src/lib/format.ts"
+   "src/lib/format.ts",
+   "src/lib/reminders.ts"
   ],
   "kind": "ui",
   "placeholders": []
@@ -17858,6 +18105,24 @@
   "placeholders": []
  },
  {
+  "key": "Müəllim proqram təyin etdi",
+  "counted": false,
+  "files": [
+   "src/lib/notifications.ts"
+  ],
+  "kind": "data",
+  "placeholders": []
+ },
+ {
+  "key": "Müəllimin sənə yeni məşq proqramı göndərir",
+  "counted": false,
+  "files": [
+   "src/lib/notifications.ts"
+  ],
+  "kind": "data",
+  "placeholders": []
+ },
+ {
   "key": "Məni etiketləyəndə",
   "counted": false,
   "files": [
@@ -18045,6 +18310,17 @@
   ]
  },
  {
+  "key": "{name} sənə məşq proqramı təyin etdi",
+  "counted": false,
+  "files": [
+   "src/lib/notifications.ts"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "name"
+  ]
+ },
+ {
   "key": "{name} təklifini qəbul etdi",
   "counted": false,
   "files": [
@@ -18131,6 +18407,96 @@
   "counted": false,
   "files": [
    "src/lib/push.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "B.",
+  "counted": false,
+  "files": [
+   "src/lib/reminders.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "B.e.",
+  "counted": false,
+  "files": [
+   "src/lib/reminders.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Bazar",
+  "counted": false,
+  "files": [
+   "src/lib/reminders.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Bugünkü məşqin hazırdır — SPOT-u aç və başla.",
+  "counted": false,
+  "files": [
+   "src/lib/reminders.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "C.",
+  "counted": false,
+  "files": [
+   "src/lib/reminders.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "C.a.",
+  "counted": false,
+  "files": [
+   "src/lib/reminders.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Məşq vaxtıdır",
+  "counted": false,
+  "files": [
+   "src/lib/reminders.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Ç.",
+  "counted": false,
+  "files": [
+   "src/lib/reminders.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Ç.a.",
+  "counted": false,
+  "files": [
+   "src/lib/reminders.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Ş.",
+  "counted": false,
+  "files": [
+   "src/lib/reminders.ts"
   ],
   "kind": "ui",
   "placeholders": []

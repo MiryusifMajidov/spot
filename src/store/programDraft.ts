@@ -109,13 +109,17 @@ interface DraftState {
   editingId: string | null;
   title: string;
   desc: string;
+  /** «Hamı görsün» — listed in everybody's library (schema92). */
+  isPublic: boolean;
   days: DraftDay[];
   /** Has anything been typed? Drives the «throw this away?» prompt. */
   touched: boolean;
 
-  startNew: () => void;
+  /** `isPublic`: where a NEW program starts — on for a trainer, whose programs
+   *  exist to be published, off for everybody else. */
+  startNew: (isPublic?: boolean) => void;
   startEdit: (p: Program) => void;
-  set: (patch: Partial<Pick<DraftState, 'title' | 'desc'>>) => void;
+  set: (patch: Partial<Pick<DraftState, 'title' | 'desc' | 'isPublic'>>) => void;
   addDay: () => void;
   removeDay: (key: string) => void;
   patchDay: (key: string, patch: Partial<Pick<DraftDay, 'title' | 'focus'>>) => void;
@@ -128,14 +132,16 @@ export const useProgramDraft = create<DraftState>((set) => ({
   editingId: null,
   title: '',
   desc: '',
+  isPublic: false,
   days: [newDay(0)],
   touched: false,
 
-  startNew: () =>
+  startNew: (isPublic = false) =>
     set({
       editingId: null,
       title: '',
       desc: '',
+      isPublic,
       days: [newDay(0)],
       touched: false,
     }),
@@ -169,6 +175,9 @@ export const useProgramDraft = create<DraftState>((set) => ({
       editingId: p.id,
       title: p.title ?? '',
       desc: p.desc ?? '',
+      // A program saved before schema92 was public by force; it stays as it was
+      // until its author decides otherwise.
+      isPublic: p.isPublic ?? true,
       days: days.length ? days : [newDay(0)],
       touched: false,
     });

@@ -52,6 +52,7 @@ export function estimateMinutes(days: DraftDay[]): number {
 function toLocalProgram(input: {
   title: string;
   desc: string;
+  isPublic: boolean;
   days: DraftDay[];
   creatorName: string;
   creatorType: 'trainer' | 'user';
@@ -60,6 +61,7 @@ function toLocalProgram(input: {
   const all = input.days.flatMap((d) => d.items);
   return {
     desc: input.desc.trim(),
+    isPublic: input.isPublic,
     title: input.title.trim(),
     creatorName: input.creatorName,
     creatorType: input.creatorType,
@@ -108,6 +110,7 @@ export async function saveProgramDraft(input: {
   editingId: string | null;
   title: string;
   desc: string;
+  isPublic: boolean;
   days: DraftDay[];
   creatorName: string;
   creatorType: 'trainer' | 'user';
@@ -153,6 +156,7 @@ export async function saveProgramDraft(input: {
     tags: program.tags,
     days: wireDays,
     description: program.desc || null,
+    is_public: input.isPublic,
   };
 
   try {
@@ -257,6 +261,8 @@ export async function syncLocalPrograms(): Promise<{ sent: number; failed: numbe
       tags: p.tags ?? [],
       days: programDaysToWire(days),
       description: p.desc || null,
+      // Device-only programs from before schema92 were written to be public.
+      is_public: p.isPublic ?? true,
     };
     try {
       const r = await insertProgram(p.id, base, {
