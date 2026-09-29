@@ -142,3 +142,19 @@ export const shadow = {
 } as const;
 
 export const hitSlop = { top: 8, bottom: 8, left: 8, right: 8 };
+
+/** The two sizes of an icon-only button, always inside a 44 pt box.
+ *
+ *  `inCircle` (24): the glyph sits in a filled shape — the gym page's four hero
+ *  buttons, which the owner held up as the standard, a volt «+», the send button, the
+ *  map's «where am I». The disc carries the button's size, so the glyph can be modest.
+ *  `action` (34): a bare glyph on the screen's own background — header icons, back,
+ *  ⋯, bookmark, chat, close. With no disc around it the glyph IS the button, and at
+ *  24 it read as a small icon next to the gym page's 44 pt discs (the owner's call:
+ *  «dairə daxilində olmayanlar 34 px»). The paths fill ~70% of their box, so 34 draws
+ *  a ~24 pt mark.
+ *  Before this one kind of button was drawn at 20, 22, 24, 25, 26 and 27 across
+ *  screens. Not for: icons inside a text row or a chip, a field's clear «x», badges
+ *  on an avatar, tab bars (`tab`, which has a label under it), or the full-screen
+ *  video's action rail, which stays larger on purpose. */
+export const iconSize = { action: 34, inCircle: 24, tab: 28 } as const;

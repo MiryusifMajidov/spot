@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 import { AppText } from './AppText';
 import { PressableScale } from './PressableScale';
 import { Icon, IconName } from '../Icon';
@@ -26,7 +26,9 @@ export function LargeHeader({ title, right, subtitle }: { title: string; right?:
 /**
  * Tappable header icon with an optional numeric badge.
  *
- * The glyph is 25 px, which is right; the tap area was not — `padding: 1` made the
+ * The glyph is `iconSize.action` (34): a bare glyph on the page background, the
+ * owner's standard for every button that has no disc around it (src/theme.ts). The
+ * tap area was the other «too small» part — `padding: 1` made the
  * button 27x27, so the Discover bell, chat and map icons were the «too small» icons
  * owners pointed at. The box is now 44x44 with the glyph centred. The row pulls its
  * last box back by the empty half (see styles.actions) so the glyphs stay on the
@@ -48,7 +50,7 @@ export function HeaderIcon({
 }) {
   return (
     <PressableScale onPress={onPress} activeScale={0.9} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={label}>
-      <Icon name={name} size={25} color={color} />
+      <Icon name={name} size={iconSize.action} color={color} />
       {badge ? (
         <View style={styles.badge}>
           <AppText style={styles.badgeText}>{badge}</AppText>
@@ -67,7 +69,7 @@ const styles = StyleSheet.create({
      now that the box is taller than the glyph. */
   actions: { flexDirection: 'row', alignItems: 'center', marginRight: -9.5, marginBottom: -3.5 },
   iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  // The glyph's top-right corner is at (34.5, 9.5) inside the 44 box.
-  badge: { position: 'absolute', top: 4, right: 3, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: palette.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  // On the 34 glyph's top-right shoulder (its ink starts ~5 pt in from the corner).
+  badge: { position: 'absolute', top: 2, right: 1, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: palette.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   badgeText: { color: palette.white, fontSize: 10.5, fontWeight: '700' },
 });

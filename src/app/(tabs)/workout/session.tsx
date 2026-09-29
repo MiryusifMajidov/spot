@@ -35,7 +35,7 @@ import {
 } from '@/store/db';
 import { useSessionPick } from '@/store/sessionPick';
 import { confirm, toast } from '@/store/ui';
-import { dark, palette, radius, spacing } from '@/theme';
+import { dark, iconSize, palette, radius, spacing } from '@/theme';
 import { resolveDayExercises } from './day';
 
 /* `id` is the set's identity for its whole life on this screen — the React key of
@@ -704,7 +704,7 @@ export default function Session() {
         {/* Header */}
         <View style={styles.header}>
           <PressableScale activeScale={0.9} onPress={quit} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t('Bağla')}>
-            <Icon name="x" size={22} color={palette.white} />
+            <Icon name="x" size={iconSize.action} color={palette.white} />
           </PressableScale>
           {/* flex: 1 — a long day title («Sinə, çiyin və triseps…») is truncated by
               numberOfLines instead of pushing the timer off the screen edge. */}
@@ -891,7 +891,7 @@ export default function Session() {
                   accessibilityLabel={t('Son seti sil')}
                   accessibilityState={{ disabled: !canRemove }}
                   style={[styles.stepBtn, !canRemove && styles.stepBtnOff]}>
-                  <MinusGlyph size={18} color={palette.white} />
+                  <MinusGlyph size={iconSize.inCircle} color={palette.white} />
                 </PressableScale>
                 <AppText style={styles.stepCount} accessibilityLabel={t('{n} set', { n: setCount, count: setCount })}>
                   {String(setCount)}
@@ -904,7 +904,7 @@ export default function Session() {
                   accessibilityLabel={t('Set əlavə et')}
                   accessibilityState={{ disabled: !canAdd }}
                   style={[styles.stepBtn, !canAdd && styles.stepBtnOff]}>
-                  <Icon name="plus" size={18} color={palette.white} />
+                  <Icon name="plus" size={iconSize.inCircle} color={palette.white} />
                 </PressableScale>
               </View>
             </View>
@@ -957,7 +957,7 @@ export default function Session() {
             accessibilityLabel={t('Əvvəlki hərəkət')}
             accessibilityState={{ disabled: ci === 0 }}
             style={[styles.navBtn, ci === 0 && { opacity: 0.4 }]}>
-            <Icon name="chevL" size={20} color={palette.white} />
+            <Icon name="chevL" size={iconSize.inCircle} color={palette.white} />
           </PressableScale>
           {ci < logs.length - 1 ? (
             <PressableScale onPress={() => setCi((c) => c + 1)} style={styles.nextBtn}>
@@ -969,7 +969,7 @@ export default function Session() {
             </PressableScale>
           )}
           <PressableScale activeScale={0.94} onPress={finish} style={styles.navBtn} accessibilityRole="button" accessibilityLabel={t('Məşqi bitir')}>
-            <Icon name="check" size={20} color={palette.volt} />
+            <Icon name="check" size={iconSize.inCircle} color={palette.volt} />
           </PressableScale>
         </View>
       </SafeAreaView>

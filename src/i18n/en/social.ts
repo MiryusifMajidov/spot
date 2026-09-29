@@ -7,6 +7,7 @@ export const social: Dict = {
   ' Aşağıda yalnız sənin göndərdiyin təkliflər var.': ' Below are only the invites you sent.',
   ' · oxundu': ' · read',
   'Adı göstərilmir': 'Name not shown',
+  'Axtar': 'Search',
   'Aşağıda yalnız sənin göndərdiyin təkliflər var.': 'Below are only the invites you sent.',
   'Bağlantını sil': 'Remove link',
   'Bir mesaj göndərdin — cavab gələnə qədər ikincisini göndərmək olmur.': 'You\'ve sent a message — you can\'t send another until they reply.',

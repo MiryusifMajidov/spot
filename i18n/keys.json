@@ -3591,6 +3591,15 @@
   "placeholders": []
  },
  {
+  "key": "Axtar",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/feed/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Bu lentdə hələ heç nə paylaşılmayıb. Birinci sən ol — texnika videonu yüklə.",
   "counted": false,
   "files": [

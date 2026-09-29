@@ -16,6 +16,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
+import { SwipePager, usePagerLock } from '@/components/ui/SwipePager';
 import { CommunityPost, FeedVideo } from '@/data/feed';
 import { useAuthGate } from '@/lib/authGate';
 import { useFetchPhase } from '@/lib/focusFetch';
@@ -27,7 +28,7 @@ import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { findProgram, gymById } from '@/store/db';
 import { actionSheet, openComments, toast, useUi } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 import { azLower } from '@/lib/az';
 import { likeVideo, unlikeVideo, myVideoLikes, myVideoSaves, saveVideo, unsaveVideo, videoSaveCount, likePost, unlikePost, myPostLikes, followProfile, unfollowProfile } from '@/lib/social';
 
@@ -174,13 +175,32 @@ function useMyIdentity() {
   };
 }
 
+/* Zalım / Videolar are two pages side by side (components/ui/SwipePager): a
+   sideways swipe drags one out and the other in, under the finger. It used to be a
+   fling that SWAPPED one screen for the other the instant it was recognised — the
+   owner's words: «bir anlıq dəyişir səhifə», nothing to feel.
+   The community page is mounted the first time it is needed — the moment a drag
+   towards it starts, or a tap on its label — so opening the feed still costs one
+   screen. The video page stays mounted and pauses when it is not the one showing. */
 export default function Feed() {
   const [mode, setMode] = useState<Mode>('video');
   const homeGymName = useHomeGymName();
-  return mode === 'video' ? (
-    <VideoFeed mode={mode} setMode={setMode} homeGymName={homeGymName} />
-  ) : (
-    <CommunityFeed mode={mode} setMode={setMode} homeGymName={homeGymName} />
+  const [communityMounted, setCommunityMounted] = useState(false);
+  const showCommunity = communityMounted || mode === 'community';
+  return (
+    <View style={{ flex: 1, backgroundColor: palette.grouped }}>
+      <SwipePager
+        index={mode === 'video' ? 1 : 0}
+        onIndexChange={(i) => setMode(i === 1 ? 'video' : 'community')}
+        onDragStart={() => setCommunityMounted(true)}>
+        {showCommunity ? (
+          <CommunityFeed mode={mode} setMode={setMode} homeGymName={homeGymName} />
+        ) : (
+          <View style={{ flex: 1, backgroundColor: palette.grouped }} />
+        )}
+        <VideoFeed mode={mode} setMode={setMode} homeGymName={homeGymName} pageActive={mode === 'video'} />
+      </SwipePager>
+    </View>
   );
 }
 
@@ -229,7 +249,18 @@ function Toggle({
   );
 }
 
-function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mode) => void; homeGymName: string | null }) {
+function VideoFeed({
+  mode,
+  setMode,
+  homeGymName,
+  pageActive,
+}: {
+  mode: Mode;
+  setMode: (m: Mode) => void;
+  homeGymName: string | null;
+  /** This page is the one in the pager's view — nothing plays otherwise. */
+  pageActive: boolean;
+}) {
   const t = useT();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -269,11 +300,18 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
      next focus (the sheet always ends in router.back()), or on unmount. */
   const navigation = useNavigation();
   const heldBarEntry = useRef<ReturnType<typeof StatusBar.pushStackEntry> | null>(null);
+  /* `pageActive` in the deps: the feed tab can be focused while the pager shows the
+     light Zalım page, and a white clock there is unreadable. Swiping back to the
+     videos pushes the entry again. */
   useFocusEffect(
     useCallback(() => {
       if (heldBarEntry.current) {
         StatusBar.popStackEntry(heldBarEntry.current);
         heldBarEntry.current = null;
+      }
+      if (!pageActive) {
+        if (Platform.OS === 'ios') StatusBar.setBarStyle('dark-content', true);
+        return;
       }
       if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
       const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
@@ -283,7 +321,7 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
         if (Platform.OS === 'ios' && front === 'share') heldBarEntry.current = entry;
         else StatusBar.popStackEntry(entry);
       };
-    }, [navigation])
+    }, [navigation, pageActive])
   );
   useEffect(() => {
     const held = heldBarEntry;
@@ -401,15 +439,12 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
       });
     }
   };
-  // Horizontal swipes: right → Zalım (community), left → the creator's profile.
-  const swipe = Gesture.Exclusive(
-    Gesture.Fling()
-      .direction(Directions.RIGHT)
-      .onEnd(() => runOnJS(setMode)('community')),
-    Gesture.Fling()
-      .direction(Directions.LEFT)
-      .onEnd(() => runOnJS(openCreator)())
-  );
+  /* Left → the creator's profile. Right → Zalım is the pager's job now: this
+     page is the pager's last, so a leftward swipe has no page to move to and the
+     fling can have it. */
+  const swipe = Gesture.Fling()
+    .direction(Directions.LEFT)
+    .onEnd(() => runOnJS(openCreator)());
 
   const openShare = () => gate(() => router.push('/(tabs)/feed/share'), t('Video paylaşmaq üçün'));
 
@@ -431,7 +466,7 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
                 v={item}
                 height={h}
                 topInset={insets.top}
-                active={index === activeIndex && isFocused}
+                active={index === activeIndex && isFocused && pageActive}
                 muted={muted}
                 onToggleMute={() => setMuted((m) => !m)}
                 commentCount={commentCounts[videoKey(item.id)]}
@@ -469,12 +504,12 @@ function VideoFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m: Mo
             bigger icon. The header's paddingBottom keeps that slop inside its
             bounds — React Native drops touches that land outside the parent. */}
         <View style={[styles.videoHeader, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
-          <PressableScale activeScale={0.9} onPress={openShare} hitSlop={10}>
-            <Icon name="cam" size={24} color={palette.white} />
+          <PressableScale activeScale={0.9} onPress={openShare} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Video paylaş')}>
+            <Icon name="cam" size={iconSize.action} color={palette.white} />
           </PressableScale>
           <Toggle mode={mode} setMode={setMode} homeGymName={homeGymName} dark />
-          <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/discover')} hitSlop={10}>
-            <Icon name="search" size={24} color={palette.white} />
+          <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/discover')} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Axtar')}>
+            <Icon name="search" size={iconSize.action} color={palette.white} />
           </PressableScale>
         </View>
 
@@ -556,6 +591,10 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
     if (d > 0) player.currentTime = ratio * d;
     setDragRatio(null);
   };
+  /* The scrubber drags sideways, and so does the pager this page sits in: while a
+     finger is on the scrubber the pager holds still, or seeking forward would pull
+     the Zalım page in. */
+  const lockPager = usePagerLock();
   const scrub = Gesture.Pan()
     .activeOffsetX([-8, 8])
     .failOffsetY([-14, 14])
@@ -630,7 +669,7 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
       {/* 40pt disc + 2pt hitSlop = a 44pt target; the glyph was 17px in a 34pt
           disc, too small to read or hit over a moving picture. */}
       <PressableScale activeScale={0.85} onPress={onToggleMute} hitSlop={2} style={[styles.muteBtn, { top: topInset + 52 }]}>
-        <Icon name={muted ? 'mute' : 'sound'} size={20} color={palette.white} />
+        <Icon name={muted ? 'mute' : 'sound'} size={iconSize.inCircle} color={palette.white} />
       </PressableScale>
 
       {/* The shade is the one layer that runs on under the bar: it is not content,
@@ -794,7 +833,11 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
 
       {/* Reels-style scrubber — drag to seek back and forth */}
       <GestureDetector gesture={scrub}>
-        <View style={[styles.scrubHit, { bottom: bottomInset }]}>
+        <View
+          style={[styles.scrubHit, { bottom: bottomInset }]}
+          onTouchStart={() => lockPager(true)}
+          onTouchEnd={() => lockPager(false)}
+          onTouchCancel={() => lockPager(false)}>
           <View style={[styles.scrubTrack, dragRatio != null && styles.scrubTrackActive]}>
             <View style={[styles.scrubFill, { width: progress * width }]} />
             {dragRatio != null ? <View style={[styles.scrubKnob, { left: progress * width }]} /> : null}
@@ -887,9 +930,6 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
     };
   }, [visible]);
 
-  const swipeBack = Gesture.Fling()
-    .direction(Directions.LEFT)
-    .onEnd(() => runOnJS(setMode)('video'));
   const openCompose = () => gate(() => router.push('/(tabs)/feed/compose'), t('Post paylaşmaq üçün'));
   return (
     <Screen>
@@ -900,7 +940,7 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
         </View>
         {/* 40pt disc + 4pt hitSlop: at least 44pt to hit. */}
         <PressableScale activeScale={0.9} onPress={openCompose} hitSlop={4} style={styles.composeBtn}>
-          <Icon name="plus" size={20} color={palette.inkText} />
+          <Icon name="plus" size={iconSize.inCircle} color={palette.inkText} />
         </PressableScale>
       </View>
       {!homeGymName ? (
@@ -915,44 +955,42 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
           <Icon name="chevR" size={16} color={palette.tertiary} />
         </PressableScale>
       ) : null}
-      <GestureDetector gesture={swipeBack}>
-        <FlatList
-          data={visible}
-          keyExtractor={(p) => p.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: listBottom, flexGrow: 1 }}
-          renderItem={({ item }) => (
-            <PostCard
-              post={item}
-              commentCount={commentCounts[postKey(item.id)]}
-              onOpenComments={() => openComments(postKey(item.id))}
-              onHide={() => setHidden((h) => [...h, item.id])}
-            />
-          )}
-          ListEmptyComponent={
-            <View style={styles.communityEmpty}>
-              <Icon name={postPhase === 'failed' ? 'x' : 'msg'} size={28} color={palette.tertiary} />
-              <AppText variant="headline" center style={{ marginTop: 14 }}>
-                {postPhase === 'failed'
-                  ? t('Postlar yüklənmədi')
-                  : homeGymName
-                    ? t('{gym} zalında hələ post yoxdur', { gym: homeGymName })
-                    : t('Hələ post yoxdur')}
-              </AppText>
-              <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, lineHeight: 21, maxWidth: 270 }}>
-                {postPhase === 'failed'
-                  ? t('Serverlə əlaqə alınmadı — burada post olmadığı demək deyil. İnterneti yoxlayıb yenidən aç.')
-                  : homeGymName
-                    ? t('Nailiyyətini, sualını və ya motivasiyanı yaz — zalındakılar görəcək. Digər zalların postları burada göstərilmir.')
-                    : t('İcmada hələ heç nə paylaşılmayıb. Birinci sən ol.')}
-              </AppText>
-              {postPhase === 'failed' ? null : (
-                <Button title={t('İlk postu yaz')} icon="plus" onPress={openCompose} style={{ marginTop: 20 }} />
-              )}
-            </View>
-          }
-        />
-      </GestureDetector>
+      <FlatList
+        data={visible}
+        keyExtractor={(p) => p.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: listBottom, flexGrow: 1 }}
+        renderItem={({ item }) => (
+          <PostCard
+            post={item}
+            commentCount={commentCounts[postKey(item.id)]}
+            onOpenComments={() => openComments(postKey(item.id))}
+            onHide={() => setHidden((h) => [...h, item.id])}
+          />
+        )}
+        ListEmptyComponent={
+          <View style={styles.communityEmpty}>
+            <Icon name={postPhase === 'failed' ? 'x' : 'msg'} size={28} color={palette.tertiary} />
+            <AppText variant="headline" center style={{ marginTop: 14 }}>
+              {postPhase === 'failed'
+                ? t('Postlar yüklənmədi')
+                : homeGymName
+                  ? t('{gym} zalında hələ post yoxdur', { gym: homeGymName })
+                  : t('Hələ post yoxdur')}
+            </AppText>
+            <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, lineHeight: 21, maxWidth: 270 }}>
+              {postPhase === 'failed'
+                ? t('Serverlə əlaqə alınmadı — burada post olmadığı demək deyil. İnterneti yoxlayıb yenidən aç.')
+                : homeGymName
+                  ? t('Nailiyyətini, sualını və ya motivasiyanı yaz — zalındakılar görəcək. Digər zalların postları burada göstərilmir.')
+                  : t('İcmada hələ heç nə paylaşılmayıb. Birinci sən ol.')}
+            </AppText>
+            {postPhase === 'failed' ? null : (
+              <Button title={t('İlk postu yaz')} icon="plus" onPress={openCompose} style={{ marginTop: 20 }} />
+            )}
+          </View>
+        }
+      />
     </Screen>
   );
 }
@@ -1020,7 +1058,7 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
           </AppText>
         </View>
         <PressableScale activeScale={0.9} haptic={false} onPress={onMore} hitSlop={10}>
-          <Icon name="more" size={20} color={palette.tertiary} />
+          <Icon name="more" size={iconSize.action} color={palette.tertiary} />
         </PressableScale>
       </View>
 
@@ -1084,7 +1122,7 @@ const styles = StyleSheet.create({
   videoEmpty: { alignItems: 'center', paddingHorizontal: 30 },
   bottomScrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   playBadge: { width: 68, height: 68, borderRadius: 999, backgroundColor: 'rgba(11,11,14,0.42)', alignItems: 'center', justifyContent: 'center' },
-  muteBtn: { position: 'absolute', right: spacing.screen, width: 40, height: 40, borderRadius: 999, backgroundColor: 'rgba(11,11,14,0.4)', alignItems: 'center', justifyContent: 'center' },
+  muteBtn: { position: 'absolute', right: spacing.screen, width: 44, height: 44, borderRadius: 999, backgroundColor: 'rgba(11,11,14,0.4)', alignItems: 'center', justifyContent: 'center' },
   scrubHit: { position: 'absolute', left: 0, right: 0, height: SCRUB_H, justifyContent: 'flex-end', paddingBottom: 6 },
   scrubTrack: { height: 3, backgroundColor: 'rgba(255,255,255,0.28)', justifyContent: 'center' },
   scrubTrackActive: { height: 5 },
@@ -1115,7 +1153,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.screen,
     marginBottom: 10,
   },
-  composeBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
+  composeBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
   post: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 12 },
   postHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   postActions: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 14 },

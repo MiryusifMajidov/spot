@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSharedValue } from 'react-native-reanimated';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -7,6 +8,7 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
+import { SwipeSwitch } from '@/components/ui/SwipeSwitch';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
 import { t } from '@/lib/i18n';
 import { bestsInWorkout } from '@/lib/lifts';
@@ -14,7 +16,7 @@ import { removeWorkout } from '@/lib/removeWorkout';
 import { useFormat, useT } from '@/lib/useT';
 import { seedById, useDb, type Workout } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 
 const AZ_MON_SHORT = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avq', 'sen', 'okt', 'noy', 'dek'];
 
@@ -96,12 +98,14 @@ export default function History() {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const sorted = useMemo(() => [...workouts].sort((a, b) => b.at.localeCompare(a.at)), [workouts]);
   const sessions = useMemo(() => sorted.slice(0, shown), [sorted, shown]);
+  // The tab position as a float — the segment's thumb follows a swipe on the content.
+  const segProgress = useSharedValue(seg);
 
   return (
     <Screen edges={['top']}>
       <NavBar title={t('Məşq tarixçəsi')} />
       <View style={{ paddingHorizontal: spacing.screen, paddingBottom: 12 }}>
-        <Segmented options={[t('Siyahı'), t('Təqvim')]} value={seg} onChange={setSeg} />
+        <Segmented options={[t('Siyahı'), t('Təqvim')]} value={seg} onChange={setSeg} progress={segProgress} />
       </View>
       {/* iOS 26: the Liquid Glass tab bar floats over this list and reserves no
           space, so at RN's default («never») the last session or «Daha çox
@@ -113,123 +117,125 @@ export default function History() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
-        {seg === 1 ? (
-        <View style={styles.calCard}>
-          <View style={styles.calHead}>
-            <AppText variant="headline">{fmt.monthAndYear(month, year)}</AppText>
-            {/* The month arrows were 17 px glyphs with a 10 pt slop — about 37 pt
-                to aim at, and on Android a slop does not reach past the parent's
-                edge. Each is now a real 44x44 box with a 22 px glyph. */}
-            <View style={styles.monthNav}>
-              <PressableScale
-                haptic={false}
-                activeScale={0.85}
-                onPress={() => setOffset((o) => o - 1)}
-                style={styles.monthBtn}
-                accessibilityRole="button"
-                accessibilityLabel={t('Əvvəlki ay')}>
-                <Icon name="chevL" size={22} color={palette.inkText} />
-              </PressableScale>
-              <PressableScale
-                haptic={false}
-                activeScale={0.85}
-                disabled={offset >= 0}
-                onPress={() => setOffset((o) => Math.min(0, o + 1))}
-                style={styles.monthBtn}
-                accessibilityRole="button"
-                accessibilityLabel={t('Növbəti ay')}
-                accessibilityState={{ disabled: offset >= 0 }}>
-                <Icon name="chevR" size={22} color={offset >= 0 ? palette.tertiary : palette.inkText} />
-              </PressableScale>
+        <SwipeSwitch index={seg} count={2} onIndexChange={setSeg} progress={segProgress}>
+          {seg === 1 ? (
+          <View style={styles.calCard}>
+            <View style={styles.calHead}>
+              <AppText variant="headline">{fmt.monthAndYear(month, year)}</AppText>
+              {/* The month arrows were 17 px glyphs with a 10 pt slop — about 37 pt
+                  to aim at, and on Android a slop does not reach past the parent's
+                  edge. Each is now a real 44x44 box with a 22 px glyph. */}
+              <View style={styles.monthNav}>
+                <PressableScale
+                  haptic={false}
+                  activeScale={0.85}
+                  onPress={() => setOffset((o) => o - 1)}
+                  style={styles.monthBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Əvvəlki ay')}>
+                  <Icon name="chevL" size={iconSize.action} color={palette.inkText} />
+                </PressableScale>
+                <PressableScale
+                  haptic={false}
+                  activeScale={0.85}
+                  disabled={offset >= 0}
+                  onPress={() => setOffset((o) => Math.min(0, o + 1))}
+                  style={styles.monthBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Növbəti ay')}
+                  accessibilityState={{ disabled: offset >= 0 }}>
+                  <Icon name="chevR" size={iconSize.action} color={offset >= 0 ? palette.tertiary : palette.inkText} />
+                </PressableScale>
+              </View>
+            </View>
+            <View style={styles.calGrid}>
+              {cal.map((c, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.calCell,
+                    { backgroundColor: c.tone === 0 ? '#F0F0F3' : c.tone === 1 ? 'rgba(198,255,61,0.45)' : palette.volt },
+                    c.isToday && styles.calToday,
+                  ]}
+                />
+              ))}
+            </View>
+            <View style={styles.calStats}>
+              <CalStat value={`${monthStats.count}`} label={t('məşq')} />
+              <View style={styles.vdiv} />
+              <CalStat value={t('{n} t', { n: fmt.decimal(monthStats.volumeKg / 1000, 1) })} label={t('həcm')} />
+              <View style={styles.vdiv} />
+              <CalStat value={fmtDur(monthStats.durationMin, t)} label={t('zalda')} />
             </View>
           </View>
-          <View style={styles.calGrid}>
-            {cal.map((c, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.calCell,
-                  { backgroundColor: c.tone === 0 ? '#F0F0F3' : c.tone === 1 ? 'rgba(198,255,61,0.45)' : palette.volt },
-                  c.isToday && styles.calToday,
-                ]}
-              />
-            ))}
-          </View>
-          <View style={styles.calStats}>
-            <CalStat value={`${monthStats.count}`} label={t('məşq')} />
-            <View style={styles.vdiv} />
-            <CalStat value={t('{n} t', { n: fmt.decimal(monthStats.volumeKg / 1000, 1) })} label={t('həcm')} />
-            <View style={styles.vdiv} />
-            <CalStat value={fmtDur(monthStats.durationMin, t)} label={t('zalda')} />
-          </View>
-        </View>
-        ) : null}
+          ) : null}
 
-        {seg === 1 ? null : sessions.length === 0 ? (
-          <View style={styles.empty}>
-            <Icon name="dumbbell" size={26} color={palette.tertiary} />
-            <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 240 }}>
-              {t('Hələ məşq yoxdur. İlk məşqini qeyd et — burada tarixçən yığılacaq.')}
-            </AppText>
-          </View>
-        ) : (
-          <View style={{ gap: 10 }}>
-            {sessions.map((s) => {
-              const d = new Date(s.at);
-              // A workout restored from the server has no per-set detail, so
-              // counting `exercises` would print «0 set» for a real session.
-              // `setsDone` is the number that was actually recorded.
-              const setsN = s.setsDone ?? s.exercises.reduce((a, e) => a + e.sets.length, 0);
-              const partner = s.partnerId ? seedById(s.partnerId) : null;
-              const isOpen = !!open[s.id];
-              return (
-                <View key={s.id} style={styles.session}>
-                  <PressableScale
-                    activeScale={0.99}
-                    onPress={() => setOpen((o) => ({ ...o, [s.id]: !o[s.id] }))}
-                    style={styles.sessionHead}
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: isOpen }}
-                  >
-                    <View style={[styles.sessionIcon, { backgroundColor: 'rgba(198,255,61,0.3)' }]}>
-                      <Icon name="dumbbell" size={22} color="#5B7F00" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{s.title}</AppText>
-                      <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
-                        {d.getDate()} {t(AZ_MON_SHORT[d.getMonth()])} · {fmtDur(s.durationMin || 0, t)} ·{' '}
-                        {t('{n} t', { n: fmt.decimal(s.volumeKg / 1000, 1) })} · {t('{n} set', { n: setsN, count: setsN })}
-                      </AppText>
-                    </View>
-                    <View style={isOpen ? styles.chevOpen : undefined}>
-                      <Icon name="chevD" size={18} color={palette.tertiary} />
-                    </View>
-                  </PressableScale>
-                  {partner ? (
-                    <View style={{ flexDirection: 'row', gap: 7, marginTop: 11 }}>
-                      <View style={styles.tag}>
-                        <AppText style={{ fontSize: 11, fontWeight: '600', color: '#3A3A42' }}>{t('{name} ilə', { name: partner.name })}</AppText>
-                      </View>
-                    </View>
-                  ) : null}
-                  {isOpen ? <SessionDetail workout={s} /> : null}
-                </View>
-              );
-            })}
-            {sorted.length > sessions.length ? (
-              <PressableScale activeScale={0.98} onPress={() => setShown((n) => n + PAGE)} style={styles.more}>
-                <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Daha çox göstər')}</AppText>
-                <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
-                  {t('{n} / {total} məşq göstərilir', { n: sessions.length, total: sorted.length, count: sorted.length })}
-                </AppText>
-              </PressableScale>
-            ) : sorted.length > PAGE ? (
-              <AppText style={{ fontSize: 12, color: palette.tertiary, textAlign: 'center', paddingVertical: 10 }}>
-                {t('Hamısı göstərilir · {n} məşq', { n: sorted.length, count: sorted.length })}
+          {seg === 1 ? null : sessions.length === 0 ? (
+            <View style={styles.empty}>
+              <Icon name="dumbbell" size={26} color={palette.tertiary} />
+              <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 10, maxWidth: 240 }}>
+                {t('Hələ məşq yoxdur. İlk məşqini qeyd et — burada tarixçən yığılacaq.')}
               </AppText>
-            ) : null}
-          </View>
-        )}
+            </View>
+          ) : (
+            <View style={{ gap: 10 }}>
+              {sessions.map((s) => {
+                const d = new Date(s.at);
+                // A workout restored from the server has no per-set detail, so
+                // counting `exercises` would print «0 set» for a real session.
+                // `setsDone` is the number that was actually recorded.
+                const setsN = s.setsDone ?? s.exercises.reduce((a, e) => a + e.sets.length, 0);
+                const partner = s.partnerId ? seedById(s.partnerId) : null;
+                const isOpen = !!open[s.id];
+                return (
+                  <View key={s.id} style={styles.session}>
+                    <PressableScale
+                      activeScale={0.99}
+                      onPress={() => setOpen((o) => ({ ...o, [s.id]: !o[s.id] }))}
+                      style={styles.sessionHead}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: isOpen }}
+                    >
+                      <View style={[styles.sessionIcon, { backgroundColor: 'rgba(198,255,61,0.3)' }]}>
+                        <Icon name="dumbbell" size={22} color="#5B7F00" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{s.title}</AppText>
+                        <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
+                          {d.getDate()} {t(AZ_MON_SHORT[d.getMonth()])} · {fmtDur(s.durationMin || 0, t)} ·{' '}
+                          {t('{n} t', { n: fmt.decimal(s.volumeKg / 1000, 1) })} · {t('{n} set', { n: setsN, count: setsN })}
+                        </AppText>
+                      </View>
+                      <View style={isOpen ? styles.chevOpen : undefined}>
+                        <Icon name="chevD" size={18} color={palette.tertiary} />
+                      </View>
+                    </PressableScale>
+                    {partner ? (
+                      <View style={{ flexDirection: 'row', gap: 7, marginTop: 11 }}>
+                        <View style={styles.tag}>
+                          <AppText style={{ fontSize: 11, fontWeight: '600', color: '#3A3A42' }}>{t('{name} ilə', { name: partner.name })}</AppText>
+                        </View>
+                      </View>
+                    ) : null}
+                    {isOpen ? <SessionDetail workout={s} /> : null}
+                  </View>
+                );
+              })}
+              {sorted.length > sessions.length ? (
+                <PressableScale activeScale={0.98} onPress={() => setShown((n) => n + PAGE)} style={styles.more}>
+                  <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Daha çox göstər')}</AppText>
+                  <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>
+                    {t('{n} / {total} məşq göstərilir', { n: sessions.length, total: sorted.length, count: sorted.length })}
+                  </AppText>
+                </PressableScale>
+              ) : sorted.length > PAGE ? (
+                <AppText style={{ fontSize: 12, color: palette.tertiary, textAlign: 'center', paddingVertical: 10 }}>
+                  {t('Hamısı göstərilir · {n} məşq', { n: sorted.length, count: sorted.length })}
+                </AppText>
+              ) : null}
+            </View>
+          )}
+        </SwipeSwitch>
       </ScrollView>
     </Screen>
   );

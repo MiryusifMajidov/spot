@@ -44,7 +44,7 @@ import { showModerationSheet } from '@/lib/moderation';
 import { useAppStore } from '@/store/appStore';
 import { timeAgoAz } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useT } from '@/lib/useT';
 
@@ -497,7 +497,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                 {showList ? t('Şərhlər · {n}', { n: rows.length, count: rows.length }) : t('Şərhlər')}
               </AppText>
               <PressableScale haptic={false} activeScale={0.9} onPress={onClose}>
-                <Icon name="x" size={22} color={palette.inkText} />
+                <Icon name="x" size={iconSize.action} color={palette.inkText} />
               </PressableScale>
             </View>
           </View>
@@ -654,7 +654,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                     {sending ? (
                       <ActivityIndicator size="small" color={palette.tertiary} />
                     ) : (
-                      <Icon name="arrowU" size={18} color={canSend ? palette.inkText : palette.tertiary} />
+                      <Icon name="arrowU" size={iconSize.inCircle} color={canSend ? palette.inkText : palette.tertiary} />
                     )}
                   </PressableScale>
                 </View>
@@ -849,6 +849,6 @@ const styles = StyleSheet.create({
     backgroundColor: palette.element, borderRadius: 999, height: 42, paddingLeft: 15, paddingRight: 5,
   },
   input: { flex: 1, fontSize: 15, color: palette.inkText, paddingVertical: 0, marginRight: 6 },
-  send: { width: 32, height: 32, borderRadius: 16, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
+  send: { width: 36, height: 36, borderRadius: 18, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
   sendOff: { backgroundColor: 'transparent' },
 });

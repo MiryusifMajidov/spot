@@ -24,7 +24,7 @@ import { gymById, seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { applyPartnerFilter, partnerFilterCount, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
 import { toast } from '@/store/ui';
-import { palette } from '@/theme';
+import { iconSize, palette } from '@/theme';
 import { nameWithAge } from '@/lib/authorName';
 import { memberOnly } from '@/lib/memberOnly';
 
@@ -249,7 +249,7 @@ function Cards() {
             accessibilityRole="button"
             accessibilityLabel={t('Yoldaş filtri')}
             style={styles.navBtn}>
-            <Icon name="sliders" size={22} color={palette.inkText} />
+            <Icon name="sliders" size={iconSize.action} color={palette.inkText} />
           </PressableScale>
         }
       />

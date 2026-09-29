@@ -12,7 +12,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Program } from '@/data/types';
 import { usePrograms } from '@/lib/hooks';
 import { useDb } from '@/store/db';
-import { palette, shadow, spacing } from '@/theme';
+import { iconSize, palette, shadow, spacing } from '@/theme';
 import { searchKey } from '@/lib/az';
 import { useT } from '@/lib/useT';
 
@@ -138,7 +138,7 @@ export default function Library() {
         style={[styles.fab, { bottom: 28 + bottomClearance }, shadow.floating as object]}
         accessibilityRole="button"
         accessibilityLabel={t('Yeni proqram yarat')}>
-        <Icon name="plus" size={26} color={palette.volt} />
+        <Icon name="plus" size={iconSize.inCircle} color={palette.volt} />
       </PressableScale>
     </Screen>
   );

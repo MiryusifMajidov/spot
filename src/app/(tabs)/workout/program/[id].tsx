@@ -15,7 +15,7 @@ import { removeProgram } from '@/lib/removeProgram';
 import { useFormat, useT } from '@/lib/useT';
 import { nextProgramDay, useAllPrograms, useDb } from '@/store/db';
 import { actionSheet, confirm, toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 import { estimateDurationMin, resolveDayExercises } from '../day';
 
 export default function ProgramDetail() {
@@ -227,7 +227,7 @@ export default function ProgramDetail() {
                 accessibilityRole="button"
                 accessibilityLabel={t('Digər seçimlər')}
                 style={styles.headerBtn}>
-                <Icon name="more" size={22} color={palette.inkText} />
+                <Icon name="more" size={iconSize.action} color={palette.inkText} />
               </PressableScale>
             ) : null}
             <PressableScale
@@ -240,7 +240,7 @@ export default function ProgramDetail() {
               accessibilityLabel={t('Yadda saxla')}
               accessibilityState={{ selected: isSaved }}
               style={styles.headerBtn}>
-              <Icon name="bookmark" size={22} color={isSaved ? palette.voltDeep : palette.inkText} />
+              <Icon name="bookmark" size={iconSize.action} color={isSaved ? palette.voltDeep : palette.inkText} />
             </PressableScale>
           </View>
         }

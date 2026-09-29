@@ -11,7 +11,7 @@ import { EmptyNote, GymGate, updateMyGym, useMyGym, type OwnedGym, type Schedule
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useT } from '@/lib/useT';
 import { confirm, toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 
 const sortByTime = (a: ScheduleItem, b: ScheduleItem) => a.time.localeCompare(b.time);
 
@@ -102,7 +102,7 @@ export default function GymClasses() {
             style={styles.fab}
             accessibilityRole="button"
             accessibilityLabel={t('Cədvələ əlavə et')}>
-            <Icon name="plus" size={22} color={palette.inkText} />
+            <Icon name="plus" size={iconSize.inCircle} color={palette.inkText} />
           </PressableScale>
         </View>
         {/* This used to say the schedule «zal profilinə yazılır» — the gym profile.

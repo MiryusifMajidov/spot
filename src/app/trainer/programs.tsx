@@ -12,7 +12,7 @@ import { removeProgram } from '@/lib/removeProgram';
 import { useT } from '@/lib/useT';
 import { useDb } from '@/store/db';
 import { actionSheet, confirm, toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 
 /**
  * A trainer's programs.
@@ -108,10 +108,9 @@ export default function TrainerPrograms() {
             activeScale={0.9}
             accessibilityRole="button"
             accessibilityLabel={t('Yeni proqram yarat')}
-            hitSlop={8}
             onPress={openNew}
             style={styles.fab}>
-            <Icon name="plus" size={20} color={palette.inkText} />
+            <Icon name="plus" size={iconSize.inCircle} color={palette.inkText} />
           </PressableScale>
         }
       />
@@ -152,10 +151,9 @@ export default function TrainerPrograms() {
                     activeScale={0.9}
                     accessibilityRole="button"
                     accessibilityLabel={t('{title} üçün əməliyyatlar', { title: p.title })}
-                    hitSlop={10}
                     onPress={() => rowMenu(p)}
                     style={styles.moreBtn}>
-                    <Icon name="more" size={18} color={palette.textSecondary} />
+                    <Icon name="more" size={iconSize.action} color={palette.textSecondary} />
                   </PressableScale>
                 </PressableScale>
               </View>
@@ -172,10 +170,13 @@ export default function TrainerPrograms() {
 }
 
 const styles = StyleSheet.create({
-  fab: { width: 36, height: 36, borderRadius: 12, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
+  /* A real 44 pt volt button — it was 36 with an 8 pt slop and a 20 px «+». The
+     LargeHeader's action row gives back the empty half of a 44 box on the right. */
+  fab: { width: 44, height: 44, borderRadius: 14, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center', marginRight: 9.5 },
   empty: { backgroundColor: palette.white, borderRadius: 16, padding: 18 },
-  primaryBtn: { backgroundColor: palette.ink, borderRadius: 12, height: 40, alignItems: 'center', justifyContent: 'center' },
+  primaryBtn: { backgroundColor: palette.ink, borderRadius: 12, height: 44, alignItems: 'center', justifyContent: 'center' },
   card: { backgroundColor: palette.white, borderRadius: 16, padding: 13 },
   thumb: { width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(198,255,61,0.22)', alignItems: 'center', justifyContent: 'center' },
-  moreBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  // 44 pt, with the empty half given back so the «⋯» stays on the card's edge.
+  moreBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
 });

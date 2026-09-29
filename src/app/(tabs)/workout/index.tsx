@@ -13,7 +13,7 @@ import { getMyAssignedProgram, type AssignedProgram } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useFormat, useT, type Fmt } from '@/lib/useT';
 import { exerciseLibrary, nextProgramDay, useAllPrograms, useDb, useWeekStats } from '@/store/db';
-import { hitSlop, palette, spacing } from '@/theme';
+import { hitSlop, iconSize, palette, spacing } from '@/theme';
 import { estimateDurationMin, resolveDayExercises } from './day';
 
 /**
@@ -165,7 +165,7 @@ export default function WorkoutToday() {
             accessibilityRole="button"
             accessibilityLabel={t('Söhbətlər')}
             style={styles.headerBtn}>
-            <Icon name="msg" size={24} color={palette.inkText} />
+            <Icon name="msg" size={iconSize.action} color={palette.inkText} />
           </PressableScale>
         </View>
 

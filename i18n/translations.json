@@ -10985,5 +10985,10 @@
   "ru_many": "Начать с {n} упражнениями",
   "en_one": "Start with {n} exercise",
   "en_other": "Start with {n} exercises"
+ },
+ {
+  "key": "Axtar",
+  "ru": "Поиск",
+  "en": "Search"
  }
 ]

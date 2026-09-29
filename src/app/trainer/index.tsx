@@ -147,9 +147,16 @@ export default function TrainerPanel() {
               {name.split(' ')[0]}
             </AppText>
           </View>
-          <PressableScale activeScale={0.94} onPress={() => showAccountSwitcher(router)} style={styles.modePill}>
-            <Icon name="user" size={13} color={palette.volt} />
-            <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>{t('Hesabı dəyiş')}</AppText>
+          {/* The gym panel's pill: 36 pt + 4 pt slop above and below = a 44 pt target,
+              a 16 px glyph. It was ~32 pt with a 13 px one. */}
+          <PressableScale
+            activeScale={0.94}
+            onPress={() => showAccountSwitcher(router)}
+            hitSlop={{ top: 4, bottom: 4 }}
+            accessibilityRole="button"
+            style={styles.modePill}>
+            <Icon name="user" size={16} color={palette.volt} />
+            <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Hesabı dəyiş')}</AppText>
           </PressableScale>
         </View>
 
@@ -237,7 +244,13 @@ export default function TrainerPanel() {
           <View style={styles.card}>
             <View style={styles.cardHead}>
               <AppText variant="headline">{t('Şagirdlərin')}</AppText>
-              <PressableScale haptic={false} activeScale={0.95} onPress={() => router.push('/trainer/students')}>
+              {/* An 18 pt line of text: 13 pt of slop above and below makes it 44. */}
+              <PressableScale
+                haptic={false}
+                activeScale={0.95}
+                hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }}
+                accessibilityRole="button"
+                onPress={() => router.push('/trainer/students')}>
                 <AppText variant="subhead" color={palette.blue}>{t('Hamısı')}</AppText>
               </PressableScale>
             </View>
@@ -402,7 +415,7 @@ function ToolRow({ icon, title, sub, onPress }: { icon: 'dumbbell' | 'msg' | 've
   return (
     <PressableScale activeScale={0.98} onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <View style={styles.toolIcon}>
-        <Icon name={icon} size={17} color={palette.inkText} />
+        <Icon name={icon} size={19} color={palette.inkText} />
       </View>
       <View style={{ flex: 1 }}>
         <AppText style={{ fontSize: 14, fontWeight: '600' }}>{title}</AppText>
@@ -415,7 +428,7 @@ function ToolRow({ icon, title, sub, onPress }: { icon: 'dumbbell' | 'msg' | 've
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 },
-  modePill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: palette.ink, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 8, marginTop: 6 },
+  modePill: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, backgroundColor: palette.ink, borderRadius: 999, paddingHorizontal: 12, marginTop: 6 },
   statRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
   statCard: { flex: 1, borderRadius: 18, padding: 15 },
   statCap: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.6, color: palette.tertiary },
@@ -423,11 +436,11 @@ const styles = StyleSheet.create({
   card: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 14 },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 },
   reqRow: { backgroundColor: palette.grouped, borderRadius: 14, padding: 13 },
-  acceptBtn: { flex: 1, height: 42, borderRadius: 12, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
-  declineBtn: { flex: 1, height: 42, borderRadius: 12, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  acceptBtn: { flex: 1, height: 44, borderRadius: 12, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
+  declineBtn: { flex: 1, height: 44, borderRadius: 12, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
   emptyIcon: { width: 58, height: 58, borderRadius: 18, backgroundColor: 'rgba(198,255,61,0.28)', alignItems: 'center', justifyContent: 'center' },
   emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 18, height: 44, paddingHorizontal: 18, borderRadius: 13, backgroundColor: palette.grouped },
-  noticeBtn: { height: 38, borderRadius: 11, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center', marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 },
+  noticeBtn: { height: 44, borderRadius: 12, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center', marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 },
   toolIcon: { width: 36, height: 36, borderRadius: 11, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
   note: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', paddingHorizontal: 4, marginTop: 2 },
 });

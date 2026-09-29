@@ -13,7 +13,7 @@ import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useFormat, useT } from '@/lib/useT';
 import { useDb } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 import { studentDateLine, useMyStudents } from '../students';
 
 /**
@@ -225,7 +225,7 @@ function StudentDetailBody() {
             accessibilityLabel={t('{name} ilə söhbət', { name })}
             onPress={() => router.push({ pathname: '/chat/[id]', params: { id: student.profileId } })}
             style={styles.navBtn}>
-            <Icon name="msg" size={22} color={palette.inkText} />
+            <Icon name="msg" size={iconSize.action} color={palette.inkText} />
           </PressableScale>
         }
       />

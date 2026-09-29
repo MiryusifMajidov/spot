@@ -1,5 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { ReactNode, useCallback, useMemo, useState } from 'react';
+import { useSharedValue } from 'react-native-reanimated';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { GymCard } from '@/components/GymCard';
@@ -13,6 +14,7 @@ import { LiveDot } from '@/components/ui/LiveDot';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
+import { SwipePager } from '@/components/ui/SwipePager';
 import { Partner } from '@/data/types';
 import { getPartner } from '@/lib/api';
 import { useFetchPhase } from '@/lib/focusFetch';
@@ -40,6 +42,8 @@ export default function Discover() {
      means somebody who was on «Yoldaşlar» and then signed OUT lands on a real
      segment instead of a blank third one. */
   const segment = guest && rawSegment > 1 ? 0 : rawSegment;
+  /* The pager's position as a float — the segment's thumb rides on it. */
+  const pageProgress = useSharedValue(0);
   const [query, setQuery] = useState('');
   const profile = useAppStore((s) => s.profile);
   // No substitute gym. If the person has not chosen one, we say so instead of
@@ -252,297 +256,308 @@ export default function Discover() {
             options={guest ? [t('Zallar'), t('Müəllimlər')] : [t('Zallar'), t('Müəllimlər'), t('Yoldaşlar')]}
             value={segment}
             onChange={setSegment}
+            progress={pageProgress}
           />
         </View>
 
-        {segment === 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chips}
-            style={{ marginTop: 12, marginHorizontal: -spacing.screen }}>
-            {/* The map is the second way to browse gyms — it must be visible in the
-                Zallar segment itself, not only behind the header pin. */}
-            <Chip label={t('Xəritə')} icon="pin" tone="card" onPress={() => router.push('/(tabs)/discover/map')} />
-            <Chip
-              label={filterN > 0 ? t('Filtr · {n}', { n: filterN, count: filterN }) : t('Filtr')}
-              icon="sliders"
-              selected={filterN > 0}
-              onPress={() => router.push('/(tabs)/discover/filter')}
-            />
-            <Chip
-              label={t('2 km-ə qədər')}
-              tone="card"
-              selected={gymFilter.maxDistanceKm === 2}
-              onPress={() => setGymFilter({ maxDistanceKm: gymFilter.maxDistanceKm === 2 ? null : 2 })}
-            />
-            <Chip
-              label={t('50 ₼-dək')}
-              tone="card"
-              selected={gymFilter.maxPrice === 50}
-              onPress={() => setGymFilter({ maxPrice: gymFilter.maxPrice === 50 ? null : 50 })}
-            />
-            <Chip
-              label={t('24 saat')}
-              tone="card"
-              selected={gymFilter.hours === '24h'}
-              onPress={() => setGymFilter({ hours: gymFilter.hours === '24h' ? null : '24h' })}
-            />
-            {['Duş', 'Park'].map((a) => (
-              <Chip
-                key={a}
-                label={t(a)}
-                tone="card"
-                selected={gymFilter.amenities.includes(a)}
-                onPress={() =>
-                  setGymFilter({
-                    amenities: gymFilter.amenities.includes(a)
-                      ? gymFilter.amenities.filter((x) => x !== a)
-                      : [...gymFilter.amenities, a],
-                  })
-                }
-              />
-            ))}
-          </ScrollView>
-        ) : segment === 2 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chips}
-            style={{ marginTop: 12, marginHorizontal: -spacing.screen }}>
-            <Chip
-              label={partnerFilterN > 0 ? t('Filtr · {n}', { n: partnerFilterN, count: partnerFilterN }) : t('Filtr')}
-              icon="sliders"
-              selected={partnerFilterN > 0}
-              onPress={() => router.push('/(tabs)/discover/partner-filter')}
-            />
-            <Chip label={t('Kartlar')} icon="grid" tone="card" onPress={() => router.push('/(tabs)/discover/cards')} />
-            {pendingOut > 0 ? (
-              <Chip
-                label={t('Gözləyən təklif · {n}', { n: pendingOut, count: pendingOut })}
-                tone="card"
-                onPress={() => router.push('/chat/requests')}
-              />
-            ) : null}
-          </ScrollView>
-        ) : null}
       </View>
 
-      {/* iOS 26: the Liquid Glass tab bar floats over this list, and at RN's
-          default («never») the last gym card ended under the glass. «automatic»
-          lets UIKit add the tab bar's safe area at the bottom. react-native-screens
-          only switches the scroll view it finds down the FIRST-child chain, and
-          this one sits after the header and the controls, so it has to say it
-          itself. Nothing is added at the top: the list starts below the header, clear
-          of the status bar. iOS-only prop; Android's bar reserves its own space. */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled">
-        {segment === 0 &&
-          (visibleGyms.length === 0 ? (
-            <EmptyBlock
-              icon="pin"
-              text={
-                /* «Hələ zal yoxdur» is a claim about the catalogue. Until now it
-                   was also printed over a read that never landed — there was no
-                   failed branch for gyms at all. */
-                gymsPhase === 'failed'
-                  ? t('Zallar yüklənmədi — bu, zal olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç.')
-                  : gymsPhase === 'loading'
-                    ? t('Zallar yüklənir…')
-                    : q || filterN > 0
-                      ? t('Bu axtarışa uyğun zal tapılmadı. Filtri sıfırla və ya başqa söz yaz.')
-                      : guest
-                        ? /* A guest has no Profil tab — the other sentence
-                             sent them to a screen they cannot reach. */
-                          t('Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, daxil ol və zalını əlavə et.')
-                        : t('Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, Profil → Parametrlər → «Zal hesabı yarat» ilə özün əlavə edə bilərsən.')
-              }
-              /* «Xəritədə bax» over an empty catalogue opened a map with nothing
-                 on it. Only offered when the list is empty because of a filter
-                 or a failed read, where the map can still say something. */
-              action={
-                q || filterN > 0 || gymsPhase === 'failed'
-                  ? { label: t('Xəritədə bax'), onPress: () => router.push('/(tabs)/discover/map') }
-                  : guest
-                    ? { label: t('Daxil ol'), onPress: () => router.push('/onboarding/welcome') }
-                    : undefined
-              }
-            />
-          ) : (
-            <>
-              {homeGym ? (
-                <>
-                  {/* Only a count the server really reported may appear here. */}
-                  {homeGym.liveCount > 0 ? (
-                    <View style={styles.liveRow}>
-                      <LiveDot />
-                      <AppText style={styles.liveLabel}>
-                        {t('İNDİ ZALDA {n} NƏFƏR · {gym}', {
-                          n: homeGym.liveCount,
-                          count: homeGym.liveCount,
-                          gym: azUpper(homeGym.name),
-                        })}
-                      </AppText>
-                    </View>
-                  ) : null}
-                  <GymCard
-                    gym={homeGym}
-                    variant="hero"
-                    onPress={() => router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: homeGym.id } })}
+      {/* Three lists side by side: a sideways swipe moves between them and the
+          segment's thumb follows the finger (components/ui/SwipePager). They used
+          to be one list whose contents a tap swapped — a swipe did nothing. Each
+          page scrolls on its own, and its filter chips travel with it. */}
+      <SwipePager index={segment} onIndexChange={setSegment} progress={pageProgress}>
+        <Page>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chips}
+              style={styles.chipRow}>
+              {/* The map is the second way to browse gyms — it must be visible in the
+                  Zallar segment itself, not only behind the header pin. */}
+              <Chip label={t('Xəritə')} icon="pin" tone="card" onPress={() => router.push('/(tabs)/discover/map')} />
+              <Chip
+                label={filterN > 0 ? t('Filtr · {n}', { n: filterN, count: filterN }) : t('Filtr')}
+                icon="sliders"
+                selected={filterN > 0}
+                onPress={() => router.push('/(tabs)/discover/filter')}
+              />
+              <Chip
+                label={t('2 km-ə qədər')}
+                tone="card"
+                selected={gymFilter.maxDistanceKm === 2}
+                onPress={() => setGymFilter({ maxDistanceKm: gymFilter.maxDistanceKm === 2 ? null : 2 })}
+              />
+              <Chip
+                label={t('50 ₼-dək')}
+                tone="card"
+                selected={gymFilter.maxPrice === 50}
+                onPress={() => setGymFilter({ maxPrice: gymFilter.maxPrice === 50 ? null : 50 })}
+              />
+              <Chip
+                label={t('24 saat')}
+                tone="card"
+                selected={gymFilter.hours === '24h'}
+                onPress={() => setGymFilter({ hours: gymFilter.hours === '24h' ? null : '24h' })}
+              />
+              {['Duş', 'Park'].map((a) => (
+                <Chip
+                  key={a}
+                  label={t(a)}
+                  tone="card"
+                  selected={gymFilter.amenities.includes(a)}
+                  onPress={() =>
+                    setGymFilter({
+                      amenities: gymFilter.amenities.includes(a)
+                        ? gymFilter.amenities.filter((x) => x !== a)
+                        : [...gymFilter.amenities, a],
+                    })
+                  }
+                />
+              ))}
+            </ScrollView>
+          {(visibleGyms.length === 0 ? (
+                      <EmptyBlock
+                        icon="pin"
+                        text={
+                          /* «Hələ zal yoxdur» is a claim about the catalogue. Until now it
+                             was also printed over a read that never landed — there was no
+                             failed branch for gyms at all. */
+                          gymsPhase === 'failed'
+                            ? t('Zallar yüklənmədi — bu, zal olmadığı demək deyil. Bağlantını yoxla və səhifəni yenidən aç.')
+                            : gymsPhase === 'loading'
+                              ? t('Zallar yüklənir…')
+                              : q || filterN > 0
+                                ? t('Bu axtarışa uyğun zal tapılmadı. Filtri sıfırla və ya başqa söz yaz.')
+                                : guest
+                                  ? /* A guest has no Profil tab — the other sentence
+                                       sent them to a screen they cannot reach. */
+                                    t('Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, daxil ol və zalını əlavə et.')
+                                  : t('Hələ heç bir zal SPOT-da qeydiyyatdan keçməyib. Zal sahibisənsə, Profil → Parametrlər → «Zal hesabı yarat» ilə özün əlavə edə bilərsən.')
+                        }
+                        /* «Xəritədə bax» over an empty catalogue opened a map with nothing
+                           on it. Only offered when the list is empty because of a filter
+                           or a failed read, where the map can still say something. */
+                        action={
+                          q || filterN > 0 || gymsPhase === 'failed'
+                            ? { label: t('Xəritədə bax'), onPress: () => router.push('/(tabs)/discover/map') }
+                            : guest
+                              ? { label: t('Daxil ol'), onPress: () => router.push('/onboarding/welcome') }
+                              : undefined
+                        }
+                      />
+                    ) : (
+                      <>
+                        {homeGym ? (
+                          <>
+                            {/* Only a count the server really reported may appear here. */}
+                            {homeGym.liveCount > 0 ? (
+                              <View style={styles.liveRow}>
+                                <LiveDot />
+                                <AppText style={styles.liveLabel}>
+                                  {t('İNDİ ZALDA {n} NƏFƏR · {gym}', {
+                                    n: homeGym.liveCount,
+                                    count: homeGym.liveCount,
+                                    gym: azUpper(homeGym.name),
+                                  })}
+                                </AppText>
+                              </View>
+                            ) : null}
+                            <GymCard
+                              gym={homeGym}
+                              variant="hero"
+                              onPress={() => router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: homeGym.id } })}
+                            />
+                            <View style={{ height: 14 }} />
+                          </>
+                        ) : !homeGymId && !guest ? (
+                          /* Only when no gym was ever chosen — a home gym hidden by the current
+                             filter/search must not be reported as "not chosen".
+                             And never to a guest: they have no profile to set it on, the
+                             Profil tab it pushed into is hidden from them, and the reason
+                             it gives («yoldaşlar zala görə tapılır») is about a section a
+                             guest does not have either. */
+                          <PressableScale activeScale={0.98} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.weeklyBanner}>
+                            <View style={styles.weeklyIcon}>
+                              <Icon name="pin" size={18} color={palette.voltDeep} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <AppText variant="headline">{t('Əsas zalın seçilməyib')}</AppText>
+                              <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2, lineHeight: 18 }}>
+                                {t('Zalını seç — yoldaşlar zala görə tapılır.')}
+                              </AppText>
+                            </View>
+                            <Icon name="chevR" size={18} color={palette.tertiary} />
+                          </PressableScale>
+                        ) : null}
+                        {otherGyms.map((g) => (
+                          <View key={g.id} style={{ marginBottom: 12 }}>
+                            <GymCard
+                              gym={g}
+                              variant="compact"
+                              onPress={() => router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: g.id } })}
+                            />
+                          </View>
+                        ))}
+                      </>
+                    ))}
+        </Page>
+        <Page>
+          {(visibleTrainers.length === 0 ? (
+                      /* A read that never reached the server is not «there are none» —
+                         see lib/focusFetch. Without this the app states a fact about the
+                         world every time the connection wobbles. */
+                      <EmptyBlock
+                        icon="user"
+                        text={
+                          trainerPhase === 'failed'
+                            ? t('Müəllimlər yüklənmədi — serverlə əlaqə alınmadı. Bu, müəllim olmadığı demək deyil.')
+                            : q
+                              ? t('Bu ada uyğun müəllim tapılmadı.')
+                              : t('Hələ müəllim yoxdur. Zalını seç — müəllimlər orada görünəcək.')
+                        }
+                      />
+                    ) : (
+                      visibleTrainers.map((t) => (
+                        <TrainerRow
+                          key={t.id}
+                          trainer={t}
+                          onPress={() => router.push({ pathname: '/(tabs)/discover/trainer/[id]', params: { id: t.id } })}
+                        />
+                      ))
+                    ))}
+        </Page>
+        {/* A guest has no Yoldaşlar — see the segment above. */}
+        {guest ? null : (
+          <Page>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chips}
+                style={styles.chipRow}>
+                <Chip
+                  label={partnerFilterN > 0 ? t('Filtr · {n}', { n: partnerFilterN, count: partnerFilterN }) : t('Filtr')}
+                  icon="sliders"
+                  selected={partnerFilterN > 0}
+                  onPress={() => router.push('/(tabs)/discover/partner-filter')}
+                />
+                <Chip label={t('Kartlar')} icon="grid" tone="card" onPress={() => router.push('/(tabs)/discover/cards')} />
+                {pendingOut > 0 ? (
+                  <Chip
+                    label={t('Gözləyən təklif · {n}', { n: pendingOut, count: pendingOut })}
+                    tone="card"
+                    onPress={() => router.push('/chat/requests')}
                   />
-                  <View style={{ height: 14 }} />
-                </>
-              ) : !homeGymId && !guest ? (
-                /* Only when no gym was ever chosen — a home gym hidden by the current
-                   filter/search must not be reported as "not chosen".
-                   And never to a guest: they have no profile to set it on, the
-                   Profil tab it pushed into is hidden from them, and the reason
-                   it gives («yoldaşlar zala görə tapılır») is about a section a
-                   guest does not have either. */
-                <PressableScale activeScale={0.98} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.weeklyBanner}>
+                ) : null}
+              </ScrollView>
+            <>
+              {weeklyCount > 0 ? (
+                <PressableScale activeScale={0.98} onPress={() => router.push('/(tabs)/discover/weekly')} style={styles.weeklyBanner}>
                   <View style={styles.weeklyIcon}>
-                    <Icon name="pin" size={18} color={palette.voltDeep} />
+                    <Icon name="star" size={18} color={palette.voltDeep} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <AppText variant="headline">{t('Əsas zalın seçilməyib')}</AppText>
-                    <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2, lineHeight: 18 }}>
-                      {t('Zalını seç — yoldaşlar zala görə tapılır.')}
+                    <AppText variant="headline">{t('{n} həftəlik təklif', { n: weeklyCount, count: weeklyCount })}</AppText>
+                    <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2 }}>
+                      {t('Bu həftənin ən uyğun yoldaşları')}
                     </AppText>
                   </View>
                   <Icon name="chevR" size={18} color={palette.tertiary} />
                 </PressableScale>
               ) : null}
-              {otherGyms.map((g) => (
-                <View key={g.id} style={{ marginBottom: 12 }}>
-                  <GymCard
-                    gym={g}
-                    variant="compact"
-                    onPress={() => router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: g.id } })}
-                  />
-                </View>
-              ))}
-            </>
-          ))}
 
-        {segment === 1 &&
-          (visibleTrainers.length === 0 ? (
-            /* A read that never reached the server is not «there are none» —
-               see lib/focusFetch. Without this the app states a fact about the
-               world every time the connection wobbles. */
-            <EmptyBlock
-              icon="user"
-              text={
-                trainerPhase === 'failed'
-                  ? t('Müəllimlər yüklənmədi — serverlə əlaqə alınmadı. Bu, müəllim olmadığı demək deyil.')
-                  : q
-                    ? t('Bu ada uyğun müəllim tapılmadı.')
-                    : t('Hələ müəllim yoxdur. Zalını seç — müəllimlər orada görünəcək.')
-              }
-            />
-          ) : (
-            visibleTrainers.map((t) => (
-              <TrainerRow
-                key={t.id}
-                trainer={t}
-                onPress={() => router.push({ pathname: '/(tabs)/discover/trainer/[id]', params: { id: t.id } })}
-              />
-            ))
-          ))}
-
-        {segment === 2 && (
-          <>
-            {weeklyCount > 0 ? (
-              <PressableScale activeScale={0.98} onPress={() => router.push('/(tabs)/discover/weekly')} style={styles.weeklyBanner}>
-                <View style={styles.weeklyIcon}>
-                  <Icon name="star" size={18} color={palette.voltDeep} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <AppText variant="headline">{t('{n} həftəlik təklif', { n: weeklyCount, count: weeklyCount })}</AppText>
-                  <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2 }}>
-                    {t('Bu həftənin ən uyğun yoldaşları')}
+              {savedPartners.length > 0 ? (
+                <>
+                  <AppText variant="overline" color={palette.caption} style={{ marginBottom: 10 }}>
+                    {savedPhase === 'ready'
+                      ? t('Saxlanılanlar · {n}', { n: saved.length, count: saved.length })
+                      : t('Saxlanılanlar')}
                   </AppText>
-                </View>
-                <Icon name="chevR" size={18} color={palette.tertiary} />
-              </PressableScale>
-            ) : null}
-
-            {savedPartners.length > 0 ? (
-              <>
-                <AppText variant="overline" color={palette.caption} style={{ marginBottom: 10 }}>
-                  {savedPhase === 'ready'
-                    ? t('Saxlanılanlar · {n}', { n: saved.length, count: saved.length })
-                    : t('Saxlanılanlar')}
-                </AppText>
-                {saved.map((p) => (
-                  <PartnerRow
-                    key={`saved-${p.id}`}
-                    partner={p}
-                    onPress={() => router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: p.id } })}
-                  />
-                ))}
-                {savedPhase === 'loading' && saved.length === 0 ? (
-                  <AppText variant="footnote" color={palette.caption} style={{ paddingVertical: 10, lineHeight: 18 }}>
-                    {t('Saxladıqların yüklənir…')}
-                  </AppText>
-                ) : null}
-                {savedPhase === 'error' ? (
-                  <AppText variant="footnote" color={palette.caption} style={{ paddingVertical: 10, lineHeight: 18 }}>
-                    {hasSupabaseConfig
-                      ? t('Saxladıqların yüklənmədi — internet bağlantısını yoxla və bu səhifəni yenidən aç.')
-                      : t('Bu quraşdırmada server bağlantısı yoxdur — saxladığın profilləri oxuya bilmirik.')}
-                  </AppText>
-                ) : null}
-                {savedPhase === 'ready' && saved.length === 0 ? (
-                  <AppText variant="footnote" color={palette.caption} style={{ paddingVertical: 10, lineHeight: 18 }}>
-                    {t('Saxladığın profillər artıq görünmür — profillərini gizlədiblər və ya hesabları yoxdur.')}
-                  </AppText>
-                ) : null}
-                <View style={{ height: 8 }} />
-              </>
-            ) : null}
-
-            {!homeGymId ? (
-              <EmptyBlock
-                icon="pin"
-                text={t('Zalını seç — yoldaşlar zala görə tapılır.')}
-                action={{ label: t('Zalını seç'), onPress: () => router.push('/(tabs)/profile/edit') }}
-              />
-            ) : (
-              <>
-                <AppText variant="subhead" color={palette.textSecondary} style={{ marginBottom: 10 }}>
-                  {t('Uyğun yoldaşlar · səbəb etiketləri ilə')}
-                </AppText>
-                {visiblePartners.length === 0 ? (
-                  <EmptyBlock
-                    icon="users"
-                    text={
-                      partnerPhase === 'failed'
-                        ? t('Yoldaşlar yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda kimsə olmadığı demək deyil.')
-                        : q
-                          ? t('Bu axtarışa uyğun yoldaş yoxdur.')
-                          : partnerFilterN > 0
-                            ? t('Seçdiyin filtrə uyğun yoldaş yoxdur. Filtri yumşalt.')
-                            : t('Bu zalda hələ uyğun yoldaş yoxdur. Başqa zal seç və ya profilini tamamla.')
-                    }
-                  />
-                ) : (
-                  visiblePartners.map((p) => (
+                  {saved.map((p) => (
                     <PartnerRow
-                      key={p.id}
+                      key={`saved-${p.id}`}
                       partner={p}
                       onPress={() => router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: p.id } })}
                     />
-                  ))
-                )}
-              </>
-            )}
-          </>
+                  ))}
+                  {savedPhase === 'loading' && saved.length === 0 ? (
+                    <AppText variant="footnote" color={palette.caption} style={{ paddingVertical: 10, lineHeight: 18 }}>
+                      {t('Saxladıqların yüklənir…')}
+                    </AppText>
+                  ) : null}
+                  {savedPhase === 'error' ? (
+                    <AppText variant="footnote" color={palette.caption} style={{ paddingVertical: 10, lineHeight: 18 }}>
+                      {hasSupabaseConfig
+                        ? t('Saxladıqların yüklənmədi — internet bağlantısını yoxla və bu səhifəni yenidən aç.')
+                        : t('Bu quraşdırmada server bağlantısı yoxdur — saxladığın profilləri oxuya bilmirik.')}
+                    </AppText>
+                  ) : null}
+                  {savedPhase === 'ready' && saved.length === 0 ? (
+                    <AppText variant="footnote" color={palette.caption} style={{ paddingVertical: 10, lineHeight: 18 }}>
+                      {t('Saxladığın profillər artıq görünmür — profillərini gizlədiblər və ya hesabları yoxdur.')}
+                    </AppText>
+                  ) : null}
+                  <View style={{ height: 8 }} />
+                </>
+              ) : null}
+
+              {!homeGymId ? (
+                <EmptyBlock
+                  icon="pin"
+                  text={t('Zalını seç — yoldaşlar zala görə tapılır.')}
+                  action={{ label: t('Zalını seç'), onPress: () => router.push('/(tabs)/profile/edit') }}
+                />
+              ) : (
+                <>
+                  <AppText variant="subhead" color={palette.textSecondary} style={{ marginBottom: 10 }}>
+                    {t('Uyğun yoldaşlar · səbəb etiketləri ilə')}
+                  </AppText>
+                  {visiblePartners.length === 0 ? (
+                    <EmptyBlock
+                      icon="users"
+                      text={
+                        partnerPhase === 'failed'
+                          ? t('Yoldaşlar yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda kimsə olmadığı demək deyil.')
+                          : q
+                            ? t('Bu axtarışa uyğun yoldaş yoxdur.')
+                            : partnerFilterN > 0
+                              ? t('Seçdiyin filtrə uyğun yoldaş yoxdur. Filtri yumşalt.')
+                              : t('Bu zalda hələ uyğun yoldaş yoxdur. Başqa zal seç və ya profilini tamamla.')
+                      }
+                    />
+                  ) : (
+                    visiblePartners.map((p) => (
+                      <PartnerRow
+                        key={p.id}
+                        partner={p}
+                        onPress={() => router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: p.id } })}
+                      />
+                    ))
+                  )}
+                </>
+              )}
+            </>
+          </Page>
         )}
-      </ScrollView>
+      </SwipePager>
     </Screen>
+  );
+}
+
+/* One page of the Kəşf pager: its own vertical list.
+   iOS 26: the Liquid Glass tab bar floats over it, and at RN's default («never»)
+   the last card ended under the glass. «automatic» lets UIKit add the tab bar's
+   safe area at the bottom. Nothing is added at the top: the page starts below the
+   header. iOS-only prop; Android's bar reserves its own space. */
+function Page({ children }: { children: ReactNode }) {
+  return (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled">
+      {children}
+    </ScrollView>
   );
 }
 
@@ -597,6 +612,8 @@ const styles = StyleSheet.create({
      glyph on the left) and only the touch area grows. Same as the Proqramlar search. */
   clearBtn: { width: 44, height: 44, marginRight: -10, paddingRight: 10, alignItems: 'flex-end', justifyContent: 'center' },
   chips: { paddingHorizontal: spacing.screen, gap: 7 },
+  // flexGrow 0: a ScrollView grows by default and would take the page's height.
+  chipRow: { marginHorizontal: -spacing.screen, marginBottom: 14, flexGrow: 0 },
   content: { paddingHorizontal: spacing.screen, paddingTop: 14, paddingBottom: 40 },
   liveRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 },
   liveLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.6, color: palette.voltDeep },

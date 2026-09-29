@@ -4,6 +4,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Linking, Platform, ScrollView, Share, StatusBar, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSharedValue } from 'react-native-reanimated';
 
 import { Icon } from '@/components/Icon';
 import { GymImage } from '@/components/GymImage';
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
+import { SwipeSwitch } from '@/components/ui/SwipeSwitch';
 import { Tag } from '@/components/ui/Tag';
 import { Gym, Partner } from '@/data/types';
 import { createDayPass, DayPass, getGym, getMyDayPass, getMyProfile, getWhoIsHere, type GymDetail as GymRow } from '@/lib/api';
@@ -29,7 +31,7 @@ import { useFormat, useT } from '@/lib/useT';
 import { gymById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 
 /** Local wall-clock HH:MM — the pass expiry is stored as a real timestamp. */
 const hhmm = (iso: string) => {
@@ -226,6 +228,8 @@ export default function GymDetail() {
   const SEGS: Seg[] =
     guest || !showMembers ? ['Haqqında', 'Müəllimlər', 'Rəylər'] : ['Haqqında', 'Müəllimlər', 'Üzvlər', 'Rəylər'];
   const tab: Seg = SEGS.includes(picked) ? picked : 'Haqqında';
+  // The tab position as a float — the segment's thumb follows a swipe on the content.
+  const tabProgress = useSharedValue(SEGS.indexOf(tab));
 
   const base = remote ?? seedGym;
   /* Only the server can say how many people are in a gym. `gymLiveCount` reports
@@ -532,7 +536,7 @@ export default function GymDetail() {
         accessibilityRole="button"
         accessibilityLabel={t('Geri')}
         style={styles.circleBtn}>
-        <Icon name="chevL" size={24} color={palette.inkText} />
+        <Icon name="chevL" size={iconSize.inCircle} color={palette.inkText} />
       </PressableScale>
       <View style={styles.heroRight}>
         <PressableScale
@@ -548,7 +552,7 @@ export default function GymDetail() {
           accessibilityRole="button"
           accessibilityLabel={t('Zalı paylaş')}
           style={styles.circleBtn}>
-          <Icon name="share" size={22} color={palette.inkText} />
+          <Icon name="share" size={iconSize.inCircle} color={palette.inkText} />
         </PressableScale>
         {/* Saved = the filled glyph, as on the feed. A colour change alone on an
             outline was easy to miss on the translucent circle. */}
@@ -559,7 +563,7 @@ export default function GymDetail() {
           accessibilityLabel={t('Yadda saxla')}
           accessibilityState={{ selected: saved }}
           style={styles.circleBtn}>
-          <Icon name={saved ? 'bookmarkOn' : 'bookmark'} size={22} color={saved ? palette.voltDeep : palette.inkText} />
+          <Icon name={saved ? 'bookmarkOn' : 'bookmark'} size={iconSize.inCircle} color={saved ? palette.voltDeep : palette.inkText} />
         </PressableScale>
         <PressableScale
           activeScale={0.9}
@@ -567,7 +571,7 @@ export default function GymDetail() {
           accessibilityRole="button"
           accessibilityLabel={t('Digər seçimlər')}
           style={styles.circleBtn}>
-          <Icon name="more" size={22} color={palette.inkText} />
+          <Icon name="more" size={iconSize.inCircle} color={palette.inkText} />
         </PressableScale>
       </View>
     </View>
@@ -790,347 +794,356 @@ export default function GymDetail() {
             ) : null}
 
             <View style={{ marginTop: 16 }}>
-              <Segmented options={SEGS.map((s) => t(s))} value={SEGS.indexOf(tab)} onChange={(i) => setPicked(SEGS[i])} />
+              <Segmented options={SEGS.map((s) => t(s))} value={SEGS.indexOf(tab)} onChange={(i) => setPicked(SEGS[i])} progress={tabProgress} />
             </View>
 
-            <View style={{ marginTop: 16 }}>
-              {tab === 'Haqqında' && (
-                <>
-                  {gym.about ? (
-                    <AppText variant="body" color={palette.text3} style={{ lineHeight: 22 }}>
-                      {gym.about}
-                    </AppText>
-                  ) : null}
-                  <View style={styles.infoRow}>
-                    <InfoCard icon="clock" title={gym.hours} sub={t('iş saatı')} />
-                    {/* `gyms.trainers` is a seeded column nothing maintains — it claimed
-                        «9 müəllim» on a gym whose Müəllimlər tab correctly says there are
-                        none. The count comes from the real trainer rows this screen
-                        already fetched, and a figure appears only when it is real: a
-                        zero here is an absence, not a measurement. */}
-                    {gym.members > 0 || gymTrainers.length > 0 ? (
-                      <InfoCard
-                        icon="users"
-                        title={
-                          gym.members > 0
-                            ? t('{n} üzv', { n: gym.members, count: gym.members })
-                            : t('{n} müəllim', { n: gymTrainers.length, count: gymTrainers.length })
+            {/* The tab content follows a sideways swipe (components/ui/SwipeSwitch) and
+                the segment's thumb follows the finger. It could only be changed by
+                tapping the segment before. */}
+            <SwipeSwitch
+              index={SEGS.indexOf(tab)}
+              count={SEGS.length}
+              onIndexChange={(i) => setPicked(SEGS[i])}
+              progress={tabProgress}>
+              <View style={{ marginTop: 16 }}>
+                {tab === 'Haqqında' && (
+                  <>
+                    {gym.about ? (
+                      <AppText variant="body" color={palette.text3} style={{ lineHeight: 22 }}>
+                        {gym.about}
+                      </AppText>
+                    ) : null}
+                    <View style={styles.infoRow}>
+                      <InfoCard icon="clock" title={gym.hours} sub={t('iş saatı')} />
+                      {/* `gyms.trainers` is a seeded column nothing maintains — it claimed
+                          «9 müəllim» on a gym whose Müəllimlər tab correctly says there are
+                          none. The count comes from the real trainer rows this screen
+                          already fetched, and a figure appears only when it is real: a
+                          zero here is an absence, not a measurement. */}
+                      {gym.members > 0 || gymTrainers.length > 0 ? (
+                        <InfoCard
+                          icon="users"
+                          title={
+                            gym.members > 0
+                              ? t('{n} üzv', { n: gym.members, count: gym.members })
+                              : t('{n} müəllim', { n: gymTrainers.length, count: gymTrainers.length })
+                          }
+                          sub={
+                            gym.members > 0 && gymTrainers.length > 0
+                              ? t('{n} müəllim', { n: gymTrainers.length, count: gymTrainers.length })
+                              : t('SPOT-da qeydiyyatlı')
+                          }
+                        />
+                      ) : null}
+                      <InfoCard icon="pin" title={gym.district} sub={t('Yol göstər')} onPress={openDirections} />
+                    </View>
+                    {/* Real photos the gym uploaded — nothing is shown when there are none. */}
+                    {photos.length > 0 ? (
+                      <>
+                        <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
+                          {t('Şəkillər · {n}', { n: photos.length, count: photos.length })}
+                        </AppText>
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={{ gap: 8 }}
+                          style={{ marginHorizontal: -spacing.screen, paddingHorizontal: spacing.screen }}>
+                          {photos.map((uri) => (
+                            <Image key={uri} source={{ uri }} style={styles.photo} contentFit="cover" transition={180} />
+                          ))}
+                        </ScrollView>
+                      </>
+                    ) : null}
+
+                    {/* Location — only drawn when the gym was actually pinned on the map. */}
+                    {coords ? (
+                      <>
+                        <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
+                          {t('Yeri')}
+                        </AppText>
+                        <PressableScale
+                          activeScale={0.98}
+                          onPress={openDirections}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('{name} — yol göstər', { name: gym.name })}
+                          style={styles.mapCard}>
+                          {/* preview only: touches go to the card, not into the map */}
+                          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                            <SpotMap
+                              markers={[{ id: gym.id, lat: coords.lat, lng: coords.lng, title: gym.name, subtitle: gym.district, active: true }]}
+                              center={coords}
+                              zoom={15}
+                              preview
+                              style={styles.mapFill}
+                            />
+                          </View>
+                          <View style={styles.mapCta}>
+                            <Icon name="pin" size={15} color={palette.inkText} />
+                            <AppText style={styles.mapCtaText}>{t('Yol göstər')}</AppText>
+                          </View>
+                        </PressableScale>
+                      </>
+                    ) : null}
+
+                    {/* The class timetable, as the gym's own owner typed it into
+                        `/gym/classes`. It has been saved to `gyms.schedule` since
+                        schema7 and nothing customer-facing ever read it back, so
+                        an owner could fill in a whole week and be the only person
+                        alive who could see it. Nothing is drawn when the array is
+                        empty — an unwritten timetable is not «no classes». */}
+                    {schedule.length > 0 ? (
+                      <>
+                        <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
+                          {t('Cədvəl')}
+                        </AppText>
+                        <View style={{ gap: 9 }}>
+                          {schedule.map((c, i) => (
+                            <View key={`${c.time}-${c.name}-${i}`} style={styles.classRow}>
+                              <AppText style={styles.classTime}>{c.time}</AppText>
+                              <View style={styles.classDiv} />
+                              <View style={{ flex: 1 }}>
+                                <AppText style={{ fontSize: 15, fontWeight: '600' }}>{c.name}</AppText>
+                                {/* The trainer field is optional in the owner panel;
+                                    a blank line under the class name would read as a
+                                    name we failed to load. */}
+                                {c.trainer ? (
+                                  <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>{c.trainer}</AppText>
+                                ) : null}
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                        {/* Said plainly, because a timetable looks like something you
+                            can tap to book: SPOT has no places, no queue and no
+                            booking, so it must not imply one. */}
+                        <AppText variant="caption" color={palette.caption} style={{ marginTop: 9, lineHeight: 17 }}>
+                          {t('Cədvəli zalın özü yazır. Dərsə yazılma SPOT-da yoxdur — yer üçün zalla danış.')}
+                        </AppText>
+                      </>
+                    ) : null}
+
+                    {gym.amenities.length > 0 ? (
+                      <>
+                        <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
+                          {t('İmkanlar')}
+                        </AppText>
+                        <View style={styles.amenities}>
+                          {gym.amenities.map((a) => (
+                            <Tag key={a} label={t(a)} />
+                          ))}
+                        </View>
+                      </>
+                    ) : null}
+                  </>
+                )}
+
+                {tab === 'Müəllimlər' && (
+                  <View>
+                    {gymTrainers.length === 0 ? (
+                      /* «Bu zalda hələ müəllim yoxdur» is a statement about the gym.
+                         When the request failed it is a statement about our own
+                         connection, and it sends a customer away from a coach who
+                         is right there. The reviews tab on this same screen already
+                         drew the distinction; the trainer and member tabs did not. */
+                      <EmptyState
+                        icon={trainersPhase === 'failed' ? 'x' : 'user'}
+                        text={
+                          trainersPhase === 'failed'
+                            ? t('Müəllimlər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda müəllim olmadığı demək deyil.')
+                            : trainersPhase === 'loading'
+                              ? t('Müəllimlər yüklənir…')
+                              : t('Bu zalda hələ SPOT-da qeydiyyatdan keçmiş müəllim yoxdur.')
                         }
-                        sub={
-                          gym.members > 0 && gymTrainers.length > 0
-                            ? t('{n} müəllim', { n: gymTrainers.length, count: gymTrainers.length })
-                            : t('SPOT-da qeydiyyatlı')
+                      />
+                    ) : (
+                      gymTrainers.map((t) => (
+                        <TrainerRow key={t.id} trainer={t} onPress={() => router.push({ pathname: '/(tabs)/discover/trainer/[id]', params: { id: t.id } })} />
+                      ))
+                    )}
+                  </View>
+                )}
+
+                {tab === 'Üzvlər' && (
+                  <View>
+                    {members.length === 0 ? (
+                      <EmptyState
+                        icon={membersPhase === 'failed' ? 'x' : 'users'}
+                        text={
+                          membersPhase === 'failed'
+                            ? t('Üzvlər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda istifadəçi olmadığı demək deyil.')
+                            : membersPhase === 'loading'
+                              ? t('Üzvlər yüklənir…')
+                              : t('Bu zalda hələ SPOT istifadəçisi yoxdur. Birinci sən ol — check-in et.')
+                        }
+                      />
+                    ) : (
+                      <>
+                        <View style={styles.hintRow}>
+                          <Icon name="msg" size={15} color={palette.textSecondary} />
+                          <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 18 }}>
+                            {t('Bu zalı öz zalı seçən istifadəçilər. Uyğunluq sənin cədvəlinə görə hesablanır.')}
+                          </AppText>
+                        </View>
+                        {members.map((p) => (
+                          <PartnerRow key={p.id} partner={p} onPress={() => router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: p.id } })} />
+                        ))}
+                      </>
+                    )}
+                  </View>
+                )}
+
+                {tab === 'Rəylər' && (
+                  <View>
+                    {/* Already reviewed → no compose button. The database allows one
+                        review per person per gym, so the button could only produce a
+                        refusal that the person had to read to find that out. */}
+                    {iAlreadyReviewed ? (
+                      <View style={styles.gateCard}>
+                        <Icon name="check" size={18} color={palette.voltDeep} />
+                        <View style={{ flex: 1 }}>
+                          <AppText variant="callout">{t('Bu zala rəyini yazmısan')}</AppText>
+                          <AppText variant="footnote" color={palette.caption} style={{ marginTop: 3, lineHeight: 18 }}>
+                            {t('Hər zala bir rəy yazmaq olar — rəyin aşağıdakı siyahıdadır.')}
+                          </AppText>
+                        </View>
+                      </View>
+                    ) : /* 3-check-in gate — only real gym-goers can review (prevents fake reviews) */
+                    myCheckins >= 3 ? (
+                      composing ? (
+                        <View style={styles.composeCard}>
+                          <AppText variant="headline">{t('Rəyin')}</AppText>
+                          <View style={styles.starRow}>
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <PressableScale
+                                key={s}
+                                activeScale={0.85}
+                                onPress={() => setRating(s)}
+                                accessibilityRole="button"
+                                accessibilityLabel={t('{n} ulduz', { n: s, count: s })}
+                                accessibilityState={{ selected: s <= rating }}
+                                style={styles.starBtn}>
+                                <Icon name="star" size={32} color={s <= rating ? palette.streak : palette.separator} />
+                              </PressableScale>
+                            ))}
+                          </View>
+                          <TextInput
+                            value={reviewText}
+                            onChangeText={setReviewText}
+                            placeholder={t('Təcrübəni yaz…')}
+                            placeholderTextColor={palette.caption}
+                            multiline
+                            style={styles.reviewInput}
+                          />
+                          <View style={{ flexDirection: 'row', gap: 9 }}>
+                            <Button title={t('Ləğv et')} variant="secondary" onPress={() => setComposing(false)} style={{ flex: 1, height: 44 }} />
+                            <Button
+                              title={savingReview ? t('Göndərilir…') : t('Göndər')}
+                              disabled={savingReview || !reviewText.trim()}
+                              onPress={submitReview}
+                              style={{ flex: 1, height: 44 }}
+                            />
+                          </View>
+                        </View>
+                      ) : (
+                        <Button title={t('Rəy yaz')} icon="edit" full onPress={() => setComposing(true)} style={{ marginBottom: 14 }} />
+                      )
+                    ) : (
+                      <View style={styles.gateCard}>
+                        <Icon name="lock" size={18} color={palette.textSecondary} />
+                        <View style={{ flex: 1 }}>
+                          <AppText variant="callout">
+                            {t('Rəy yazmaq üçün {n} check-in qalıb', { n: 3 - myCheckins, count: 3 - myCheckins })}
+                          </AppText>
+                          <AppText variant="footnote" color={palette.caption} style={{ marginTop: 3, lineHeight: 18 }}>
+                            {t('Yalnız bu zalda ən azı 3 dəfə check-in edən rəy yaza bilər — saxta rəylərin qarşısını alır. ({n}/3)', {
+                              n: myCheckins,
+                            })}
+                          </AppText>
+                        </View>
+                      </View>
+                    )}
+
+                    {mineOnly.map((r, i) => (
+                      <View key={`mine-${i}`} style={styles.review}>
+                        <View style={styles.reviewHead}>
+                          <AppText variant="headline">{profileName}</AppText>
+                          <View style={{ flexDirection: 'row', gap: 2 }}>
+                            {Array.from({ length: 5 }).map((_, j) => (
+                              <Icon key={j} name="star" size={12} color={j < r.rating ? palette.streak : palette.separator} />
+                            ))}
+                          </View>
+                        </View>
+                        {/* A verification-style shield on a row the gym never received
+                            read as «your review is live here». These are the copies
+                            that only exist on this phone, so they say so. */}
+                        <View style={styles.tenure}>
+                          <Icon name="clock" size={12} color={palette.textSecondary} />
+                          <AppText style={{ fontSize: 11, fontWeight: '600', color: palette.textSecondary }}>
+                            {t('Yalnız sənin cihazında — zala göndərilməyib')}
+                          </AppText>
+                        </View>
+                        <AppText variant="body" color={palette.text3} style={{ marginTop: 8, lineHeight: 21 }}>
+                          {r.text}
+                        </AppText>
+                      </View>
+                    ))}
+
+                    {reviews.map((r) => (
+                      <View key={r.id} style={styles.review}>
+                        <View style={styles.reviewHead}>
+                          <AppText variant="headline">{reviewerName(r.name, t)}</AppText>
+                          <View style={{ flexDirection: 'row', gap: 2 }}>
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Icon key={i} name="star" size={12} color={i < r.rating ? palette.streak : palette.separator} />
+                            ))}
+                          </View>
+                        </View>
+                        {tenureLabel(r.tenure, t) ? (
+                          <View style={styles.tenure}>
+                            <Icon name="shield" size={12} color={palette.voltDeep} />
+                            <AppText style={{ fontSize: 11, fontWeight: '600', color: palette.voltDeep }}>{tenureLabel(r.tenure, t)}</AppText>
+                          </View>
+                        ) : null}
+                        <AppText variant="body" color={palette.text3} style={{ marginTop: 8, lineHeight: 21 }}>
+                          {r.text}
+                        </AppText>
+                        {/* The gym's official answer. It is written on the owner
+                            panel (gym/reviews.tsx) and, until now, read there and
+                            nowhere else — the person it was addressed to never saw
+                            it. Same card as the owner's own view, so both sides
+                            read the same words. */}
+                        {r.reply ? (
+                          <View style={styles.reply}>
+                            <AppText style={{ fontSize: 12, fontWeight: '700', color: palette.blue }}>
+                              {t('{gym} · rəsmi cavab', { gym: gym.name })}{r.replyAt && dayLabel(r.replyAt) ? ` · ${dayLabel(r.replyAt)}` : ''}
+                            </AppText>
+                            <AppText variant="footnote" color={palette.text3} style={{ marginTop: 4, lineHeight: 18 }}>
+                              {r.reply}
+                            </AppText>
+                          </View>
+                        ) : null}
+                      </View>
+                    ))}
+
+                    {reviewsFailed ? (
+                      <EmptyState
+                        icon="x"
+                        text={t('Rəylər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda rəy olmadığı demək deyil.')}
+                      />
+                    ) : reviewsLoaded && totalReviews === 0 && mineOnly.length === 0 ? (
+                      <EmptyState
+                        icon="star"
+                        text={
+                          myCheckins >= 3
+                            ? t('Hələ rəy yoxdur — ilk rəyi sən yaz.')
+                            : t('Hələ rəy yoxdur. Bu zalda 3 check-in etdikdən sonra ilk rəyi sən yaza bilərsən.')
                         }
                       />
                     ) : null}
-                    <InfoCard icon="pin" title={gym.district} sub={t('Yol göstər')} onPress={openDirections} />
                   </View>
-                  {/* Real photos the gym uploaded — nothing is shown when there are none. */}
-                  {photos.length > 0 ? (
-                    <>
-                      <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
-                        {t('Şəkillər · {n}', { n: photos.length, count: photos.length })}
-                      </AppText>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ gap: 8 }}
-                        style={{ marginHorizontal: -spacing.screen, paddingHorizontal: spacing.screen }}>
-                        {photos.map((uri) => (
-                          <Image key={uri} source={{ uri }} style={styles.photo} contentFit="cover" transition={180} />
-                        ))}
-                      </ScrollView>
-                    </>
-                  ) : null}
-
-                  {/* Location — only drawn when the gym was actually pinned on the map. */}
-                  {coords ? (
-                    <>
-                      <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
-                        {t('Yeri')}
-                      </AppText>
-                      <PressableScale
-                        activeScale={0.98}
-                        onPress={openDirections}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('{name} — yol göstər', { name: gym.name })}
-                        style={styles.mapCard}>
-                        {/* preview only: touches go to the card, not into the map */}
-                        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-                          <SpotMap
-                            markers={[{ id: gym.id, lat: coords.lat, lng: coords.lng, title: gym.name, subtitle: gym.district, active: true }]}
-                            center={coords}
-                            zoom={15}
-                            preview
-                            style={styles.mapFill}
-                          />
-                        </View>
-                        <View style={styles.mapCta}>
-                          <Icon name="pin" size={15} color={palette.inkText} />
-                          <AppText style={styles.mapCtaText}>{t('Yol göstər')}</AppText>
-                        </View>
-                      </PressableScale>
-                    </>
-                  ) : null}
-
-                  {/* The class timetable, as the gym's own owner typed it into
-                      `/gym/classes`. It has been saved to `gyms.schedule` since
-                      schema7 and nothing customer-facing ever read it back, so
-                      an owner could fill in a whole week and be the only person
-                      alive who could see it. Nothing is drawn when the array is
-                      empty — an unwritten timetable is not «no classes». */}
-                  {schedule.length > 0 ? (
-                    <>
-                      <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
-                        {t('Cədvəl')}
-                      </AppText>
-                      <View style={{ gap: 9 }}>
-                        {schedule.map((c, i) => (
-                          <View key={`${c.time}-${c.name}-${i}`} style={styles.classRow}>
-                            <AppText style={styles.classTime}>{c.time}</AppText>
-                            <View style={styles.classDiv} />
-                            <View style={{ flex: 1 }}>
-                              <AppText style={{ fontSize: 15, fontWeight: '600' }}>{c.name}</AppText>
-                              {/* The trainer field is optional in the owner panel;
-                                  a blank line under the class name would read as a
-                                  name we failed to load. */}
-                              {c.trainer ? (
-                                <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 4 }}>{c.trainer}</AppText>
-                              ) : null}
-                            </View>
-                          </View>
-                        ))}
-                      </View>
-                      {/* Said plainly, because a timetable looks like something you
-                          can tap to book: SPOT has no places, no queue and no
-                          booking, so it must not imply one. */}
-                      <AppText variant="caption" color={palette.caption} style={{ marginTop: 9, lineHeight: 17 }}>
-                        {t('Cədvəli zalın özü yazır. Dərsə yazılma SPOT-da yoxdur — yer üçün zalla danış.')}
-                      </AppText>
-                    </>
-                  ) : null}
-
-                  {gym.amenities.length > 0 ? (
-                    <>
-                      <AppText variant="overline" color={palette.caption} style={{ marginTop: 20, marginBottom: 10 }}>
-                        {t('İmkanlar')}
-                      </AppText>
-                      <View style={styles.amenities}>
-                        {gym.amenities.map((a) => (
-                          <Tag key={a} label={t(a)} />
-                        ))}
-                      </View>
-                    </>
-                  ) : null}
-                </>
-              )}
-
-              {tab === 'Müəllimlər' && (
-                <View>
-                  {gymTrainers.length === 0 ? (
-                    /* «Bu zalda hələ müəllim yoxdur» is a statement about the gym.
-                       When the request failed it is a statement about our own
-                       connection, and it sends a customer away from a coach who
-                       is right there. The reviews tab on this same screen already
-                       drew the distinction; the trainer and member tabs did not. */
-                    <EmptyState
-                      icon={trainersPhase === 'failed' ? 'x' : 'user'}
-                      text={
-                        trainersPhase === 'failed'
-                          ? t('Müəllimlər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda müəllim olmadığı demək deyil.')
-                          : trainersPhase === 'loading'
-                            ? t('Müəllimlər yüklənir…')
-                            : t('Bu zalda hələ SPOT-da qeydiyyatdan keçmiş müəllim yoxdur.')
-                      }
-                    />
-                  ) : (
-                    gymTrainers.map((t) => (
-                      <TrainerRow key={t.id} trainer={t} onPress={() => router.push({ pathname: '/(tabs)/discover/trainer/[id]', params: { id: t.id } })} />
-                    ))
-                  )}
-                </View>
-              )}
-
-              {tab === 'Üzvlər' && (
-                <View>
-                  {members.length === 0 ? (
-                    <EmptyState
-                      icon={membersPhase === 'failed' ? 'x' : 'users'}
-                      text={
-                        membersPhase === 'failed'
-                          ? t('Üzvlər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda istifadəçi olmadığı demək deyil.')
-                          : membersPhase === 'loading'
-                            ? t('Üzvlər yüklənir…')
-                            : t('Bu zalda hələ SPOT istifadəçisi yoxdur. Birinci sən ol — check-in et.')
-                      }
-                    />
-                  ) : (
-                    <>
-                      <View style={styles.hintRow}>
-                        <Icon name="msg" size={15} color={palette.textSecondary} />
-                        <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 18 }}>
-                          {t('Bu zalı öz zalı seçən istifadəçilər. Uyğunluq sənin cədvəlinə görə hesablanır.')}
-                        </AppText>
-                      </View>
-                      {members.map((p) => (
-                        <PartnerRow key={p.id} partner={p} onPress={() => router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: p.id } })} />
-                      ))}
-                    </>
-                  )}
-                </View>
-              )}
-
-              {tab === 'Rəylər' && (
-                <View>
-                  {/* Already reviewed → no compose button. The database allows one
-                      review per person per gym, so the button could only produce a
-                      refusal that the person had to read to find that out. */}
-                  {iAlreadyReviewed ? (
-                    <View style={styles.gateCard}>
-                      <Icon name="check" size={18} color={palette.voltDeep} />
-                      <View style={{ flex: 1 }}>
-                        <AppText variant="callout">{t('Bu zala rəyini yazmısan')}</AppText>
-                        <AppText variant="footnote" color={palette.caption} style={{ marginTop: 3, lineHeight: 18 }}>
-                          {t('Hər zala bir rəy yazmaq olar — rəyin aşağıdakı siyahıdadır.')}
-                        </AppText>
-                      </View>
-                    </View>
-                  ) : /* 3-check-in gate — only real gym-goers can review (prevents fake reviews) */
-                  myCheckins >= 3 ? (
-                    composing ? (
-                      <View style={styles.composeCard}>
-                        <AppText variant="headline">{t('Rəyin')}</AppText>
-                        <View style={styles.starRow}>
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <PressableScale
-                              key={s}
-                              activeScale={0.85}
-                              onPress={() => setRating(s)}
-                              accessibilityRole="button"
-                              accessibilityLabel={t('{n} ulduz', { n: s, count: s })}
-                              accessibilityState={{ selected: s <= rating }}
-                              style={styles.starBtn}>
-                              <Icon name="star" size={32} color={s <= rating ? palette.streak : palette.separator} />
-                            </PressableScale>
-                          ))}
-                        </View>
-                        <TextInput
-                          value={reviewText}
-                          onChangeText={setReviewText}
-                          placeholder={t('Təcrübəni yaz…')}
-                          placeholderTextColor={palette.caption}
-                          multiline
-                          style={styles.reviewInput}
-                        />
-                        <View style={{ flexDirection: 'row', gap: 9 }}>
-                          <Button title={t('Ləğv et')} variant="secondary" onPress={() => setComposing(false)} style={{ flex: 1, height: 44 }} />
-                          <Button
-                            title={savingReview ? t('Göndərilir…') : t('Göndər')}
-                            disabled={savingReview || !reviewText.trim()}
-                            onPress={submitReview}
-                            style={{ flex: 1, height: 44 }}
-                          />
-                        </View>
-                      </View>
-                    ) : (
-                      <Button title={t('Rəy yaz')} icon="edit" full onPress={() => setComposing(true)} style={{ marginBottom: 14 }} />
-                    )
-                  ) : (
-                    <View style={styles.gateCard}>
-                      <Icon name="lock" size={18} color={palette.textSecondary} />
-                      <View style={{ flex: 1 }}>
-                        <AppText variant="callout">
-                          {t('Rəy yazmaq üçün {n} check-in qalıb', { n: 3 - myCheckins, count: 3 - myCheckins })}
-                        </AppText>
-                        <AppText variant="footnote" color={palette.caption} style={{ marginTop: 3, lineHeight: 18 }}>
-                          {t('Yalnız bu zalda ən azı 3 dəfə check-in edən rəy yaza bilər — saxta rəylərin qarşısını alır. ({n}/3)', {
-                            n: myCheckins,
-                          })}
-                        </AppText>
-                      </View>
-                    </View>
-                  )}
-
-                  {mineOnly.map((r, i) => (
-                    <View key={`mine-${i}`} style={styles.review}>
-                      <View style={styles.reviewHead}>
-                        <AppText variant="headline">{profileName}</AppText>
-                        <View style={{ flexDirection: 'row', gap: 2 }}>
-                          {Array.from({ length: 5 }).map((_, j) => (
-                            <Icon key={j} name="star" size={12} color={j < r.rating ? palette.streak : palette.separator} />
-                          ))}
-                        </View>
-                      </View>
-                      {/* A verification-style shield on a row the gym never received
-                          read as «your review is live here». These are the copies
-                          that only exist on this phone, so they say so. */}
-                      <View style={styles.tenure}>
-                        <Icon name="clock" size={12} color={palette.textSecondary} />
-                        <AppText style={{ fontSize: 11, fontWeight: '600', color: palette.textSecondary }}>
-                          {t('Yalnız sənin cihazında — zala göndərilməyib')}
-                        </AppText>
-                      </View>
-                      <AppText variant="body" color={palette.text3} style={{ marginTop: 8, lineHeight: 21 }}>
-                        {r.text}
-                      </AppText>
-                    </View>
-                  ))}
-
-                  {reviews.map((r) => (
-                    <View key={r.id} style={styles.review}>
-                      <View style={styles.reviewHead}>
-                        <AppText variant="headline">{reviewerName(r.name, t)}</AppText>
-                        <View style={{ flexDirection: 'row', gap: 2 }}>
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Icon key={i} name="star" size={12} color={i < r.rating ? palette.streak : palette.separator} />
-                          ))}
-                        </View>
-                      </View>
-                      {tenureLabel(r.tenure, t) ? (
-                        <View style={styles.tenure}>
-                          <Icon name="shield" size={12} color={palette.voltDeep} />
-                          <AppText style={{ fontSize: 11, fontWeight: '600', color: palette.voltDeep }}>{tenureLabel(r.tenure, t)}</AppText>
-                        </View>
-                      ) : null}
-                      <AppText variant="body" color={palette.text3} style={{ marginTop: 8, lineHeight: 21 }}>
-                        {r.text}
-                      </AppText>
-                      {/* The gym's official answer. It is written on the owner
-                          panel (gym/reviews.tsx) and, until now, read there and
-                          nowhere else — the person it was addressed to never saw
-                          it. Same card as the owner's own view, so both sides
-                          read the same words. */}
-                      {r.reply ? (
-                        <View style={styles.reply}>
-                          <AppText style={{ fontSize: 12, fontWeight: '700', color: palette.blue }}>
-                            {t('{gym} · rəsmi cavab', { gym: gym.name })}{r.replyAt && dayLabel(r.replyAt) ? ` · ${dayLabel(r.replyAt)}` : ''}
-                          </AppText>
-                          <AppText variant="footnote" color={palette.text3} style={{ marginTop: 4, lineHeight: 18 }}>
-                            {r.reply}
-                          </AppText>
-                        </View>
-                      ) : null}
-                    </View>
-                  ))}
-
-                  {reviewsFailed ? (
-                    <EmptyState
-                      icon="x"
-                      text={t('Rəylər yüklənmədi — serverlə əlaqə alınmadı. Bu, zalda rəy olmadığı demək deyil.')}
-                    />
-                  ) : reviewsLoaded && totalReviews === 0 && mineOnly.length === 0 ? (
-                    <EmptyState
-                      icon="star"
-                      text={
-                        myCheckins >= 3
-                          ? t('Hələ rəy yoxdur — ilk rəyi sən yaz.')
-                          : t('Hələ rəy yoxdur. Bu zalda 3 check-in etdikdən sonra ilk rəyi sən yaza bilərsən.')
-                      }
-                    />
-                  ) : null}
-                </View>
-              )}
-            </View>
+                )}
+              </View>
+            </SwipeSwitch>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

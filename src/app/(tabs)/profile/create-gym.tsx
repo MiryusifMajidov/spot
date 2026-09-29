@@ -21,7 +21,7 @@ import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useFormat, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, confirm, toast, type UiAction } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 
 const AMENITIES = ['Sərbəst ağırlıq', 'Kardio', 'Duş', 'Park', 'Sauna', 'Hovuz', 'Qadın zonası', 'Kafe'];
@@ -606,7 +606,7 @@ function Gallery({
         accessibilityRole="button"
         accessibilityLabel={t('Zal şəkli əlavə et')}
         style={styles.addTile}>
-        {busy ? <ActivityIndicator color={palette.tertiary} /> : <Icon name="plus" size={22} color={palette.tertiary} />}
+        {busy ? <ActivityIndicator color={palette.tertiary} /> : <Icon name="plus" size={iconSize.inCircle} color={palette.tertiary} />}
       </PressableScale>
     </ScrollView>
   );

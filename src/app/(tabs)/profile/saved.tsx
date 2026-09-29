@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useSharedValue } from 'react-native-reanimated';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { GymCard } from '@/components/GymCard';
@@ -11,6 +12,7 @@ import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
+import { SwipeSwitch } from '@/components/ui/SwipeSwitch';
 import { useFeedVideos, useGyms } from '@/lib/hooks';
 import { displayAuthor } from '@/lib/authorName';
 import { allMyVideoSaves } from '@/lib/social';
@@ -51,12 +53,14 @@ export default function Saved() {
   const savesFailed = serverSaves === 'failed' && savedVideos.length === 0;
   const videos = useFeedVideos().filter((v) => savedIds.includes(v.id));
   const gyms = useGyms().filter((g) => bookmarks.includes(g.id));
+  // The tab position as a float — the segment's thumb follows a swipe on the content.
+  const segProgress = useSharedValue(seg);
 
   return (
     <Screen edges={['top']}>
       <NavBar title={t('Saxlanılanlar')} />
       <View style={{ paddingHorizontal: spacing.screen, paddingBottom: 12 }}>
-        <Segmented options={[t('Videolar'), t('Zallar')]} value={seg} onChange={setSeg} />
+        <Segmented options={[t('Videolar'), t('Zallar')]} value={seg} onChange={setSeg} progress={segProgress} />
       </View>
       {/* iOS 26: this screen is pushed inside the Profil tab, and the Liquid Glass
           tab bar floats over it without reserving space. At RN's default
@@ -66,65 +70,67 @@ export default function Saved() {
           the scroll view starts below the segmented control, so nothing is added
           there. iOS-only prop; on Android the tab already sits above its bar. */}
       <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        {seg === 0 ? (
-          savesFailed ? (
+        <SwipeSwitch index={seg} count={2} onIndexChange={setSeg} progress={segProgress}>
+          {seg === 0 ? (
+            savesFailed ? (
+              <Empty
+                icon="bookmark"
+                title={t('Saxlanılanlar yüklənmədi')}
+                text={t('Siyahı serverdən gəlmədi. Bu, siyahının boş olduğu demək deyil — bağlantını yoxlayıb yenidən aç.')}
+              />
+            ) : videos.length === 0 ? (
+              /* «Feed-də ... 'Saxla' düyməsinə» was wrong twice: «Feed» is English
+                 inside Azerbaijani, and the rail no longer carries a «Saxla» caption
+                 — it is a bare bookmark icon (feed/index.tsx, RailBtn). Name the
+                 icon, the way the gym empty state below does. */
+              <Empty
+                icon="bookmark"
+                title={t('Saxlanılmış video yoxdur')}
+                text={t('Lentdə videonun yanındakı əlfəcin nişanına toxun — video burada toplanacaq.')}
+                action={<Button title={t('Lentə keç')} onPress={() => router.push('/(tabs)/feed')} style={{ marginTop: 18 }} />}
+              />
+            ) : (
+              <View style={styles.grid}>
+                {videos.map((v) => (
+                  /* Tapping a saved clip PLAYS it. It used to open the author's
+                     creator page instead — the same thumbnail with the same play
+                     badge and nothing behind it — so a saved video could never be
+                     watched again except by scrolling the whole feed to find it. */
+                  <PressableScale
+                    key={v.id}
+                    activeScale={0.97}
+                    onPress={() => router.push({ pathname: '/(tabs)/feed', params: { videoId: v.id } })}
+                    style={styles.tile}>
+                    <VideoPoster id={v.id} videoUrl={v.videoUrl} gradient={v.gradient} />
+                    <View style={styles.tilePlay}>
+                      <Icon name="play" size={16} color="rgba(255,255,255,0.9)" />
+                    </View>
+                    <AppText numberOfLines={2} style={styles.tileCaption}>
+                      {v.caption}
+                    </AppText>
+                    <AppText style={styles.tileAuthor}>{displayAuthor(v.author)}</AppText>
+                  </PressableScale>
+                ))}
+              </View>
+            )
+          ) : gyms.length === 0 ? (
+            /* The text used to read «...bookmark düyməsi...»: an English word, naming
+               a button that carries no caption anywhere — on the gym page it is a bare
+               icon in the header. Point at where that icon is instead. */
             <Empty
-              icon="bookmark"
-              title={t('Saxlanılanlar yüklənmədi')}
-              text={t('Siyahı serverdən gəlmədi. Bu, siyahının boş olduğu demək deyil — bağlantını yoxlayıb yenidən aç.')}
-            />
-          ) : videos.length === 0 ? (
-            /* «Feed-də ... 'Saxla' düyməsinə» was wrong twice: «Feed» is English
-               inside Azerbaijani, and the rail no longer carries a «Saxla» caption
-               — it is a bare bookmark icon (feed/index.tsx, RailBtn). Name the
-               icon, the way the gym empty state below does. */
-            <Empty
-              icon="bookmark"
-              title={t('Saxlanılmış video yoxdur')}
-              text={t('Lentdə videonun yanındakı əlfəcin nişanına toxun — video burada toplanacaq.')}
-              action={<Button title={t('Lentə keç')} onPress={() => router.push('/(tabs)/feed')} style={{ marginTop: 18 }} />}
+              icon="dumbbell"
+              title={t('Saxlanılmış zal yoxdur')}
+              text={t('Zal səhifəsinin yuxarısındakı əlfəcin nişanına toxun — zal burada toplanacaq.')}
+              action={<Button title={t('Zallara bax')} onPress={() => router.push('/(tabs)/discover')} style={{ marginTop: 18 }} />}
             />
           ) : (
-            <View style={styles.grid}>
-              {videos.map((v) => (
-                /* Tapping a saved clip PLAYS it. It used to open the author's
-                   creator page instead — the same thumbnail with the same play
-                   badge and nothing behind it — so a saved video could never be
-                   watched again except by scrolling the whole feed to find it. */
-                <PressableScale
-                  key={v.id}
-                  activeScale={0.97}
-                  onPress={() => router.push({ pathname: '/(tabs)/feed', params: { videoId: v.id } })}
-                  style={styles.tile}>
-                  <VideoPoster id={v.id} videoUrl={v.videoUrl} gradient={v.gradient} />
-                  <View style={styles.tilePlay}>
-                    <Icon name="play" size={16} color="rgba(255,255,255,0.9)" />
-                  </View>
-                  <AppText numberOfLines={2} style={styles.tileCaption}>
-                    {v.caption}
-                  </AppText>
-                  <AppText style={styles.tileAuthor}>{displayAuthor(v.author)}</AppText>
-                </PressableScale>
+            <View style={{ gap: 12 }}>
+              {gyms.map((g) => (
+                <GymCard key={g.id} gym={g} variant="compact" onPress={() => router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: g.id } })} />
               ))}
             </View>
-          )
-        ) : gyms.length === 0 ? (
-          /* The text used to read «...bookmark düyməsi...»: an English word, naming
-             a button that carries no caption anywhere — on the gym page it is a bare
-             icon in the header. Point at where that icon is instead. */
-          <Empty
-            icon="dumbbell"
-            title={t('Saxlanılmış zal yoxdur')}
-            text={t('Zal səhifəsinin yuxarısındakı əlfəcin nişanına toxun — zal burada toplanacaq.')}
-            action={<Button title={t('Zallara bax')} onPress={() => router.push('/(tabs)/discover')} style={{ marginTop: 18 }} />}
-          />
-        ) : (
-          <View style={{ gap: 12 }}>
-            {gyms.map((g) => (
-              <GymCard key={g.id} gym={g} variant="compact" onPress={() => router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: g.id } })} />
-            ))}
-          </View>
-        )}
+          )}
+        </SwipeSwitch>
       </ScrollView>
     </Screen>
   );

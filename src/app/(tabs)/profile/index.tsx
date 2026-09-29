@@ -18,7 +18,7 @@ import { hasSupabaseConfig } from '@/lib/supabase';
 import { useFormat, useT } from '@/lib/useT';
 import { useDb, useStats } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 import { azLower, azUpper } from '@/lib/az';
 
 /** `avatar_url` lives on the profiles row (added by schema8) — read it defensively. */
@@ -202,7 +202,7 @@ export default function Profile() {
             accessibilityLabel={t('Saxlanılanlar')}
             onPress={() => router.push('/(tabs)/profile/saved')}
             style={styles.squareBtn}>
-            <Icon name="bookmark" size={22} color={palette.inkText} />
+            <Icon name="bookmark" size={iconSize.inCircle} color={palette.inkText} />
           </PressableScale>
         </View>
 

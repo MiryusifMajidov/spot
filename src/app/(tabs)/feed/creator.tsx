@@ -19,7 +19,7 @@ import { hasSupabaseConfig } from '@/lib/supabase';
 import { useFormat, useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
 import { useAppStore } from '@/store/appStore';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 import { azLower } from '@/lib/az';
 
 const sameText = (a: string, b: string) => azLower(a.trim()) === azLower(b.trim());
@@ -99,7 +99,7 @@ export default function Creator() {
               accessibilityRole="button"
               accessibilityLabel={t('Digər seçimlər')}
               style={styles.moreBtn}>
-              <Icon name="more" size={22} color={palette.inkText} />
+              <Icon name="more" size={iconSize.action} color={palette.inkText} />
             </PressableScale>
           ) : undefined
         }

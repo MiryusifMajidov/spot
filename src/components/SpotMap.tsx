@@ -46,7 +46,7 @@ import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useLang, useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
-import { palette, radius, shadow } from '@/theme';
+import { iconSize, palette, radius, shadow } from '@/theme';
 
 import {
   buildSpotMapHtml,
@@ -518,7 +518,7 @@ export function SpotMap({
             {locating ? (
               <ActivityIndicator size="small" color={palette.blue} />
             ) : (
-              <Icon name={following ? 'locateOn' : 'locate'} size={20} color={following ? palette.blue : palette.inkText} />
+              <Icon name={following ? 'locateOn' : 'locate'} size={iconSize.inCircle} color={following ? palette.blue : palette.inkText} />
             )}
           </PressableScale>
         </Animated.View>

@@ -17,7 +17,7 @@ import { showModerationSheet } from '@/lib/moderation';
 import { getMyRequestTo, type TrainerRequestRow } from '@/lib/roles';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
@@ -119,7 +119,7 @@ export default function TrainerDetail() {
             accessibilityRole="button"
             accessibilityLabel={t('Digər seçimlər')}
             style={styles.moreBtn}>
-            <Icon name="more" size={22} color={palette.inkText} />
+            <Icon name="more" size={iconSize.action} color={palette.inkText} />
           </PressableScale>
         }
       />

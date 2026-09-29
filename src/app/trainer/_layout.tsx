@@ -4,14 +4,14 @@ import { ColorValue } from 'react-native';
 import { Icon, IconName } from '@/components/Icon';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
-import { palette } from '@/theme';
+import { iconSize, palette } from '@/theme';
 
 function tab(name: IconName) {
   // A named declaration rather than a bare arrow: the tab bar renders this as a
   // component, and an anonymous component has no name anywhere it matters — in
   // React DevTools, in a component stack, in a warning about the icon.
   function TabIcon({ color }: { color: ColorValue }) {
-    return <Icon name={name} size={24} color={color as string} />;
+    return <Icon name={name} size={iconSize.tab} color={color as string} />;
   }
   return TabIcon;
 }
@@ -33,9 +33,12 @@ export default function TrainerLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: palette.inkText,
-        tabBarInactiveTintColor: '#A0A0A8',
+        /* textSecondary, not #A0A0A8: that grey was ~2.6:1 on white, so the tabs you
+           were not on could hardly be read — the same fix the main tab bar got. And
+           11 pt labels, not 10. */
+        tabBarInactiveTintColor: palette.textSecondary,
         tabBarStyle: { backgroundColor: palette.white, borderTopColor: palette.separator },
-        tabBarLabelStyle: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
       }}>
       <Tabs.Screen name="index" options={{ title: t('Panel'), tabBarIcon: tab('grid') }} />
       <Tabs.Screen name="students" options={{ title: t('Şagirdlər'), tabBarIcon: tab('users') }} />

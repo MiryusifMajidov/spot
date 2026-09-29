@@ -13,7 +13,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { repsText } from '@/lib/duration';
 import { useFormat, useT } from '@/lib/useT';
 import { exerciseById, LibExercise } from '@/store/db';
-import { dark, palette } from '@/theme';
+import { dark, iconSize, palette } from '@/theme';
 
 const { width } = Dimensions.get('window');
 /* The pan reports x relative to the track's own hit area, which progressWrap
@@ -187,7 +187,7 @@ export default function ExerciseVideo() {
         accessibilityRole="button"
         accessibilityLabel={t('Bağla')}
         style={[styles.circle, circleFill]}>
-        <Icon name="x" size={24} color={palette.white} />
+        <Icon name="x" size={iconSize.inCircle} color={palette.white} />
       </PressableScale>
       <PressableScale
         activeScale={0.9}
@@ -195,7 +195,7 @@ export default function ExerciseVideo() {
         accessibilityRole="button"
         accessibilityLabel={t('Paylaş')}
         style={[styles.circle, circleFill]}>
-        <Icon name="share" size={22} color={palette.white} />
+        <Icon name="share" size={iconSize.inCircle} color={palette.white} />
       </PressableScale>
     </>
   );

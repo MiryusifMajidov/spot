@@ -27,7 +27,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) => string) =>
   timeAgo(iso, Date.now(), tr);
 import { useDiscoverPrefs } from '@/store/discoverPrefs';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { toast } from '@/store/ui';
@@ -243,7 +243,7 @@ export default function Conversation() {
             accessibilityRole="button"
             accessibilityLabel={t('Digər seçimlər')}
             style={styles.moreBtn}>
-            <Icon name="more" size={22} color={palette.inkText} />
+            <Icon name="more" size={iconSize.action} color={palette.inkText} />
           </PressableScale>
         }
       />
@@ -335,7 +335,7 @@ export default function Conversation() {
               accessibilityRole="button"
               accessibilityLabel={t('Mesajı göndər')}
               style={styles.sendBtn}>
-              <Icon name="arrowU" size={20} color={palette.inkText} />
+              <Icon name="arrowU" size={iconSize.inCircle} color={palette.inkText} />
             </PressableScale>
           </View>
         </View>

@@ -20,7 +20,7 @@ import { addGymPhoto, imageTooLargeMessage, isNotSavedError, pickImage, removeGy
 import { supabase } from '@/lib/supabase';
 import { useFormat, useT } from '@/lib/useT';
 import { actionSheet, confirm, toast, useUi, type UiAction } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 
 type Coords = { lat: number; lng: number };
 
@@ -489,7 +489,7 @@ export default function GymEdit() {
               accessibilityRole="button"
               accessibilityLabel={t('Şəkil əlavə et')}
               style={styles.addTile}>
-              {photoBusy ? <ActivityIndicator color={palette.tertiary} /> : <Icon name="plus" size={22} color={palette.tertiary} />}
+              {photoBusy ? <ActivityIndicator color={palette.tertiary} /> : <Icon name="plus" size={iconSize.inCircle} color={palette.tertiary} />}
             </PressableScale>
           </ScrollView>
         </View>

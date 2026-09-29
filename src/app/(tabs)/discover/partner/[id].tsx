@@ -19,7 +19,7 @@ import { useFormat, useT } from '@/lib/useT';
 import { Partner } from '@/data/types';
 import { seedById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 import { nameWithAge } from '@/lib/authorName';
 import { memberOnly } from '@/lib/memberOnly';
 
@@ -138,7 +138,7 @@ function PartnerDetail() {
             accessibilityRole="button"
             accessibilityLabel={t('Digər seçimlər')}
             style={styles.moreBtn}>
-            <Icon name="more" size={22} color={palette.inkText} />
+            <Icon name="more" size={iconSize.action} color={palette.inkText} />
           </PressableScale>
         }
       />

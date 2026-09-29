@@ -3,7 +3,7 @@ import { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useT } from '@/lib/useT';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 import { AppText } from './AppText';
 import { PressableScale } from './PressableScale';
 import { Icon } from '../Icon';
@@ -11,8 +11,9 @@ import { Icon } from '../Icon';
 /**
  * Compact top nav bar with a back chevron, optional inline title, and right actions.
  *
- * Owners reported «some icons are too small». The chevron itself was never small
- * (26 px, the platform's own size) — its TAP AREA was: a 32x32 box, so a thumb that
+ * Owners reported «some icons are too small». The chevron is `iconSize.action` (34),
+ * the size of every bare icon-only button (src/theme.ts); it was 26 here and 24 on the
+ * gym page. The TAP AREA was the other problem: a 32x32 box, so a thumb that
  * landed on the edge of the glyph hit nothing, and the button felt tiny. It is now
  * 44x44, the iOS and Material minimum. The box grows toward the screen edge
  * (negative margin + matching padding) so the chevron stays exactly where it was,
@@ -34,7 +35,7 @@ export function NavBar({ title, right, onBack }: { title?: string; right?: React
         style={styles.back}
         accessibilityRole="button"
         accessibilityLabel={t('Geri')}>
-        <Icon name="chevL" size={26} color={palette.blue} />
+        <Icon name="chevL" size={iconSize.action} color={palette.blue} />
       </PressableScale>
       {title ? (
         <AppText variant="headline" numberOfLines={1} style={styles.title}>

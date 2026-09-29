@@ -7,6 +7,7 @@ export const social: Dict = {
   ' Aşağıda yalnız sənin göndərdiyin təkliflər var.': ' Ниже — только отправленные тобой предложения.',
   ' · oxundu': ' · прочитано',
   'Adı göstərilmir': 'Имя не показано',
+  'Axtar': 'Поиск',
   'Aşağıda yalnız sənin göndərdiyin təkliflər var.': 'Ниже — только отправленные тобой предложения.',
   'Bağlantını sil': 'Убрать привязку',
   'Bir mesaj göndərdin — cavab gələnə qədər ikincisini göndərmək olmur.': 'Одно сообщение уже отправлено — второе можно отправить только после ответа.',

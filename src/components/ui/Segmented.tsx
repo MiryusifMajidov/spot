@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { tapFeedback } from '@/lib/feedback';
 import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, SharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
 import { palette, shadow, type } from '@/theme';
 import { AppText } from './AppText';
@@ -13,15 +13,24 @@ type Props = {
    *  person gave, which is how an untouched gender control became «Kişi». */
   value: number;
   onChange: (index: number) => void;
+  /** A page position (0 … n-1) from a SwipePager: the thumb then follows the
+   *  finger through the swipe instead of jumping when the page settles. */
+  progress?: SharedValue<number>;
 };
 
 /** iOS segmented control with a spring-sliding white thumb. */
-export function Segmented({ options, value, onChange }: Props) {
+export function Segmented({ options, value, onChange, progress }: Props) {
   const [width, setWidth] = useState(0);
   const seg = width / options.length;
 
   const thumb = useAnimatedStyle(() => ({
-    transform: [{ translateX: withTiming(seg * value, { duration: 190, easing: Easing.out(Easing.cubic) }) }],
+    transform: [
+      {
+        translateX: progress
+          ? seg * Math.min(options.length - 1, Math.max(0, progress.value))
+          : withTiming(seg * value, { duration: 190, easing: Easing.out(Easing.cubic) }),
+      },
+    ],
     width: seg > 0 ? seg - 4 : 0,
   }));
 

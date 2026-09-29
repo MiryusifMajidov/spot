@@ -7,7 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import { Gym } from '@/data/types';
 import { useFormat, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
-import { palette, radius, shadow } from '@/theme';
+import { iconSize, palette, radius, shadow } from '@/theme';
 import { AppText } from './ui/AppText';
 import { PressableScale } from './ui/PressableScale';
 import { Tag } from './ui/Tag';
@@ -79,7 +79,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
           accessibilityLabel={t('Yadda saxla')}
           accessibilityState={{ selected: saved }}>
           <View style={styles.bookmarkCircle}>
-            <Icon name={saved ? 'bookmarkOn' : 'bookmark'} size={20} color={saved ? palette.volt : palette.white} />
+            <Icon name={saved ? 'bookmarkOn' : 'bookmark'} size={iconSize.inCircle} color={saved ? palette.volt : palette.white} />
           </View>
         </PressableScale>
       </Cover>

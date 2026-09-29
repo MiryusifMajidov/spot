@@ -9,7 +9,7 @@ import { KeyboardLift, useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { useT } from '@/lib/useT';
-import { palette, spacing } from '@/theme';
+import { iconSize, palette, spacing } from '@/theme';
 
 export function OnboardingScaffold({
   step,
@@ -68,7 +68,7 @@ export function OnboardingScaffold({
             style={styles.back}
             accessibilityRole="button"
             accessibilityLabel={t('Geri')}>
-            <Icon name="chevL" size={26} color={palette.blue} />
+            <Icon name="chevL" size={iconSize.action} color={palette.blue} />
           </PressableScale>
         ) : (
           <View style={styles.skipSpacer} />
