@@ -982,12 +982,14 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema89. sp_write tested only owns_trainer(trainer_id) and said nothing about student_id, and becoming a coach is self-service — so ANY account could put a program, with its free-text note, into ANY person''s «Məşq» tab, past the request flow and past the chat gate. Proved rolled back: stranger=blocked by RLS (42501) | accepted student: the assignment lands.'
   union all
-  select 'function', 'suggested_trainers falls back to verified trainers only',
+  select 'function', 'suggested_trainers fills in tiers: featured, verified, complete profiles',
          case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
                            where n.nspname='public' and p.proname='suggested_trainers'
-                             and pg_get_functiondef(p.oid) like '%t.verified = true%')
+                             and pg_get_functiondef(p.oid) like '%as tier%'
+                             and pg_get_functiondef(p.oid) like '%distinct on (owner_id)%'
+                             and pg_get_functiondef(p.oid) like '%t.listed = true%')
               then 'OK' else 'MISSING' end,
-         'schema77. The fallback shuffled every listed trainer, and listed is the trainer''s own switch — so an unchecked stranger could put themselves on the first screen every new member sees. Featured-by-admin OR verified only.'
+         'schema91 (replaces schema77). Featured-or-verified only returned nothing at launch (0 verified, 0 featured), so the registration trainer step never appeared. Now: featured, then verified, then listed trainers with a complete profile fill up to five; listed stays required for every tier, one card per owner.'
   union all
   select 'trigger', 'programs_validate_days bounds a day and pins its video',
          case when exists (select 1 from pg_trigger t join pg_class c on c.oid = t.tgrelid

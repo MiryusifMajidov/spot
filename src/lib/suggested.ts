@@ -1,11 +1,13 @@
 /**
- * The trainers SPOT offers a brand-new member (schema75).
+ * The trainers SPOT offers a brand-new member (schema75, tiers since schema91).
  *
- * Which ones appear is an admin decision — `featured_trainers`, set from the
- * panel. When nothing is set, the server shuffles the listed trainers instead,
- * so the screen has real answers on day one instead of an empty box. Not by
- * rating: nothing in SPOT can rate a coach, so every rating is 0 and sorting by
- * it would only freeze the list.
+ * The server fills up to five in tiers, random within each: first the ones an
+ * admin featured (`featured_trainers`, set from the panel), then verified
+ * trainers, then listed trainers with a complete public profile (name, specialty,
+ * and a photo or a bio) — the same people Kəşf already shows. The last tier only
+ * fills what the first two leave empty, so verified trainers push unverified ones
+ * out as they arrive. Not by rating: nothing in SPOT can rate a coach, so every
+ * rating is 0 and sorting by it would only freeze the list.
  *
  * The count is NOT guaranteed to be five. The database holds what it holds: ask
  * for five, and if there are two real trainers in the country you get two. The

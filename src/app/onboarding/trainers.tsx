@@ -22,10 +22,12 @@ import { palette, radius, spacing } from '@/theme';
  *
  * A new account opens onto an empty feed and an empty everything — the one
  * thing SPOT can do at that moment is introduce a few real coaches. Which ones
- * is an admin decision (`featured_trainers`, schema75); when nothing is
- * configured the server shuffles the listed trainers instead, because
- * `trainers.rating` is pinned to 0 and ordering by it would hand the same two
- * people every placement forever.
+ * is the server's call (`suggested_trainers`, schema91): admin-featured first,
+ * then verified, then listed trainers with a complete profile to fill up to
+ * five — random within each tier, because `trainers.rating` is pinned to 0 and
+ * ordering by it would hand the same two people every placement forever.
+ * schema77 allowed only the first two tiers, and with no trainer verified yet
+ * that made this screen invisible to every new member.
  *
  * Three rules this screen keeps:
  *

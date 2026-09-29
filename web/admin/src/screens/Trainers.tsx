@@ -391,10 +391,10 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
             reads as an award rather than as the placement it is — and an empty
             list looks broken instead of like the fallback doing its job. */}
         <div className="card" style={{ padding: '12px 14px', marginBottom: 12, color: 'var(--muted2)', fontSize: 13, lineHeight: 1.5 }}>
-          Qeydiyyatı bitirən hər yeni istifadəçiyə burada seçilmiş müəllimlər göstərilir (ən çoxu 5). Heç kim seçilməyibsə,
-          tətbiq doğrulanmış müəllimlərdən təsadüfi seçir — ən çoxu 5, amma nə qədər varsa o qədər (indi az ola bilər).
-          Doğrulanmamış müəllim yalnız sən onu burada seçsən görünür. Öz elanını gizlədən müəllim heç vaxt göstərilmir,
-          və 5-dən artıq seçsən, yalnız ilk 5-i görünəcək.
+          Qeydiyyatı bitirən hər yeni istifadəçiyə ən çoxu 5 müəllim göstərilir, bu sıra ilə: əvvəl burada seçdiklərin,
+          sonra doğrulanmış müəllimlər, yer qalsa profili tam olan (ad, ixtisas, şəkil və ya haqqında mətni) digər
+          müəllimlər — hər qrupun içində təsadüfi. Doğrulanmamışlar yalnız boş yerləri doldurur və «təsdiqlənib» nişanı
+          almır. Öz elanını gizlədən müəllim heç vaxt göstərilmir, və 5-dən artıq seçsən, yalnız ilk 5-i görünəcək.
         </div>
         <table className="tbl">
           {/* No «Reytinq» column. `reviews` has a `gym_id` and no `trainer_id` at
