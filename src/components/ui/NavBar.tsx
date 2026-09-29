@@ -11,7 +11,7 @@ import { Icon } from '../Icon';
 /**
  * Compact top nav bar with a back chevron, optional inline title, and right actions.
  *
- * Owners reported «some icons are too small». The chevron is `iconSize.action` (34),
+ * Owners reported «some icons are too small». The chevron is `iconSize.action` (31),
  * the size of every bare icon-only button (src/theme.ts); it was 26 here and 24 on the
  * gym page. The TAP AREA was the other problem: a 32x32 box, so a thumb that
  * landed on the edge of the glyph hit nothing, and the button felt tiny. It is now

@@ -26,7 +26,7 @@ export function LargeHeader({ title, right, subtitle }: { title: string; right?:
 /**
  * Tappable header icon with an optional numeric badge.
  *
- * The glyph is `iconSize.action` (34): a bare glyph on the page background, the
+ * The glyph is `iconSize.action` (31): a bare glyph on the page background, the
  * owner's standard for every button that has no disc around it (src/theme.ts). The
  * tap area was the other «too small» part — `padding: 1` made the
  * button 27x27, so the Discover bell, chat and map icons were the «too small» icons
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
      now that the box is taller than the glyph. */
   actions: { flexDirection: 'row', alignItems: 'center', marginRight: -9.5, marginBottom: -3.5 },
   iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  // On the 34 glyph's top-right shoulder (its ink starts ~5 pt in from the corner).
-  badge: { position: 'absolute', top: 2, right: 1, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: palette.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  // On the glyph's top-right shoulder (a 31 glyph's ink starts ~6 pt in from the box corner).
+  badge: { position: 'absolute', top: 3, right: 2, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: palette.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   badgeText: { color: palette.white, fontSize: 10.5, fontWeight: '700' },
 });
