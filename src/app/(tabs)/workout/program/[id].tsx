@@ -410,11 +410,14 @@ export default function ProgramDetail() {
           buttons above the glass bar on iOS (see `bottomClearance`). */}
       {hasDays ? (
         <View style={[styles.footer, { paddingBottom: bottomClearance + spacing.md }]}>
+          {/* flex: 1, not `full` alone: the footer is a row, and `full` is
+              alignSelf: 'stretch', which in a row stretches the height. */}
           <Button
             title={days.length > 1 ? t('Başla — Gün {n}', { n: nextDay + 1 }) : t('Başla')}
             icon="play"
             full
             onPress={start}
+            style={{ flex: 1 }}
           />
         </View>
       ) : mine ? (
@@ -428,6 +431,7 @@ export default function ProgramDetail() {
             icon="plus"
             full
             onPress={() => router.push({ pathname: '/(tabs)/workout/create', params: { id: p.id } })}
+            style={{ flex: 1 }}
           />
         </View>
       ) : null}

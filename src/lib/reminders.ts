@@ -76,11 +76,26 @@ async function allowed(): Promise<boolean> {
 
 export type ReminderResult = 'scheduled' | 'off' | 'denied' | 'failed';
 
+/* Every apply runs after the previous one has finished. Two used to run at once
+   — the settings screen applies a change and the root layout re-applies on the
+   same state change — and each cancelled «ours» before the other had scheduled
+   anything, then both scheduled: every reminder was on the phone TWICE and rang
+   twice (seen in `dumpsys alarm` on the test phone). Serialised, the second run
+   cancels what the first scheduled and the schedule is exactly one per day. */
+let queue: Promise<unknown> = Promise.resolve();
+
 /**
  * Make the phone's schedule match `r`: everything of ours is cancelled, then one
- * weekly notification per chosen day is scheduled. Safe to call repeatedly.
+ * weekly notification per chosen day is scheduled. Safe to call repeatedly and
+ * concurrently — calls are applied one after another.
  */
-export async function applyWorkoutReminder(r: WorkoutReminder): Promise<ReminderResult> {
+export function applyWorkoutReminder(r: WorkoutReminder): Promise<ReminderResult> {
+  const run = queue.then(() => applyNow(r));
+  queue = run.catch(() => {});
+  return run;
+}
+
+async function applyNow(r: WorkoutReminder): Promise<ReminderResult> {
   try {
     await cancelWorkoutReminders();
     if (!r.on || !r.days.length) return 'off';

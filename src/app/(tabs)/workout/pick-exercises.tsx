@@ -193,7 +193,9 @@ export default function PickExercises() {
       </View>
 
       {!q ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        /* flexGrow/flexShrink 0: a ScrollView grows and shrinks by default, and the
+           list below it squeezed this row until the chips' bottoms were cut off. */
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow} contentContainerStyle={styles.chips}>
           {GROUPS.map((g, i) => (
             <PressableScale
               key={g.label}
@@ -306,6 +308,7 @@ const styles = StyleSheet.create({
      spends the field's own right padding, so the glyph stays where it was and the
      target reaches the field's edge. */
   clear: { width: 44, height: 44, marginRight: -13, alignItems: 'center', justifyContent: 'center' },
+  chipRow: { flexGrow: 0, flexShrink: 0 },
   chips: { paddingHorizontal: spacing.screen, gap: 8, paddingVertical: 12 },
   chip: { paddingHorizontal: 14, height: 34, borderRadius: 17, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
   chipOn: { backgroundColor: palette.ink },
