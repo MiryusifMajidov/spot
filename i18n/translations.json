@@ -10697,5 +10697,35 @@
   "key": "{n} nömrəli setin nəticəsi silinəcək.",
   "ru": "Результат подхода {n} будет удалён.",
   "en": "The result logged for set {n} will be deleted."
+ },
+ {
+  "key": "Bu parol çox sadədir və ya sızmış parollar siyahısındadır — başqa parol seç",
+  "ru": "Этот пароль слишком простой или есть в списке утёкших паролей — выбери другой",
+  "en": "This password is too simple or appears in a list of leaked passwords — choose another one"
+ },
+ {
+  "key": "Parolda kiçik hərf, böyük hərf və rəqəm olsun",
+  "ru": "В пароле должны быть строчная буква, заглавная буква и цифра",
+  "en": "Use a lowercase letter, an uppercase letter and a digit in the password"
+ },
+ {
+  "key": "Bu e-poçt ünvanı qəbul edilmədi — ünvanı yoxla",
+  "ru": "Этот адрес почты не принят — проверь адрес",
+  "en": "This e-mail address was not accepted — check the address"
+ },
+ {
+  "key": "Yeni hesab açmaq hazırda bağlıdır. Bu, serverin ayarıdır — bizə yaz.",
+  "ru": "Регистрация новых аккаунтов сейчас закрыта. Это настройка сервера — напиши нам.",
+  "en": "Creating new accounts is closed right now. This is a server setting — write to us."
+ },
+ {
+  "key": "İnternet bağlantısını yoxla və yenidən cəhd et",
+  "ru": "Проверь подключение к интернету и попробуй ещё раз",
+  "en": "Check your internet connection and try again"
+ },
+ {
+  "key": "Hesab yaradıldı",
+  "ru": "Аккаунт создан",
+  "en": "Account created"
  }
 ]

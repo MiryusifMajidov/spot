@@ -125,10 +125,22 @@ async function requireProvider(name: 'google' | 'apple' | 'phone' | 'email'): Pr
  * caller then signed the person into a brand-new account, leaving their profile,
  * @username, streak, workouts and videos behind on the old one. A guess in that
  * direction costs somebody their history.
+ *
+ * NO SESSION AT ALL is not «cannot tell», though — it is an answer: there is no
+ * anonymous account on this phone, so there is nothing to link and a plain sign-in
+ * or sign-up is the only move. That is the state right after «Hesabdan çıx» or
+ * «Hesabı sil»: both end the session and land on the gate, and the gate does not
+ * mint a new anonymous user. Throwing here made every way back in fail from that
+ * state — a new e-mail + password created nothing («Alınmadı — yenidən cəhd et»),
+ * and Google failed the same way. App Review walks exactly that path (delete the
+ * account, then register again), so it is answered: not anonymous.
  */
 export async function isAnonymous(): Promise<boolean> {
   const { data, error } = await supabase.auth.getUser();
-  if (error) throw new Error('session-unknown');
+  if (error) {
+    if (isAuthSessionMissingError(error)) return false;
+    throw new Error('session-unknown');
+  }
   return !!data.user?.is_anonymous;
 }
 
@@ -612,11 +624,26 @@ export function passwordErrorText(e: unknown): string | null {
     return t('Bu hesab e-poçt təsdiqi gözləyir. Serverin ayarıdır — bizə yaz.');
   if (m.includes('already registered') || m.includes('already been registered') || m.includes('already exists'))
     return t('Bu e-poçtla hesab var — parolunla daxil ol');
+  /* Checked BEFORE the length rule below. «Password should contain at least one
+     character of each: …» also contains «password» and «at least», and used to be
+     answered «Parol ən azı 8 simvol olmalıdır» — to somebody who had typed twelve.
+     The leaked-password check («known to be weak and easy to guess») fell through
+     to «Alınmadı» the same way: the person never learned what to change. */
+  if (m.includes('weak') || m.includes('easy to guess') || m.includes('pwned'))
+    return t('Bu parol çox sadədir və ya sızmış parollar siyahısındadır — başqa parol seç');
+  if (m.includes('at least one character'))
+    return t('Parolda kiçik hərf, böyük hərf və rəqəm olsun');
   if (m.includes('password') && (m.includes('short') || m.includes('at least') || m.includes('characters')))
     return t('Parol ən azı {n} simvol olmalıdır', { n: PASSWORD_MIN, count: PASSWORD_MIN });
   if (m.includes('rate') || m.includes('too many'))
     return t('Çox tez-tez cəhd edildi — bir neçə dəqiqə gözlə');
-  if (m.includes('weak password')) return t('Parol çox sadədir — daha güclüsünü seç');
+  // «Email address "…" is invalid»: the server refuses addresses whose domain
+  // cannot receive mail, which the pattern check on the phone cannot know.
+  if (m.includes('email') && m.includes('invalid')) return t('Bu e-poçt ünvanı qəbul edilmədi — ünvanı yoxla');
+  if (m.includes('signups not allowed') || m.includes('signup is disabled'))
+    return t('Yeni hesab açmaq hazırda bağlıdır. Bu, serverin ayarıdır — bizə yaz.');
+  if (m.includes('network') || m.includes('failed to fetch') || m.includes('fetch failed'))
+    return t('İnternet bağlantısını yoxla və yenidən cəhd et');
   return null;
 }
 

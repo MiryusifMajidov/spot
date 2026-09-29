@@ -88,8 +88,21 @@ export default function SignIn() {
   const providers = useSocialProviders();
 
   /* From the gate there is nothing to go «back» to — the gate IS the root of the
-     stack — so a signed-in person is sent into the app instead. */
-  const done = () => (login ? router.replace('/(tabs)/discover') : router.back());
+     stack — so a signed-in person is sent on. WHERE depends on whether the
+     account has registered (bootstrap() has just decided `onboarded` from the
+     server's @ad), the same test the gate's Google/Apple buttons make:
+       · a returning account goes straight into the app;
+       · a new one goes to the registration step («Səni necə çağıraq?») and from
+         there to the trainer suggestion.
+     It used to go to Kəşf unconditionally. A brand-new e-mail account then had
+     no name and no @ad, never saw the trainer step, and the gate sent it back to
+     «Tək məşq etmə» on the next launch — which read as «the account was never
+     created». */
+  const done = () => {
+    if (!login) return router.back();
+    const { onboarded, profile } = useAppStore.getState();
+    router.replace(onboarded && profile.name.trim() ? '/(tabs)/discover' : '/onboarding/profile');
+  };
 
   const setupMessage = (e: unknown): string | null => {
     if (!(e instanceof AuthSetupError)) return null;
@@ -182,7 +195,7 @@ export default function SignIn() {
          server and sets `onboarded`, so a returning person goes straight in. */
       await bootstrap();
       successFeedback();
-      toast(outcome === 'signed-in' ? t('Xoş gəldin') : t('Hesabın hazırdır'));
+      toast(outcome === 'signed-in' ? t('Xoş gəldin') : t('Hesab yaradıldı'));
       done();
     } catch (e) {
       errorFeedback();
@@ -207,6 +220,8 @@ export default function SignIn() {
     setBusy('email');
     try {
       await confirmEmailCode(sent.to, code, sent.linking);
+      // Same re-read as the other two paths: done() routes on what it finds.
+      await bootstrap();
       successFeedback();
       toast(login ? t('Daxil oldun') : t('Hesabın qorundu'));
       done();

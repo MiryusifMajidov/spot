@@ -9751,7 +9751,7 @@
   "placeholders": []
  },
  {
-  "key": "Hesabın",
+  "key": "Hesab yaradıldı",
   "counted": false,
   "files": [
    "src/app/auth/sign-in.tsx"
@@ -9760,11 +9760,10 @@
   "placeholders": []
  },
  {
-  "key": "Hesabın hazırdır",
+  "key": "Hesabın",
   "counted": false,
   "files": [
-   "src/app/auth/sign-in.tsx",
-   "src/app/onboarding/trainers.tsx"
+   "src/app/auth/sign-in.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -12956,6 +12955,15 @@
  },
  {
   "key": "1 müəllimi izlə",
+  "counted": false,
+  "files": [
+   "src/app/onboarding/trainers.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Hesabın hazırdır",
   "counted": false,
   "files": [
    "src/app/onboarding/trainers.tsx"
@@ -16315,6 +16323,15 @@
   "placeholders": []
  },
  {
+  "key": "Bu e-poçt ünvanı qəbul edilmədi — ünvanı yoxla",
+  "counted": false,
+  "files": [
+   "src/lib/auth.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Bu e-poçtla hesab var — parolunla daxil ol",
   "counted": false,
   "files": [
@@ -16333,6 +16350,15 @@
   "placeholders": []
  },
  {
+  "key": "Bu parol çox sadədir və ya sızmış parollar siyahısındadır — başqa parol seç",
+  "counted": false,
+  "files": [
+   "src/lib/auth.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "E-poçt və ya parol yanlışdır",
   "counted": false,
   "files": [
@@ -16342,7 +16368,25 @@
   "placeholders": []
  },
  {
-  "key": "Parol çox sadədir — daha güclüsünü seç",
+  "key": "Parolda kiçik hərf, böyük hərf və rəqəm olsun",
+  "counted": false,
+  "files": [
+   "src/lib/auth.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Yeni hesab açmaq hazırda bağlıdır. Bu, serverin ayarıdır — bizə yaz.",
+  "counted": false,
+  "files": [
+   "src/lib/auth.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "İnternet bağlantısını yoxla və yenidən cəhd et",
   "counted": false,
   "files": [
    "src/lib/auth.ts"
