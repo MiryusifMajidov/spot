@@ -37,6 +37,7 @@ import * as WebBrowser from 'expo-web-browser';
 
 import { t } from './i18n';
 import { unregisterPush } from './push';
+import { expectSignOut } from './sessionGuard';
 import { supabase } from './supabase';
 
 /** Where the browser sends the person back to. `scheme: 'spot'` in app.json. */
@@ -538,8 +539,19 @@ export async function signOut(): Promise<void> {
   // authorise the delete. Otherwise the phone keeps buzzing for an account
   // nobody on it is signed into any more.
   await unregisterPush();
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  /* 'local', not the default 'global'. The default ended the account on EVERY
+     phone it was open on — leaving on one silently signed the person out of the
+     others. Other phones are ended on purpose, from Parametrlər → Aktiv cihazlar. */
+  expectSignOut();
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
+  if (error) {
+    /* auth-js (2.112) drops the session on this phone even when the server call
+       fails — offline, say — and still returns the error. Reporting «Çıxmaq
+       alınmadı» then would be false: the phone IS signed out, and its refresh
+       token is gone with it. Only a session still stored is a real failure. */
+    const { data } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+    if (data.session) throw error;
+  }
 }
 
 // ----------------------------------------------------------------- deep links

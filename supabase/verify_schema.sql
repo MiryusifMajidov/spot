@@ -991,6 +991,24 @@ results(check_kind, object, status, detail) as (
               then 'OK' else 'MISSING' end,
          'schema91 (replaces schema77). Featured-or-verified only returned nothing at launch (0 verified, 0 featured), so the registration trainer step never appeared. Now: featured, then verified, then listed trainers with a complete profile fill up to five; listed stays required for every tier, one card per owner.'
   union all
+  select 'function', 'Aktiv cihazlar: my_devices / touch_my_device / revoke_my_session',
+         case when to_regclass('public.session_devices') is not null
+               and exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='my_devices' and p.prosecdef)
+               and exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='touch_my_device' and p.prosecdef)
+               and exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='revoke_my_session' and p.prosecdef
+                             and pg_get_functiondef(p.oid) like '%s.id <> v_sid%'
+                             and pg_get_functiondef(p.oid) like '%delete from public.push_tokens%')
+               and exists (select 1 from information_schema.columns
+                           where table_schema='public' and table_name='push_tokens' and column_name='session_id')
+               and exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                           where n.nspname='public' and p.proname='register_push_token'
+                             and pg_get_functiondef(p.oid) like '%session_id%')
+              then 'OK' else 'MISSING' end,
+         'schema93. Parametrlər → Aktiv cihazlar lists auth.sessions for the caller only, ends one other session or all others (never the current one) and deletes their push addresses. Without it the screen reads «Cihazlar yüklənmədi» and a phone signed out elsewhere keeps its pushes.'
+  union all
   select 'trigger', 'programs_validate_days bounds a day and pins its video',
          case when exists (select 1 from pg_trigger t join pg_class c on c.oid = t.tgrelid
                             join pg_namespace n on n.oid = c.relnamespace

@@ -53,7 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error ? error.message : null;
   };
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // 'local': the default 'global' also signed the admin out of SPOT on their phone.
+    await supabase.auth.signOut({ scope: 'local' });
     setAdmin(null);
   };
 

@@ -7,20 +7,24 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 import * as Notifications from 'expo-notifications';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppErrorBoundary } from '@/components/ui/AppErrorBoundary';
 import { UiHost } from '@/components/ui/UiHost';
 import { loadDictionaries } from '@/i18n';
+import { touchDevice } from '@/lib/devices';
 import { openPush, registerPush } from '@/lib/push';
 import { applyWorkoutReminder } from '@/lib/reminders';
+import { installSessionGuard } from '@/lib/sessionGuard';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
+import { toast } from '@/store/ui';
+import { wipeDeviceData } from '@/lib/wipe';
 import { palette } from '@/theme';
 
 /* At module scope, not in an effect: the dictionaries must be in place before
@@ -46,6 +50,30 @@ export default function RootLayout() {
   useEffect(() => {
     bootstrap();
   }, [bootstrap]);
+
+  /* Signed out of this phone from another one (Parametrlər → Aktiv cihazlar).
+     The same thing «Hesabdan çıx» does here — the phone is cleared, the welcome
+     screen comes back — plus the reason, so it does not look like a crash or a
+     lost account. `touchDevice` on every return to the foreground is what makes
+     it prompt: the access token alone would keep working for up to an hour. */
+  useEffect(() => {
+    const stop = installSessionGuard(async () => {
+      await wipeDeviceData();
+      try {
+        router.replace('/onboarding/welcome');
+      } catch {
+        /* Not mounted yet (cold start): the index gate sends a wiped phone there. */
+      }
+      toast(t('Bu telefonda hesabından çıxarıldın. Yenidən daxil ola bilərsən.'), 'info');
+    });
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') void touchDevice();
+    });
+    return () => {
+      stop();
+      sub.remove();
+    };
+  }, [t]);
 
   /* E-poçt girişi src/app/auth-callback.tsx-də bitir.
      The link lands on that route now. This effect used to exchange the token

@@ -103,7 +103,7 @@ export default function Settings() {
   const signOutRow = () =>
     confirm(
       t('Hesabdan çıx'),
-      t('Bu telefonda saxlanan məlumatlar silinir. Hesabın serverdə qalır — hansı yolla girmisənsə, eyni yolla yenidən girə bilərsən.'),
+      t('Yalnız bu telefondan çıxırsan: burada saxlanan məlumatlar silinir, digər cihazlarında hesab açıq qalır. Hansı yolla girmisənsə, eyni yolla yenidən girə bilərsən.'),
       [
         { label: t('Ləğv et'), style: 'cancel' },
         {
@@ -223,6 +223,18 @@ export default function Settings() {
               chevron={false}
             />
           )}
+          {/* Where else this account is open, and a way to end it there — a lost
+              or sold phone stays signed in otherwise. Linked accounts only: an
+              anonymous one exists on this phone alone. */}
+          {linked ? (
+            <ListRow
+              icon="phone"
+              iconBg={palette.ink}
+              title={t('Aktiv cihazlar')}
+              subtitle={t('Hesabının açıq olduğu telefonlar')}
+              onPress={() => router.push('/(tabs)/profile/devices')}
+            />
+          ) : null}
           <ListRow icon="user" iconBg={palette.blue} title={t('Profili redaktə et')} onPress={() => router.push('/(tabs)/profile/edit')} />
           <ListRow icon="lock" iconBg={palette.caption} title={t('Məxfilik')} subtitle={t('Görünürlük və məlumatlar')} onPress={() => router.push('/(tabs)/profile/privacy')} />
           <ListRow icon="bookmark" iconBg={palette.voltDeep} title={t('Saxlanılanlar')} subtitle={t('Videolar və zallar')} onPress={() => router.push('/(tabs)/profile/saved')} />

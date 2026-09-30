@@ -10990,5 +10990,195 @@
   "key": "Axtar",
   "ru": "Поиск",
   "en": "Search"
+ },
+ {
+  "key": "Aktiv cihazlar",
+  "ru": "Активные устройства",
+  "en": "Active devices"
+ },
+ {
+  "key": "Bu cihaz",
+  "ru": "Это устройство",
+  "en": "This device"
+ },
+ {
+  "key": "Bu telefon",
+  "ru": "Этот телефон",
+  "en": "This phone"
+ },
+ {
+  "key": "Cihaz hesabdan çıxarıldı",
+  "ru": "Устройство выведено из аккаунта",
+  "en": "Device signed out"
+ },
+ {
+  "key": "Cihaz çıxarılmadı — yenidən cəhd et",
+  "ru": "Не удалось отключить устройство — попробуй ещё раз",
+  "en": "Couldn't sign the device out — try again"
+ },
+ {
+  "key": "Cihazlar yenilənmədi — internet yoxlanılsın",
+  "ru": "Список не обновился — проверь интернет",
+  "en": "Couldn't refresh devices — check your connection"
+ },
+ {
+  "key": "Cihazlar yüklənmədi",
+  "ru": "Устройства не загрузились",
+  "en": "Couldn't load devices"
+ },
+ {
+  "key": "Cihazlar çıxarılmadı — yenidən cəhd et",
+  "ru": "Не удалось отключить устройства — попробуй ещё раз",
+  "en": "Couldn't sign the devices out — try again"
+ },
+ {
+  "key": "Cihazların siyahısı serverdən gəlir. İnternetə qoşul və yenidən yoxla.",
+  "ru": "Список устройств приходит с сервера. Подключись к интернету и попробуй снова.",
+  "en": "The device list comes from the server. Connect to the internet and try again."
+ },
+ {
+  "key": "Digər bütün cihazlardan çıx",
+  "ru": "Выйти на всех других устройствах",
+  "en": "Sign out of all other devices"
+ },
+ {
+  "key": "Digər bütün cihazlardan çıxılsın?",
+  "ru": "Выйти на всех других устройствах?",
+  "en": "Sign out of all other devices?"
+ },
+ {
+  "key": "Digər cihazlar",
+  "ru": "Другие устройства",
+  "en": "Other devices"
+ },
+ {
+  "key": "Digər cihazlar ({n})",
+  "ru": "Другие устройства ({n})",
+  "en": "Other devices ({n})"
+ },
+ {
+  "key": "Hamısından çıx",
+  "ru": "Выйти везде",
+  "en": "Sign out of all"
+ },
+ {
+  "key": "Hesabın başqa cihazda açıq deyil",
+  "ru": "Аккаунт не открыт на других устройствах",
+  "en": "Your account isn't open on any other device"
+ },
+ {
+  "key": "O cihaz bu hesabın bildirişlərini dərhal almır və SPOT-u növbəti açanda hesabdan çıxır. Sonra yenidən daxil ola bilər.",
+  "ru": "Это устройство сразу перестанет получать уведомления аккаунта и выйдет из него при следующем запуске SPOT. Потом на нём можно войти снова.",
+  "en": "That device stops getting this account's notifications right away and is signed out the next time SPOT opens. It can sign in again later."
+ },
+ {
+  "key": "SPOT hesabının hazırda açıq olduğu telefonlar. Siyahını aşağı çəkib yeniləyə bilərsən.",
+  "ru": "Телефоны, на которых сейчас открыт твой аккаунт SPOT. Потяни список вниз, чтобы обновить.",
+  "en": "The phones your SPOT account is open on right now. Pull the list down to refresh."
+ },
+ {
+  "key": "Tanımadığın və ya artıq istifadə etmədiyin cihazı çıxar. O cihaz dərhal bildiriş almır və SPOT-u növbəti açanda hesabdan çıxır.",
+  "ru": "Отключи устройство, которое не узнаёшь или больше не используешь. Оно сразу перестанет получать уведомления и выйдет из аккаунта при следующем запуске SPOT.",
+  "en": "Remove a device you don't recognise or no longer use. It stops getting notifications right away and is signed out the next time SPOT opens."
+ },
+ {
+  "key": "Yenidən cəhd etmək üçün toxun",
+  "ru": "Нажми, чтобы попробовать снова",
+  "en": "Tap to try again"
+ },
+ {
+  "key": "{name} cihazını çıxar",
+  "ru": "Отключить {name}",
+  "en": "Remove {name}"
+ },
+ {
+  "key": "{name} hesabdan çıxarılsın?",
+  "ru": "Выйти из аккаунта на {name}?",
+  "en": "Sign {name} out?"
+ },
+ {
+  "key": "Çıxar",
+  "ru": "Отключить",
+  "en": "Remove"
+ },
+ {
+  "key": "Çıxarılır…",
+  "ru": "Отключаем…",
+  "en": "Signing out…"
+ },
+ {
+  "key": "İndi aktiv",
+  "ru": "Активно сейчас",
+  "en": "Active now"
+ },
+ {
+  "key": "Hesabının açıq olduğu telefonlar",
+  "ru": "Телефоны, где открыт аккаунт",
+  "en": "Phones your account is open on"
+ },
+ {
+  "key": "Yalnız bu telefondan çıxırsan: burada saxlanan məlumatlar silinir, digər cihazlarında hesab açıq qalır. Hansı yolla girmisənsə, eyni yolla yenidən girə bilərsən.",
+  "ru": "Ты выходишь только на этом телефоне: данные на нём удаляются, на других устройствах аккаунт остаётся открытым. Войти снова можно тем же способом, что и раньше.",
+  "en": "You're signing out on this phone only: the data stored here is removed, and your account stays open on your other devices. Sign back in the same way you did before."
+ },
+ {
+  "key": "Bu telefonda hesabından çıxarıldın. Yenidən daxil ola bilərsən.",
+  "ru": "На этом телефоне тебя вывели из аккаунта. Можно войти снова.",
+  "en": "You were signed out on this phone. You can sign in again."
+ },
+ {
+  "key": "Android telefon",
+  "ru": "Android-телефон",
+  "en": "Android phone"
+ },
+ {
+  "key": "Naməlum cihaz",
+  "ru": "Неизвестное устройство",
+  "en": "Unknown device"
+ },
+ {
+  "key": "Veb brauzer",
+  "ru": "Веб-браузер",
+  "en": "Web browser"
+ },
+ {
+  "key": "Hesab yalnız bu telefonda açıq qalacaq. Digər {n} cihaz bildiriş almayacaq və SPOT-u növbəti açanda hesabdan çıxacaq.",
+  "ru_one": "Аккаунт останется открытым только на этом телефоне. Ещё {n} устройство перестанет получать уведомления и выйдет из аккаунта при следующем запуске SPOT.",
+  "ru_few": "Аккаунт останется открытым только на этом телефоне. Ещё {n} устройства перестанут получать уведомления и выйдут из аккаунта при следующем запуске SPOT.",
+  "ru_many": "Аккаунт останется открытым только на этом телефоне. Ещё {n} устройств перестанут получать уведомления и выйдут из аккаунта при следующем запуске SPOT.",
+  "en_one": "Your account will stay open on this phone only. {n} other device stops getting notifications and is signed out the next time SPOT opens.",
+  "en_other": "Your account will stay open on this phone only. {n} other devices stop getting notifications and are signed out the next time SPOT opens."
+ },
+ {
+  "key": "{n} cihaz hesabdan çıxarıldı",
+  "ru_one": "{n} устройство выведено из аккаунта",
+  "ru_few": "{n} устройства выведены из аккаунта",
+  "ru_many": "{n} устройств выведено из аккаунта",
+  "en_one": "{n} device signed out",
+  "en_other": "{n} devices signed out"
+ },
+ {
+  "key": "{n} dəqiqə əvvəl",
+  "ru_one": "{n} минуту назад",
+  "ru_few": "{n} минуты назад",
+  "ru_many": "{n} минут назад",
+  "en_one": "{n} minute ago",
+  "en_other": "{n} minutes ago"
+ },
+ {
+  "key": "{n} saat əvvəl",
+  "ru_one": "{n} час назад",
+  "ru_few": "{n} часа назад",
+  "ru_many": "{n} часов назад",
+  "en_one": "{n} hour ago",
+  "en_other": "{n} hours ago"
+ },
+ {
+  "key": "{n} gün əvvəl",
+  "ru_one": "{n} день назад",
+  "ru_few": "{n} дня назад",
+  "ru_many": "{n} дней назад",
+  "en_one": "{n} day ago",
+  "en_other": "{n} days ago"
  }
 ]

@@ -1141,6 +1141,7 @@
    "src/app/(tabs)/feed/share.tsx",
    "src/app/(tabs)/profile/become-trainer.tsx",
    "src/app/(tabs)/profile/create-gym.tsx",
+   "src/app/(tabs)/profile/devices.tsx",
    "src/app/(tabs)/profile/edit.tsx",
    "src/app/(tabs)/profile/history.tsx",
    "src/app/(tabs)/profile/privacy.tsx",
@@ -5686,6 +5687,295 @@
   "placeholders": []
  },
  {
+  "key": "Aktiv cihazlar",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx",
+   "src/app/(tabs)/profile/settings.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Bu cihaz",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Bu telefon",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Cihaz hesabdan çıxarıldı",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Cihaz çıxarılmadı — yenidən cəhd et",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Cihazlar yenilənmədi — internet yoxlanılsın",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Cihazlar yüklənmədi",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Cihazlar çıxarılmadı — yenidən cəhd et",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Cihazların siyahısı serverdən gəlir. İnternetə qoşul və yenidən yoxla.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Digər bütün cihazlardan çıx",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Digər bütün cihazlardan çıxılsın?",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Digər cihazlar",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Digər cihazlar ({n})",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "Dünən",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx",
+   "src/lib/format.ts",
+   "src/store/db.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Hamısından çıx",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Hesab yalnız bu telefonda açıq qalacaq. Digər {n} cihaz bildiriş almayacaq və SPOT-u növbəti açanda hesabdan çıxacaq.",
+  "counted": true,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "Hesabın başqa cihazda açıq deyil",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "O cihaz bu hesabın bildirişlərini dərhal almır və SPOT-u növbəti açanda hesabdan çıxır. Sonra yenidən daxil ola bilər.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "SPOT hesabının hazırda açıq olduğu telefonlar. Siyahını aşağı çəkib yeniləyə bilərsən.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Tanımadığın və ya artıq istifadə etmədiyin cihazı çıxar. O cihaz dərhal bildiriş almır və SPOT-u növbəti açanda hesabdan çıxır.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Yenidən cəhd etmək üçün toxun",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "{name} cihazını çıxar",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "name"
+  ]
+ },
+ {
+  "key": "{name} hesabdan çıxarılsın?",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "name"
+  ]
+ },
+ {
+  "key": "{n} cihaz hesabdan çıxarıldı",
+  "counted": true,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "{n} dəqiqə əvvəl",
+  "counted": true,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "{n} gün əvvəl",
+  "counted": true,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "{n} saat əvvəl",
+  "counted": true,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": [
+   "n"
+  ]
+ },
+ {
+  "key": "Çıxar",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Çıxarılır…",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "İndi aktiv",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/devices.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Ad",
   "counted": false,
   "files": [
@@ -7023,15 +7313,6 @@
   "placeholders": []
  },
  {
-  "key": "Bu telefonda saxlanan məlumatlar silinir. Hesabın serverdə qalır — hansı yolla girmisənsə, eyni yolla yenidən girə bilərsən.",
-  "counted": false,
-  "files": [
-   "src/app/(tabs)/profile/settings.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Düymələrə basanda titrəmə və qısa səs. İkisini də ayrıca söndürə bilərsən.",
   "counted": false,
   "files": [
@@ -7174,6 +7455,15 @@
   "files": [
    "src/app/(tabs)/profile/settings.tsx",
    "src/app/auth/sign-in.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Hesabının açıq olduğu telefonlar",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/settings.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -7357,6 +7647,15 @@
  },
  {
   "key": "Videolar və zallar",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/profile/settings.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Yalnız bu telefondan çıxırsan: burada saxlanan məlumatlar silinir, digər cihazlarında hesab açıq qalır. Hansı yolla girmisənsə, eyni yolla yenidən girə bilərsən.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/settings.tsx"
@@ -9804,6 +10103,15 @@
  },
  {
   "key": "Bu pəncərə açılmadı",
+  "counted": false,
+  "files": [
+   "src/app/_layout.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Bu telefonda hesabından çıxarıldın. Yenidən daxil ola bilərsən.",
   "counted": false,
   "files": [
    "src/app/_layout.tsx"
@@ -16776,6 +17084,33 @@
   "placeholders": []
  },
  {
+  "key": "Android telefon",
+  "counted": false,
+  "files": [
+   "src/lib/devices.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Naməlum cihaz",
+  "counted": false,
+  "files": [
+   "src/lib/devices.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Veb brauzer",
+  "counted": false,
+  "files": [
+   "src/lib/devices.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Video {size} MB-dır — {limit} MB-a qədər qəbul olunur.",
   "counted": false,
   "files": [
@@ -16813,16 +17148,6 @@
   "files": [
    "src/lib/format.ts",
    "src/lib/reminders.ts"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Dünən",
-  "counted": false,
-  "files": [
-   "src/lib/format.ts",
-   "src/store/db.ts"
   ],
   "kind": "ui",
   "placeholders": []

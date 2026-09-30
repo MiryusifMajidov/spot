@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gym, GymScheduleItem, Partner, toLevel } from '@/data/types';
+import { expectSignOut, linkedSessionEnded } from './sessionGuard';
 import { supabase } from './supabase';
 import { t } from './i18n';
 import { invalidateFocusCache } from './focusFetch';
@@ -120,6 +121,15 @@ export async function ensureSession() {
 
   if (await hasStoredSession()) {
     throw new SessionRestoreError();
+  }
+  // A linked account was signed out of this phone from another one (Aktiv
+  // cihazlar). supabase-js has already dropped the stored token, so the check
+  // above passes — but minting an anonymous user now would carry the previous
+  // account's local data over to it. The session guard clears the phone first.
+  // Not a SessionRestoreError: that one raises the «hesab geri gəlmədi» banner,
+  // and this is an ending the person (or they on another phone) asked for.
+  if (await linkedSessionEnded()) {
+    throw new Error('session_ended_elsewhere');
   }
 
   const { data: anon, error: signInError } = await supabase.auth.signInAnonymously();
@@ -1364,5 +1374,6 @@ export async function deleteMyAccount(): Promise<void> {
   const { error } = await supabase.rpc('delete_my_account');
   if (error) throw error;
   // The session belongs to a user that no longer exists.
-  await supabase.auth.signOut().catch(() => {});
+  expectSignOut();
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 }

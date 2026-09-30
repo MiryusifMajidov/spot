@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { SessionRestoreError, ensureSession, getMatchRequestsSafe, getMyProfile, getUserId, isUsernameConflict, touchLastActive, updateMyProfile, sanctionOf } from '@/lib/api';
 import { isPlaceholderName } from '@/lib/authorName';
+import { touchDevice } from '@/lib/devices';
 import { applyLang, deviceLang, Lang } from '@/lib/i18n';
 import { getMyGymId } from '@/lib/roles';
 import { invalidateFocusCache } from '@/lib/focusFetch';
@@ -331,6 +332,9 @@ export const useAppStore = create<AppState>()(
         // «Son aktiv» — one stamp per launch. Deliberately not awaited and
         // deliberately swallowed: nothing the user sees depends on it.
         void touchLastActive().catch(() => {});
+        // Which phone this session is (Parametrlər → Aktiv cihazlar), and whether
+        // it was signed out from another one while the app was closed.
+        void touchDevice(true);
         // Bring the device's partner-request state back in line with the server.
         // Guarded inside `getMatchRequestsSafe`: on a read failure nothing is
         // reconciled, because an empty result would erase real local records.

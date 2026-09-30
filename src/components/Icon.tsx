@@ -11,7 +11,7 @@ export type IconName =
   | 'flame' | 'users' | 'user' | 'cal' | 'clock' | 'cam' | 'lock' | 'shield'
   | 'share' | 'more' | 'trophy' | 'target' | 'bookmark' | 'bookmarkOn' | 'verified' | 'apple'
   | 'scale' | 'meal' | 'timer' | 'video' | 'grid' | 'edit' | 'qr' | 'arrowU'
-  | 'sound' | 'mute' | 'locate' | 'locateOn';
+  | 'sound' | 'mute' | 'locate' | 'locateOn' | 'phone' | 'browser';
 
 const paths: Record<IconName, (c: string) => ReactNode> = {
   search: (c) => (
@@ -206,6 +206,19 @@ const paths: Record<IconName, (c: string) => ReactNode> = {
     <G fill="none" stroke={c} strokeWidth={1.8}>
       <Path d="M4 8.5V6a2 2 0 0 1 2-2h2.5M15.5 4H18a2 2 0 0 1 2 2v2.5M20 15.5V18a2 2 0 0 1-2 2h-2.5M8.5 20H6a2 2 0 0 1-2-2v-2.5" />
       <Path d="M7.5 12h9" strokeLinecap="round" />
+    </G>
+  ),
+  // Parametrlər → Aktiv cihazlar: a phone, and a browser window for web sessions.
+  phone: (c) => (
+    <G fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round">
+      <Rect x={6.5} y={2.8} width={11} height={18.4} rx={2.6} />
+      <Path d="M10.6 17.6h2.8" />
+    </G>
+  ),
+  browser: (c) => (
+    <G fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round">
+      <Rect x={3.2} y={4.5} width={17.6} height={15} rx={2.6} />
+      <Path d="M3.2 9h17.6" />
     </G>
   ),
   arrowU: (c) => <Path d="M12 20V5m-5.5 5.5L12 4.5l5.5 6" fill="none" stroke={c} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />,
