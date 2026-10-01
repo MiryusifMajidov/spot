@@ -85,7 +85,7 @@
         "expo-camera",
         {
           "cameraPermission": "Kamera üç yerdə işlənir: zalın resepsiyasındakı QR kodu oxumaq, texnika videosu çəkmək və profil şəkli əlavə etmək.",
-          "microphonePermission": false,
+          "microphonePermission": "Texnika videosu səsi ilə çəkildikdə mikrofon işlədilir.",
           "recordAudioAndroid": false
         }
       ],

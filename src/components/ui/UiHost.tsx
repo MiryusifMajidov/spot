@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
+import { BackHandler, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FullWindowOverlay } from 'react-native-screens';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -42,6 +43,38 @@ function untilLabel(until: Date): string {
   return t('{date} tarixinə qədər', { date: until.toLocaleDateString('az-AZ') });
 }
 
+/**
+ * Where dialogs, action sheets and toasts are drawn.
+ *
+ * iOS presents a `presentation: 'modal'` route (Yeni video, Post yaz, Filtr,
+ * Kartlar…) as its own view controller ON TOP of the app's root view — and this
+ * host lives in that root view. So on iPhone every sheet, dialog and toast opened
+ * from a modal screen was drawn BEHIND the modal: «Video çək və ya seç» opened
+ * «Çək / Qalereyadan seç» where nobody could see or reach it, and the forgotten
+ * sheet was still lying over the Feed once the modal closed. Android has no such
+ * layer (its modals are screens in the same window), which is why only iPhone
+ * showed it.
+ *
+ * `FullWindowOverlay` puts its children in a container on the WINDOW — but it
+ * adds that container when it mounts, so a modal presented later covers it. The
+ * layer is therefore mounted only while something is showing, and re-mounted
+ * (key = `seq`) on every opening: each sheet, dialog and toast lands above
+ * whatever is presented at that moment. It stays mounted a moment after closing
+ * so the exit animations still play; while empty it is not mounted at all, which
+ * also keeps it from capturing VoiceOver. Android renders the content in place.
+ */
+function OverlayLayer({ active, layerKey, children }: { active: boolean; layerKey: number; children: ReactNode }) {
+  const [held, setHeld] = useState(false);
+  useEffect(() => {
+    // Hold the layer through the close animation (FadeOut / SlideOutDown ≤ 160 ms).
+    const id = setTimeout(() => setHeld(active), active ? 0 : 260);
+    return () => clearTimeout(id);
+  }, [active]);
+  if (Platform.OS !== 'ios') return <Fragment>{children}</Fragment>;
+  if (!active && !held) return null;
+  return <FullWindowOverlay key={layerKey}>{children}</FullWindowOverlay>;
+}
+
 /** Global overlay host — renders custom toasts, dialogs and action sheets. */
 export function UiHost() {
   const t = useT();
@@ -55,6 +88,7 @@ export function UiHost() {
   const closeComments = useUi((s) => s.closeComments);
   const dismiss = useUi((s) => s.dismiss);
   const hideToast = useUi((s) => s.hideToast);
+  const seq = useUi((s) => s.seq);
   // The banner used to sit at `insets.top + 6`, directly over every screen's
   // title — «Kəşf» was invisible for as long as the sanction lasted. It now sits
   // above the tab bar, where it is still on every screen and still unmissable,
@@ -95,104 +129,106 @@ export function UiHost() {
 
   return (
     <>
-      {/* ---- Centered dialog ---- */}
-      {dialog ? (
-        <Animated.View entering={FadeIn.duration(140)} exiting={FadeOut.duration(120)} style={styles.backdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
-          <Animated.View entering={FadeInDown.duration(180)} exiting={FadeOutDown.duration(130)} style={styles.dialog}>
-            <AppText variant="title3" center>
-              {dialog.title}
-            </AppText>
-            {dialog.message ? (
-              <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, lineHeight: 21 }}>
-                {dialog.message}
+      <OverlayLayer active={!!(dialog || sheet || toast)} layerKey={seq}>
+        {/* ---- Centered dialog ---- */}
+        {dialog ? (
+          <Animated.View entering={FadeIn.duration(140)} exiting={FadeOut.duration(120)} style={styles.backdrop}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
+            <Animated.View entering={FadeInDown.duration(180)} exiting={FadeOutDown.duration(130)} style={styles.dialog}>
+              <AppText variant="title3" center>
+                {dialog.title}
               </AppText>
-            ) : null}
-            {/* Two actions sit side by side; three or more stack. `flex: 1` is
-                applied ONLY in the row case — in a column the container has no
-                fixed height, so a flexed child collapses to nothing. With four
-                actions the buttons disappeared entirely and the dialog became a
-                question with no answers. */}
-            <View style={[styles.dialogActions, dialog.actions.length === 2 ? { flexDirection: 'row' } : undefined]}>
-              {dialog.actions.map((a) => {
-                const c = actionColors(a.style);
-                return (
-                  <PressableScale
-                    key={a.label}
-                    activeScale={0.97}
-                    onPress={() => run(a)}
-                    style={[
-                      styles.dialogBtn,
-                      dialog.actions.length === 2 ? { flex: 1 } : null,
-                      { backgroundColor: c.bg, borderColor: c.border, borderWidth: c.border === 'transparent' ? 0 : 1 },
-                    ]}>
-                    <AppText center numberOfLines={2} style={{ fontSize: 15.5, fontWeight: '600', color: c.text }}>
-                      {a.label}
-                    </AppText>
-                  </PressableScale>
-                );
-              })}
-            </View>
-          </Animated.View>
-        </Animated.View>
-      ) : null}
-
-      {/* ---- Bottom action sheet ---- */}
-      {sheet ? (
-        <Animated.View entering={FadeIn.duration(140)} exiting={FadeOut.duration(120)} style={styles.backdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
-          <Animated.View entering={SlideInDown.duration(220)} exiting={SlideOutDown.duration(160)} style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
-            {sheet.title || sheet.message ? (
-              <View style={styles.sheetHeader}>
-                {sheet.title ? <AppText variant="headline">{sheet.title}</AppText> : null}
-                {sheet.message ? (
-                  <AppText variant="footnote" color={palette.caption} style={{ marginTop: 4, lineHeight: 18 }}>
-                    {sheet.message}
-                  </AppText>
-                ) : null}
-              </View>
-            ) : null}
-            <View style={styles.sheetGroup}>
-              {sheet.actions
-                .filter((a) => a.style !== 'cancel')
-                .map((a, i) => (
-                  <View key={a.label}>
-                    {i > 0 ? <View style={styles.sheetSep} /> : null}
-                    <PressableScale activeScale={0.98} onPress={() => run(a)} style={styles.sheetRow}>
-                      <AppText style={{ fontSize: 16, fontWeight: '500', color: a.style === 'destructive' ? palette.red : palette.inkText }}>
+              {dialog.message ? (
+                <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, lineHeight: 21 }}>
+                  {dialog.message}
+                </AppText>
+              ) : null}
+              {/* Two actions sit side by side; three or more stack. `flex: 1` is
+                  applied ONLY in the row case — in a column the container has no
+                  fixed height, so a flexed child collapses to nothing. With four
+                  actions the buttons disappeared entirely and the dialog became a
+                  question with no answers. */}
+              <View style={[styles.dialogActions, dialog.actions.length === 2 ? { flexDirection: 'row' } : undefined]}>
+                {dialog.actions.map((a) => {
+                  const c = actionColors(a.style);
+                  return (
+                    <PressableScale
+                      key={a.label}
+                      activeScale={0.97}
+                      onPress={() => run(a)}
+                      style={[
+                        styles.dialogBtn,
+                        dialog.actions.length === 2 ? { flex: 1 } : null,
+                        { backgroundColor: c.bg, borderColor: c.border, borderWidth: c.border === 'transparent' ? 0 : 1 },
+                      ]}>
+                      <AppText center numberOfLines={2} style={{ fontSize: 15.5, fontWeight: '600', color: c.text }}>
                         {a.label}
                       </AppText>
                     </PressableScale>
-                  </View>
-                ))}
-            </View>
-            <PressableScale activeScale={0.98} onPress={dismiss} style={styles.sheetCancel}>
-              <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
-                {sheet.actions.find((a) => a.style === 'cancel')?.label ?? t('Ləğv et')}
-              </AppText>
-            </PressableScale>
+                  );
+                })}
+              </View>
+            </Animated.View>
           </Animated.View>
-        </Animated.View>
-      ) : null}
+        ) : null}
 
-      {/* ---- Toast ----
-          Cleared above the native tab bar. The host is outside the tab navigator, so
-          `insets.bottom` here is the system inset only and the bar's own height has to
-          be allowed for by hand. */}
-      {toast ? (
-        <View pointerEvents="box-none" style={[styles.toastWrap, { bottom: bannerBottom + (banner ? bannerH + 8 : 0) }]}>
-          <Animated.View entering={FadeInDown.duration(200)} exiting={FadeOutDown.duration(160)}>
-            <PressableScale haptic={false} activeScale={0.98} onPress={hideToast} style={styles.toast}>
-              {toast.kind !== 'info' ? (
-                <View style={[styles.toastDot, { backgroundColor: toast.kind === 'error' ? palette.red : palette.volt }]}>
-                  <Icon name={toast.kind === 'error' ? 'x' : 'check'} size={12} color={toast.kind === 'error' ? palette.white : palette.inkText} />
+        {/* ---- Bottom action sheet ---- */}
+        {sheet ? (
+          <Animated.View entering={FadeIn.duration(140)} exiting={FadeOut.duration(120)} style={styles.backdrop}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
+            <Animated.View entering={SlideInDown.duration(220)} exiting={SlideOutDown.duration(160)} style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
+              {sheet.title || sheet.message ? (
+                <View style={styles.sheetHeader}>
+                  {sheet.title ? <AppText variant="headline">{sheet.title}</AppText> : null}
+                  {sheet.message ? (
+                    <AppText variant="footnote" color={palette.caption} style={{ marginTop: 4, lineHeight: 18 }}>
+                      {sheet.message}
+                    </AppText>
+                  ) : null}
                 </View>
               ) : null}
-              <AppText style={{ color: palette.white, fontSize: 14, fontWeight: '600', flexShrink: 1 }}>{toast.msg}</AppText>
-            </PressableScale>
+              <View style={styles.sheetGroup}>
+                {sheet.actions
+                  .filter((a) => a.style !== 'cancel')
+                  .map((a, i) => (
+                    <View key={a.label}>
+                      {i > 0 ? <View style={styles.sheetSep} /> : null}
+                      <PressableScale activeScale={0.98} onPress={() => run(a)} style={styles.sheetRow}>
+                        <AppText style={{ fontSize: 16, fontWeight: '500', color: a.style === 'destructive' ? palette.red : palette.inkText }}>
+                          {a.label}
+                        </AppText>
+                      </PressableScale>
+                    </View>
+                  ))}
+              </View>
+              <PressableScale activeScale={0.98} onPress={dismiss} style={styles.sheetCancel}>
+                <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
+                  {sheet.actions.find((a) => a.style === 'cancel')?.label ?? t('Ləğv et')}
+                </AppText>
+              </PressableScale>
+            </Animated.View>
           </Animated.View>
-        </View>
-      ) : null}
+        ) : null}
+
+        {/* ---- Toast ----
+            Cleared above the native tab bar. The host is outside the tab navigator, so
+            `insets.bottom` here is the system inset only and the bar's own height has to
+            be allowed for by hand. */}
+        {toast ? (
+          <View pointerEvents="box-none" style={[styles.toastWrap, { bottom: bannerBottom + (banner ? bannerH + 8 : 0) }]}>
+            <Animated.View entering={FadeInDown.duration(200)} exiting={FadeOutDown.duration(160)}>
+              <PressableScale haptic={false} activeScale={0.98} onPress={hideToast} style={styles.toast}>
+                {toast.kind !== 'info' ? (
+                  <View style={[styles.toastDot, { backgroundColor: toast.kind === 'error' ? palette.red : palette.volt }]}>
+                    <Icon name={toast.kind === 'error' ? 'x' : 'check'} size={12} color={toast.kind === 'error' ? palette.white : palette.inkText} />
+                  </View>
+                ) : null}
+                <AppText style={{ color: palette.white, fontSize: 14, fontWeight: '600', flexShrink: 1 }}>{toast.msg}</AppText>
+              </PressableScale>
+            </Animated.View>
+          </View>
+        ) : null}
+      </OverlayLayer>
       {/* Rendered here, not inside the feed screen, for two reasons: the root sits
           above the tab bar, so the bar can never cover the composer; and it stays
           in the app's own window rather than a Modal's, which is what lets the

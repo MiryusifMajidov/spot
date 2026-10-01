@@ -44,6 +44,10 @@ interface UiState {
    *  `adjustResize` moves it above the keyboard by itself. Inside a Modal (its
    *  own window) neither of those held. */
   comments: string | null;
+  /** Bumped every time a toast, dialog or sheet opens. On iOS the overlay layer
+   *  is keyed on it so each opening lands ABOVE any native modal presented since
+   *  the layer was last mounted (UiHost.tsx). */
+  seq: number;
   showToast: (msg: string, kind?: ToastKind) => void;
   hideToast: () => void;
   showDialog: (d: Dialog) => void;
@@ -60,9 +64,10 @@ export const useUi = create<UiState>((set) => ({
   dialog: null,
   sheet: null,
   comments: null,
+  seq: 0,
   showToast: (msg, kind = 'success') => {
     if (toastTimer) clearTimeout(toastTimer);
-    set({ toast: { id: Date.now(), msg, kind } });
+    set((s) => ({ toast: { id: Date.now(), msg, kind }, seq: s.seq + 1 }));
     toastTimer = setTimeout(() => set({ toast: null }), 2400);
   },
   hideToast: () => set({ toast: null }),
@@ -71,11 +76,11 @@ export const useUi = create<UiState>((set) => ({
      gate fired from the comment composer). Close the keyboard first, always. */
   showDialog: (dialog) => {
     Keyboard.dismiss();
-    set({ dialog, sheet: null });
+    set((s) => ({ dialog, sheet: null, seq: s.seq + 1 }));
   },
   showSheet: (sheet) => {
     Keyboard.dismiss();
-    set({ sheet, dialog: null });
+    set((s) => ({ sheet, dialog: null, seq: s.seq + 1 }));
   },
   openComments: (comments) => set({ comments }),
   closeComments: () => set({ comments: null }),

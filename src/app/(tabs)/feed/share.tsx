@@ -77,10 +77,17 @@ export default function Share() {
     setMeta({ durationSec: secs, sizeBytes: a.fileSize ?? null });
   };
 
+  /* Both pickers throw on iOS for reasons that are not «cancelled» (no camera,
+     a missing usage key, a picker that would not present) — and an unhandled
+     rejection here did nothing at all: no picker, no message. */
   const fromLibrary = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: MAX_SECONDS });
-    if (res.canceled || !res.assets[0]) return;
-    accept(res.assets[0]);
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: MAX_SECONDS });
+      if (res.canceled || !res.assets[0]) return;
+      accept(res.assets[0]);
+    } catch {
+      toast(t('Video açılmadı'), 'error');
+    }
   };
 
   /* The card says «Video çək və ya seç» and there was no way to çək: this screen
@@ -93,9 +100,13 @@ export default function Share() {
       toast(t('Kamera üçün icazə verilməyib — cihaz Ayarlarından SPOT-a kamera icazəsi ver'), 'error');
       return;
     }
-    const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: MAX_SECONDS });
-    if (res.canceled || !res.assets[0]) return;
-    accept(res.assets[0]);
+    try {
+      const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: MAX_SECONDS });
+      if (res.canceled || !res.assets[0]) return;
+      accept(res.assets[0]);
+    } catch {
+      toast(t('Video açılmadı'), 'error');
+    }
   };
 
   const pick = () =>
