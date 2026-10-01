@@ -14,7 +14,7 @@ import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { useAllPrograms } from '@/store/db';
 import { actionSheet, toast } from '@/store/ui';
-import { hitSlop, palette, radius, spacing } from '@/theme';
+import { hitSlop, palette, radius, spacing, inputTint } from '@/theme';
 
 export default function Share() {
   const t = useT();
@@ -198,7 +198,7 @@ export default function Share() {
           hitSlop={hitSlop}
           accessibilityRole="button"
           style={styles.headerBtn}>
-          <AppText variant="body" color={palette.blue}>
+          <AppText variant="body" color={palette.inkText} style={{ fontWeight: '500' }}>
             {t('Bağla')}
           </AppText>
         </PressableScale>
@@ -217,10 +217,10 @@ export default function Share() {
           {/* While uploading, the label stays in the layout (just invisible) with
               the spinner over it, so the button keeps its width and the title does
               not jump sideways. */}
-          <AppText variant="headline" color={uri ? palette.blue : palette.tertiary} style={uploading && styles.hidden}>
+          <AppText variant="headline" color={uri ? palette.inkText : palette.tertiary} style={uploading && styles.hidden}>
             {t('Paylaş')}
           </AppText>
-          {uploading && <ActivityIndicator color={palette.blue} style={StyleSheet.absoluteFill} />}
+          {uploading && <ActivityIndicator color={palette.inkText} style={StyleSheet.absoluteFill} />}
         </PressableScale>
       </View>
 
@@ -240,7 +240,7 @@ export default function Share() {
         <AppText variant="overline" color={palette.caption} style={styles.label}>
           {t('Təsvir')}
         </AppText>
-        <TextInput
+        <TextInput {...inputTint}
           value={caption}
           onChangeText={setCaption}
           placeholder={t('Nə göstərirsən? Hansı hərəkət?')}

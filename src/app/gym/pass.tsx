@@ -12,7 +12,7 @@ import type { t as T } from '@/lib/i18n';
 import { checkDayPass, redeemDayPass, type PassCheck } from '@/lib/roles';
 import { useFormat, useT, type Fmt } from '@/lib/useT';
 import { toast } from '@/store/ui';
-import { palette, radius, spacing } from '@/theme';
+import { palette, radius, spacing, inputTint } from '@/theme';
 
 /**
  * «Day-pass yoxla» — the missing half of the day-pass.
@@ -131,7 +131,7 @@ export default function GymPass() {
           )}
         </AppText>
 
-        <TextInput
+        <TextInput {...inputTint}
           value={code}
           onChangeText={(t) => {
             setCode(t.toUpperCase().slice(0, 8));

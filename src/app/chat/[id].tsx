@@ -27,7 +27,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ago = (iso: string, tr: (s: string, v?: Record<string, string | number>) => string) =>
   timeAgo(iso, Date.now(), tr);
 import { useDiscoverPrefs } from '@/store/discoverPrefs';
-import { iconSize, palette, spacing } from '@/theme';
+import { iconSize, palette, spacing, inputTint } from '@/theme';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { toast } from '@/store/ui';
@@ -320,7 +320,7 @@ export default function Conversation() {
             ))}
           </ScrollView>
           <View style={styles.inputRow}>
-            <TextInput
+            <TextInput {...inputTint}
               value={text}
               onChangeText={setText}
               placeholder={t('Mesaj yaz…')}

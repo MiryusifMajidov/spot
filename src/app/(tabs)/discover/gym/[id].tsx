@@ -31,7 +31,7 @@ import { useFormat, useT } from '@/lib/useT';
 import { gymById, useDb } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
-import { iconSize, palette, spacing } from '@/theme';
+import { iconSize, palette, spacing, inputTint } from '@/theme';
 
 /** Local wall-clock HH:MM — the pass expiry is stored as a real timestamp. */
 const hhmm = (iso: string) => {
@@ -619,7 +619,7 @@ export default function GymDetail() {
                 <View style={styles.nameRow}>
                   <AppText variant="title">{gym.name}</AppText>
                   {/* 20 beside the 27 pt title, as on the trainer page. */}
-                  {gym.verified && <Icon name="verified" size={20} color={palette.blue} />}
+                  {gym.verified && <Icon name="verified" size={20} color={palette.voltDeep} />}
                 </View>
                 <View style={styles.ratingRow}>
                   {avgRating !== null ? (
@@ -1026,7 +1026,7 @@ export default function GymDetail() {
                               </PressableScale>
                             ))}
                           </View>
-                          <TextInput
+                          <TextInput {...inputTint}
                             value={reviewText}
                             onChangeText={setReviewText}
                             placeholder={t('Təcrübəni yaz…')}
@@ -1114,7 +1114,7 @@ export default function GymDetail() {
                             read the same words. */}
                         {r.reply ? (
                           <View style={styles.reply}>
-                            <AppText style={{ fontSize: 12, fontWeight: '700', color: palette.blue }}>
+                            <AppText style={{ fontSize: 12, fontWeight: '700', color: palette.inkText }}>
                               {t('{gym} · rəsmi cavab', { gym: gym.name })}{r.replyAt && dayLabel(r.replyAt) ? ` · ${dayLabel(r.replyAt)}` : ''}
                             </AppText>
                             <AppText variant="footnote" color={palette.text3} style={{ marginTop: 4, lineHeight: 18 }}>
@@ -1172,7 +1172,7 @@ function InfoCard({ icon, title, sub, onPress }: { icon: 'clock' | 'users' | 'pi
       <AppText style={{ fontSize: 13.5, fontWeight: '600', marginTop: 8 }} numberOfLines={1}>
         {title}
       </AppText>
-      <AppText style={{ fontSize: 11.5, color: onPress ? palette.blue : palette.caption, marginTop: 3 }}>{sub}</AppText>
+      <AppText style={{ fontSize: 11.5, color: onPress ? palette.inkText : palette.caption, fontWeight: onPress ? '600' : '400', marginTop: 3 }}>{sub}</AppText>
     </>
   );
   if (onPress) {
@@ -1230,9 +1230,9 @@ const styles = StyleSheet.create({
   passHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   passCode: { fontSize: 30, fontWeight: '800', letterSpacing: 3, marginTop: 8, color: palette.inkText },
   avatars: { flexDirection: 'row', alignItems: 'center' },
-  avatarDot: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: '#F6FBEA' },
+  avatarDot: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: palette.white },
   avatarMore: { marginLeft: -10, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
-  liveText: { flex: 1, fontSize: 13, fontWeight: '600', color: '#3F5500', lineHeight: 18 },
+  liveText: { flex: 1, fontSize: 13, fontWeight: '600', color: palette.voltText, lineHeight: 18 },
   infoRow: { flexDirection: 'row', gap: 9, marginTop: 14 },
   infoCard: { flex: 1, backgroundColor: palette.white, borderRadius: 14, padding: 13 },
   amenities: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
@@ -1240,7 +1240,7 @@ const styles = StyleSheet.create({
   review: { backgroundColor: palette.white, borderRadius: 14, padding: 14, marginBottom: 10 },
   reviewHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   // Same card the owner panel draws its own reply in (src/app/gym/reviews.tsx).
-  reply: { backgroundColor: 'rgba(10,132,255,0.06)', borderRadius: 12, padding: 12, marginTop: 12 },
+  reply: { backgroundColor: palette.inkTint, borderRadius: 12, padding: 12, marginTop: 12 },
   classRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 13 },
   classTime: { fontSize: 16, fontWeight: '700', width: 52 },
   classDiv: { width: 1, alignSelf: 'stretch', backgroundColor: palette.separator },

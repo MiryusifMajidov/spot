@@ -4,6 +4,22 @@
  * a few screens (welcome, active workout, video feed) are dark and use `dark` tokens.
  *
  * Principle: "simplicity in structure, magnificence in motion."
+ *
+ * COLOUR — one primary, one accent, and colour only where it means something.
+ *   · Ink is the primary: buttons, active states, EVERY navigation glyph and every
+ *     text action («Bağla», «Paylaş», «Hamısı»). A text action is told apart from
+ *     text by weight (500/600), not by a link colour.
+ *   · Volt is the accent — energy, success, live, verified. It is 1.2:1 on white,
+ *     so on light surfaces it is a FILL only (with ink on it); a green glyph on a
+ *     light surface is `voltDeep` (4.7:1), green text is `voltText` (8.4:1). On dark
+ *     surfaces volt itself is the glyph and the text (16.6:1).
+ *   · Streak orange is seriya AND warning — one orange family: `streak` for glyphs
+ *     and fills (2.8:1 — never small text), `streakText` for words (5.4:1).
+ *   · Red is danger only: delete, errors, unread badges.
+ *   · There is no blue. It was iOS's system tint, it came in through links, the
+ *     back chevron, the verified seal and the settings tiles, and it made SPOT read
+ *     as two apps — «some icons blue, some green». Removed from the palette so it
+ *     cannot creep back.
  */
 import { Platform, TextStyle } from 'react-native';
 
@@ -11,9 +27,10 @@ export const palette = {
   ink: '#101014', // primary buttons, active states
   inkText: '#0B0B0E', // near-black text
   ink17: '#17171C', // elevated dark surface
-  volt: '#C6FF3D', // energy / selection accent
-  voltText: '#4C6B00', // readable text on volt tint
-  voltDeep: '#5B7F00',
+  volt: '#C6FF3D', // accent — fills; glyphs/text only on dark surfaces
+  voltText: '#3F5500', // green TEXT on light surfaces and volt tints (8.4:1 on white)
+  voltDeep: '#5B7F00', // green GLYPHS on light surfaces (4.7:1 on white)
+  voltTint: 'rgba(198,255,61,0.24)', // success / verified chip background
   white: '#FFFFFF',
   canvas: '#E9E9EC', // app canvas behind cards
   grouped: '#F4F4F6', // grouped list background / tag fill
@@ -28,11 +45,31 @@ export const palette = {
   separator: 'rgba(60,60,67,0.18)',
   hairline: 'rgba(60,60,67,0.12)',
   cardBorder: 'rgba(60,60,67,0.10)',
-  streak: '#FF6B35', // streak / warning accent
-  red: '#FF3B30', // destructive / notification
-  blue: '#0A84FF', // iOS system blue (links, verified)
+  streak: '#FF6B35', // seriya + warning — glyphs and fills
+  streakText: '#B8441A', // orange TEXT on light surfaces (5.4:1 on white)
+  streakTint: 'rgba(255,107,53,0.12)', // warning / seriya chip background
+  red: '#FF3B30', // destructive / unread
+  inkTint: 'rgba(16,16,20,0.06)', // neutral chip / quote background
   overlay: 'rgba(11,11,14,0.55)',
 } as const;
+
+/**
+ * The caret, selection handles and selection highlight of a text field. Without
+ * them iOS drew all three in its system blue — the last blue left in SPOT, on
+ * every field. Spread FIRST on a TextInput (`<TextInput {...inputTint} …>`).
+ * iOS tints all three from `selectionColor`; Android paints the highlight with it
+ * as-is, so there it is a translucent volt (ink text stays readable on it) and the
+ * caret comes from `cursorColor`.
+ */
+export const inputTint = Platform.select({
+  ios: { selectionColor: '#5B7F00' },
+  default: { selectionColor: 'rgba(198,255,61,0.55)', cursorColor: '#5B7F00' },
+});
+/** The same on a dark surface (the active workout): volt is the caret there. */
+export const inputTintDark = Platform.select({
+  ios: { selectionColor: '#C6FF3D' },
+  default: { selectionColor: 'rgba(198,255,61,0.4)', cursorColor: '#C6FF3D' },
+});
 
 /** Semantic tokens for the default (light) surface. */
 export const colors = {
@@ -46,7 +83,7 @@ export const colors = {
   accent: palette.ink,
   accentText: palette.white,
   volt: palette.volt,
-  link: palette.blue,
+  link: palette.inkText, // text actions are ink; weight marks them, not colour
   separator: palette.separator,
   fill: palette.fill,
   streak: palette.streak,

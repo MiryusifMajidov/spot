@@ -49,13 +49,13 @@ export default function Filter() {
       <View style={styles.grabber} />
       <View style={styles.header}>
         <PressableScale haptic={false} activeScale={0.94} onPress={reset}>
-          <AppText variant="body" color={palette.blue}>
+          <AppText variant="body" color={palette.inkText} style={{ fontWeight: '500' }}>
             {t('Sıfırla')}
           </AppText>
         </PressableScale>
         <AppText variant="headline">{t('Filtr')}</AppText>
         <PressableScale haptic={false} activeScale={0.94} onPress={() => router.back()}>
-          <AppText variant="body" color={palette.blue}>
+          <AppText variant="body" color={palette.inkText} style={{ fontWeight: '500' }}>
             {t('Bağla')}
           </AppText>
         </PressableScale>

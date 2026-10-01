@@ -126,7 +126,7 @@ export default function Creator() {
               <Avatar name={shown} size={84} />
               <View style={styles.nameRow}>
                 <AppText variant="title2">{shown}</AppText>
-                {params.verified === '1' ? <Icon name="verified" size={18} color={palette.blue} /> : null}
+                {params.verified === '1' ? <Icon name="verified" size={18} color={palette.voltDeep} /> : null}
               </View>
               {/* Own profile only, and only if a handle really exists. */}
               {myHandle ? (
@@ -136,8 +136,8 @@ export default function Creator() {
               ) : null}
               {isTrainer ? (
                 <View style={styles.trainerTag}>
-                  <Icon name="verified" size={12} color={palette.blue} />
-                  <AppText style={{ color: palette.blue, fontSize: 12, fontWeight: '700' }}>{trainer ? t('MÜƏLLİM · {specialty}', { specialty: trainer.specialty }) : t('MÜƏLLİM')}</AppText>
+                  <Icon name="users" size={12} color={palette.inkText} />
+                  <AppText style={{ color: palette.inkText, fontSize: 12, fontWeight: '700' }}>{trainer ? t('MÜƏLLİM · {specialty}', { specialty: trainer.specialty }) : t('MÜƏLLİM')}</AppText>
                 </View>
               ) : null}
               {trainer?.bio ? (
@@ -226,7 +226,7 @@ function VideoTile({ v }: { v: FeedVideo }) {
 const styles = StyleSheet.create({
   header: { alignItems: 'center', paddingTop: 6 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 14 },
-  trainerTag: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(10,132,255,0.1)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 10 },
+  trainerTag: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: palette.inkTint, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 10 },
   stats: { flexDirection: 'row', gap: 30, marginTop: 18 },
   /* A 44 pt hit area around the 22 pt glyph — it was the bare glyph, so a thumb on
      its edge hit nothing. The negative margin gives back the 11 pt of padding on the

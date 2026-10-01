@@ -115,7 +115,7 @@ export default function Analytics() {
           </View>
           {imbalance ? (
             <View style={styles.warn}>
-              <AppText style={{ fontSize: 12.5, lineHeight: 18, color: '#8A4A25' }}>
+              <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.streakText }}>
                 {t('{muscle} həcmi ən yüksək qrupdan {ratio} dəfə azdır — disbalans riski. Bu qrupa hərəkət əlavə et.', {
                   muscle: t(imbalance.low),
                   ratio: imbalance.ratio,
@@ -124,7 +124,7 @@ export default function Analytics() {
             </View>
           ) : nonZero.length >= 3 ? (
             <View style={[styles.warn, { backgroundColor: 'rgba(198,255,61,0.16)' }]}>
-              <AppText style={{ fontSize: 12.5, lineHeight: 18, color: '#3F5500' }}>
+              <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.voltText }}>
                 {t('Əzələ qrupları balanslıdır. Belə davam et.')}
               </AppText>
             </View>
@@ -193,7 +193,7 @@ export default function Analytics() {
         {hasData ? (
           <PressableScale activeScale={0.98} onPress={shareReport} style={styles.sendCard} accessibilityRole="button">
             <View style={styles.sendIcon}>
-              <Icon name="share" size={20} color={palette.volt} />
+              <Icon name="share" size={20} color={palette.voltDeep} />
             </View>
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Hesabatı paylaş')}</AppText>

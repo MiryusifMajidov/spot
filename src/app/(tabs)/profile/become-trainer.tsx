@@ -20,7 +20,7 @@ import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, confirm, toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { palette, spacing, inputTint } from '@/theme';
 
 /* 'unsynced' = the read worked and there is no listing row. 'unsaved' = the last
    save did not reach the server; the row may well exist with older data, so it
@@ -530,7 +530,7 @@ export default function BecomeTrainer() {
               <Icon
                 name={syncBad ? 'shield' : status === 'approved' && badge ? 'verified' : 'clock'}
                 size={17}
-                color={syncBad ? palette.red : status === 'approved' && badge ? palette.blue : '#FF9500'}
+                color={syncBad ? palette.red : status === 'approved' && badge ? palette.voltDeep : palette.streak}
               />
               <AppText style={{ fontSize: 14, fontWeight: '600', flex: 1 }}>
                 {!hasSupabaseConfig
@@ -661,7 +661,7 @@ function Field({ label, value, onChangeText, placeholder, keyboardType, multilin
       <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 8, fontWeight: '600' }}>
         {label}
       </AppText>
-      <TextInput
+      <TextInput {...inputTint}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

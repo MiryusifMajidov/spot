@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   partnerTag: { backgroundColor: 'rgba(198,255,61,0.35)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   trainerTag: { backgroundColor: palette.grouped, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
-  unread: { width: 10, height: 10, borderRadius: 5, backgroundColor: palette.blue },
+  unread: { width: 10, height: 10, borderRadius: 5, backgroundColor: palette.inkText },
   empty: { alignItems: 'center', paddingVertical: 40 },
   note: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 18, paddingHorizontal: 4 },
 });

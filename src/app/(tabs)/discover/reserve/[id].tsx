@@ -19,7 +19,7 @@ import { getMyRequestTo, requestTrainer, type TrainerRequestRow } from '@/lib/ro
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { palette, spacing, inputTint } from '@/theme';
 
 const SLOTS = ['09:00', '10:00', '11:00', '17:00', '18:00', '19:00', '20:00', '21:00'];
 
@@ -283,7 +283,7 @@ export default function Reserve() {
               <AppText variant="overline" color={palette.caption} style={{ marginTop: 22, marginBottom: 10 }}>
                 {t('Qeyd (məcburi deyil)')}
               </AppText>
-              <TextInput
+              <TextInput {...inputTint}
                 value={note}
                 onChangeText={setNote}
                 placeholder={t('Məqsədin, təcrübən, travma varsa yaz…')}

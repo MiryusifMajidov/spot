@@ -134,7 +134,7 @@ export default function TrainerDetail() {
           <View style={styles.nameRow}>
             <AppText variant="title">{trainer.name}</AppText>
             {trainer.verified ? (
-              <Icon name="verified" size={20} color={palette.blue} />
+              <Icon name="verified" size={20} color={palette.voltDeep} />
             ) : (
               <View style={styles.unverified}>
                 <AppText style={styles.unverifiedText}>{t('Doğrulanmayıb')}</AppText>

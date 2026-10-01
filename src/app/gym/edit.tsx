@@ -20,7 +20,7 @@ import { addGymPhoto, imageTooLargeMessage, isNotSavedError, pickImage, removeGy
 import { supabase } from '@/lib/supabase';
 import { useFormat, useT } from '@/lib/useT';
 import { actionSheet, confirm, toast, useUi, type UiAction } from '@/store/ui';
-import { iconSize, palette, spacing } from '@/theme';
+import { iconSize, palette, spacing, inputTint } from '@/theme';
 
 type Coords = { lat: number; lng: number };
 
@@ -414,7 +414,7 @@ export default function GymEdit() {
             accessibilityRole="button"
             accessibilityState={{ disabled: saving, busy: saving }}
             style={styles.saveBtn}>
-            <AppText style={{ fontSize: 15, fontWeight: '600', color: saving ? palette.tertiary : palette.blue }}>
+            <AppText style={{ fontSize: 15, fontWeight: '600', color: saving ? palette.tertiary : palette.inkText }}>
               {saving ? t('Saxlanılır…') : t('Saxla')}
             </AppText>
           </PressableScale>
@@ -533,7 +533,7 @@ export default function GymEdit() {
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
             {t('ZAL HAQQINDA')}
           </AppText>
-          <TextInput
+          <TextInput {...inputTint}
             value={about}
             onChangeText={mark(setAbout)}
             multiline
@@ -647,7 +647,7 @@ function TextRow({
   return (
     <View style={styles.priceRow}>
       <AppText style={{ fontSize: 15, color: palette.tertiary, width: 92 }}>{label}</AppText>
-      <TextInput
+      <TextInput {...inputTint}
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
@@ -671,7 +671,7 @@ function PriceRow({ label, value, onChange }: { label: string; value: string; on
   return (
     <View style={styles.priceRow}>
       <AppText style={{ fontSize: 15, color: palette.tertiary, width: 92 }}>{label}</AppText>
-      <TextInput
+      <TextInput {...inputTint}
         value={value}
         onChangeText={onChange}
         keyboardType="numeric"
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
   note: { fontSize: 11.5, lineHeight: 16, color: palette.tertiary, marginTop: -4, marginBottom: 14, paddingHorizontal: 4 },
   noteLast: { marginTop: 2 },
   hint: { fontSize: 12, lineHeight: 17, color: palette.tertiary },
-  warn: { fontSize: 12, lineHeight: 17, color: '#FF9500', fontWeight: '500', marginTop: 10 },
+  warn: { fontSize: 12, lineHeight: 17, color: palette.streakText, fontWeight: '500', marginTop: 10 },
   coverWrap: { borderRadius: 14, overflow: 'hidden', backgroundColor: palette.grouped },
   cover: { width: '100%', height: 160 },
   coverBadge: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(11,11,14,0.72)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },

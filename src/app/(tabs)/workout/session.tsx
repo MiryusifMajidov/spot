@@ -35,7 +35,7 @@ import {
 } from '@/store/db';
 import { useSessionPick } from '@/store/sessionPick';
 import { confirm, toast } from '@/store/ui';
-import { dark, iconSize, palette, radius, spacing } from '@/theme';
+import { dark, iconSize, palette, radius, spacing, inputTintDark } from '@/theme';
 import { resolveDayExercises } from './day';
 
 /* `id` is the set's identity for its whole life on this screen — the React key of
@@ -835,7 +835,7 @@ export default function Session() {
                 <View style={[styles.setRow, s.done && styles.setRowDone]} onTouchStart={closeOpenRow}>
                   <AppText style={[styles.setIndex, { width: 34 }]}>{i + 1}</AppText>
                   <AppText style={{ flex: 1, color: dark.textTertiary, fontSize: 13 }}>{current.prev}</AppText>
-                  <TextInput
+                  <TextInput {...inputTintDark}
                     value={s.kg}
                     onChangeText={(v) => update(s.id, 'kg', v)}
                     keyboardType="numeric"
@@ -843,7 +843,7 @@ export default function Session() {
                     placeholder={current.bodyweight ? t('öz') : '—'}
                     placeholderTextColor={dark.textTertiary}
                   />
-                  <TextInput
+                  <TextInput {...inputTintDark}
                     value={s.reps}
                     onChangeText={(v) => update(s.id, 'reps', v)}
                     keyboardType="numeric"

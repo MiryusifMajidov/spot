@@ -25,7 +25,7 @@ import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
-import { palette, radius, spacing } from '@/theme';
+import { palette, radius, spacing, inputTint } from '@/theme';
 
 /**
  * Sign in — in two moods, because two different people arrive here.
@@ -292,7 +292,7 @@ export default function SignIn() {
             <AppText variant="overline" color={palette.caption} style={styles.label}>
               {t('VƏ YA MƏKTUBDAKI KODU YAZ')}
             </AppText>
-            <TextInput
+            <TextInput {...inputTint}
               value={code}
               onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 8))}
               placeholder="123456"
@@ -313,7 +313,7 @@ export default function SignIn() {
               {t('Məktubda yalnız keçid varsa, kod xanasını boş burax — keçidə toxunmaq kifayətdir.')}
             </AppText>
             <PressableScale haptic={false} onPress={() => setSent(null)} style={styles.backLink}>
-              <AppText variant="subhead" color={palette.blue}>
+              <AppText variant="subhead" color={palette.inkText} style={{ fontWeight: '600' }}>
                 {t('Başqa üsulla')}
               </AppText>
             </PressableScale>
@@ -352,7 +352,7 @@ export default function SignIn() {
             <AppText variant="overline" color={palette.caption} style={styles.label}>
               {t('E-POÇT İLƏ')}
             </AppText>
-            <TextInput
+            <TextInput {...inputTint}
               value={email}
               onChangeText={setEmail}
               placeholder={t('ad@gmail.com')}
@@ -373,14 +373,14 @@ export default function SignIn() {
                   style={{ marginTop: 12 }}
                 />
                 <PressableScale activeScale={0.97} onPress={() => setByCode(false)} style={styles.switchRow}>
-                  <AppText variant="footnote" color={palette.blue}>
+                  <AppText variant="footnote" color={palette.inkText} style={{ fontWeight: '600' }}>
                     {t('Parolla daxil ol')}
                   </AppText>
                 </PressableScale>
               </>
             ) : (
               <>
-                <TextInput
+                <TextInput {...inputTint}
                   value={password}
                   onChangeText={setPassword}
                   placeholder={t('Parol — ən azı {n} simvol', { n: PASSWORD_MIN, count: PASSWORD_MIN })}
@@ -402,7 +402,7 @@ export default function SignIn() {
                   {t('Hesabın varsa daxil olacaqsan, yoxdursa elə indi yaradılacaq.')}
                 </AppText>
                 <PressableScale activeScale={0.97} onPress={() => setByCode(true)} style={styles.switchRow}>
-                  <AppText variant="footnote" color={palette.blue}>
+                  <AppText variant="footnote" color={palette.inkText} style={{ fontWeight: '600' }}>
                     {t('Parolsuz — e-poçta keçid göndər')}
                   </AppText>
                 </PressableScale>

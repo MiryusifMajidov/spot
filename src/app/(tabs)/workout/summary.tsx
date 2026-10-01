@@ -176,7 +176,7 @@ export default function Summary() {
         {rpe !== null ? (
           <AppText
             variant="footnote"
-            color={stored ? palette.voltDeep : '#FF9500'}
+            color={stored ? palette.voltDeep : palette.streak}
             style={{ marginTop: 10, paddingHorizontal: 4, lineHeight: 18 }}>
             {!stored
               ? t('Qiymətləndirmə yazılmadı — bu məşq artıq bağlanıb, ona görə növbəti çəki təklifinə təsir etməyəcək.')

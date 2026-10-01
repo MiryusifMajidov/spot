@@ -14,7 +14,7 @@ import { EmptyNote, GymGate, getGymReviews, replyToReview, useMyGym, type GymRev
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useFormat, useT } from '@/lib/useT';
 import { actionSheet, toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { palette, spacing, inputTint } from '@/theme';
 
 export default function GymReviews() {
   const t = useT();
@@ -131,7 +131,7 @@ export default function GymReviews() {
         {failed ? (
           <View style={styles.failCard}>
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
-              <Icon name="x" size={17} color="#D14A15" />
+              <Icon name="x" size={17} color={palette.streakText} />
               <View style={{ flex: 1 }}>
                 <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{t('Rəylər yüklənmədi')}</AppText>
                 <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 5 }}>
@@ -157,7 +157,7 @@ export default function GymReviews() {
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', gap: 2 }}>
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <Icon key={i} name="star" size={15} color={i <= Math.round(summary.avg) ? palette.volt : palette.separator} />
+                  <Icon key={i} name="star" size={15} color={i <= Math.round(summary.avg) ? palette.voltDeep : palette.separator} />
                 ))}
               </View>
               <AppText variant="caption" color={palette.tertiary} style={{ marginTop: 4 }}>
@@ -201,7 +201,7 @@ export default function GymReviews() {
                   </View>
                   <View style={{ flexDirection: 'row', gap: 2 }}>
                     {[1, 2, 3, 4, 5].map((i) => (
-                      <Icon key={i} name="star" size={13} color={i <= r.rating ? palette.volt : palette.separator} />
+                      <Icon key={i} name="star" size={13} color={i <= r.rating ? palette.voltDeep : palette.separator} />
                     ))}
                   </View>
                 </View>
@@ -212,7 +212,7 @@ export default function GymReviews() {
 
                 {r.reply ? (
                   <View style={styles.reply}>
-                    <AppText style={{ fontSize: 12, fontWeight: '700', color: palette.blue }}>
+                    <AppText style={{ fontSize: 12, fontWeight: '700', color: palette.inkText }}>
                       {t('{gym} · rəsmi cavab', { gym: gym.name })}
                     </AppText>
                     <AppText variant="footnote" color={palette.text3} style={{ marginTop: 4, lineHeight: 18 }}>
@@ -265,7 +265,7 @@ export default function GymReviews() {
             <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 6 }}>
               {t('Cavabın rəyin altında {gym} adından görünəcək.', { gym: gym.name })}
             </AppText>
-            <TextInput
+            <TextInput {...inputTint}
               value={replyText}
               onChangeText={setReplyText}
               multiline
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   summary: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 18 },
   failCard: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginTop: 10, marginBottom: 14 },
   card: { backgroundColor: palette.white, borderRadius: 18, padding: 16 },
-  reply: { backgroundColor: 'rgba(10,132,255,0.06)', borderRadius: 12, padding: 12, marginTop: 12 },
+  reply: { backgroundColor: palette.inkTint, borderRadius: 12, padding: 12, marginTop: 12 },
   /* The pill was the whole press area (~35 pt) and «Şikayət et» only its own
      12.5 pt line of text (~17 pt). Each now sits in a 44 pt-tall box; the pill
      looks as it did. The row's top margin drops from 12 to 8 and a -4 bottom

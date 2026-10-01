@@ -26,7 +26,7 @@ import { supabase } from '@/lib/supabase';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { palette, spacing, inputTint } from '@/theme';
 
 /** Hours drawn on the occupancy chart (the ones a gym is realistically open). */
 const FROM_HOUR = 6;
@@ -326,7 +326,7 @@ export default function GymPanel() {
               </View>
               {peakHour != null ? (
                 <View style={styles.tip}>
-                  <AppText style={{ fontSize: 12.5, lineHeight: 18, color: '#3F5500', fontWeight: '500' }}>
+                  <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.voltText, fontWeight: '500' }}>
                     {t('Ən sıx saat: {hour}:00 · {n} check-in. Rəqəmlər yalnız bugünkü real check-in-lərdən hesablanır.', {
                       hour: String(peakHour).padStart(2, '0'),
                       n: peak,
@@ -420,7 +420,7 @@ export default function GymPanel() {
               onPress={() => router.push('/gym/edit')}
               hitSlop={{ top: 13, bottom: 13, left: 12, right: 12 }}
               accessibilityRole="button">
-              <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.blue }}>{t('Yeri dəyiş')}</AppText>
+              <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.inkText }}>{t('Yeri dəyiş')}</AppText>
             </PressableScale>
           </View>
           {errors.location ? (
@@ -506,7 +506,7 @@ export default function GymPanel() {
             <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 6 }}>
               {t('Elan icma lentində sənin öz adınla paylaşılır — {gym} adı yalnız adının altındakı kiçik sətirdə görünür. Push bildiriş göndərilmir.', { gym: gym.name })}
             </AppText>
-            <TextInput
+            <TextInput {...inputTint}
               value={announceText}
               onChangeText={setAnnounceText}
               multiline
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: 'rgba(255,149,0,0.12)',
+    backgroundColor: palette.streakTint,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,

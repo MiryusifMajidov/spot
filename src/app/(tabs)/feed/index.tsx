@@ -693,7 +693,7 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
               <View>
                 <View style={styles.authorNameRow}>
                   <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600' }}>{displayAuthor(v.author)}</AppText>
-                  {v.verified ? <Icon name="verified" size={14} color={palette.blue} /> : null}
+                  {v.verified ? <Icon name="verified" size={14} color={palette.volt} /> : null}
                 </View>
                 {/* Only your own handle, and only once it really exists. */}
                 {isMine && me.username ? <AppText style={styles.authorHandle}>@{me.username}</AppText> : null}

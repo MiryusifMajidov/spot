@@ -10,7 +10,7 @@ import { createReport } from '@/lib/api';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
-import { palette, radius, spacing } from '@/theme';
+import { palette, radius, spacing, inputTint } from '@/theme';
 
 /**
  * Kömək və dəstək — with the message actually written by the person.
@@ -106,7 +106,7 @@ export default function Support() {
             accessibilityRole="button"
             accessibilityState={{ disabled: !canSend }}
             style={styles.navAction}>
-            <AppText variant="headline" color={canSend ? palette.blue : palette.tertiary}>
+            <AppText variant="headline" color={canSend ? palette.inkText : palette.tertiary}>
               {sending ? t('Göndərilir…') : t('Göndər')}
             </AppText>
           </PressableScale>
@@ -140,7 +140,7 @@ export default function Support() {
         <AppText variant="overline" color={palette.caption} style={{ marginTop: 22 }}>
           {t('NƏ BAŞ VERDİ?')}
         </AppText>
-        <TextInput
+        <TextInput {...inputTint}
           value={note}
           onChangeText={(t) => setNote(t.slice(0, MAX_CHARS))}
           placeholder={t(cat.hint)}

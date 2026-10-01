@@ -34,7 +34,7 @@ export function TrainerRow({ trainer, onPress }: { trainer: Trainer; onPress?: (
         <View style={styles.nameRow}>
           <AppText variant="headline">{trainer.name}</AppText>
           {trainer.verified ? (
-            <Icon name="verified" size={15} color={palette.blue} />
+            <Icon name="verified" size={15} color={palette.voltDeep} />
           ) : (
             <View style={styles.unverified}>
               <AppText style={styles.unverifiedText}>{t('Doğrulanmayıb')}</AppText>

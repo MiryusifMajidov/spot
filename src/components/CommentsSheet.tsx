@@ -44,7 +44,7 @@ import { showModerationSheet } from '@/lib/moderation';
 import { useAppStore } from '@/store/appStore';
 import { timeAgoAz } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
-import { iconSize, palette, spacing } from '@/theme';
+import { iconSize, palette, spacing, inputTint } from '@/theme';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useT } from '@/lib/useT';
 
@@ -525,7 +525,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                   /* «Yüklənmədi» is not «yoxdur». The difference matters: one is a
                      broken connection, the other is a thread nobody has written in. */
                   <View style={styles.state}>
-                    <Icon name="x" size={24} color="#D14A15" />
+                    <Icon name="x" size={24} color={palette.streakText} />
                     <AppText variant="headline" style={{ marginTop: 12 }}>
                       {t('Şərhlər yüklənmədi')}
                     </AppText>
@@ -630,7 +630,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
               <View style={styles.composer}>
                 <Avatar name={myName || 'Sən'} size={32} />
                 <View style={styles.field}>
-                  <TextInput
+                  <TextInput {...inputTint}
                     ref={inputRef}
                     value={text}
                     onChangeText={onChangeText}
@@ -758,7 +758,7 @@ function Body({ body, onMention }: { body: string; onMention: (handle: string) =
     <AppText variant="body" color={palette.text3} style={{ marginTop: 4, lineHeight: 20 }}>
       {parts.map((p, i) =>
         p.handle ? (
-          <AppText key={i} variant="body" color={palette.blue} style={{ lineHeight: 20 }} onPress={() => onMention(p.handle as string)}>
+          <AppText key={i} variant="body" color={palette.inkText} style={{ lineHeight: 20, fontWeight: '600' }} onPress={() => onMention(p.handle as string)}>
             {p.text}
           </AppText>
         ) : (

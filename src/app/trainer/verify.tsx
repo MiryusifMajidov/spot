@@ -299,13 +299,13 @@ export default function Verify() {
 
   const statusTone =
     approvedNoBadge
-      ? { bg: 'rgba(255,149,0,0.16)', fg: '#8A5A00', icon: 'shield' as IconName, label: t('Nişan aktiv deyil') }
+      ? { bg: palette.streakTint, fg: palette.streakText, icon: 'shield' as IconName, label: t('Nişan aktiv deyil') }
       : status === 'approved'
       ? { bg: 'rgba(198,255,61,0.3)', fg: palette.voltDeep, icon: 'check' as IconName, label: t('Təsdiqləndi') }
       : status === 'rejected'
         ? { bg: 'rgba(255,59,48,0.1)', fg: palette.red, icon: 'x' as IconName, label: t('Rədd edildi') }
         : status === 'pending'
-          ? { bg: 'rgba(255,149,0,0.16)', fg: '#8A5A00', icon: 'clock' as IconName, label: t('Yoxlanılır') }
+          ? { bg: palette.streakTint, fg: palette.streakText, icon: 'clock' as IconName, label: t('Yoxlanılır') }
           : { bg: palette.element, fg: palette.textSecondary, icon: 'shield' as IconName, label: t('Başlanmayıb') };
 
   return (
@@ -438,9 +438,9 @@ export default function Verify() {
                 button here — not a message telling the trainer to write to support. */}
             {certs.length > 0 && row?.status === 'pending' && row.doc_cert_url !== certs[certs.length - 1] ? (
               <View style={styles.warnRow}>
-                <Icon name="shield" size={14} color="#8A5A00" />
+                <Icon name="shield" size={14} color={palette.streakText} />
                 <View style={{ flex: 1 }}>
-                  <AppText style={{ fontSize: 12, lineHeight: 17, color: '#8A5A00' }}>
+                  <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.streakText }}>
                     {row.doc_cert_url
                       ? t('Sorğuna köhnə şəkil bağlıdır — yoxlayan ən son yüklədiyin sertifikatı görmür.')
                       : t('Şəkillər saxlancdadır, amma açıq doğrulama sorğuna bağlanmayıb — yoxlayan onları görmür.')}
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
   addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, backgroundColor: palette.element, marginTop: 13 },
   docIcon: { width: 40, height: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   disclaimer: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: palette.element, borderRadius: 14, padding: 14, marginTop: 16 },
-  warnRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: 'rgba(255,149,0,0.16)', borderRadius: 12, padding: 11, marginTop: 12 },
+  warnRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: palette.streakTint, borderRadius: 12, padding: 11, marginTop: 12 },
   warnBtn: { alignSelf: 'flex-start', height: 32, paddingHorizontal: 12, borderRadius: 10, backgroundColor: palette.white, justifyContent: 'center', marginTop: 9 },
   noteRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: palette.element, borderRadius: 12, padding: 11, marginTop: 12 },
 });

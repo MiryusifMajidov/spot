@@ -20,7 +20,7 @@ import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, toast } from '@/store/ui';
-import { palette, radius, spacing } from '@/theme';
+import { palette, radius, spacing, inputTint } from '@/theme';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 
 /** `avatar_url` lives on the profiles row (added by schema8) — read it defensively. */
@@ -311,7 +311,7 @@ export default function EditProfile() {
             accessibilityRole="button"
             accessibilityState={{ disabled: saving || uploading }}
             style={styles.navAction}>
-            <AppText variant="headline" color={saving || uploading ? palette.tertiary : palette.blue}>
+            <AppText variant="headline" color={saving || uploading ? palette.tertiary : palette.inkText}>
               {saving ? t('Saxlanılır…') : t('Yadda saxla')}
             </AppText>
           </PressableScale>
@@ -359,14 +359,14 @@ export default function EditProfile() {
         </View>
 
         <Label text={t('Ad')} />
-        <TextInput value={profile.name} onChangeText={(name) => setProfile({ name })} placeholder={t('Adın')} placeholderTextColor={palette.caption} style={styles.input} />
+        <TextInput {...inputTint} value={profile.name} onChangeText={(name) => setProfile({ name })} placeholder={t('Adın')} placeholderTextColor={palette.caption} style={styles.input} />
 
         <Label text={t('İstifadəçi adı')} />
         <View style={[styles.handleRow, shownHandleErr ? styles.handleRowBad : null]}>
           <AppText variant="body" color={palette.caption}>
             @
           </AppText>
-          <TextInput
+          <TextInput {...inputTint}
             value={handle}
             onChangeText={(v) => {
               setTaken(null);
@@ -450,7 +450,7 @@ export default function EditProfile() {
             the trainer form's label: that key is shared with the gym page's tab,
             so it reads «О зале» in Russian. */}
         <Label text={t('Haqqımda')} />
-        <TextInput
+        <TextInput {...inputTint}
           value={profile.bio}
           onChangeText={(bio) => setProfile({ bio })}
           placeholder={t('Özün haqqında bir neçə söz')}

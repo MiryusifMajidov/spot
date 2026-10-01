@@ -213,7 +213,6 @@ export default function PrivacyDetails() {
           footer={t('«Bu cihazdakı nüsxəni sil» yalnız telefonundakı nüsxəni təmizləyir — hesabın serverdə qalır. Hesabı tamamilə silmək üçün «Hesabı tamamilə sil» sətrini işlət. Silməzdən əvvəl məlumatlarını özünə göndərməyi məsləhət görürük.')}>
           <ListRow
             icon="arrowU"
-            iconBg={palette.blue}
             title={t('Məlumatlarını yüklə')}
             subtitle={t('Profil, məşq, check-in və qeydlərin JSON kimi')}
             onPress={exportData}

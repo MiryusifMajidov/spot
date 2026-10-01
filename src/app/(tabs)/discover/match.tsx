@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   compatPill: { alignSelf: 'flex-start', backgroundColor: palette.ink, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 8 },
   reasons: { flexDirection: 'row', gap: 7, marginTop: 6, flexWrap: 'wrap' },
   reason: { backgroundColor: 'rgba(198,255,61,0.30)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
-  reasonBad: { backgroundColor: 'rgba(255,149,0,0.16)' },
+  reasonBad: { backgroundColor: palette.streakTint },
   unknownPill: { alignSelf: 'flex-start', backgroundColor: palette.grouped, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 8 },
   stateCard: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: palette.white, borderRadius: 16, padding: 16, marginTop: 22 },
   times: { gap: 9 },

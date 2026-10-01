@@ -12,7 +12,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Program } from '@/data/types';
 import { usePrograms } from '@/lib/hooks';
 import { useDb } from '@/store/db';
-import { iconSize, palette, shadow, spacing } from '@/theme';
+import { iconSize, palette, shadow, spacing, inputTint } from '@/theme';
 import { searchKey } from '@/lib/az';
 import { useT } from '@/lib/useT';
 
@@ -76,7 +76,7 @@ export default function Library() {
         </AppText>
         <View style={styles.search}>
           <Icon name="search" size={17} color={palette.caption} />
-          <TextInput
+          <TextInput {...inputTint}
             value={q}
             onChangeText={setQ}
             placeholder={t('Proqram, müəllif və ya etiket axtar')}

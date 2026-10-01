@@ -30,7 +30,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
           <View style={styles.rowBetween}>
             <View style={styles.nameRow}>
               <AppText variant="title3">{gym.name}</AppText>
-              {gym.verified && <Icon name="verified" size={15} color={palette.blue} />}
+              {gym.verified && <Icon name="verified" size={15} color={palette.voltDeep} />}
             </View>
             <Price value={gym.priceMonth} />
           </View>
@@ -88,7 +88,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
         <View style={styles.rowBetween}>
           <View style={styles.nameRow}>
             <AppText variant="title3">{gym.name}</AppText>
-            {gym.verified && <Icon name="verified" size={15} color={palette.blue} />}
+            {gym.verified && <Icon name="verified" size={15} color={palette.voltDeep} />}
           </View>
           <Price value={gym.priceMonth} />
         </View>

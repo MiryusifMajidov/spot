@@ -167,12 +167,12 @@ export default function Devices() {
         <ListGroup header={t('Bu cihaz')}>
           {current.length ? (
             current.map((d) => (
-              <ListRow key={d.id} icon={iconOf(d)} iconBg={palette.voltDeep} title={deviceTitle(d, t)} subtitle={subtitleOf(d)} />
+              <ListRow key={d.id} icon={iconOf(d)} iconBg={palette.volt} iconColor={palette.inkText} title={deviceTitle(d, t)} subtitle={subtitleOf(d)} />
             ))
           ) : (
             // Only a session that is not in the list at all — a token the server
             // no longer knows. touchDevice signs such a phone out on its own.
-            <ListRow icon="phone" iconBg={palette.voltDeep} title={t('Bu telefon')} subtitle={t('İndi aktiv')} />
+            <ListRow icon="phone" iconBg={palette.volt} iconColor={palette.inkText} title={t('Bu telefon')} subtitle={t('İndi aktiv')} />
           )}
         </ListGroup>
 
@@ -184,7 +184,6 @@ export default function Devices() {
               <ListRow
                 key={d.id}
                 icon={iconOf(d)}
-                iconBg={palette.ink}
                 title={deviceTitle(d, t)}
                 subtitle={subtitleOf(d)}
                 right={

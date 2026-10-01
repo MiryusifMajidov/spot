@@ -298,7 +298,7 @@ export default function ExerciseVideo() {
           <View style={styles.mistakeCard}>
             <Icon name="shield" size={18} color={palette.streak} />
             <View style={{ flex: 1 }}>
-              <AppText style={{ color: '#FFB394', fontSize: 13, fontWeight: '600' }}>{t('Ən çox edilən səhv')}</AppText>
+              <AppText style={{ color: palette.streak, fontSize: 13, fontWeight: '600' }}>{t('Ən çox edilən səhv')}</AppText>
               <AppText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20, marginTop: 5 }}>{t(ex.commonMistake)}</AppText>
             </View>
           </View>

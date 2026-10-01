@@ -36,17 +36,17 @@ const FALLBACK_ICON = { name: 'bell' as IconName, tint: palette.tertiary };
 
 const ICON: Record<NotifType, { name: IconName; tint: string }> = {
   comment_like: { name: 'heart', tint: palette.red },
-  comment_reply: { name: 'msg', tint: palette.blue },
-  mention: { name: 'msg', tint: palette.voltDeep },
-  match_request: { name: 'users', tint: palette.blue },
+  comment_reply: { name: 'msg', tint: palette.inkText },
+  mention: { name: 'msg', tint: palette.inkText },
+  match_request: { name: 'users', tint: palette.inkText },
   match_accepted: { name: 'check', tint: palette.voltDeep },
-  trainer_request: { name: 'users', tint: palette.blue },
+  trainer_request: { name: 'users', tint: palette.inkText },
   trainer_decided: { name: 'check', tint: palette.voltDeep },
   review_reply: { name: 'star', tint: palette.voltDeep },
-  message: { name: 'msg', tint: palette.blue },
+  message: { name: 'msg', tint: palette.inkText },
   video_like: { name: 'heart', tint: palette.red },
   post_like: { name: 'heart', tint: palette.red },
-  follow: { name: 'users', tint: palette.voltDeep },
+  follow: { name: 'users', tint: palette.inkText },
   program_assigned: { name: 'dumbbell', tint: palette.voltDeep },
 };
 
@@ -102,7 +102,7 @@ export default function Notifications() {
                 setRows((rs) => rs.map((r) => ({ ...r, read: true })));
               }}
             >
-              <AppText variant="footnote" color={palette.blue}>{t('Hamısını oxu')}</AppText>
+              <AppText variant="footnote" color={palette.inkText} style={{ fontWeight: '600' }}>{t('Hamısını oxu')}</AppText>
             </PressableScale>
           ) : undefined
         }

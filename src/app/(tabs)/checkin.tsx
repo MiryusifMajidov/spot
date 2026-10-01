@@ -16,7 +16,7 @@ import { t } from '@/lib/i18n';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useDb } from '@/store/db';
-import { palette, spacing } from '@/theme';
+import { palette, spacing, inputTint } from '@/theme';
 
 /**
  * Check-in — scan the QR at the reception desk.
@@ -154,7 +154,7 @@ export default function CheckIn() {
     <View style={{ paddingBottom: bottomClearance, marginBottom: lift }}>
       {typing ? (
         <View style={styles.manual}>
-          <TextInput
+          <TextInput {...inputTint}
             value={manual}
             onChangeText={(v) => setManual(v.replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 10))}
             placeholder="A1B2C3D4E5"
@@ -174,7 +174,7 @@ export default function CheckIn() {
         </View>
       ) : (
         <PressableScale haptic={false} onPress={() => setTyping(true)} accessibilityRole="button" style={styles.noQr}>
-          <AppText variant="subhead" color={palette.blue}>
+          <AppText variant="subhead" color={palette.inkText} style={{ fontWeight: '600' }}>
             {t('QR oxunmur? Kodu əl ilə yaz')}
           </AppText>
         </PressableScale>
@@ -252,7 +252,7 @@ export default function CheckIn() {
               accessibilityRole="button"
               hitSlop={{ top: 12, bottom: 14, left: 16, right: 16 }}
               style={{ marginTop: 12 }}>
-              <AppText variant="subhead" color={palette.blue}>
+              <AppText variant="subhead" color={palette.inkText} style={{ fontWeight: '600' }}>
                 {t('Başqa kod oxut')}
               </AppText>
             </PressableScale>

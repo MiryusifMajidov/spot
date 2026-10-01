@@ -30,7 +30,7 @@
  *
  * Location: `userLocation` (the screen's own live fix) or `trackUser` (the map
  * watches by itself, only if permission was ALREADY granted, only while the
- * screen is focused) draws the blue dot. `locateButton` adds a native «where am
+ * screen is focused) draws the «you are here» dot. `locateButton` adds a native «where am
  * I» button that asks for permission when it is needed. The coordinate stays on
  * the device — it only ever goes into this WebView.
  */
@@ -139,7 +139,9 @@ const MAP_PALETTE: SpotMapPalette = {
   tertiary: palette.tertiary,
   text3: palette.text3,
   text4: palette.text4,
-  blue: palette.blue,
+  voltDeep: palette.voltDeep,
+  // Cartography: the hue water is mixed from. Not a UI colour (theme.ts has none).
+  water: '#0A84FF',
 };
 
 const toUser = (pos: Location.LocationObject): UserLocation => ({
@@ -516,9 +518,9 @@ export function SpotMap({
             accessibilityState={{ busy: locating, selected: following }}
             style={[styles.locate, shadow.card]}>
             {locating ? (
-              <ActivityIndicator size="small" color={palette.blue} />
+              <ActivityIndicator size="small" color={palette.inkText} />
             ) : (
-              <Icon name={following ? 'locateOn' : 'locate'} size={iconSize.inCircle} color={following ? palette.blue : palette.inkText} />
+              <Icon name={following ? 'locateOn' : 'locate'} size={iconSize.inCircle} color={palette.inkText} />
             )}
           </PressableScale>
         </Animated.View>

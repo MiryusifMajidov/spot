@@ -12,7 +12,7 @@ import { useAppStore } from '@/store/appStore';
 import { exerciseLibrary, gymById, LibExercise, useDb } from '@/store/db';
 import { saveProgramDays } from '@/lib/saveProgram';
 import { actionSheet, confirm, toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { palette, spacing, inputTint } from '@/theme';
 import { searchKey } from '@/lib/az';
 import { useT } from '@/lib/useT';
 
@@ -151,7 +151,7 @@ export default function ExerciseLibrary() {
       <View style={{ paddingHorizontal: spacing.screen }}>
         <View style={styles.search}>
           <Icon name="search" size={17} color={palette.tertiary} />
-          <TextInput value={q} onChangeText={setQ} placeholder={t('Hərəkət və ya əzələ axtar')} placeholderTextColor={palette.tertiary} style={styles.searchInput} />
+          <TextInput {...inputTint} value={q} onChangeText={setQ} placeholder={t('Hərəkət və ya əzələ axtar')} placeholderTextColor={palette.tertiary} style={styles.searchInput} />
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7, paddingVertical: 12 }}>
           {MUSCLES.map((m) => (
@@ -224,7 +224,7 @@ export default function ExerciseLibrary() {
                     </View>
                     {status ? (
                       <View style={[styles.tag, { backgroundColor: 'rgba(198,255,61,0.3)' }]}>
-                        <AppText style={[styles.tagText, { color: '#3F5500' }]}>
+                        <AppText style={[styles.tagText, { color: palette.voltText }]}>
                           {status === 'own' ? t('Avadanlıq lazım deyil') : t('Zalında var')}
                         </AppText>
                       </View>

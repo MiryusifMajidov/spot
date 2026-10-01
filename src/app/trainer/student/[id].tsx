@@ -13,7 +13,7 @@ import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useFormat, useT } from '@/lib/useT';
 import { useDb } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
-import { iconSize, palette, spacing } from '@/theme';
+import { iconSize, palette, spacing, inputTint } from '@/theme';
 import { studentDateLine, useMyStudents } from '../students';
 
 /**
@@ -357,7 +357,7 @@ function StudentDetailBody() {
         <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 10 }}>
           {t('QEYD · ŞAGİRD BUNU OXUYUR')}
         </AppText>
-        <TextInput
+        <TextInput {...inputTint}
           value={noteValue}
           onChangeText={setNote}
           multiline

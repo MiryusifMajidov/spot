@@ -261,7 +261,7 @@ export default function GymMap() {
                     <AppText variant="title3" numberOfLines={1} style={{ flexShrink: 1 }}>
                       {selected.name}
                     </AppText>
-                    {selected.verified ? <Icon name="verified" size={15} color={palette.blue} /> : null}
+                    {selected.verified ? <Icon name="verified" size={15} color={palette.voltDeep} /> : null}
                   </View>
                   <AppText variant="footnote" color={palette.caption} style={{ marginTop: 4 }}>
                     {[
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
      pill through SpotMap's bottomInset instead of sharing the row with it. */
   pillBottom: { bottom: 12 },
   pillText: { flex: 1, lineHeight: 18 },
-  retry: { fontSize: 13, fontWeight: '600', color: palette.blue },
+  retry: { fontSize: 13, fontWeight: '600', color: palette.inkText },
   card: {
     position: 'absolute',
     left: 12,
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   price: { fontSize: 17, fontWeight: '700', color: palette.inkText },
   live: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(198,255,61,0.22)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, marginTop: 11, alignSelf: 'flex-start' },
-  liveText: { fontSize: 12.5, fontWeight: '600', color: '#3F5500' },
+  liveText: { fontSize: 12.5, fontWeight: '600', color: palette.voltText },
   // paddingBottom is set inline: 40 plus the floating tab bar on iOS.
   content: { paddingHorizontal: spacing.screen, paddingTop: 4 },
   empty: { alignItems: 'center', paddingVertical: 50 },

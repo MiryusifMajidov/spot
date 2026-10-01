@@ -68,7 +68,7 @@ export function OnboardingScaffold({
             style={styles.back}
             accessibilityRole="button"
             accessibilityLabel={t('Geri')}>
-            <Icon name="chevL" size={iconSize.action} color={palette.blue} />
+            <Icon name="chevL" size={iconSize.action} color={palette.inkText} />
           </PressableScale>
         ) : (
           <View style={styles.skipSpacer} />
@@ -83,7 +83,7 @@ export function OnboardingScaffold({
             the same room as the back box, so the progress bar stays centred. */}
         {onSkip ? (
           <PressableScale activeScale={0.92} onPress={onSkip} style={styles.skip} accessibilityRole="button">
-            <AppText variant="body" numberOfLines={1} color={palette.blue}>
+            <AppText variant="body" numberOfLines={1} color={palette.inkText} style={{ fontWeight: '500' }}>
               {t('Keç')}
             </AppText>
           </PressableScale>

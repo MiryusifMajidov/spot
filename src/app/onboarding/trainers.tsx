@@ -134,7 +134,7 @@ export default function SuggestTrainers() {
         {/* Live from the first frame, on purpose: a skip must never wait on a
             network request the person did not ask for. */}
         <PressableScale activeScale={0.92} haptic={false} onPress={leave} style={styles.skip}>
-          <AppText variant="body" color={palette.blue}>
+          <AppText variant="body" color={palette.inkText} style={{ fontWeight: '500' }}>
             {t('Keç')}
           </AppText>
         </PressableScale>
@@ -200,7 +200,7 @@ function TrainerRow({ trainer, on, onToggle }: { trainer: SuggestedTrainer; on: 
           <AppText variant="headline" numberOfLines={1} style={{ flexShrink: 1 }}>
             {trainer.name}
           </AppText>
-          {trainer.verified ? <Icon name="verified" size={15} color={palette.blue} /> : null}
+          {trainer.verified ? <Icon name="verified" size={15} color={palette.voltDeep} /> : null}
         </View>
         <AppText variant="footnote" color={palette.textSecondary} numberOfLines={1} style={{ marginTop: 2 }}>
           {trainer.specialty || t('Məşqçi')}

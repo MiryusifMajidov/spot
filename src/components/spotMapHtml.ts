@@ -12,7 +12,7 @@
  * (anything that arrives earlier waits in a queue):
  *   markers {markers}           replace the gym markers (diffed by id)
  *   select  {id|null}           highlight one gym in volt, or none
- *   user    {loc|null}          the blue dot + accuracy circle
+ *   user    {loc|null}          the «you are here» dot + accuracy circle
  *   locate  {lat,lng,accuracy,zoom}  fly to the user and follow until they pan
  *   lang    {lang}              relabel the basemap in az / ru / en
  *   inset   {bottom}            px hidden by the screen's own overlays
@@ -54,7 +54,11 @@ export interface SpotMapPalette {
   tertiary: string;
   text3: string;
   text4: string;
-  blue: string;
+  /** The voltDeep accent: the «you are here» pulse and accuracy ring. */
+  voltDeep: string;
+  /** CARTOGRAPHY, not interface: the hue water and parks are mixed from. People
+   *  read a bluish-grey patch as water; the app's own UI has no blue (theme.ts). */
+  water: string;
 }
 
 export interface SpotMapHtmlOptions {
@@ -153,8 +157,8 @@ function mix(a: string, b: string, t: number): string {
 }
 
 function basemapColors(p: SpotMapPalette) {
-  const green = mix(p.volt, p.blue, 0.35); // the volt accent pulled toward a natural green
-  const coolGrey = mix(p.blue, p.textSecondary, 0.35); // system blue, desaturated
+  const green = mix(p.volt, p.water, 0.35); // the volt accent pulled toward a natural green
+  const coolGrey = mix(p.water, p.textSecondary, 0.35); // the water hue, desaturated
   return {
     bg: p.grouped,
     residential: mix(p.grouped, p.canvas, 0.45),
@@ -162,7 +166,7 @@ function basemapColors(p: SpotMapPalette) {
     buildingEdge: mix(p.canvas, p.tertiary, 0.25),
     park: mix(p.grouped, green, 0.2),
     water: mix(p.grouped, coolGrey, 0.28),
-    waterText: mix(p.blue, p.text3, 0.55),
+    waterText: mix(p.water, p.text3, 0.55),
     roadCasing: mix(p.canvas, p.tertiary, 0.34),
     minorCasing: mix(p.canvas, p.tertiary, 0.22),
     minorLow: mix(p.canvas, p.tertiary, 0.08),
@@ -172,7 +176,7 @@ function basemapColors(p: SpotMapPalette) {
     white: p.white,
     ink: p.ink,
     volt: p.volt,
-    blue: p.blue,
+    voltDeep: p.voltDeep,
     text3: p.text3,
     text4: p.text4,
     textSecondary: p.textSecondary,
@@ -260,12 +264,15 @@ export function buildSpotMapHtml(o: SpotMapHtmlOptions): string {
   .pp.drop svg{animation:drop .32s cubic-bezier(.3,1.5,.6,1)}
   @keyframes drop{0%{transform:translateY(-16px)}100%{transform:translateY(0)}}
 
-  /* you are here: 16 pt blue dot, 3 pt white ring, soft pulse */
+  /* you are here: a volt dot (SPOT's «live» colour — Apple's HIG has the user
+     location take the app's tint), 3 pt white ring, a hairline of ink so the volt
+     holds on a light basemap, and a voltDeep pulse. Not ink: the gym pins are ink. */
   .ud{width:22px;height:22px;pointer-events:none}
   .ud b{position:absolute;top:0;left:0;right:0;bottom:0;box-sizing:border-box;border-radius:50%;
-    background:${C.blue};border:3px solid ${C.white};box-shadow:0 1px 5px rgba(16,16,20,.35)}
+    background:${C.volt};border:3px solid ${C.white};
+    box-shadow:0 0 0 1px rgba(16,16,20,.55),0 1px 5px rgba(16,16,20,.35)}
   .ud:before{content:"";position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;
-    background:${C.blue};opacity:0;animation:pulse 2.4s ease-out infinite}
+    background:${C.voltDeep};opacity:0;animation:pulse 2.4s ease-out infinite}
   @keyframes pulse{0%{transform:scale(1);opacity:.32}70%,100%{transform:scale(2.6);opacity:0}}
   @media (prefers-reduced-motion:reduce){.ud:before{animation:none}.gm i,.pp svg{transition:none}}
 </style>
@@ -706,9 +713,9 @@ export function buildSpotMapHtml(o: SpotMapHtmlOptions): string {
     map.addSource('spot-accuracy', { type: 'geojson', data: EMPTY });
     var before = firstSymbolId();
     map.addLayer({ id: 'spot-accuracy-fill', type: 'fill', source: 'spot-accuracy',
-      paint: { 'fill-color': C.blue, 'fill-opacity': 0.1 } }, before);
+      paint: { 'fill-color': C.voltDeep, 'fill-opacity': 0.1 } }, before);
     map.addLayer({ id: 'spot-accuracy-line', type: 'line', source: 'spot-accuracy',
-      paint: { 'line-color': C.blue, 'line-opacity': 0.3, 'line-width': 1 } }, before);
+      paint: { 'line-color': C.voltDeep, 'line-opacity': 0.35, 'line-width': 1 } }, before);
   }
 
   /* a geodesic circle: metres stay metres at every zoom and latitude */

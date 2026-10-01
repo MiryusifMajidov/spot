@@ -22,7 +22,7 @@ import { nameWithAge } from '@/lib/authorName';
  * absence of one, and the UI must never print the second as the first. */
 
 /** The colour used for a mismatch — `palette.warning` does not exist. */
-export const MISMATCH_COLOR = '#FF9500';
+export const MISMATCH_COLOR = palette.streakText;
 
 /** Copy shown wherever a score cannot be computed. One string, one meaning. */
 export const COMPAT_UNKNOWN = 'Uyğunluq hesablanmayıb — profilini tamamla';
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   hereText: { fontSize: 10.5, fontWeight: '700', color: palette.voltText },
   reasons: { flexDirection: 'row', gap: 6, marginTop: 7, flexWrap: 'wrap' },
   reason: { backgroundColor: palette.grouped, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4 },
-  reasonBad: { backgroundColor: 'rgba(255,149,0,0.14)' },
+  reasonBad: { backgroundColor: palette.streakTint },
   reasonText: { fontSize: 11, fontWeight: '600', color: palette.text3 },
   compatWrap: { alignItems: 'center' },
   compat: { fontSize: 18, fontWeight: '700', color: palette.inkText, letterSpacing: -0.3 },

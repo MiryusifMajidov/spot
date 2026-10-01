@@ -16,7 +16,7 @@ import { exerciseLibrary } from '@/store/db';
 import { itemFromLibrary, itemFromName, useProgramDraft } from '@/store/programDraft';
 import { useSessionPick } from '@/store/sessionPick';
 import { confirm, toast } from '@/store/ui';
-import { palette, radius, spacing } from '@/theme';
+import { palette, radius, spacing, inputTint } from '@/theme';
 
 /**
  * Choosing what goes into a day.
@@ -171,7 +171,7 @@ export default function PickExercises() {
 
       <View style={styles.searchWrap}>
         <Icon name="search" size={17} color={palette.caption} />
-        <TextInput
+        <TextInput {...inputTint}
           value={q}
           onChangeText={setQ}
           placeholder={t('Hərəkət axtar')}
@@ -256,7 +256,7 @@ export default function PickExercises() {
           <AppText variant="overline" color={palette.caption}>
             {t('Öz hərəkətini yaz')}
           </AppText>
-          <TextInput
+          <TextInput {...inputTint}
             value={own}
             onChangeText={setOwn}
             placeholder={t('Məsələn: Bolqar skvatı')}

@@ -90,7 +90,7 @@ export default function ProgramDetail() {
           <Icon
             name={probe === 'failed' ? 'x' : 'dumbbell'}
             size={30}
-            color={probe === 'failed' ? '#FF9500' : palette.tertiary}
+            color={probe === 'failed' ? palette.streak : palette.tertiary}
           />
           <AppText variant="headline" style={{ marginTop: 12 }}>
             {heading}

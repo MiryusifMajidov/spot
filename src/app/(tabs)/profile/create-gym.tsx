@@ -21,7 +21,7 @@ import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useFormat, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { actionSheet, confirm, toast, type UiAction } from '@/store/ui';
-import { iconSize, palette, spacing } from '@/theme';
+import { iconSize, palette, spacing, inputTint } from '@/theme';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 
 const AMENITIES = ['Sərbəst ağırlıq', 'Kardio', 'Duş', 'Park', 'Sauna', 'Hovuz', 'Qadın zonası', 'Kafe'];
@@ -618,7 +618,7 @@ function Field({ label, value, onChangeText, placeholder, keyboardType }: { labe
       <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 8, fontWeight: '600' }}>
         {label}
       </AppText>
-      <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={palette.caption} keyboardType={keyboardType} style={styles.input} />
+      <TextInput {...inputTint} value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={palette.caption} keyboardType={keyboardType} style={styles.input} />
     </View>
   );
 }
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: palette.volt, borderColor: palette.volt },
   sectionLabel: { marginBottom: 8, fontWeight: '600' },
   hint: { fontSize: 12, lineHeight: 17, color: palette.tertiary, marginTop: 8 },
-  warn: { fontSize: 12.5, lineHeight: 18, color: '#FF9500', marginBottom: 10, fontWeight: '500' },
+  warn: { fontSize: 12.5, lineHeight: 18, color: palette.streakText, marginBottom: 10, fontWeight: '500' },
   coverWrap: { borderRadius: 16, overflow: 'hidden', backgroundColor: palette.grouped },
   cover: { width: '100%', height: 168 },
   coverBadge: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(11,11,14,0.72)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },

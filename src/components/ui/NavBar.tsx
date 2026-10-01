@@ -35,7 +35,7 @@ export function NavBar({ title, right, onBack }: { title?: string; right?: React
         style={styles.back}
         accessibilityRole="button"
         accessibilityLabel={t('Geri')}>
-        <Icon name="chevL" size={iconSize.action} color={palette.blue} />
+        <Icon name="chevL" size={iconSize.action} color={palette.inkText} />
       </PressableScale>
       {title ? (
         <AppText variant="headline" numberOfLines={1} style={styles.title}>

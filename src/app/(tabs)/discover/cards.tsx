@@ -477,7 +477,7 @@ function DataCell({ label, value, volt }: { label: string; value: string; volt?:
   return (
     <View style={[styles.cell, volt && { backgroundColor: 'rgba(198,255,61,0.26)' }]}>
       <AppText style={[styles.cellLabel, volt && { color: palette.voltDeep }]}>{azUpper(label)}</AppText>
-      <AppText style={[styles.cellValue, volt && { color: '#3F5500' }]} numberOfLines={1}>
+      <AppText style={[styles.cellValue, volt && { color: palette.voltText }]} numberOfLines={1}>
         {value}
       </AppText>
     </View>
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   photo: { height: 300 },
   matchBadge: { position: 'absolute', top: 14, left: 14, backgroundColor: palette.ink, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 6 },
   hereBadge: { position: 'absolute', top: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(198,255,61,0.94)', borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6 },
-  hereDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#3F5500' },
+  hereDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.voltText },
   photoScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 110 },
   nameOverlay: { position: 'absolute', left: 16, bottom: 14 },
   body: { padding: 16 },

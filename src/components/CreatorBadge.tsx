@@ -28,7 +28,7 @@ export function CreatorBadge({
       ? { label: t('SPOT proqramı'), color: palette.textSecondary, bg: palette.element }
       : type === 'trainer'
         ? verified
-          ? { label: t('Doğrulanmış müəllim'), color: palette.blue, bg: 'rgba(10,132,255,0.12)' }
+          ? { label: t('Doğrulanmış müəllim'), color: palette.voltText, bg: palette.voltTint }
           : { label: t('Müəllim'), color: palette.textSecondary, bg: palette.element }
         : { label: t('İstifadəçi'), color: palette.textSecondary, bg: palette.element };
 
@@ -36,7 +36,7 @@ export function CreatorBadge({
     <View style={styles.row}>
       <Avatar name={name} size={avatarSize} />
       <AppText style={styles.name}>{name}</AppText>
-      {verified && type !== 'spot' && <Icon name="verified" size={13} color={palette.blue} />}
+      {verified && type !== 'spot' && <Icon name="verified" size={13} color={palette.voltDeep} />}
       <View style={[styles.tag, { backgroundColor: tag.bg }]}>
         <AppText style={[styles.tagText, { color: tag.color }]}>{tag.label}</AppText>
       </View>

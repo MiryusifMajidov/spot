@@ -12,7 +12,7 @@ import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
-import { hitSlop, palette, radius, spacing } from '@/theme';
+import { hitSlop, palette, radius, spacing, inputTint } from '@/theme';
 
 export default function Compose() {
   const t = useT();
@@ -76,7 +76,7 @@ export default function Compose() {
         }
       />
       <View style={styles.body}>
-        <TextInput
+        <TextInput {...inputTint}
           value={text}
           onChangeText={setText}
           placeholder={t('Nə paylaşmaq istəyirsən? Nailiyyət, sual və ya motivasiya…')}

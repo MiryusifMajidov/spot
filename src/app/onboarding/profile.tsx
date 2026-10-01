@@ -10,7 +10,7 @@ import { errorFeedback } from '@/lib/feedback';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
-import { palette, radius } from '@/theme';
+import { palette, radius, inputTint } from '@/theme';
 
 export default function ProfileStep() {
   const t = useT();
@@ -132,7 +132,7 @@ export default function ProfileStep() {
       <AppText variant="overline" color={palette.caption} style={styles.label}>
         {t('Ad')}
       </AppText>
-      <TextInput
+      <TextInput {...inputTint}
         value={profile.name}
         onChangeText={(name) => {
           setNameTouched(true);
@@ -153,7 +153,7 @@ export default function ProfileStep() {
         <AppText variant="body" color={palette.caption}>
           @
         </AppText>
-        <TextInput
+        <TextInput {...inputTint}
           value={handle}
           onChangeText={(v) => {
             setHandleTouched(true);
@@ -179,7 +179,7 @@ export default function ProfileStep() {
       <AppText variant="overline" color={palette.caption} style={styles.label}>
         {t('Yaş')}
       </AppText>
-      <TextInput
+      <TextInput {...inputTint}
         value={ageText}
         onChangeText={(v) => {
           setAgeTouched(true);
@@ -211,7 +211,7 @@ export default function ProfileStep() {
       <AppText variant="overline" color={palette.caption} style={styles.label}>
         {t('Haqqımda')}
       </AppText>
-      <TextInput
+      <TextInput {...inputTint}
         value={profile.bio}
         onChangeText={(bio) => setProfile({ bio })}
         placeholder={t('Məsələn: Səhər məşqlərini sevirəm, pauerliftinq üzərində işləyirəm.')}

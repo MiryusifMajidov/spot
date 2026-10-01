@@ -25,7 +25,7 @@ import { useAppStore } from '@/store/appStore';
 import { findProgram } from '@/store/db';
 import { DraftItem, useProgramDraft } from '@/store/programDraft';
 import { actionSheet, confirm, toast } from '@/store/ui';
-import { palette, radius, spacing } from '@/theme';
+import { palette, radius, spacing, inputTint } from '@/theme';
 
 /**
  * Writing a program.
@@ -279,7 +279,7 @@ export default function CreateProgram() {
             disabled={saving}
             accessibilityRole="button"
             style={styles.navAction}>
-            <AppText variant="headline" color={ready && !saving ? palette.blue : palette.tertiary}>
+            <AppText variant="headline" color={ready && !saving ? palette.inkText : palette.tertiary}>
               {saving ? t('Saxlanılır…') : draft.editingId ? t('Saxla') : t('Yarat')}
             </AppText>
           </PressableScale>
@@ -307,7 +307,7 @@ export default function CreateProgram() {
         </AppText>
 
         <Label text={t('Başlıq')} first />
-        <TextInput
+        <TextInput {...inputTint}
           value={draft.title}
           onChangeText={(title) => draft.set({ title })}
           placeholder={t('Məsələn: 3 günlük güc')}
@@ -317,7 +317,7 @@ export default function CreateProgram() {
         />
 
         <Label text={t('Təsvir')} />
-        <TextInput
+        <TextInput {...inputTint}
           value={draft.desc}
           onChangeText={(desc) => draft.set({ desc })}
           placeholder={t('Kimə uyğundur, nə lazımdır, necə işləyir?')}
@@ -333,7 +333,7 @@ export default function CreateProgram() {
               <View style={styles.dayIndex}>
                 <AppText style={{ fontSize: 13, fontWeight: '700', color: palette.voltDeep }}>{i + 1}</AppText>
               </View>
-              <TextInput
+              <TextInput {...inputTint}
                 value={d.title}
                 onChangeText={(v) => draft.patchDay(d.key, { title: v })}
                 placeholder={t('Gün {n}', { n: i + 1 })}
@@ -354,7 +354,7 @@ export default function CreateProgram() {
                 </PressableScale>
               ) : null}
             </View>
-            <TextInput
+            <TextInput {...inputTint}
               value={d.focus}
               onChangeText={(v) => draft.patchDay(d.key, { focus: v })}
               placeholder={t('Fokus (məs: sinə, triseps)')}
@@ -378,8 +378,8 @@ export default function CreateProgram() {
               activeScale={0.97}
               onPress={() => router.push({ pathname: '/(tabs)/workout/pick-exercises', params: { dayKey: d.key } })}
               style={styles.addMove}>
-              <Icon name="plus" size={16} color={palette.blue} />
-              <AppText variant="subhead" color={palette.blue}>
+              <Icon name="plus" size={16} color={palette.inkText} />
+              <AppText variant="subhead" color={palette.inkText} style={{ fontWeight: '600' }}>
                 {t('Hərəkət əlavə et')}
               </AppText>
             </PressableScale>
@@ -458,7 +458,7 @@ function ItemEditor({
     <View style={styles.item}>
       <View style={styles.itemHead}>
         <Icon name="dumbbell" size={15} color={palette.textSecondary} />
-        <TextInput
+        <TextInput {...inputTint}
           value={item.name}
           onChangeText={(name) => onPatch({ name })}
           placeholder={t('Hərəkətin adı')}
@@ -489,7 +489,7 @@ function ItemEditor({
               «15». Any count from 3 to 9 could not be entered at all. The
               number is committed when it is valid and restored on blur when
               the field is left empty. */}
-          <TextInput
+          <TextInput {...inputTint}
             value={setsText}
             onChangeText={(v) => {
               const digits = v.replace(/\D/g, '').slice(0, 2);
@@ -538,7 +538,7 @@ function ItemEditor({
             ))}
           </View>
           <View style={styles.valueRow}>
-            <TextInput
+            <TextInput {...inputTint}
               value={item.value}
               onChangeText={(value) => onPatch({ value })}
               placeholder={timed ? '45' : '8-10'}
@@ -557,8 +557,8 @@ function ItemEditor({
       </View>
 
       <PressableScale activeScale={0.97} haptic={false} onPress={onVideo} disabled={uploading} style={styles.videoBtn}>
-        <Icon name={item.videoUrl ? 'check' : 'video'} size={15} color={item.videoUrl ? palette.voltDeep : palette.blue} />
-        <AppText variant="footnote" color={item.videoUrl ? palette.voltDeep : palette.blue}>
+        <Icon name={item.videoUrl ? 'check' : 'video'} size={15} color={item.videoUrl ? palette.voltDeep : palette.inkText} />
+        <AppText variant="footnote" color={item.videoUrl ? palette.voltText : palette.inkText} style={{ fontWeight: '600' }}>
           {uploading ? t('Yüklənir…') : item.videoUrl ? t('Video əlavə olunub') : t('Video əlavə et')}
         </AppText>
       </PressableScale>

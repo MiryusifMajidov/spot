@@ -24,7 +24,7 @@ import { useDb } from '@/store/db';
 import { useIsGuest } from '@/lib/authGate';
 import { useAppStore } from '@/store/appStore';
 import { applyGymFilter, applyPartnerFilter, gymFilterCount, partnerFilterCount, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
-import { palette, spacing } from '@/theme';
+import { palette, spacing, inputTint } from '@/theme';
 import { searchKey, azUpper } from '@/lib/az';
 import { getUnreadCount } from '@/lib/notifications';
 import { useT } from '@/lib/useT';
@@ -223,7 +223,7 @@ export default function Discover() {
       <View style={styles.controls}>
         <View style={styles.search}>
           <Icon name="search" size={17} color={palette.caption} />
-          <TextInput
+          <TextInput {...inputTint}
             value={query}
             onChangeText={setQuery}
             placeholder={searchPlaceholder}

@@ -214,7 +214,8 @@ export default function Settings() {
           ) : (
             <ListRow
               icon="shield"
-              iconBg={palette.voltDeep}
+              iconBg={palette.volt}
+              iconColor={palette.inkText}
               title={t('Giriş')}
               value={
                 ident.label ??
@@ -229,16 +230,15 @@ export default function Settings() {
           {linked ? (
             <ListRow
               icon="phone"
-              iconBg={palette.ink}
               title={t('Aktiv cihazlar')}
               subtitle={t('Hesabının açıq olduğu telefonlar')}
               onPress={() => router.push('/(tabs)/profile/devices')}
             />
           ) : null}
-          <ListRow icon="user" iconBg={palette.blue} title={t('Profili redaktə et')} onPress={() => router.push('/(tabs)/profile/edit')} />
-          <ListRow icon="lock" iconBg={palette.caption} title={t('Məxfilik')} subtitle={t('Görünürlük və məlumatlar')} onPress={() => router.push('/(tabs)/profile/privacy')} />
-          <ListRow icon="bookmark" iconBg={palette.voltDeep} title={t('Saxlanılanlar')} subtitle={t('Videolar və zallar')} onPress={() => router.push('/(tabs)/profile/saved')} />
-          <ListRow icon="bell" iconBg={palette.streak} title={t('Bildirişlər')} subtitle={t('Hansı bildirişləri alacağını seç')} onPress={() => router.push('/(tabs)/profile/notifications')} />
+          <ListRow icon="user" title={t('Profili redaktə et')} onPress={() => router.push('/(tabs)/profile/edit')} />
+          <ListRow icon="lock" title={t('Məxfilik')} subtitle={t('Görünürlük və məlumatlar')} onPress={() => router.push('/(tabs)/profile/privacy')} />
+          <ListRow icon="bookmark" title={t('Saxlanılanlar')} subtitle={t('Videolar və zallar')} onPress={() => router.push('/(tabs)/profile/saved')} />
+          <ListRow icon="bell" title={t('Bildirişlər')} subtitle={t('Hansı bildirişləri alacağını seç')} onPress={() => router.push('/(tabs)/profile/notifications')} />
         </ListGroup>
 
         {/* Inline, not a row that pushes a screen: there are three options and
@@ -253,12 +253,11 @@ export default function Settings() {
         <ListGroup header={t('Məşq')}>
           <ListRow
             icon="clock"
-            iconBg={palette.blue}
             title={t('Məşq xatırlatması')}
             value={reminderSummary(reminder, t) ?? t('Söndürülüb')}
             onPress={() => router.push('/(tabs)/profile/reminders')}
           />
-          <ListRow icon="timer" iconBg={palette.voltDeep} title={t('Setlər arası fasilə')} value={restLabel(restSeconds)} onPress={pickRest} />
+          <ListRow icon="timer" title={t('Setlər arası fasilə')} value={restLabel(restSeconds)} onPress={pickRest} />
         </ListGroup>
 
         {/* «Kəşf-də», not «Kəşfdə»: the hyphen before a case suffix belongs to
@@ -269,19 +268,18 @@ export default function Settings() {
             tab. */}
         <ListGroup header={t('Hesablar')} footer={t('Müəllim profili yaradılan kimi Kəşfdə görünür, zal isə SPOT yoxlayandan sonra. Instagram kimi bir neçə hesab arasında keçə bilərsən.')}>
           {accountCount() > 1 ? (
-            <ListRow icon="grid" iconBg={palette.inkText} title={t('Hesabı dəyiş')} subtitle={[t('Şəxsi'), role === 'trainer' ? t('Müəllim') : null, ownsGym ? t('Zal') : null].filter(Boolean).join(' · ')} onPress={() => showAccountSwitcher(router)} />
+            <ListRow icon="grid" title={t('Hesabı dəyiş')} subtitle={[t('Şəxsi'), role === 'trainer' ? t('Müəllim') : null, ownsGym ? t('Zal') : null].filter(Boolean).join(' · ')} onPress={() => showAccountSwitcher(router)} />
           ) : null}
           {role === 'trainer' ? (
-            <ListRow icon="users" iconBg={palette.blue} title={t('Müəllim hesabım')} subtitle={t('Redaktə et')} onPress={() => router.push('/(tabs)/profile/become-trainer')} />
+            <ListRow icon="users" title={t('Müəllim hesabım')} subtitle={t('Redaktə et')} onPress={() => router.push('/(tabs)/profile/become-trainer')} />
           ) : (
-            <ListRow icon="verified" iconBg={palette.blue} title={t('Müəllim ol')} subtitle={t('Öz təlim hesabını yarat')} onPress={() => router.push('/(tabs)/profile/become-trainer')} />
+            <ListRow icon="verified" title={t('Müəllim ol')} subtitle={t('Öz təlim hesabını yarat')} onPress={() => router.push('/(tabs)/profile/become-trainer')} />
           )}
           {ownsGym ? null : (
             /* A guest has no profiles row, so the whole form would fail at the end —
                 ask for the 30-second profile before the form, not after it. */
             <ListRow
               icon="dumbbell"
-              iconBg={palette.voltDeep}
               title={t('Zal hesabı yarat')}
               subtitle={t('Öz idman zalını qeydiyyata al')}
               onPress={() => gate(() => router.push('/(tabs)/profile/create-gym'), t('Zal hesabı üçün'))}
@@ -298,7 +296,6 @@ export default function Settings() {
           footer={t('Düymələrə basanda titrəmə və qısa səs. İkisini də ayrıca söndürə bilərsən.')}>
           <ListRow
             icon="sliders"
-            iconBg={palette.inkText}
             title={t('Titrəmə')}
             subtitle={t('Basanda yüngül titrəmə')}
             chevron={false}
@@ -315,7 +312,6 @@ export default function Settings() {
           />
           <ListRow
             icon="sound"
-            iconBg={palette.blue}
             title={t('Səs')}
             subtitle={t('Qısa interfeys səsləri')}
             chevron={false}
@@ -334,13 +330,13 @@ export default function Settings() {
         </ListGroup>
 
         <ListGroup header={t('Tətbiq')} footer={t('SPOT tam pulsuzdur — abunə, tətbiqdaxili ödəniş və ya kilidli funksiya yoxdur. Zal və məşqçi qiymətləri yalnız məlumat üçün göstərilir; SPOT bu ödənişlərə qarışmır və heç bir pay götürmür.')}>
-          <ListRow icon="target" iconBg={palette.ink} title={t('Analitika')} subtitle={t('Həcm, 1RM, disbalans')} onPress={() => router.push('/(tabs)/profile/analytics')} />
+          <ListRow icon="target" title={t('Analitika')} subtitle={t('Həcm, 1RM, disbalans')} onPress={() => router.push('/(tabs)/profile/analytics')} />
           {/* «Seriya», not «streak». Every other place the counter is named — the
               profile badge, check-in, analitika, nailiyyətlər — calls it «seriya»,
               so this row advertised a screen by a name that appears nowhere on it. */}
-          <ListRow icon="trophy" iconBg={palette.streak} title={t('Nailiyyətlər')} subtitle={t('Nişanlar və seriya')} onPress={() => router.push('/(tabs)/profile/achievements')} />
-          <ListRow icon="shield" iconBg={palette.voltDeep} title={t('Kömək və dəstək')} subtitle={t('Problemi komandaya bildir')} onPress={help} />
-          <ListRow icon="star" iconBg={palette.streak} title={t('SPOT haqqında')} value={APP_VERSION ? `v${APP_VERSION}` : undefined} chevron={false} />
+          <ListRow icon="trophy" title={t('Nailiyyətlər')} subtitle={t('Nişanlar və seriya')} onPress={() => router.push('/(tabs)/profile/achievements')} />
+          <ListRow icon="shield" title={t('Kömək və dəstək')} subtitle={t('Problemi komandaya bildir')} onPress={help} />
+          <ListRow icon="star" title={t('SPOT haqqında')} value={APP_VERSION ? `v${APP_VERSION}` : undefined} chevron={false} />
         </ListGroup>
 
         {/* Reachable AFTER onboarding too: the store review checks that a
@@ -350,20 +346,17 @@ export default function Settings() {
         <ListGroup header={t('Hüquqi')}>
           <ListRow
             icon="shield"
-            iconBg={palette.ink}
             title={t('İstifadə şərtləri')}
             onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'terms' } })}
           />
           <ListRow
             icon="shield"
-            iconBg={palette.blue}
             title={t('Məxfilik siyasəti')}
             subtitle={t('Hansı məlumat toplanır, kim görür')}
             onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'privacy' } })}
           />
           <ListRow
             icon="users"
-            iconBg={palette.voltDeep}
             title={t('İcma qaydaları')}
             subtitle={t('Bu tanışlıq tətbiqi deyil')}
             onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'rules' } })}

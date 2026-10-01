@@ -11,7 +11,7 @@ import { EmptyNote, GymGate, updateMyGym, useMyGym, type OwnedGym, type Schedule
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useT } from '@/lib/useT';
 import { confirm, toast } from '@/store/ui';
-import { iconSize, palette, spacing } from '@/theme';
+import { iconSize, palette, spacing, inputTint } from '@/theme';
 
 const sortByTime = (a: ScheduleItem, b: ScheduleItem) => a.time.localeCompare(b.time);
 
@@ -226,7 +226,7 @@ function Field({
       <AppText variant="footnote" color={palette.caption} style={{ marginBottom: 7, fontWeight: '600' }}>
         {label}
       </AppText>
-      <TextInput
+      <TextInput {...inputTint}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

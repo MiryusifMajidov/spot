@@ -33,10 +33,22 @@ export function ListGroup({ header, footer, children }: { header?: string; foote
   );
 }
 
+/**
+ * A settings-style row.
+ *
+ * The icon tile is NEUTRAL by default — light grey with an ink glyph. It used to
+ * be a colour per row in the manner of iOS Settings (blue, green, orange, grey,
+ * black and red in one list), which is a second palette next to SPOT's own and the
+ * reason the app read as «some icons blue, some green». Colour on a tile now
+ * MEANS something, so a caller passes `iconBg` only for a state: red for danger or
+ * an unprotected account, streak for a failure, volt for «active / protected».
+ * A coloured tile gets a white glyph unless `iconColor` says otherwise (volt
+ * takes ink: white on volt is 1.2:1).
+ */
 export function ListRow({
   icon,
   iconBg,
-  iconColor = palette.white,
+  iconColor,
   title,
   subtitle,
   value,
@@ -59,12 +71,12 @@ export function ListRow({
   const body = (
     <View style={styles.row}>
       {icon ? (
-        <View style={[styles.iconBox, { backgroundColor: iconBg ?? palette.ink }]}>
+        <View style={[styles.iconBox, { backgroundColor: iconBg ?? palette.element }]}>
           {/* 20, not 16: the glyphs fill only the middle ~70% of their 24-unit box,
               so 16 drew a ~10 pt mark in the 30 pt tile — the Settings and Privacy
               icons owners called «too small». 20 is about half the tile, the
               proportion of iOS Settings. */}
-          <Icon name={icon} size={20} color={iconColor} />
+          <Icon name={icon} size={20} color={iconColor ?? (iconBg ? palette.white : palette.inkText)} />
         </View>
       ) : null}
       <View style={{ flex: 1 }}>

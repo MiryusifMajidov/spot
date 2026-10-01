@@ -256,7 +256,7 @@ export default function WorkoutToday() {
         <View style={styles.sectionHead}>
           <AppText variant="title3">{t('Proqramlar')}</AppText>
           <PressableScale haptic={false} hitSlop={linkSlop} onPress={() => router.push('/(tabs)/workout/library')}>
-            <AppText variant="subhead" color={palette.blue}>
+            <AppText variant="subhead" color={palette.inkText} style={{ fontWeight: '600' }}>
               {t('Hamısı')}
             </AppText>
           </PressableScale>

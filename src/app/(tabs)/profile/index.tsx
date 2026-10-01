@@ -156,11 +156,11 @@ export default function Profile() {
             </AppText>
             <View style={styles.badges}>
               {profile.role === 'trainer' ? (
-                <View style={[styles.badge, { backgroundColor: 'rgba(10,132,255,0.12)' }]}>
-                  {/* Not the verified seal: this chip says «trainer», and the blue
-                      badge is only for trainers SPOT has checked. */}
-                  <Icon name="users" size={12} color={palette.blue} />
-                  <AppText style={{ fontSize: 11.5, fontWeight: '700', color: palette.blue }}>{t('Müəllim')}</AppText>
+                <View style={[styles.badge, { backgroundColor: palette.inkTint }]}>
+                  {/* Not the verified seal: this chip says «trainer» and stays neutral;
+                      the green seal is only for trainers SPOT has checked. */}
+                  <Icon name="users" size={12} color={palette.inkText} />
+                  <AppText style={{ fontSize: 11.5, fontWeight: '700', color: palette.inkText }}>{t('Müəllim')}</AppText>
                 </View>
               ) : null}
               {/* A 25 pt chip: the slop brings the target to 45 pt tall without
@@ -176,12 +176,12 @@ export default function Profile() {
                 onPress={() => router.push('/(tabs)/profile/achievements')}
                 style={[styles.badge, { backgroundColor: 'rgba(255,107,53,0.14)' }]}>
                 <Icon name="flame" size={12} color={palette.streak} />
-                <AppText style={{ fontSize: 11.5, fontWeight: '700', color: '#D14A15' }}>{streakText}</AppText>
+                <AppText style={{ fontSize: 11.5, fontWeight: '700', color: palette.streakText }}>{streakText}</AppText>
               </PressableScale>
               {partners > 0 ? (
                 <View style={[styles.badge, { backgroundColor: 'rgba(198,255,61,0.30)' }]}>
                   <Icon name="users" size={12} color={palette.voltDeep} />
-                  <AppText style={{ fontSize: 11.5, fontWeight: '700', color: '#3F5500' }}>{t('{n} yoldaş', { n: partners, count: partners })}</AppText>
+                  <AppText style={{ fontSize: 11.5, fontWeight: '700', color: palette.voltText }}>{t('{n} yoldaş', { n: partners, count: partners })}</AppText>
                 </View>
               ) : null}
             </View>
@@ -218,7 +218,7 @@ export default function Profile() {
             <AppText variant="headline">{t('Şəxsi rekordlar')}</AppText>
             {prs.length > 0 ? (
               <PressableScale haptic={false} activeScale={0.94} accessibilityRole="button" onPress={() => router.push('/(tabs)/profile/analytics')} style={styles.prLink}>
-                <AppText variant="subhead" color={palette.blue}>
+                <AppText variant="subhead" color={palette.inkText} style={{ fontWeight: '600' }}>
                   {t('Hamısı')}
                 </AppText>
               </PressableScale>

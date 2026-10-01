@@ -12,7 +12,7 @@ import { Screen } from '@/components/ui/Screen';
 import { GymGate, getMyGymClaim, submitGymClaim, useMyGym, type GymClaimRow } from '@/lib/gymOwner';
 import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { palette, spacing, inputTint } from '@/theme';
 
 /** What approval REALLY changes.
  *
@@ -148,7 +148,7 @@ export default function GymClaim() {
         ) : loadFailed ? (
           <View style={styles.card}>
             <View style={{ flexDirection: 'row', gap: 11, alignItems: 'flex-start', marginBottom: 12 }}>
-              <Icon name="x" size={18} color="#D14A15" />
+              <Icon name="x" size={18} color={palette.streakText} />
               <View style={{ flex: 1 }}>
                 <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{t('Müraciətin statusu yüklənmədi')}</AppText>
                 <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 5 }}>
@@ -184,7 +184,7 @@ export default function GymClaim() {
               <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
                 {t('VÖEN VƏ YA QEYDİYYAT NÖMRƏSİ')}
               </AppText>
-              <TextInput
+              <TextInput {...inputTint}
                 value={voen}
                 onChangeText={setVoen}
                 placeholder={t('Məs: 1234567891')}
@@ -221,8 +221,8 @@ export default function GymClaim() {
         </View>
 
         <View style={styles.disclaimer}>
-          <Icon name="shield" size={16} color="#D14A15" />
-          <AppText style={{ fontSize: 12.5, lineHeight: 18, color: '#8A4A25', flex: 1 }}>
+          <Icon name="shield" size={16} color={palette.streakText} />
+          <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.streakText, flex: 1 }}>
             {t(
               'Sahib rəyləri silə BİLMİR — yalnız cavab yaza bilər. Bu qayda dəyişməzdir, əks halda reytinq mənasını itirir.'
             )}
@@ -266,8 +266,8 @@ function StatusCard({
   title: string;
   body: string;
 }) {
-  const color = tone === 'ok' ? '#5B7F00' : tone === 'wait' ? '#0A84FF' : '#D14A15';
-  const bg = tone === 'ok' ? 'rgba(198,255,61,0.18)' : tone === 'wait' ? 'rgba(10,132,255,0.08)' : 'rgba(255,107,53,0.1)';
+  const color = tone === 'ok' ? palette.voltDeep : tone === 'wait' ? palette.streak : palette.red;
+  const bg = tone === 'ok' ? palette.voltTint : tone === 'wait' ? palette.streakTint : 'rgba(255,59,48,0.08)';
   return (
     <View style={[styles.status, { backgroundColor: bg }]}>
       <Icon name={icon} size={18} color={color} />

@@ -106,7 +106,7 @@ export default function GymMembers() {
         {failed ? (
           <View style={styles.failCard}>
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
-              <Icon name="x" size={17} color="#D14A15" />
+              <Icon name="x" size={17} color={palette.streakText} />
               <View style={{ flex: 1 }}>
                 <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{t('Üzv siyahısı yüklənmədi')}</AppText>
                 <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 5 }}>
@@ -197,7 +197,7 @@ export default function GymMembers() {
                         </View>
                         {loyal ? (
                           <View style={styles.tag}>
-                            <AppText style={{ fontSize: 10.5, fontWeight: '700', color: '#3F5500' }}>{t('SADİQ')}</AppText>
+                            <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.voltText }}>{t('SADİQ')}</AppText>
                           </View>
                         ) : null}
                       </View>

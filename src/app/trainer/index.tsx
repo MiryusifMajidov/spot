@@ -251,7 +251,7 @@ export default function TrainerPanel() {
                 hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }}
                 accessibilityRole="button"
                 onPress={() => router.push('/trainer/students')}>
-                <AppText variant="subhead" color={palette.blue}>{t('Hamısı')}</AppText>
+                <AppText variant="subhead" color={palette.inkText} style={{ fontWeight: '600' }}>{t('Hamısı')}</AppText>
               </PressableScale>
             </View>
             <View style={{ gap: 12 }}>

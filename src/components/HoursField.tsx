@@ -3,7 +3,7 @@ import { StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
 import { useT } from '@/lib/useT';
-import { palette } from '@/theme';
+import { palette, inputTint } from '@/theme';
 
 /**
  * Opening hours, entered as hours — not as a sentence.
@@ -96,13 +96,13 @@ export function HoursField({
         <Switch
           value={always}
           onValueChange={(v) => onChange({ always: v, open, close })}
-          trackColor={{ true: palette.volt, false: palette.separator }}
+          trackColor={{ true: palette.voltDeep, false: palette.separator }}
         />
       </View>
 
       {!always ? (
         <View style={styles.times}>
-          <TextInput
+          <TextInput {...inputTint}
             value={open}
             onChangeText={(t) => onChange({ always, open: maskTime(t), close })}
             placeholder="06:00"
@@ -114,7 +114,7 @@ export function HoursField({
           <AppText variant="body" color={palette.caption}>
             –
           </AppText>
-          <TextInput
+          <TextInput {...inputTint}
             value={close}
             onChangeText={(t) => onChange({ always, open, close: maskTime(t) })}
             placeholder="24:00"
