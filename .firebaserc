@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "spot-d7566"
-  }
+  },
+  "targets": {
+    "spot-d7566": {
+      "hosting": {
+        "landing": [
+          "spot-d7566"
+        ],
+        "admin": [
+          "spot-az-admin"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
