@@ -14711,7 +14711,7 @@
   ]
  },
  {
-  "key": "Adının yanında mavi nişan görünür",
+  "key": "Adının yanında yaşıl nişan görünür",
   "counted": false,
   "files": [
    "src/app/trainer/verify.tsx"

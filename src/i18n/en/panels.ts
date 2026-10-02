@@ -12,7 +12,7 @@ export const panels: Dict = {
   'Ad Soyad': 'Full name',
   'Admin komandası nömrəni rəsmi reyestrdə yoxlayır. Lazım olsa zalın nömrəsinə zəng edirlər. Sənəd yükləmə və selfie yoxlaması bu versiyada yoxdur — yalnız VÖEN tələb olunur.': 'The admin team checks the number in the official registry. If needed, they call the gym\'s phone number. This version has no document upload or selfie check — only the VÖEN is required.',
   'Adını zal siyahısında göstərməyə icazə verməyib': 'Hasn\'t allowed their name in the gym list',
-  'Adının yanında mavi nişan görünür': 'A blue badge shows next to your name',
+  'Adının yanında yaşıl nişan görünür': 'A green badge shows next to your name',
   'Alınmadı — internet bağlantısını yoxla': 'Didn\'t work — check your internet connection',
   'Anonim üzv': 'Anonymous member',
   'Aylıq': 'Monthly',

@@ -12,7 +12,7 @@ export const panels: Dict = {
   'Ad Soyad': 'Имя и фамилия',
   'Admin komandası nömrəni rəsmi reyestrdə yoxlayır. Lazım olsa zalın nömrəsinə zəng edirlər. Sənəd yükləmə və selfie yoxlaması bu versiyada yoxdur — yalnız VÖEN tələb olunur.': 'Команда админов проверяет номер в официальном реестре. При необходимости звонят по номеру зала. Загрузки документов и проверки по селфи в этой версии нет — нужен только VÖEN.',
   'Adını zal siyahısında göstərməyə icazə verməyib': 'Не разрешает показывать имя в списке зала',
-  'Adının yanında mavi nişan görünür': 'Рядом с твоим именем виден синий значок',
+  'Adının yanında yaşıl nişan görünür': 'Рядом с твоим именем виден зелёный значок',
   'Alınmadı — internet bağlantısını yoxla': 'Не получилось — проверь подключение к интернету',
   'Anonim üzv': 'Анонимный участник',
   'Aylıq': 'Месяц',

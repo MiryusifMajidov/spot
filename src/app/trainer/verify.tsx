@@ -30,7 +30,7 @@ interface VerificationRow {
 }
 
 const BENEFITS = [
-  'Adının yanında mavi nişan görünür',
+  'Adının yanında yaşıl nişan görünür',
   'Proqramların «Doğrulanmış müəllim» kimi təqdim olunur',
   'Yeni istifadəçilər üçün daha etibarlı görünürsən',
 ];

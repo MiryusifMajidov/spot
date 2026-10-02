@@ -11210,5 +11210,10 @@
   "key": "Profilin yaşıl nişanla görünür.",
   "ru": "Твой профиль отмечен зелёным значком.",
   "en": "Your profile shows a green badge."
+ },
+ {
+  "key": "Adının yanında yaşıl nişan görünür",
+  "ru": "Рядом с твоим именем виден зелёный значок",
+  "en": "A green badge shows next to your name"
  }
 ]
