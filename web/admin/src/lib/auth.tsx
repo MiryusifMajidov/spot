@@ -9,6 +9,8 @@ interface AuthState {
   admin: Admin | null; // the admins-table row for this user (null = signed in but NOT an admin)
   loading: boolean;
   signIn: (email: string, password: string) => Promise<string | null>; // returns error msg or null
+  /** Redirects to Google; resolves only with an error message if it could not start. */
+  signInWithGoogle: () => Promise<string | null>;
   signOut: () => Promise<void>;
 }
 
@@ -17,6 +19,7 @@ const Ctx = createContext<AuthState>({
   admin: null,
   loading: true,
   signIn: async () => 'not ready',
+  signInWithGoogle: async () => 'not ready',
   signOut: async () => {},
 });
 
@@ -41,9 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await loadAdmin(data.session);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
+    /* Not awaited inside the callback: auth-js holds its lock while it runs, and
+       loadAdmin's query needs the same lock for its token — a sign-in that lands
+       here from Google's redirect (inside the code exchange) would wait forever. */
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
-      await loadAdmin(s);
+      setTimeout(() => void loadAdmin(s), 0);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -52,13 +58,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return error ? error.message : null;
   };
+  /* The owner signs in to the app with Google and has no password of their own.
+     The same Google account is the admin here: no second credential to keep, and
+     Google's own 2-step verification protects the panel. Supabase must list this
+     site under Authentication → URL Configuration → Redirect URLs. */
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    return error ? error.message : null;
+  };
   const signOut = async () => {
     // 'local': the default 'global' also signed the admin out of SPOT on their phone.
     await supabase.auth.signOut({ scope: 'local' });
     setAdmin(null);
   };
 
-  return <Ctx.Provider value={{ session, admin, loading, signIn, signOut }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ session, admin, loading, signIn, signInWithGoogle, signOut }}>{children}</Ctx.Provider>;
 }
 
 export const useAuth = () => useContext(Ctx);
