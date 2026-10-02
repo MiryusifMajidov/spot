@@ -16,7 +16,8 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { decimal } from './format';
 import { t } from './i18n';
-import { supabase } from './supabase';
+import { IMMUTABLE_CACHE, supabase } from './supabase';
+import { VIDEO_PICKER_OPTIONS } from './videoCompress';
 import { stripVideoLocation } from './videoMeta';
 
 /** The videos bucket's own ceiling (schema33), refused before a long upload. */
@@ -55,8 +56,7 @@ export function clipProblem(a: PickedAsset): string | null {
 
 export async function pickClipFromLibrary(): Promise<PickedAsset | null> {
   const res = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['videos'],
-    quality: 0.8,
+    ...VIDEO_PICKER_OPTIONS,
     videoMaxDuration: CLIP_MAX_SECONDS,
   });
   if (res.canceled || !res.assets?.[0]) return null;
@@ -68,8 +68,7 @@ export async function recordClip(): Promise<PickedAsset | null | 'no-permission'
   const perm = await ImagePicker.requestCameraPermissionsAsync();
   if (!perm.granted) return 'no-permission';
   const res = await ImagePicker.launchCameraAsync({
-    mediaTypes: ['videos'],
-    quality: 0.8,
+    ...VIDEO_PICKER_OPTIONS,
     videoMaxDuration: CLIP_MAX_SECONDS,
   });
   if (res.canceled || !res.assets?.[0]) return null;
@@ -101,6 +100,7 @@ export async function uploadExerciseClip(uri: string, sizeHint?: number | null):
   const { error } = await supabase.storage.from('videos').upload(path, buffer, {
     contentType: 'video/mp4',
     upsert: true,
+    cacheControl: IMMUTABLE_CACHE,
   });
   if (error) throw error;
 

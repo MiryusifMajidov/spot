@@ -24,6 +24,8 @@
  */
 import type { ImageRef } from 'expo-image';
 import { createVideoPlayer } from 'expo-video';
+
+import { cachedVideo, LEAN_BUFFER } from '@/lib/videoCache';
 import { useEffect, useState } from 'react';
 
 /** Decoded frames, oldest first. Bounded - see the note above. */
@@ -56,7 +58,10 @@ async function waitUntilReady(player: { status: string }, timeoutMs = 15000): Pr
 }
 
 async function generate(videoId: string, videoUrl: string): Promise<ImageRef | null> {
-  const player = createVideoPlayer(videoUrl);
+  // Through the disk cache: the frame grab downloads the clip, and the feed then
+  // plays that same download instead of fetching it again.
+  const player = createVideoPlayer(cachedVideo(videoUrl));
+  player.bufferOptions = LEAN_BUFFER;
   try {
     if (!(await waitUntilReady(player))) return null;
     // One second in, not zero: the first frame of a phone recording is very

@@ -18,6 +18,7 @@ import {
   uploadExerciseClip,
 } from '@/lib/exerciseVideo';
 import { errorFeedback, successFeedback } from '@/lib/feedback';
+import { prepareVideo } from '@/lib/videoCompress';
 import { useProgram } from '@/lib/hooks';
 import { saveProgramDraft } from '@/lib/saveProgram';
 import { useT } from '@/lib/useT';
@@ -99,15 +100,18 @@ export default function CreateProgram() {
         return;
       }
       if (!asset) return;
-      const problem = clipProblem(asset);
-      if (problem) {
-        errorFeedback();
-        toast(problem, 'error');
-        return;
-      }
+      // «Yüklənir…» from here: on Android the clip is shrunk to 720p first
+      // (src/lib/videoCompress.ts), and the limits apply to what is sent.
       setUploading(item.key);
       try {
-        const url = await uploadExerciseClip(asset.uri, asset.fileSize ?? null);
+        const ready = await prepareVideo(asset);
+        const problem = clipProblem(ready);
+        if (problem) {
+          errorFeedback();
+          toast(problem, 'error');
+          return;
+        }
+        const url = await uploadExerciseClip(ready.uri, ready.fileSize ?? null);
         draft.patchItem(dayKey, item.key, { videoUrl: url });
         successFeedback();
         toast(t('Video əlavə olundu'));

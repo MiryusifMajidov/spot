@@ -3775,7 +3775,8 @@
   "key": "Video açılmadı",
   "counted": false,
   "files": [
-   "src/app/(tabs)/feed/index.tsx"
+   "src/app/(tabs)/feed/index.tsx",
+   "src/app/(tabs)/feed/share.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -3915,6 +3916,15 @@
   "placeholders": []
  },
  {
+  "key": "Daha tez yüklənsin deyə 720p-yə salınır",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/feed/share.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Dəyişmək üçün toxun",
   "counted": false,
   "files": [
@@ -4041,6 +4051,15 @@
  },
  {
   "key": "Video hamıya görünür və adınla paylaşılır. Yalnız öz zalına göstərmək hələ mümkün deyil.",
+  "counted": false,
+  "files": [
+   "src/app/(tabs)/feed/share.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Video hazırlanır…",
   "counted": false,
   "files": [
    "src/app/(tabs)/feed/share.tsx"

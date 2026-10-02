@@ -15,7 +15,7 @@ import { toast } from '@/store/ui';
 import { getMyProfile } from './api';
 import { decimal } from './format';
 import { t } from './i18n';
-import { supabase } from './supabase';
+import { IMMUTABLE_CACHE, supabase } from './supabase';
 import { invalidateFocusCache, invalidateFocusPrefix } from './focusFetch';
 import { uniqueTail } from './ids';
 
@@ -218,7 +218,7 @@ async function uploadToBucket(bucket: UploadBucket, localUri: string, prefix: st
     err.maxBytes = BUCKET_MAX_BYTES[bucket];
     throw err;
   }
-  const { error } = await supabase.storage.from(bucket).upload(path, bytes, { contentType: type, upsert: true });
+  const { error } = await supabase.storage.from(bucket).upload(path, bytes, { contentType: type, upsert: true, cacheControl: IMMUTABLE_CACHE });
   if (error) throw error;
   return path;
 }

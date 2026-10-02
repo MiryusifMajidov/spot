@@ -11180,5 +11180,15 @@
   "ru_many": "{n} дней назад",
   "en_one": "{n} day ago",
   "en_other": "{n} days ago"
+ },
+ {
+  "key": "Video hazırlanır…",
+  "ru": "Готовим видео…",
+  "en": "Preparing video…"
+ },
+ {
+  "key": "Daha tez yüklənsin deyə 720p-yə salınır",
+  "ru": "Сжимаем до 720p, чтобы загрузилось быстрее",
+  "en": "Converting to 720p so it uploads faster"
  }
 ]

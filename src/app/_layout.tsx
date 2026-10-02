@@ -21,6 +21,7 @@ import { touchDevice } from '@/lib/devices';
 import { openPush, registerPush } from '@/lib/push';
 import { applyWorkoutReminder } from '@/lib/reminders';
 import { installSessionGuard } from '@/lib/sessionGuard';
+import { configureVideoCache } from '@/lib/videoCache';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
@@ -50,6 +51,12 @@ export default function RootLayout() {
   useEffect(() => {
     bootstrap();
   }, [bootstrap]);
+
+  // Before the first player exists (the feed builds its players after the tab
+  // transition) — see src/lib/videoCache.ts.
+  useEffect(() => {
+    configureVideoCache();
+  }, []);
 
   /* Signed out of this phone from another one (Parametrlər → Aktiv cihazlar).
      The same thing «Hesabdan çıx» does here — the phone is cleared, the welcome

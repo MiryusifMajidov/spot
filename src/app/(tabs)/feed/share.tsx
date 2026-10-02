@@ -9,6 +9,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { uploadFeedVideo } from '@/lib/api';
 import { decimal } from '@/lib/format';
+import { compressesOnDevice, prepareVideo, VIDEO_PICKER_OPTIONS } from '@/lib/videoCompress';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
@@ -25,6 +26,8 @@ export default function Share() {
   const [linked, setLinked] = useState<{ id: string; title: string } | null>(null);
   const [uri, setUri] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  /** Android re-encodes the clip to 720p right after the pick (videoCompress.ts). */
+  const [preparing, setPreparing] = useState(false);
   /** What the picker reported about the chosen file — stored so the row can
    *  record the real duration and size instead of leaving them null. */
   const [meta, setMeta] = useState<{ durationSec: number | null; sizeBytes: number | null }>({
@@ -80,11 +83,22 @@ export default function Share() {
   /* Both pickers throw on iOS for reasons that are not «cancelled» (no camera,
      a missing usage key, a picker that would not present) — and an unhandled
      rejection here did nothing at all: no picker, no message. */
+  /* The limits are checked on what will be UPLOADED: a 150 MB 4K recording that
+     comes out of the re-encode at 20 MB is fine. */
+  const take = async (a: ImagePicker.ImagePickerAsset) => {
+    if (compressesOnDevice) setPreparing(true);
+    try {
+      accept(await prepareVideo(a));
+    } finally {
+      if (mounted.current) setPreparing(false);
+    }
+  };
+
   const fromLibrary = async () => {
     try {
-      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: MAX_SECONDS });
+      const res = await ImagePicker.launchImageLibraryAsync({ ...VIDEO_PICKER_OPTIONS, videoMaxDuration: MAX_SECONDS });
       if (res.canceled || !res.assets[0]) return;
-      accept(res.assets[0]);
+      await take(res.assets[0]);
     } catch {
       toast(t('Video açılmadı'), 'error');
     }
@@ -101,9 +115,9 @@ export default function Share() {
       return;
     }
     try {
-      const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['videos'], quality: 0.8, videoMaxDuration: MAX_SECONDS });
+      const res = await ImagePicker.launchCameraAsync({ ...VIDEO_PICKER_OPTIONS, videoMaxDuration: MAX_SECONDS });
       if (res.canceled || !res.assets[0]) return;
-      accept(res.assets[0]);
+      await take(res.assets[0]);
     } catch {
       toast(t('Video açılmadı'), 'error');
     }
@@ -209,10 +223,10 @@ export default function Share() {
           haptic={false}
           activeScale={0.94}
           onPress={publish}
-          disabled={!uri || uploading}
+          disabled={!uri || uploading || preparing}
           hitSlop={hitSlop}
           accessibilityRole="button"
-          accessibilityState={{ disabled: !uri || uploading, busy: uploading }}
+          accessibilityState={{ disabled: !uri || uploading || preparing, busy: uploading || preparing }}
           style={[styles.headerBtn, styles.headerBtnEnd]}>
           {/* While uploading, the label stays in the layout (just invisible) with
               the spinner over it, so the button keeps its width and the title does
@@ -225,15 +239,23 @@ export default function Share() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <PressableScale activeScale={0.98} onPress={pick} style={[styles.videoPick, uri && styles.videoPicked]}>
+        <PressableScale activeScale={0.98} onPress={pick} disabled={preparing} style={[styles.videoPick, uri && styles.videoPicked]}>
           <View style={[styles.videoIcon, uri && { backgroundColor: 'rgba(198,255,61,0.30)' }]}>
-            <Icon name={uri ? 'check' : 'cam'} size={26} color={uri ? palette.volt : palette.white} />
+            {preparing ? (
+              <ActivityIndicator color={palette.volt} />
+            ) : (
+              <Icon name={uri ? 'check' : 'cam'} size={26} color={uri ? palette.volt : palette.white} />
+            )}
           </View>
           <AppText variant="headline" color={palette.white} style={{ marginTop: 12 }}>
-            {uri ? t('Video seçildi') : t('Video çək və ya seç')}
+            {preparing ? t('Video hazırlanır…') : uri ? t('Video seçildi') : t('Video çək və ya seç')}
           </AppText>
           <AppText variant="footnote" color="rgba(255,255,255,0.5)" style={{ marginTop: 4 }}>
-            {uri ? t('Dəyişmək üçün toxun') : t('Çək və ya qalereyadan seç · maksimum {n} saniyə', { n: MAX_SECONDS, count: MAX_SECONDS })}
+            {preparing
+              ? t('Daha tez yüklənsin deyə 720p-yə salınır')
+              : uri
+                ? t('Dəyişmək üçün toxun')
+                : t('Çək və ya qalereyadan seç · maksimum {n} saniyə', { n: MAX_SECONDS, count: MAX_SECONDS })}
           </AppText>
         </PressableScale>
 

@@ -1,0 +1,24 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'app.spot.az'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.spotvideocompress"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  // Same Media3 release as expo-video (node_modules/expo-video/android/build.gradle):
+  // two versions of media3-common on one classpath do not mix.
+  def androidxMedia3Version = "1.9.0"
+  implementation "androidx.media3:media3-transformer:${androidxMedia3Version}"
+  implementation "androidx.media3:media3-effect:${androidxMedia3Version}"
+  implementation "androidx.media3:media3-common:${androidxMedia3Version}"
+}

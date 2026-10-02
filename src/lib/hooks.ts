@@ -133,11 +133,17 @@ export const useGyms = () => {
      lookups on other screens can see a real gym. `useList`/`useFocusFetch` keep
      their fallback when a fetch comes back empty, so a seeded array here would
      have outlived schema66 and kept showing four invented businesses forever. */
-  return useFocusFetch<Gym[]>('gyms', NO_GYMS, async () => {
+  const gyms = useFocusFetch<Gym[]>('gyms', NO_GYMS, async () => {
     const list = await getGyms();
     cacheGyms(list);
     return nonEmpty(list);
   });
+  // The list can also come from last launch's disk copy (src/lib/listCache.ts),
+  // which never passes through the loader above — the lookups need it too.
+  useEffect(() => {
+    cacheGyms(gyms);
+  }, [gyms]);
+  return gyms;
 };
 
 /** REAL people at this gym (other SPOT users), refreshed on focus. This is now the

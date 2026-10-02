@@ -21,3 +21,9 @@ export const supabase = createClient(url, anonKey, {
 });
 
 export const hasSupabaseConfig = Boolean(url && anonKey);
+
+/** `cacheControl` for every Storage upload: one year. Each upload gets a unique
+ *  name and nothing is ever overwritten in place, so the CDN and the phones may
+ *  keep a file for as long as they like. Supabase's default is one hour, which
+ *  sent a repeat view back to the origin (and onto the egress bill) every hour. */
+export const IMMUTABLE_CACHE = '31536000';

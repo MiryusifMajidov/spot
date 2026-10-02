@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { afterTransition } from '@/lib/afterTransition';
+import { isPersistedList, readList, writeList } from '@/lib/listCache';
 
 /* ---------------- focus refetch, without stalling the tab switch ----------------
  * expo-router's NativeTabs gates the native tab swap on a `useDeferredValue`
@@ -117,6 +118,18 @@ export function useFocusFetch<T>(key: string, fallback: T, load: () => Promise<T
          «tapılmadı» again before the second look had been taken. */
       setPhase(key, 'loading');
 
+      /* Cold start: nothing in memory yet. Show the copy saved last launch while
+         the request is out (src/lib/listCache.ts). It goes in with `at: 0` so it
+         never counts as fresh, and it never overwrites an answer that is already
+         here — the disk read is a few ms, but the order is not promised. */
+      if (!hit && isPersistedList(key)) {
+        void readList<T>(key).then((saved) => {
+          if (!alive || saved == null || focusCache.has(key)) return;
+          focusCache.set(key, { at: 0, value: saved });
+          setData(saved);
+        });
+      }
+
       const cancel = afterTransition(() => {
         loadRef
           .current()
@@ -126,6 +139,7 @@ export function useFocusFetch<T>(key: string, fallback: T, load: () => Promise<T
             setPhase(key, 'ready');
             if (value == null) return;
             focusCache.set(key, { at: Date.now(), value });
+            if (isPersistedList(key)) writeList(key, value);
             if (alive) setData(value);
           })
           .catch(() => {

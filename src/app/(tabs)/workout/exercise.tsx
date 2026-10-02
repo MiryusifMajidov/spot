@@ -12,6 +12,7 @@ import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { repsText } from '@/lib/duration';
 import { useFormat, useT } from '@/lib/useT';
+import { cachedVideo, LEAN_BUFFER } from '@/lib/videoCache';
 import { exerciseById, LibExercise } from '@/store/db';
 import { dark, iconSize, palette } from '@/theme';
 
@@ -111,10 +112,11 @@ export default function ExerciseVideo() {
      the target sets/reps, the most common mistake and the substitutes, so those
      stay; only the pretend player goes. */
   const hasVideo = !!ex?.videoUrl;
-  const player = useVideoPlayer(hasVideo && ex ? ex.videoUrl : null, (p) => {
+  const player = useVideoPlayer(cachedVideo(hasVideo && ex ? ex.videoUrl : null), (p) => {
     p.loop = true;
     p.muted = true;
     p.timeUpdateEventInterval = 0.25;
+    p.bufferOptions = LEAN_BUFFER; // a looping clip must not fill the heap — videoCache.ts
     p.play();
   });
 

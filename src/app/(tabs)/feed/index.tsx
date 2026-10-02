@@ -30,6 +30,7 @@ import { findProgram, gymById } from '@/store/db';
 import { actionSheet, openComments, toast, useUi } from '@/store/ui';
 import { iconSize, palette, spacing } from '@/theme';
 import { azLower } from '@/lib/az';
+import { cachedVideo, LEAN_BUFFER } from '@/lib/videoCache';
 import { likeVideo, unlikeVideo, myVideoLikes, myVideoSaves, saveVideo, unsaveVideo, videoSaveCount, likePost, unlikePost, myPostLikes, followProfile, unfollowProfile } from '@/lib/social';
 
 type Mode = 'video' | 'community';
@@ -568,10 +569,11 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
      It now arrives as an empty string, and there is nothing honest to play —
      so no source is given to the player and the card says so instead. */
   const hasSource = !!v.videoUrl;
-  const player = useVideoPlayer(hasSource ? v.videoUrl : null, (p) => {
+  const player = useVideoPlayer(cachedVideo(hasSource ? v.videoUrl : null), (p) => {
     p.loop = true;
     p.muted = muted;
     p.timeUpdateEventInterval = 0.25;
+    p.bufferOptions = LEAN_BUFFER; // the OutOfMemory crash — see videoCache.ts
   });
 
   const timeEvt = useEvent(player, 'timeUpdate');

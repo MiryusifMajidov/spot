@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gym, GymScheduleItem, Partner, toLevel } from '@/data/types';
 import { expectSignOut, linkedSessionEnded } from './sessionGuard';
-import { supabase } from './supabase';
+import { IMMUTABLE_CACHE, supabase } from './supabase';
 import { t } from './i18n';
 import { invalidateFocusCache } from './focusFetch';
 import { cacheGyms } from './gymCache';
@@ -903,7 +903,7 @@ export async function uploadFeedVideo(input: {
   stripVideoLocation(arraybuffer);
   const { error: upErr } = await supabase.storage
     .from('videos')
-    .upload(path, arraybuffer, { contentType: 'video/mp4', upsert: true });
+    .upload(path, arraybuffer, { contentType: 'video/mp4', upsert: true, cacheControl: IMMUTABLE_CACHE });
   if (upErr) throw upErr;
 
   const videoUrl = supabase.storage.from('videos').getPublicUrl(path).data.publicUrl;
