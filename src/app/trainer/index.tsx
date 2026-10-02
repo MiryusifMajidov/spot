@@ -373,7 +373,7 @@ export default function TrainerPanel() {
             {t('ALƏTLƏRİN')}
           </AppText>
           <View style={{ gap: 13 }}>
-            <ToolRow icon="verified" title={t('Doğrulanma')} sub={t('Mavi nişan üçün sənədlər')} onPress={() => router.push('/trainer/verify')} />
+            <ToolRow icon="verified" title={t('Doğrulanma')} sub={t('Yaşıl nişan üçün sənədlər')} onPress={() => router.push('/trainer/verify')} />
           </View>
         </View>
 

@@ -333,9 +333,9 @@ export default function Verify() {
                     : failed
                       ? t('Doğrulama statusunu gətirmək alınmadı.')
                       : approvedNoBadge
-                        ? t('Sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Yenidən müraciət et — sorğun yenidən yoxlamaya düşəcək.')
+                        ? t('Sorğun təsdiqlənib, amma elanında yaşıl nişan yoxdur. Yenidən müraciət et — sorğun yenidən yoxlamaya düşəcək.')
                         : status === 'approved'
-                        ? t('Profilin mavi nişanla görünür.')
+                        ? t('Profilin yaşıl nişanla görünür.')
                         : status === 'rejected'
                           ? (row?.reject_reason ?? t('Səbəb göstərilməyib.'))
                           : status === 'pending'

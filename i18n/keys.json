@@ -4714,7 +4714,7 @@
   "placeholders": []
  },
  {
-  "key": "Doğrulama sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.",
+  "key": "Doğrulama sorğun təsdiqlənib, amma elanında yaşıl nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.",
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/become-trainer.tsx"
@@ -13847,15 +13847,6 @@
   "placeholders": []
  },
  {
-  "key": "Mavi nişan üçün sənədlər",
-  "counted": false,
-  "files": [
-   "src/app/trainer/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Müəllim hesabı",
   "counted": false,
   "files": [
@@ -13987,6 +13978,15 @@
  },
  {
   "key": "YENİ SORĞU",
+  "counted": false,
+  "files": [
+   "src/app/trainer/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Yaşıl nişan üçün sənədlər",
   "counted": false,
   "files": [
    "src/app/trainer/index.tsx"
@@ -14909,7 +14909,7 @@
   "placeholders": []
  },
  {
-  "key": "Profilin mavi nişanla görünür.",
+  "key": "Profilin yaşıl nişanla görünür.",
   "counted": false,
   "files": [
    "src/app/trainer/verify.tsx"
@@ -15031,7 +15031,7 @@
   ]
  },
  {
-  "key": "Sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Yenidən müraciət et — sorğun yenidən yoxlamaya düşəcək.",
+  "key": "Sorğun təsdiqlənib, amma elanında yaşıl nişan yoxdur. Yenidən müraciət et — sorğun yenidən yoxlamaya düşəcək.",
   "counted": false,
   "files": [
    "src/app/trainer/verify.tsx"

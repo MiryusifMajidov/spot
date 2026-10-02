@@ -96,7 +96,7 @@ export const system: Dict = {
   'Disbalans: {muscle} ən yüksək qrupdan {ratio} dəfə azdır.': 'Дисбаланс: {muscle} — в {ratio} раза меньше самой нагруженной группы.',
   'Doğrulama başlanmayıb': 'Проверка не начата',
   'Doğrulama rədd edilib': 'Проверка отклонена',
-  'Doğrulama sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.': 'Твой запрос на проверку одобрен, но в объявлении нет синего значка. Подай заявку ещё раз на странице «Проверка тренера».',
+  'Doğrulama sorğun təsdiqlənib, amma elanında yaşıl nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.': 'Твой запрос на проверку одобрен, но в объявлении нет зелёного значка. Подай заявку ещё раз на странице «Проверка тренера».',
   'Doğrulama statusunu və sənədləri Müəllim doğrulanması səhifəsində görə bilərsən.': 'Статус проверки и документы можно посмотреть на странице «Проверка тренера».',
   'Doğrulama yoxlanılır': 'Проверка на рассмотрении',
   'Doğrulanma': 'Проверка',

@@ -96,7 +96,7 @@ export const system: Dict = {
   'Disbalans: {muscle} ən yüksək qrupdan {ratio} dəfə azdır.': 'Imbalance: {muscle} is {ratio} times lower than your top group.',
   'Doğrulama başlanmayıb': 'Verification not started',
   'Doğrulama rədd edilib': 'Verification rejected',
-  'Doğrulama sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.': 'Your verification request was approved, but your listing doesn\'t have the blue badge. Apply again from the Trainer verification page.',
+  'Doğrulama sorğun təsdiqlənib, amma elanında yaşıl nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.': 'Your verification request was approved, but your listing doesn\'t have the green badge. Apply again from the Trainer verification page.',
   'Doğrulama statusunu və sənədləri Müəllim doğrulanması səhifəsində görə bilərsən.': 'You can see your verification status and documents on the Trainer verification page.',
   'Doğrulama yoxlanılır': 'Verification under review',
   'Doğrulanma': 'Verification',

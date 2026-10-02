@@ -11190,5 +11190,25 @@
   "key": "Daha tez yüklənsin deyə 720p-yə salınır",
   "ru": "Сжимаем до 720p, чтобы загрузилось быстрее",
   "en": "Converting to 720p so it uploads faster"
+ },
+ {
+  "key": "Doğrulama sorğun təsdiqlənib, amma elanında yaşıl nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.",
+  "ru": "Твой запрос на проверку одобрен, но в объявлении нет зелёного значка. Подай заявку ещё раз на странице «Проверка тренера».",
+  "en": "Your verification request was approved, but your listing doesn't have the green badge. Apply again from the Trainer verification page."
+ },
+ {
+  "key": "Yaşıl nişan üçün sənədlər",
+  "ru": "Документы для зелёного значка",
+  "en": "Documents for the green badge"
+ },
+ {
+  "key": "Sorğun təsdiqlənib, amma elanında yaşıl nişan yoxdur. Yenidən müraciət et — sorğun yenidən yoxlamaya düşəcək.",
+  "ru": "Твой запрос одобрен, но в твоём профиле тренера нет зелёного значка. Подай заявку снова — запрос заново уйдёт на проверку.",
+  "en": "Your request was approved, but your trainer profile has no green badge. Apply again — your request will go back into review."
+ },
+ {
+  "key": "Profilin yaşıl nişanla görünür.",
+  "ru": "Твой профиль отмечен зелёным значком.",
+  "en": "Your profile shows a green badge."
  }
 ]

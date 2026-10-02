@@ -562,7 +562,7 @@ export default function BecomeTrainer() {
                     : sync === 'unsynced'
                       ? t('Elanın serverdə yoxdur, ona görə istifadəçilər səni tapa bilmir. Yenidən sinxronla.')
                       : status === 'approved' && !badge
-                        ? t('Doğrulama sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.')
+                        ? t('Doğrulama sorğun təsdiqlənib, amma elanında yaşıl nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.')
                         : t('Doğrulama statusunu və sənədləri Müəllim doğrulanması səhifəsində görə bilərsən.')}
             </AppText>
             <View style={{ flexDirection: 'row', gap: 9, marginTop: 12 }}>
