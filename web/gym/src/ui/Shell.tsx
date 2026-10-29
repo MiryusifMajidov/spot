@@ -20,13 +20,6 @@ const TITLES: Record<ScreenId, string> = {
   schedule: 'Dərs cədvəli', reviews: 'Rəylər', profile: 'Zal profili',
 };
 
-function nowLabel() {
-  const d = new Date();
-  const days = ['bazar', 'bazar ertəsi', 'çərşənbə axşamı', 'çərşənbə', 'cümə axşamı', 'cümə', 'şənbə'];
-  const months = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avqust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr'];
-  return `${d.getDate()} ${months[d.getMonth()]}, ${days[d.getDay()]} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
 export function Shell({
   screen, onNav, onQuickPass, children,
 }: {
@@ -37,14 +30,8 @@ export function Shell({
   children: ReactNode;
 }) {
   const { owner, gym, gyms, selectGym, signOut } = useAuth();
-  const [date, setDate] = useState(nowLabel());
   const [quick, setQuick] = useState('');
   const quickRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const t = setInterval(() => setDate(nowLabel()), 30_000);
-    return () => clearInterval(t);
-  }, []);
 
   /* Reception lives on the keyboard: Ctrl/⌘+K jumps to the day-pass box from
      anywhere, so a visitor's code is two keystrokes away. */
@@ -52,12 +39,13 @@ export function Shell({
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        quickRef.current?.focus();
+        if (screen === 'daypass') (document.querySelector('.code-input') as HTMLInputElement | null)?.focus();
+        else quickRef.current?.focus();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [screen]);
 
   const submitQuick = () => {
     const c = quick.trim().toUpperCase();
@@ -72,16 +60,14 @@ export function Shell({
         <div className="side-logo">
           <div className="side-mark"><i /></div>
           <div>
-            <div style={{ font: '700 15px/1 var(--font)', color: 'var(--on-ink)', letterSpacing: '-.3px' }}>SPOT</div>
-            <div style={{ font: '500 10px/1 var(--font)', color: 'rgba(250,250,250,.4)', marginTop: 4 }}>Zal paneli</div>
+            <div style={{ font: '700 15px/1 var(--font)', letterSpacing: '-.3px' }}>SPOT</div>
+            <div style={{ font: '500 11.5px/1 var(--font)', color: 'var(--muted)', marginTop: 4 }}>Zal paneli</div>
           </div>
         </div>
         <nav className="side-nav">
           {NAV.map((n) => (
             <div key={n.id}>
-              {n.group ? (
-                <div className="nav-group">{n.group}</div>
-              ) : null}
+              {n.group ? <div className="nav-group">{n.group}</div> : null}
               <button className={'nav-item' + (screen === n.id ? ' active' : '')} onClick={() => onNav(n.id)}>
                 <Icon name={n.icon} size={18} />
                 <span className="lbl">{n.label}</span>
@@ -90,24 +76,20 @@ export function Shell({
           ))}
         </nav>
         <div className="side-foot">
-          <div className="sep" />
           <div className="side-me">
-            <div className="initials" style={{ width: 30, height: 30, background: 'rgba(197,254,1,.16)', color: 'var(--volt)', fontSize: 12 }}>
+            <div className="initials" style={{ width: 34, height: 34, background: 'var(--ink)', color: 'var(--volt)' }}>
               {(gym?.name || 'Z').slice(0, 1).toUpperCase()}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ font: '600 12.5px/1.2 var(--font)', color: 'var(--on-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{gym?.name}</div>
-              <div style={{ font: '500 10.5px/1.2 var(--font)', color: 'rgba(250,250,250,.45)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{owner?.name || 'Sahib'}</div>
+              <div style={{ font: '600 13.5px/1.2 var(--font)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{gym?.name}</div>
+              <div style={{ font: '400 12px/1.2 var(--font)', color: 'var(--muted)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{owner?.name || 'Sahib'}</div>
             </div>
-            <button
-              title="Çıxış"
-              onClick={() => { if (confirm('Paneldən çıxılsın?')) void signOut(); }}
-              style={{ background: 'none', border: 'none', color: 'rgba(250,250,250,.5)', padding: 4, display: 'grid' }}>
+            <button className="icon-btn" title="Çıxış" onClick={() => { if (confirm('Paneldən çıxılsın?')) void signOut(); }}>
               <Icon name="logout" size={17} />
             </button>
           </div>
           {gyms.length > 1 ? (
-            <select className="gym-switch lbl" value={gym?.id} onChange={(e) => selectGym(e.target.value)} aria-label="Zal seç">
+            <select className="gym-switch" value={gym?.id} onChange={(e) => selectGym(e.target.value)} aria-label="Zal seç">
               {gyms.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
           ) : null}
@@ -116,8 +98,7 @@ export function Shell({
 
       <div className="main">
         <div className="topbar">
-          <h1>{TITLES[screen]}</h1>
-          <div className="date">{date}</div>
+          <h1>{gym?.name} <span style={{ color: 'var(--fill2)', margin: '0 6px' }}>/</span> <span style={{ color: 'var(--ink)' }}>{TITLES[screen]}</span></h1>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
             {gym ? (
               gym.listed ? (
@@ -131,15 +112,8 @@ export function Shell({
             {screen !== 'daypass' ? (
               <form className="quick" onSubmit={(e) => { e.preventDefault(); submitQuick(); }}>
                 <Icon name="ticket" size={16} color="var(--muted)" />
-                <input
-                  ref={quickRef}
-                  value={quick}
-                  onChange={(e) => setQuick(e.target.value)}
-                  placeholder="Day-pass kodu · Ctrl+K"
-                  maxLength={12}
-                  aria-label="Day-pass kodu"
-                />
-                <button type="submit" className="btn small volt" disabled={!quick.trim()}>Yoxla</button>
+                <input ref={quickRef} value={quick} onChange={(e) => setQuick(e.target.value)} placeholder="Day-pass kodunu yaz" maxLength={12} aria-label="Day-pass kodu" />
+                {quick.trim() ? <button type="submit" className="btn small primary">Yoxla</button> : <span className="kbd">Ctrl K</span>}
               </form>
             ) : null}
           </div>

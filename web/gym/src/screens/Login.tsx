@@ -54,25 +54,11 @@ export function Login() {
 
   return (
     <div className="login">
-      <div className="login-side">
-        <div className="row" style={{ gap: 10 }}>
+      <div>
+        <div className="row" style={{ justifyContent: 'center', gap: 10, marginBottom: 22 }}>
           <div className="side-mark"><i /></div>
-          <div style={{ font: '700 16px/1 var(--font)' }}>SPOT <span style={{ color: 'rgba(250,250,250,.45)', fontWeight: 500 }}>· Zal paneli</span></div>
+          <div style={{ font: '700 16px/1 var(--font)' }}>SPOT <span style={{ color: 'var(--muted)', fontWeight: 500 }}>Zal paneli</span></div>
         </div>
-        <div>
-          <h2>Zalını kompüterdən<br /><em>rahat idarə et.</em></h2>
-          <ul>
-            {POINTS.map((p) => (
-              <li key={p.text}><i><Icon name={p.icon} size={16} /></i>{p.text}</li>
-            ))}
-          </ul>
-        </div>
-        <div style={{ font: '400 12.5px/1.5 var(--font)', color: 'rgba(250,250,250,.4)' }}>
-          SPOT ödəniş qəbul etmir və üzvlərin məşq məlumatlarını zala göstərmir.
-        </div>
-      </div>
-
-      <div className="login-main">
         <div className="login-card">
           <div style={{ font: '700 22px/1.2 var(--font)', letterSpacing: '-.4px' }}>Daxil ol</div>
           <p className="p-card" style={{ marginTop: 6 }}>Zalın SPOT tətbiqindəki sahib hesabı ilə.</p>
@@ -116,7 +102,13 @@ export function Login() {
             </form>
           )}
 
-          {err ? <div style={{ marginTop: 14, font: '500 12.5px/1.45 var(--font)', color: 'var(--red-deep)' }}>{err}</div> : null}
+          {err ? <div style={{ marginTop: 14, font: '500 13px/1.45 var(--font)', color: 'var(--red-deep)' }}>{err}</div> : null}
+
+          <div className="login-points">
+            {POINTS.map((p) => (
+              <div key={p.text}><Icon name={p.icon} size={16} color="var(--volt-deep)" />{p.text}</div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
