@@ -80,7 +80,7 @@ export function Shell({
           {NAV.map((n) => (
             <div key={n.id}>
               {n.group ? (
-                <div className="lbl" style={{ font: '600 11px/1 var(--font)', color: 'rgba(250,250,250,.35)', padding: '16px 12px 8px' }}>{n.group}</div>
+                <div className="nav-group">{n.group}</div>
               ) : null}
               <button className={'nav-item' + (screen === n.id ? ' active' : '')} onClick={() => onNav(n.id)}>
                 <Icon name={n.icon} size={18} />

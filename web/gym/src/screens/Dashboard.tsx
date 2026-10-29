@@ -12,18 +12,23 @@ const WEEKDAYS = ['B', 'BE', 'ÇA', 'Ç', 'CA', 'C', 'Ş'];
 function Bars({ values, labels, highlight }: { values: number[]; labels: string[]; highlight?: number }) {
   const max = Math.max(1, ...values);
   const peak = values.indexOf(Math.max(...values));
+  const total = values.reduce((s, v) => s + v, 0);
   return (
+    <div style={{ position: 'relative' }}>
+    {total === 0 ? (
+      <div className="muted" style={{ position: 'absolute', inset: '0 0 24px', display: 'grid', placeItems: 'center', font: '500 13px/1.4 var(--font)' }}>
+        Bu müddətdə check-in olmayıb
+      </div>
+    ) : null}
     <div className="bars">
       {values.map((v, i) => (
         <div className="bar-col" key={i} title={`${labels[i]}: ${v}`}>
           <div className="bar-val">{v > 0 ? v : ''}</div>
-          <div
-            className={'bar' + (v > 0 ? (i === peak ? ' peak' : ' on') : '')}
-            style={{ height: `${Math.max(3, (v / max) * 100)}%`, outline: i === highlight ? '2px solid var(--ink)' : undefined, outlineOffset: 2 }}
-          />
-          <div className="bar-lbl">{labels[i]}</div>
+          <div className={'bar' + (v > 0 ? (i === peak ? ' peak' : ' on') : '')} style={{ height: `${Math.max(3, (v / max) * 100)}%` }} />
+          <div className={'bar-lbl' + (i === highlight ? ' now' : '')}>{labels[i]}</div>
         </div>
       ))}
+    </div>
     </div>
   );
 }
@@ -123,7 +128,7 @@ export function Dashboard({ go }: ScreenProps) {
                 highlight={hours.indexOf(nowHour)}
               />
             )}
-            <p className="p-card" style={{ marginTop: 10, fontSize: 12 }}>Check-in-lərin saatlara görə sayı. Çərçivəli sütun — indiki saat.</p>
+            <p className="p-card" style={{ marginTop: 10, fontSize: 12 }}>Check-in-lərin saatlara görə sayı. Qalın yazılan saat — indiki saat.</p>
           </div>
 
           <div className="card pad">
