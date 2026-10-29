@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   monthBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   calGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   calCell: { width: '12.7%', aspectRatio: 1, borderRadius: 8 },
-  calToday: { borderWidth: 2, borderColor: palette.ink },
+  calToday: { borderWidth: 2, borderColor: palette.inkText },
   calStats: { flexDirection: 'row', gap: 14, marginTop: 14, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.hairline },
   vdiv: { width: StyleSheet.hairlineWidth, backgroundColor: palette.hairline },
   session: { backgroundColor: palette.white, borderRadius: 16, padding: 14 },

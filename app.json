@@ -61,7 +61,11 @@
         {
           "backgroundColor": "#F7F7F7",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 140
+          "imageWidth": 140,
+          "dark": {
+            "backgroundColor": "#1A1A1A",
+            "image": "./assets/images/splash-icon.png"
+          }
         }
       ],
       "expo-font",

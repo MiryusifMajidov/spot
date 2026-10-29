@@ -20,7 +20,7 @@ function PriceOrFree({ program }: { program: Program }) {
   }
   return (
     <View style={[styles.cornerBadge, { backgroundColor: palette.volt }]}>
-      <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.inkText }}>{t('Pulsuz')}</AppText>
+      <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.ctaText }}>{t('Pulsuz')}</AppText>
     </View>
   );
 }

@@ -68,7 +68,7 @@ export class AppErrorBoundary extends Component<Props, State> {
           </AppText>
 
           <PressableScale activeScale={0.97} onPress={this.reset} style={styles.retry}>
-            <AppText style={{ fontSize: 15, fontWeight: '600', color: palette.white }}>{t('Yenidən cəhd et')}</AppText>
+            <AppText style={{ fontSize: 15, fontWeight: '600', color: palette.ctaText }}>{t('Yenidən cəhd et')}</AppText>
           </PressableScale>
 
           {__DEV__ ? (
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     height: 50,
     paddingHorizontal: 28,
     borderRadius: radius.button,
-    backgroundColor: palette.inkText,
+    backgroundColor: palette.cta,
     alignItems: 'center',
     justifyContent: 'center',
   },

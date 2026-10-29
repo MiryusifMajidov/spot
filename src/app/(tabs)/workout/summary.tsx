@@ -110,7 +110,7 @@ export default function Summary() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
         <Animated.View entering={FadeInDown.duration(300)} style={styles.hero}>
           <View style={styles.disc}>
-            <Icon name="check" size={38} color={palette.inkText} />
+            <Icon name="check" size={38} color={palette.ctaText} />
           </View>
           <AppText variant="title" style={{ marginTop: 20 }}>
             {t('Məşq bitdi')}

@@ -221,10 +221,10 @@ export function UiHost() {
               <PressableScale haptic={false} activeScale={0.98} onPress={hideToast} style={styles.toast}>
                 {toast.kind !== 'info' ? (
                   <View style={[styles.toastDot, { backgroundColor: toast.kind === 'error' ? palette.red : palette.volt }]}>
-                    <Icon name={toast.kind === 'error' ? 'x' : 'check'} size={12} color={toast.kind === 'error' ? palette.white : palette.inkText} />
+                    <Icon name={toast.kind === 'error' ? 'x' : 'check'} size={12} color={toast.kind === 'error' ? palette.onDark : palette.ctaText} />
                   </View>
                 ) : null}
-                <AppText style={{ color: palette.white, fontSize: 14, fontWeight: '600', flexShrink: 1 }}>{toast.msg}</AppText>
+                <AppText style={{ color: palette.onDark, fontSize: 14, fontWeight: '600', flexShrink: 1 }}>{toast.msg}</AppText>
               </PressableScale>
             </Animated.View>
           </View>
@@ -249,7 +249,7 @@ export function UiHost() {
           onLayout={(e) => setBannerH(e.nativeEvent.layout.height)}
         >
           <View style={styles.sanctionCard}>
-            <Icon name="shield" size={16} color={palette.white} />
+            <Icon name="shield" size={16} color={palette.onDark} />
             <AppText style={styles.sanctionText}>
               {sanction.status === 'banned'
                 ? t('Hesabın bağlanıb — yeni paylaşım, şərh və mesaj göndərə bilmirsən.')
@@ -274,7 +274,7 @@ export function UiHost() {
           onLayout={(e) => setBannerH(e.nativeEvent.layout.height)}
         >
           <View style={styles.sanctionCard}>
-            <Icon name="shield" size={16} color={palette.white} />
+            <Icon name="shield" size={16} color={palette.onDark} />
             <AppText style={styles.sanctionText}>
               {t('Hesabına bağlanmaq alınmadı — qonaq kimi davam edirsən. Məlumatların itməyib; internet qayıdanda tətbiqi yenidən aç.')}
             </AppText>
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   dialogActions: { gap: 9, marginTop: 20 },
   dialogBtn: { height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
   sheet: { position: 'absolute', left: 8, right: 8, bottom: 0, gap: 8 },
-  sheetHeader: { alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 16 },
+  sheetHeader: { alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, backgroundColor: palette.glass, borderRadius: 16 },
   sheetGroup: { backgroundColor: palette.white, borderRadius: 16, overflow: 'hidden' },
   sheetRow: { height: 56, alignItems: 'center', justifyContent: 'center' },
   sheetSep: { height: StyleSheet.hairlineWidth, backgroundColor: palette.separator },
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 9,
     backgroundColor: palette.red, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, maxWidth: '100%',
   },
-  sanctionText: { flex: 1, color: palette.white, fontSize: 12.5, fontWeight: '600', lineHeight: 17 },
+  sanctionText: { flex: 1, color: palette.onDark, fontSize: 12.5, fontWeight: '600', lineHeight: 17 },
   toastWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 1001 },
   toast: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.ink, borderRadius: 14, paddingHorizontal: 15, paddingVertical: 12, maxWidth: '88%' }, // no shadow — the design's rule
   toastDot: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

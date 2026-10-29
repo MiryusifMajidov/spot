@@ -334,11 +334,11 @@ export default function SignIn() {
                 disabled={!!busy}
                 style={[styles.socialBtn, prov === 'apple' ? styles.appleBtn : styles.googleBtn]}>
                 {busy === prov ? (
-                  <ActivityIndicator color={prov === 'apple' ? palette.onDark : palette.inkText} />
+                  <ActivityIndicator color={prov === 'apple' ? palette.appleText : palette.inkText} />
                 ) : (
                   <>
-                    {prov === 'apple' ? <Icon name="apple" size={19} color={palette.onDark} /> : null}
-                    <AppText style={{ fontSize: 16, fontWeight: '600', color: prov === 'apple' ? palette.onDark : palette.inkText }}>
+                    {prov === 'apple' ? <Icon name="apple" size={19} color={palette.appleText} /> : null}
+                    <AppText style={{ fontSize: 16, fontWeight: '600', color: prov === 'apple' ? palette.appleText : palette.inkText }}>
                       {t('{provider} ilə davam et', { provider: prov === 'apple' ? 'Apple' : 'Google' })}
                     </AppText>
                   </>
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  appleBtn: { backgroundColor: palette.ink },
+  appleBtn: { backgroundColor: palette.appleBg },
   googleBtn: { backgroundColor: palette.white },
   /* A #FEFEFE field with no visible outline, like the design's fields. The
      1 pt border is kept, transparent, so the field is exactly as tall as before. */

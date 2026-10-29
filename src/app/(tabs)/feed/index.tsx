@@ -29,7 +29,7 @@ import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { findProgram, gymById } from '@/store/db';
 import { actionSheet, openComments, toast, useUi } from '@/store/ui';
-import { iconSize, palette, radius, spacing } from '@/theme';
+import { iconSize, palette, radius, spacing, screenBarStyle } from '@/theme';
 import { azLower } from '@/lib/az';
 import { cachedVideo, LEAN_BUFFER } from '@/lib/videoCache';
 import { likeVideo, unlikeVideo, myVideoLikes, myVideoSaves, saveVideo, unsaveVideo, videoSaveCount, likePost, unlikePost, myPostLikes, followProfile, unfollowProfile } from '@/lib/social';
@@ -312,14 +312,14 @@ function VideoFeed({
         heldBarEntry.current = null;
       }
       if (!pageActive) {
-        if (Platform.OS === 'ios') StatusBar.setBarStyle('dark-content', true);
+        if (Platform.OS === 'ios') StatusBar.setBarStyle(screenBarStyle, true);
         setTabBand('feed', null);
         return;
       }
       if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
       const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
       // The tab bar's band follows this ink page (see SpotTabBar).
-      setTabBand('feed', palette.inkText);
+      setTabBand('feed', palette.media);
       return () => {
         setTabBand('feed', null);
         const state = navigation.getState();
@@ -456,7 +456,7 @@ function VideoFeed({
 
   return (
     <GestureDetector gesture={swipe}>
-      <View style={{ flex: 1, backgroundColor: palette.inkText }} onLayout={(e) => setH(e.nativeEvent.layout.height)}>
+      <View style={{ flex: 1, backgroundColor: palette.media }} onLayout={(e) => setH(e.nativeEvent.layout.height)}>
         {h > 0 && playersReady && (
           <FlatList
             ref={listRef}

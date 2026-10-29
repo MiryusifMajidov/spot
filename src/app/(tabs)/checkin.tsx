@@ -219,7 +219,7 @@ export default function CheckIn() {
       <Screen>
         <View style={styles.center}>
           <View style={[styles.badge, { backgroundColor: ok ? palette.volt : 'rgba(255,59,48,0.12)' }]}>
-            <Icon name={ok ? 'check' : 'x'} size={30} color={ok ? palette.ink : palette.red} />
+            <Icon name={ok ? 'check' : 'x'} size={30} color={ok ? palette.ctaText : palette.red} />
           </View>
           <AppText variant="title2" center style={{ marginTop: 16 }}>
             {ok ? t('Check-in edildi') : t('Alınmadı')}
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   /* The viewfinder is media: it stays #1A1A1A behind the live camera, as the
      design draws it, with the volt frame and light text on top. */
-  cameraWrap: { flex: 1, margin: spacing.screen, borderRadius: radius.sheet, overflow: 'hidden', backgroundColor: palette.ink },
+  cameraWrap: { flex: 1, margin: spacing.screen, borderRadius: radius.sheet, overflow: 'hidden', backgroundColor: palette.media },
   frame: {
     position: 'absolute',
     left: '15%',

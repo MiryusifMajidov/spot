@@ -46,7 +46,7 @@ import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useLang, useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
-import { iconSize, palette, radius } from '@/theme';
+import { iconSize, palette, paletteLight, radius } from '@/theme';
 
 import {
   buildSpotMapHtml,
@@ -127,19 +127,23 @@ const LOCATE_ZOOM = 15;
 const FIRST_FIX_ZOOM = 14;
 const LOAD_TIMEOUT_MS = 15_000;
 
-/** Theme tokens handed to the page — the page never invents a colour of its own. */
+/** Theme tokens handed to the page — the page never invents a colour of its own.
+ *  Always the LIGHT set: the basemap and its markers are drawn light in both
+ *  schemes. The page uses `white` both for roads and for the glyph on an ink
+ *  marker, so a dark set would turn the glyph the colour of the marker — a dark
+ *  basemap needs those two roles split in spotMapHtml.ts first. */
 const MAP_PALETTE: SpotMapPalette = {
-  ink: palette.ink,
-  volt: palette.volt,
-  white: palette.white,
-  grouped: palette.grouped,
-  canvas: palette.canvas,
-  textSecondary: palette.textSecondary,
-  caption: palette.caption,
-  tertiary: palette.tertiary,
-  text3: palette.text3,
-  text4: palette.text4,
-  voltDeep: palette.voltDeep,
+  ink: paletteLight.ink,
+  volt: paletteLight.volt,
+  white: paletteLight.white,
+  grouped: paletteLight.grouped,
+  canvas: paletteLight.canvas,
+  textSecondary: paletteLight.textSecondary,
+  caption: paletteLight.caption,
+  tertiary: paletteLight.tertiary,
+  text3: paletteLight.text3,
+  text4: paletteLight.text4,
+  voltDeep: paletteLight.voltDeep,
   // Cartography: the hue water is mixed from. Not a UI colour (theme.ts has none).
   water: '#0A84FF',
 };
@@ -555,7 +559,7 @@ export function SpotMap({
 }
 
 const styles = StyleSheet.create({
-  wrap: { overflow: 'hidden', backgroundColor: palette.grouped },
+  wrap: { overflow: 'hidden', backgroundColor: paletteLight.grouped }, // the basemap's own colour
   web: { flex: 1, backgroundColor: 'transparent' },
   cover: {
     ...StyleSheet.absoluteFill,

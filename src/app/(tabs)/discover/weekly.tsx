@@ -135,7 +135,7 @@ function Weekly() {
                   </View>
                 ) : (
                   <View style={styles.matchBadge}>
-                    <AppText style={{ color: palette.inkText, fontSize: 13, fontWeight: '700' }}>{topScore}%</AppText>
+                    <AppText style={{ color: palette.ctaText, fontSize: 13, fontWeight: '700' }}>{topScore}%</AppText>
                   </View>
                 )}
               </View>

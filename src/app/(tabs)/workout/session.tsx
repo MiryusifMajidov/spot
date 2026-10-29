@@ -36,7 +36,7 @@ import {
 } from '@/store/db';
 import { useSessionPick } from '@/store/sessionPick';
 import { confirm, toast } from '@/store/ui';
-import { iconSize, palette, radius, spacing, inputTint } from '@/theme';
+import { iconSize, palette, radius, spacing, inputTint, screenBarStyle } from '@/theme';
 import { resolveDayExercises } from './day';
 
 /* `id` is the set's identity for its whole life on this screen — the React key of
@@ -316,8 +316,8 @@ export default function Session() {
      as the exercise card (workout/exercise.tsx). */
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === 'ios') StatusBar.setBarStyle('dark-content', true);
-      const entry = StatusBar.pushStackEntry({ barStyle: 'dark-content', animated: true });
+      if (Platform.OS === 'ios') StatusBar.setBarStyle(screenBarStyle, true);
+      const entry = StatusBar.pushStackEntry({ barStyle: screenBarStyle, animated: true });
       return () => StatusBar.popStackEntry(entry);
     }, [])
   );
@@ -1006,7 +1006,7 @@ const styles = StyleSheet.create({
   // A field inside a card is #F7F7F7.
   input: { width: 64, height: 38, borderRadius: 10, backgroundColor: palette.grouped, color: palette.inkText, textAlign: 'center', fontSize: 15, fontWeight: '600' },
   // The tick is a disc: an open ring, then volt with an ink check.
-  check: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(26,26,26,0.3)', alignItems: 'center', justifyContent: 'center' },
+  check: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: palette.outline, alignItems: 'center', justifyContent: 'center' },
   checkDone: { backgroundColor: palette.volt, borderColor: palette.volt },
   // The label lines up with the set numbers above (the rows' own 12 pt inset).
   setCount: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: spacing.md, marginTop: spacing.xs },
@@ -1017,7 +1017,7 @@ const styles = StyleSheet.create({
   stepBtnOff: { opacity: 0.35 },
   stepCount: { minWidth: 40, textAlign: 'center', color: palette.inkText, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
   // The design's rest card: near-white with a hairline edge, radius 20.
-  restBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 10, backgroundColor: 'rgba(252,252,252,0.96)', borderWidth: StyleSheet.hairlineWidth, borderColor: palette.separator, borderRadius: 20, paddingLeft: 18, paddingRight: 6, paddingVertical: 6 },
+  restBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 10, backgroundColor: palette.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: palette.separator, borderRadius: 20, paddingLeft: 18, paddingRight: 6, paddingVertical: 6 },
   restActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   // 44 pt boxes: the bar is one row of them, so its own height is the target.
   restBtn: { minWidth: 52, height: 44, borderRadius: 11, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },

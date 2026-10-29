@@ -38,7 +38,7 @@ export function SelectCard({
         ) : null}
       </View>
       <View style={[styles.marker, single && { borderRadius: 12 }, selected ? { backgroundColor: palette.volt, borderColor: palette.volt } : { borderColor: palette.separator }]}>
-        {selected ? <Icon name="check" size={15} color={palette.inkText} /> : null}
+        {selected ? <Icon name="check" size={15} color={palette.ctaText} /> : null}
       </View>
     </PressableScale>
   );

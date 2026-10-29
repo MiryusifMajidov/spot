@@ -122,7 +122,7 @@ export default function GymQr() {
           {code.k === 'ready' ? (
             <>
               <View style={styles.qrBox}>
-                <QRCode value={code.code} size={210} backgroundColor={palette.white} color={palette.ink} />
+                <QRCode value={code.code} size={210} backgroundColor={palette.paper} color={palette.media} />
               </View>
               <AppText variant="title3" style={{ marginTop: 18, letterSpacing: 2 }}>
                 {code.code}
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   // #FEFEFE, not pure white (design rule) — the scan contrast is unchanged.
-  qrBox: { padding: 14, backgroundColor: palette.white, borderRadius: 14 },
+  qrBox: { padding: 14, backgroundColor: palette.paper, borderRadius: 14 }, // the quiet zone
   rotate: { alignSelf: 'center', paddingVertical: 16, paddingHorizontal: 20, marginTop: 6 },
   note: {
     flexDirection: 'row',

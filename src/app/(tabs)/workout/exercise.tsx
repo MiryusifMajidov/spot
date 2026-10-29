@@ -14,7 +14,7 @@ import { repsText } from '@/lib/duration';
 import { useFormat, useT } from '@/lib/useT';
 import { cachedVideo, LEAN_BUFFER } from '@/lib/videoCache';
 import { exerciseById, LibExercise } from '@/store/db';
-import { iconSize, palette } from '@/theme';
+import { iconSize, palette, screenBarStyle } from '@/theme';
 
 const { width } = Dimensions.get('window');
 /* The pan reports x relative to the track's own hit area, which progressWrap
@@ -98,7 +98,7 @@ export default function ExerciseVideo() {
   const lightClock = !!ex?.videoUrl;
   useFocusEffect(
     useCallback(() => {
-      const barStyle = lightClock ? 'light-content' : 'dark-content';
+      const barStyle = lightClock ? 'light-content' : screenBarStyle;
       if (Platform.OS === 'ios') StatusBar.setBarStyle(barStyle, true);
       const entry = StatusBar.pushStackEntry({ barStyle, animated: true });
       return () => StatusBar.popStackEntry(entry);
@@ -232,7 +232,7 @@ export default function ExerciseVideo() {
           <View style={styles.controls} pointerEvents="box-none">
             <PressableScale activeScale={0.9} onPress={() => setHalf((h) => !h)} style={[styles.sideCtrl, half && { backgroundColor: palette.volt }]}>
               {/* «0,5x» in Azerbaijani and Russian — a decimal comma, like every other number in the app. */}
-              <AppText style={{ fontSize: 12, fontWeight: '600', color: half ? palette.inkText : palette.onDark }}>{num.decimal(0.5)}x</AppText>
+              <AppText style={{ fontSize: 12, fontWeight: '600', color: half ? palette.ctaText : palette.onDark }}>{num.decimal(0.5)}x</AppText>
             </PressableScale>
             <PressableScale activeScale={0.9} onPress={() => setPlaying((p) => !p)} style={styles.playBig}>
               {/* Two bars, not the timer glyph that stood in for «pause» — the icon
@@ -248,7 +248,7 @@ export default function ExerciseVideo() {
               )}
             </PressableScale>
             <PressableScale activeScale={0.9} onPress={() => setMuted((m) => !m)} style={[styles.sideCtrl, !muted && { backgroundColor: palette.volt }]}>
-              <Icon name={muted ? 'mute' : 'sound'} size={18} color={muted ? palette.onDark : palette.inkText} />
+              <Icon name={muted ? 'mute' : 'sound'} size={18} color={muted ? palette.onDark : palette.ctaText} />
             </PressableScale>
           </View>
           <View style={styles.progressWrap}>
@@ -294,7 +294,7 @@ export default function ExerciseVideo() {
           <AppText style={{ color: palette.textSecondary, fontSize: 12.5, flexShrink: 1 }}>{meta}</AppText>
           {ex.isCompound ? (
             <View style={styles.compoundTag}>
-              <AppText style={{ color: palette.inkText, fontSize: 10.5, fontWeight: '700' }}>{t('Əsas')}</AppText>
+              <AppText style={{ color: palette.ctaText, fontSize: 10.5, fontWeight: '700' }}>{t('Əsas')}</AppText>
             </View>
           ) : null}
         </View>
@@ -335,16 +335,16 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.grouped },
   // No footage: a normal header row, same ground as the page — no empty stage.
   header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 4 },
-  video: { height: 380, backgroundColor: palette.ink },
+  video: { height: 380, backgroundColor: palette.media },
   videoTop: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16 },
   circle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   // Over footage: the design's translucent light disc, readable on any frame. On
   // the plain ground: the #FEFEFE disc every back/close button uses.
-  circleOnVideo: { backgroundColor: 'rgba(252,252,252,0.85)' },
+  circleOnVideo: { backgroundColor: palette.glass },
   circlePlain: { backgroundColor: palette.white },
   controls: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22 },
   sideCtrl: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(11,11,14,0.4)', alignItems: 'center', justifyContent: 'center' },
-  playBig: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(252,252,252,0.94)', alignItems: 'center', justifyContent: 'center' },
+  playBig: { width: 64, height: 64, borderRadius: 32, backgroundColor: palette.glass, alignItems: 'center', justifyContent: 'center' },
   pause: { flexDirection: 'row', gap: 6 },
   pauseBar: { width: 5, height: 20, borderRadius: 1.5, backgroundColor: palette.inkText },
   progressWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingBottom: 14 },

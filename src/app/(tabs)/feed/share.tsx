@@ -245,9 +245,9 @@ export default function Share() {
         <PressableScale activeScale={0.98} onPress={pick} disabled={preparing} style={[styles.videoPick, uri && styles.videoPicked]}>
           <View style={[styles.videoIcon, uri && { backgroundColor: palette.volt }]}>
             {preparing ? (
-              <ActivityIndicator color={palette.inkText} />
+              <ActivityIndicator color={uri ? palette.ctaText : palette.inkText} />
             ) : (
-              <Icon name={uri ? 'check' : 'cam'} size={26} color={palette.inkText} />
+              <Icon name={uri ? 'check' : 'cam'} size={26} color={uri ? palette.ctaText : palette.inkText} />
             )}
           </View>
           <AppText variant="headline" color={palette.inkText} style={{ marginTop: 12 }}>

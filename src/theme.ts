@@ -17,22 +17,40 @@
  *   · No ALL-CAPS text: headings and labels are sentence case (QR, SPOT, PR stay).
  *   · No drop shadows on anything — depth is #F7F7F7 screen vs #FEFEFE card.
  *   · Light is the default for every screen; dark only follows the OS setting.
+ *
+ * DARK MODE. `palette` is picked ONCE, when this module is first imported, from
+ * the OS appearance — every `StyleSheet.create` in the app reads it at import
+ * time, so the whole app is drawn in one scheme with no per-render cost and no
+ * component has to know about themes. When the OS switches while SPOT is open,
+ * the root layout reloads the JS bundle (`reloadAppAsync`) and everything is
+ * imported again in the new scheme.
+ * What that asks of the code: a token names a ROLE, never a colour. `white` is
+ * the surface (#252527 in dark), `inkText` the text (#FAFAFA in dark). Anything
+ * that must look the same in both schemes has its own token:
+ *   · `ctaText` — text and glyphs on volt (ink in both).
+ *   · `onDark` — text and glyphs on media or an ink fill (#FAFAFA in both).
+ *   · `media` — behind video and the camera (#1A1A1A in both).
+ *   · `media` / `paper` — the QR code's modules; a scanner needs dark on light.
  */
-import { Platform, TextStyle } from 'react-native';
+import { Appearance, Platform, TextStyle } from 'react-native';
 
-export const palette = {
-  ink: '#1A1A1A', // «black»: emphasis fills, Apple button, ink text
+/** The scheme this launch is drawn in (see DARK MODE above). */
+export const scheme: 'light' | 'dark' = Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
+export const isDark = scheme === 'dark';
+
+const light = {
+  ink: '#1A1A1A', // «black»: emphasis fills (the toast), map ink
   inkText: '#1A1A1A', // text
-  ink17: '#17171C', // dark surface (dark screens until the dark-mode pass)
+  ink17: '#17171C', // dark surface
   volt: '#C5FE01', // the accent — CTA fill, live/success dots, selection borders
   voltText: '#527A01', // green TEXT on light surfaces (accent text)
   voltDeep: '#527A01', // green GLYPHS on light surfaces (active tab, checks, stars)
   voltTint: 'rgba(197,254,1,0.14)', // selected outlined card / success chip background
   white: '#FEFEFE', // surface (cards, sheets, circles) — never pure #FFFFFF
-  onDark: '#FAFAFA', // text and glyphs on an ink / dark background
+  onDark: '#FAFAFA', // text and glyphs on media or an ink fill
   canvas: '#F7F7F7', // screen background
   grouped: '#F7F7F7', // screen background / field inside a card
-  element: '#EDEDED', // secondary button, selected chip, inner fill
+  element: '#EDEDED', // secondary button, inner fill
   element2: '#EDEDED',
   fill: 'rgba(118,118,128,0.12)', // search field
   textSecondary: '#6B6B6B',
@@ -43,15 +61,23 @@ export const palette = {
   separator: 'rgba(60,60,67,0.14)',
   hairline: 'rgba(60,60,67,0.12)',
   cardBorder: 'rgba(60,60,67,0.10)',
+  outline: 'rgba(26,26,26,0.3)', // an empty check ring
+  glass: 'rgba(252,252,252,0.94)', // a translucent surface over video or a list
+  stubFrom: '#D6D6DC', // a photo that has not loaded / does not exist: gradient…
+  stubTo: '#EDEDF0',
+  stubGlyph: 'rgba(11,11,14,0.14)', // …and the faint glyph on it
   streak: '#FF6B35', // seriya + warning — glyphs and fills
   streakText: '#B8441A', // orange TEXT on light surfaces (5.4:1 on white)
   streakTint: 'rgba(255,107,53,0.12)', // warning / seriya chip background
   red: '#FF3B30', // destructive / unread
   inkTint: 'rgba(26,26,26,0.06)', // neutral chip / quote background
   overlay: 'rgba(26,26,26,0.55)',
+  // ---- the same in both schemes ----
+  media: '#1A1A1A', // behind video and the camera; the QR code's dark modules
+  paper: '#FEFEFE', // the QR code's light modules
   // ---- roles the design names ----
   cta: '#C5FE01', // primary action fill
-  ctaText: '#1A1A1A', // text/glyph on the CTA
+  ctaText: '#1A1A1A', // text/glyph on the CTA — and on anything volt
   ctaDisabled: '#FEFEFE', // disabled CTA fill (text: tertiary)
   selected: '#EDEDED', // selected chip / day / filled card
   chevron: '#C0C0C6', // disclosure chevrons in rows
@@ -59,9 +85,72 @@ export const palette = {
   toggleOn: '#34C759', // Switch track when on
   tabActive: '#527A01', // active tab glyph
   tabPill: '#F2F2F2', // pill behind the active tab
+  appleBg: '#1A1A1A', // «Apple ilə davam et»: black on light (Apple's rule)…
+  appleText: '#FAFAFA',
   verified: '#0A84FF', // the verified badge — one of two places blue is kept
   cancel: '#0A84FF', // «Ləğv et» in sheets and headers — the other
 } as const;
+
+export type Palette = { readonly [K in keyof typeof light]: string };
+
+/** The designer's dark file (`SPOT iOS App Dark.dc.html`, README §8.1.1). */
+const night: Palette = {
+  ink: '#2C2C2F', // surface-emphasis («ink card»)
+  inkText: '#FAFAFA',
+  ink17: '#17171C',
+  volt: '#C5FE01',
+  voltText: '#C5FE01', // accent text is volt itself on a dark surface
+  voltDeep: '#C5FE01',
+  voltTint: 'rgba(197,254,1,0.14)',
+  white: '#252527', // surface
+  onDark: '#FAFAFA',
+  canvas: '#1A1A1A',
+  grouped: '#1A1A1A', // a field inside a card is a darker inset here
+  element: '#303033',
+  element2: '#303033',
+  fill: 'rgba(118,118,128,0.24)',
+  textSecondary: '#A3A3AB',
+  caption: '#8E8E96',
+  tertiary: '#8E8E96',
+  text3: '#D4D4DA',
+  text4: '#B4B4BA',
+  separator: 'rgba(235,235,245,0.14)',
+  hairline: 'rgba(235,235,245,0.12)',
+  cardBorder: 'rgba(235,235,245,0.10)',
+  outline: 'rgba(250,250,250,0.3)',
+  glass: 'rgba(30,30,32,0.94)',
+  stubFrom: '#3A3A3E',
+  stubTo: '#2C2C2F',
+  stubGlyph: 'rgba(250,250,250,0.14)',
+  streak: '#FF6B35',
+  streakText: '#FF8A5C',
+  streakTint: 'rgba(255,107,53,0.16)',
+  red: '#FF3B30',
+  inkTint: 'rgba(250,250,250,0.08)',
+  overlay: 'rgba(11,11,14,0.6)',
+  media: '#1A1A1A',
+  paper: '#FEFEFE',
+  cta: '#C5FE01',
+  ctaText: '#1A1A1A',
+  ctaDisabled: '#303033',
+  selected: '#3A3A3E',
+  chevron: '#5A5A66',
+  rowIcon: '#A3A3AB',
+  toggleOn: '#34C759',
+  tabActive: '#C5FE01',
+  tabPill: 'rgba(250,250,250,0.1)',
+  appleBg: '#FAFAFA', // …and white on dark
+  appleText: '#1A1A1A',
+  verified: '#0A84FF',
+  cancel: '#0A84FF',
+};
+
+export const palette: Palette = isDark ? night : light;
+/** The light set whatever the scheme — for what is drawn light in both (the map). */
+export const paletteLight: Palette = light;
+
+/** The status-bar clock over the screen background: dark on light, light on dark. */
+export const screenBarStyle = isDark ? 'light-content' : 'dark-content';
 
 /**
  * The caret, selection handles and selection highlight of a text field. Without
@@ -69,17 +158,18 @@ export const palette = {
  * every field. Spread FIRST on a TextInput (`<TextInput {...inputTint} …>`).
  * iOS tints all three from `selectionColor`; Android paints the highlight with it
  * as-is, so there it is a translucent volt (ink text stays readable on it) and the
- * caret comes from `cursorColor`.
+ * caret comes from `cursorColor`. On a dark surface the caret is volt itself.
  */
-export const inputTint = Platform.select({
-  ios: { selectionColor: '#527A01' },
-  default: { selectionColor: 'rgba(197,254,1,0.55)', cursorColor: '#527A01' },
-});
-/** The same on a dark surface (the active workout): volt is the caret there. */
 export const inputTintDark = Platform.select({
   ios: { selectionColor: '#C5FE01' },
   default: { selectionColor: 'rgba(197,254,1,0.4)', cursorColor: '#C5FE01' },
 });
+export const inputTint = isDark
+  ? inputTintDark
+  : Platform.select({
+      ios: { selectionColor: '#527A01' },
+      default: { selectionColor: 'rgba(197,254,1,0.55)', cursorColor: '#527A01' },
+    });
 
 /** Semantic tokens for the default (light) surface. */
 export const colors = {
@@ -91,7 +181,7 @@ export const colors = {
   textSecondary: palette.textSecondary,
   textTertiary: palette.caption,
   accent: palette.ink,
-  accentText: palette.white,
+  accentText: palette.onDark,
   volt: palette.volt,
   link: palette.inkText, // text actions are ink; weight marks them, not colour
   separator: palette.separator,
@@ -100,16 +190,16 @@ export const colors = {
   danger: palette.red,
 } as const;
 
-/** Tokens for dark screens (welcome, active workout, video feed). */
+/** Tokens for an immersive dark screen — the same in both schemes. */
 export const dark = {
-  bg: palette.inkText,
-  surface: palette.ink17,
-  text: palette.white,
-  textSecondary: 'rgba(255,255,255,0.60)',
-  textTertiary: 'rgba(255,255,255,0.45)',
-  hairline: 'rgba(255,255,255,0.12)',
-  fill: 'rgba(255,255,255,0.10)',
-  volt: palette.volt,
+  bg: '#1A1A1A',
+  surface: '#17171C',
+  text: '#FAFAFA',
+  textSecondary: 'rgba(250,250,250,0.60)',
+  textTertiary: 'rgba(250,250,250,0.45)',
+  hairline: 'rgba(250,250,250,0.12)',
+  fill: 'rgba(250,250,250,0.10)',
+  volt: '#C5FE01',
 } as const;
 
 export const spacing = {

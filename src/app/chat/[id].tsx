@@ -338,7 +338,7 @@ export default function Conversation() {
                  something to send it is the volt CTA. Colour only — the press
                  does what it always did (send() ignores an empty field). */
               style={[styles.sendBtn, { backgroundColor: text.trim() ? palette.cta : palette.element }]}>
-              <Icon name="arrowU" size={iconSize.inCircle} color={palette.inkText} />
+              <Icon name="arrowU" size={iconSize.inCircle} color={text.trim() ? palette.ctaText : palette.inkText} />
             </PressableScale>
           </View>
         </View>

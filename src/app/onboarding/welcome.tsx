@@ -15,7 +15,7 @@ import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
-import { palette, radius } from '@/theme';
+import { palette, radius, screenBarStyle } from '@/theme';
 
 /**
  * The first screen, and now the actual gate.
@@ -53,8 +53,8 @@ export default function Welcome() {
      approach as workout/exercise.tsx. */
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === 'ios') StatusBar.setBarStyle('dark-content', true);
-      const entry = StatusBar.pushStackEntry({ barStyle: 'dark-content', animated: true });
+      if (Platform.OS === 'ios') StatusBar.setBarStyle(screenBarStyle, true);
+      const entry = StatusBar.pushStackEntry({ barStyle: screenBarStyle, animated: true });
       return () => StatusBar.popStackEntry(entry);
     }, [])
   );
@@ -147,11 +147,11 @@ export default function Welcome() {
               onPress={() => void social(prov)}
               style={[styles.btn, prov === 'apple' ? styles.btnApple : styles.btnGoogle]}>
               {busy === prov ? (
-                <ActivityIndicator color={prov === 'apple' ? palette.onDark : palette.inkText} />
+                <ActivityIndicator color={prov === 'apple' ? palette.appleText : palette.inkText} />
               ) : (
                 <>
-                  {prov === 'apple' ? <Icon name="apple" size={19} color={palette.onDark} /> : null}
-                  <AppText style={{ fontSize: 16, fontWeight: '600', color: prov === 'apple' ? palette.onDark : palette.inkText }}>
+                  {prov === 'apple' ? <Icon name="apple" size={19} color={palette.appleText} /> : null}
+                  <AppText style={{ fontSize: 16, fontWeight: '600', color: prov === 'apple' ? palette.appleText : palette.inkText }}>
                     {t('{provider} ilə davam et', { provider: prov === 'apple' ? 'Apple' : 'Google' })}
                   </AppText>
                 </>
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 16, lineHeight: 24, color: palette.textSecondary, textAlign: 'center', maxWidth: 290, marginTop: 12 },
   actions: { gap: 10, paddingBottom: 8 },
   btn: { height: 52, borderRadius: radius.button, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  btnApple: { backgroundColor: palette.ink },
+  btnApple: { backgroundColor: palette.appleBg },
   btnGoogle: { backgroundColor: palette.white },
   // The design's secondary button: #EDEDED, no border.
   btnSecondary: { backgroundColor: palette.element },

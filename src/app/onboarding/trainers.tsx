@@ -218,7 +218,7 @@ function TrainerRow({ trainer, on, onToggle }: { trainer: SuggestedTrainer; on: 
         ) : null}
       </View>
       <View style={[styles.check, on ? styles.checkOn : null]}>
-        {on ? <Icon name="check" size={15} color={palette.ink} /> : null}
+        {on ? <Icon name="check" size={15} color={palette.ctaText} /> : null}
       </View>
     </PressableScale>
   );

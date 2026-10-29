@@ -2,7 +2,7 @@ import { Redirect, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { Platform, StatusBar, View } from 'react-native';
 
-import { palette } from '@/theme';
+import { palette, screenBarStyle } from '@/theme';
 import { useAppStore } from '@/store/appStore';
 
 /**
@@ -48,8 +48,8 @@ export default function Index() {
   useFocusEffect(
     useCallback(() => {
       if (!waiting) return;
-      if (Platform.OS === 'ios') StatusBar.setBarStyle('dark-content', true);
-      const entry = StatusBar.pushStackEntry({ barStyle: 'dark-content', animated: true });
+      if (Platform.OS === 'ios') StatusBar.setBarStyle(screenBarStyle, true);
+      const entry = StatusBar.pushStackEntry({ barStyle: screenBarStyle, animated: true });
       return () => StatusBar.popStackEntry(entry);
     }, [waiting])
   );

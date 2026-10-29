@@ -6,11 +6,13 @@ import {
   Inter_800ExtraBold,
   useFonts,
 } from '@expo-google-fonts/inter';
+import { reloadAppAsync } from 'expo';
 import * as Notifications from 'expo-notifications';
-import { router, Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
-import { AppState, View } from 'react-native';
+import { Appearance, AppState, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -26,12 +28,32 @@ import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { wipeDeviceData } from '@/lib/wipe';
-import { palette } from '@/theme';
+import { isDark, palette, scheme } from '@/theme';
 
 /* At module scope, not in an effect: the dictionaries must be in place before
    the first render, or a Russian speaker sees a frame of Azerbaijani on every
    cold start. It is a plain object merge — nothing async, nothing to await. */
 loadDictionaries();
+
+/* The window behind every screen — what shows for a frame during a transition or
+   a keyboard resize — is this scheme's screen colour, not app.json's light one. */
+void SystemUI.setBackgroundColorAsync(palette.grouped);
+
+/* Each navigator paints a card behind its screens from this theme. React
+   Navigation's own is light grey even when the phone is dark. */
+const navBase = isDark ? DarkTheme : DefaultTheme;
+const navTheme = {
+  ...navBase,
+  colors: {
+    ...navBase.colors,
+    primary: palette.volt,
+    background: palette.grouped,
+    card: palette.white,
+    text: palette.inkText,
+    border: palette.separator,
+    notification: palette.red,
+  },
+};
 
 export default function RootLayout() {
   const t = useT();
@@ -51,6 +73,25 @@ export default function RootLayout() {
   useEffect(() => {
     bootstrap();
   }, [bootstrap]);
+
+  /* Dark mode follows the phone (theme.ts, DARK MODE). The palette is fixed for
+     a launch, so a switch reloads the bundle in the new scheme. Only while SPOT
+     is in front: iOS flips the appearance back and forth while it snapshots an
+     app going to the background, and the real value is read again on return.
+     An unfinished workout survives the reload (workout/session.tsx keeps a draft). */
+  useEffect(() => {
+    const check = () => {
+      if (AppState.currentState !== 'active') return;
+      const now = Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
+      if (now !== scheme) void reloadAppAsync('colour scheme changed');
+    };
+    const appearance = Appearance.addChangeListener(check);
+    const appState = AppState.addEventListener('change', check);
+    return () => {
+      appearance.remove();
+      appState.remove();
+    };
+  }, []);
 
   // Before the first player exists (the feed builds its players after the tab
   // transition) — see src/lib/videoCache.ts.
@@ -153,19 +194,21 @@ export default function RootLayout() {
              the only exit. `UiHost` stays OUTSIDE the boundary so a toast or a
              dialog can still be shown while the boundary is what is on screen. */
           <AppErrorBoundary>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="trainer" />
-              <Stack.Screen name="gym" />
-              <Stack.Screen name="onboarding" />
-              {/* The sign-in screen. Undeclared until now — it worked only
-                  because expo-router falls back to defaults for a route nothing
-                  configures, which is also why nothing ever noticed it had a
-                  single entry point in the whole app. */}
-              <Stack.Screen name="auth" />
-              <Stack.Screen name="chat" />
-            </Stack>
+            <ThemeProvider value={navTheme}>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="trainer" />
+                <Stack.Screen name="gym" />
+                <Stack.Screen name="onboarding" />
+                {/* The sign-in screen. Undeclared until now — it worked only
+                    because expo-router falls back to defaults for a route nothing
+                    configures, which is also why nothing ever noticed it had a
+                    single entry point in the whole app. */}
+                <Stack.Screen name="auth" />
+                <Stack.Screen name="chat" />
+              </Stack>
+            </ThemeProvider>
           </AppErrorBoundary>
         ) : (
           <View style={{ flex: 1, backgroundColor: palette.grouped }} />
@@ -182,13 +225,11 @@ export default function RootLayout() {
         <AppErrorBoundary label={t('Bu pəncərə açılmadı')}>
           <UiHost />
         </AppErrorBoundary>
-        {/* The app's base clock colour: dark, for the light screens. It used to
-            be light while the fonts loaded, because the placeholder above was
-            near-black; the final design makes every screen light, the
-            placeholder included (#F7F7F7), so the clock is dark from the first
-            frame. This entry is the first one on React Native's status bar
-            stack, so it never overrides an entry a screen pushes on focus. */}
-        <StatusBar style="dark" />
+        {/* The app's base clock colour: dark over the light screens, light over
+            the dark ones (theme.ts, DARK MODE). This entry is the first one on
+            React Native's status bar stack, so it never overrides an entry a
+            screen pushes on focus. */}
+        <StatusBar style={isDark ? 'light' : 'dark'} />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

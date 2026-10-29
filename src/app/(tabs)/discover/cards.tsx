@@ -390,9 +390,9 @@ function CardFace({ partner }: { partner: Partner }) {
   return (
     <View style={styles.card}>
       <View style={styles.photo}>
-        <LinearGradient colors={['#C4C4CB', '#E6E6EA']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={[palette.stubFrom, palette.stubTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-          <Icon name="user" size={34} color="rgba(11,11,14,0.14)" />
+          <Icon name="user" size={34} color={palette.stubGlyph} />
         </View>
         <View style={styles.matchBadge}>
           <AppText style={{ color: score === null ? palette.textSecondary : palette.inkText, fontSize: 13, fontWeight: '700' }}>
@@ -403,7 +403,7 @@ function CardFace({ partner }: { partner: Partner }) {
         {partner.hereNow && !seedById(partner.id) ? (
           <View style={styles.hereBadge}>
             <View style={styles.hereDot} />
-            <AppText style={{ fontSize: 11.5, fontWeight: '600', color: palette.inkText }}>{t('İndi zalda')}</AppText>
+            <AppText style={{ fontSize: 11.5, fontWeight: '600', color: palette.ctaText }}>{t('İndi zalda')}</AppText>
           </View>
         ) : null}
         <LinearGradient colors={['transparent', 'rgba(11,11,14,0.72)']} style={styles.photoScrim} />
