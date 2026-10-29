@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
+import { StatusBarScrim } from '@/components/ui/StatusBarScrim';
 import { SwipeSwitch } from '@/components/ui/SwipeSwitch';
 import { Tag } from '@/components/ui/Tag';
 import { Gym, Partner } from '@/data/types';
@@ -1154,6 +1155,10 @@ export default function GymDetail() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      {/* Past the hero the page is the light sheet, and it scrolled on under the
+          (now dark) clock with nothing behind it — the gym's name ran through the
+          time. The scrim is the screen colour, only once the hero has gone. */}
+      {pastHero ? <StatusBarScrim /> : null}
     </View>
   );
 }
