@@ -73,8 +73,8 @@ export function Shell({
         <div className="side-logo">
           <div className="side-mark"><i /></div>
           <div>
-            <div style={{ font: '700 15px/1 var(--font)', color: 'var(--on-ink)', letterSpacing: '-.3px' }}>SPOT</div>
-            <div style={{ font: '500 10px/1 var(--font)', color: 'rgba(255,255,255,.4)', marginTop: 4 }}>Admin · Bakı</div>
+            <div style={{ font: '700 15px/1 var(--font)', letterSpacing: '-.3px' }}>SPOT</div>
+            <div style={{ font: '500 11.5px/1 var(--font)', color: 'var(--muted)', marginTop: 4 }}>Admin · Bakı</div>
           </div>
         </div>
         <nav className="side-nav">
@@ -89,18 +89,19 @@ export function Shell({
           ))}
         </nav>
         <div className="side-foot">
-          <div className="sep" />
           <button className={'nav-item' + (screen === 'admin' ? ' active' : '')} onClick={() => onNav('admin')}>
             <Icon name="settings" size={18} />
             <span className="lbl">Admin və audit</span>
           </button>
-          <div className="side-me" title="Çıxış" onClick={() => { if (confirm('Çıxış edilsin?')) signOut(); }} style={{ cursor: 'pointer' }}>
-            <div className="av" style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg,#4A4A55,#6A6A78)' }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ font: '600 12.5px/1 var(--font)', color: 'var(--on-ink)' }}>{admin?.name || admin?.email || 'Admin'}</div>
-              <div style={{ font: '500 10.5px/1 var(--font)', color: 'var(--volt)', marginTop: 4, textTransform: 'capitalize' }}>{admin?.role}</div>
+          <div className="side-me" title="Çıxış" onClick={() => { if (confirm('Çıxış edilsin?')) signOut(); }} style={{ cursor: 'pointer', marginTop: 8 }}>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--ink)', color: 'var(--volt)', display: 'grid', placeItems: 'center', font: '600 13px/1 var(--font)', flex: 'none' }}>
+              {(admin?.name || admin?.email || 'A').slice(0, 1).toUpperCase()}
             </div>
-            <Icon name="chev-d" size={15} color="rgba(255,255,255,.4)" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ font: '600 13.5px/1.2 var(--font)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{admin?.name || admin?.email || 'Admin'}</div>
+              <div style={{ font: '400 12px/1.2 var(--font)', color: 'var(--muted)', marginTop: 3, textTransform: 'capitalize' }}>{admin?.role}</div>
+            </div>
+            <Icon name="chev-d" size={15} color="var(--muted)" />
           </div>
         </div>
       </aside>
@@ -108,10 +109,10 @@ export function Shell({
       {/* Main */}
       <div className="main">
         <div className="topbar">
-          <h1>{TITLES[screen]}</h1>
+          <h1 style={{ color: 'var(--ink)' }}>{TITLES[screen]}</h1>
           <div className="date">{date}</div>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div className="search">
+            <div className="search" style={{ width: 300 }}>
               <Icon name="search" size={16} color="var(--muted)" />
               <input id="admin-search" value={search} onChange={(e) => onSearch(e.target.value)} placeholder="İstifadəçi, zal, müəllim, ID axtar" />
               <span className="kbd">⌘K</span>
@@ -128,7 +129,7 @@ export function Shell({
             >
               <Icon name="bell" size={18} />
               {pendingReports ? (
-                <span style={{ position: 'absolute', top: 7, right: 8, width: 7, height: 7, borderRadius: '50%', background: 'var(--red)', border: '1.5px solid var(--fill)' }} />
+                <span style={{ position: 'absolute', top: 8, right: 9, width: 7, height: 7, borderRadius: '50%', background: 'var(--red)', border: '1.5px solid var(--card)' }} />
               ) : null}
             </button>
           </div>

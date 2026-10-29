@@ -53,8 +53,8 @@ export function Login() {
       {/* Light page, #FEFEFE card, hairline instead of a drop shadow (Kölgə qaydası). */}
       <form onSubmit={submit} style={{ width: 380, background: 'var(--card)', borderRadius: 22, padding: 30, border: '1px solid var(--line2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 6 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--volt)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: 13, height: 13, borderRadius: '50%', border: '3px solid var(--ink)' }} />
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 13, height: 13, borderRadius: '50%', border: '3px solid var(--volt)' }} />
           </div>
           <div style={{ font: '700 18px/1 var(--font)' }}>SPOT Admin</div>
         </div>

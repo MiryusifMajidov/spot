@@ -118,8 +118,7 @@
   "files": [
    "src/app/(tabs)/checkin.tsx",
    "src/app/(tabs)/discover/gym/[id].tsx",
-   "src/app/(tabs)/profile/support.tsx",
-   "src/app/gym/index.tsx"
+   "src/app/(tabs)/profile/support.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -431,9 +430,7 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/discover/cards.tsx",
-   "src/app/(tabs)/workout/create.tsx",
-   "src/app/gym/classes.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/workout/create.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -540,10 +537,7 @@
    "src/app/(tabs)/workout/program/[id].tsx",
    "src/app/chat/[id].tsx",
    "src/app/gym/claim.tsx",
-   "src/app/gym/index.tsx",
-   "src/app/gym/members.tsx",
    "src/app/gym/qr.tsx",
-   "src/app/gym/reviews.tsx",
    "src/app/notifications.tsx",
    "src/app/onboarding/trainers.tsx",
    "src/app/trainer/verify.tsx",
@@ -672,8 +666,7 @@
   "files": [
    "src/app/(tabs)/discover/filter.tsx",
    "src/app/(tabs)/discover/index.tsx",
-   "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -891,9 +884,7 @@
   "key": "Cədvəl",
   "counted": false,
   "files": [
-   "src/app/(tabs)/discover/gym/[id].tsx",
-   "src/app/gym/_layout.tsx",
-   "src/app/gym/classes.tsx"
+   "src/app/(tabs)/discover/gym/[id].tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -1021,7 +1012,6 @@
    "src/app/(tabs)/profile/support.tsx",
    "src/app/auth/sign-in.tsx",
    "src/app/gym/claim.tsx",
-   "src/app/gym/index.tsx",
    "src/app/trainer/verify.tsx"
   ],
   "kind": "ui",
@@ -1041,8 +1031,7 @@
   "key": "Hələ rəy yoxdur",
   "counted": false,
   "files": [
-   "src/app/(tabs)/discover/gym/[id].tsx",
-   "src/app/gym/reviews.tsx"
+   "src/app/(tabs)/discover/gym/[id].tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -1091,11 +1080,7 @@
    "src/app/(tabs)/workout/create.tsx",
    "src/app/(tabs)/workout/program/[id].tsx",
    "src/app/(tabs)/workout/session.tsx",
-   "src/app/gym/classes.tsx",
-   "src/app/gym/edit.tsx",
-   "src/app/gym/index.tsx",
    "src/app/gym/qr.tsx",
-   "src/app/gym/reviews.tsx",
    "src/app/trainer/programs.tsx",
    "src/app/trainer/student/[id].tsx",
    "src/app/trainer/students.tsx",
@@ -1248,8 +1233,6 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/discover/gym/[id].tsx",
-   "src/app/gym/_layout.tsx",
-   "src/app/gym/reviews.tsx",
    "src/lib/legal.ts"
   ],
   "kind": "ui",
@@ -1355,8 +1338,6 @@
    "src/app/(tabs)/profile/notifications.tsx",
    "src/app/chat/requests.tsx",
    "src/app/gym/claim.tsx",
-   "src/app/gym/members.tsx",
-   "src/app/gym/reviews.tsx",
    "src/app/notifications.tsx",
    "src/app/trainer/chat.tsx",
    "src/app/trainer/index.tsx",
@@ -1457,8 +1438,7 @@
   "key": "{gym} · rəsmi cavab",
   "counted": false,
   "files": [
-   "src/app/(tabs)/discover/gym/[id].tsx",
-   "src/app/gym/reviews.tsx"
+   "src/app/(tabs)/discover/gym/[id].tsx"
   ],
   "kind": "ui",
   "placeholders": [
@@ -1569,10 +1549,7 @@
   "key": "Üzvlər",
   "counted": false,
   "files": [
-   "src/app/(tabs)/discover/gym/[id].tsx",
-   "src/app/gym/_layout.tsx",
-   "src/app/gym/index.tsx",
-   "src/app/gym/members.tsx"
+   "src/app/(tabs)/discover/gym/[id].tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -2711,7 +2688,6 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/discover/partner/[id].tsx",
-   "src/app/gym/members.tsx",
    "src/components/PartnerRow.tsx"
   ],
   "kind": "ui",
@@ -3824,7 +3800,6 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/feed/index.tsx",
-   "src/app/gym/reviews.tsx",
    "src/lib/moderation.ts"
   ],
   "kind": "ui",
@@ -3957,8 +3932,7 @@
   "files": [
    "src/app/(tabs)/feed/share.tsx",
    "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/(tabs)/workout/create.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/workout/create.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -4749,7 +4723,6 @@
    "src/app/(tabs)/profile/become-trainer.tsx",
    "src/app/(tabs)/profile/create-gym.tsx",
    "src/app/(tabs)/profile/edit.tsx",
-   "src/app/gym/edit.tsx",
    "src/app/trainer/verify.tsx"
   ],
   "kind": "ui",
@@ -4976,7 +4949,6 @@
   "files": [
    "src/app/(tabs)/profile/become-trainer.tsx",
    "src/app/(tabs)/profile/edit.tsx",
-   "src/app/gym/edit.tsx",
    "src/app/trainer/verify.tsx"
   ],
   "kind": "ui",
@@ -5125,7 +5097,6 @@
    "src/app/(tabs)/profile/become-trainer.tsx",
    "src/app/(tabs)/profile/create-gym.tsx",
    "src/app/(tabs)/profile/edit.tsx",
-   "src/app/gym/edit.tsx",
    "src/app/trainer/verify.tsx"
   ],
   "kind": "ui",
@@ -5137,8 +5108,7 @@
   "files": [
    "src/app/(tabs)/profile/become-trainer.tsx",
    "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/(tabs)/profile/edit.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/edit.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5176,8 +5146,7 @@
   "key": "Axtarılır…",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5240,8 +5209,7 @@
   "key": "Mövcud yerimi istifadə et",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5250,8 +5218,7 @@
   "key": "Məkan alınmadı — xəritədə özün seç",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5260,8 +5227,7 @@
   "key": "Məkan icazəsi verilmədi — işarəni xəritədə özün qoy",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5270,8 +5236,7 @@
   "key": "Məs: Nərimanov",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5289,8 +5254,7 @@
   "key": "Qadın zonası",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5333,8 +5297,6 @@
    "src/app/(tabs)/workout/program/[id].tsx",
    "src/app/(tabs)/workout/session.tsx",
    "src/app/chat/requests.tsx",
-   "src/app/gym/classes.tsx",
-   "src/app/gym/edit.tsx",
    "src/app/trainer/programs.tsx",
    "src/components/CommentsSheet.tsx",
    "src/lib/deleteAccount.ts"
@@ -5348,7 +5310,6 @@
   "files": [
    "src/app/(tabs)/profile/create-gym.tsx",
    "src/app/(tabs)/workout/exercises.tsx",
-   "src/app/gym/edit.tsx",
    "src/data/mock.ts"
   ],
   "kind": "ui",
@@ -5532,8 +5493,7 @@
   "key": "İş saatlarını tam yaz — məsələn 06:00 və 24:00",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5563,8 +5523,7 @@
   "key": "Şəkil silinmədi — yenidən cəhd et",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5609,8 +5568,7 @@
   "key": "Şəkli sil",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5619,8 +5577,7 @@
   "key": "Şəkli sil?",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/create-gym.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/create-gym.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -5928,7 +5885,6 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/edit.tsx",
-   "src/app/gym/edit.tsx",
    "src/app/onboarding/profile.tsx"
   ],
   "kind": "ui",
@@ -6033,9 +5989,7 @@
   "counted": false,
   "files": [
    "src/app/(tabs)/profile/edit.tsx",
-   "src/app/(tabs)/workout/create.tsx",
-   "src/app/gym/classes.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/workout/create.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -7079,8 +7033,7 @@
   "key": "Saat",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/reminders.tsx",
-   "src/app/gym/classes.tsx"
+   "src/app/(tabs)/profile/reminders.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -7537,7 +7490,6 @@
   "files": [
    "src/app/(tabs)/profile/settings.tsx",
    "src/app/(tabs)/workout/program/[id].tsx",
-   "src/app/gym/index.tsx",
    "src/app/trainer/programs.tsx"
   ],
   "kind": "ui",
@@ -7673,8 +7625,7 @@
   "key": "Çıx",
   "counted": false,
   "files": [
-   "src/app/(tabs)/profile/settings.tsx",
-   "src/app/gym/edit.tsx"
+   "src/app/(tabs)/profile/settings.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -11188,16 +11139,6 @@
   "placeholders": []
  },
  {
-  "key": "Panel",
-  "counted": false,
-  "files": [
-   "src/app/gym/_layout.tsx",
-   "src/app/trainer/_layout.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Admin komandası nömrəni rəsmi reyestrdə yoxlayır. Lazım olsa zalın nömrəsinə zəng edirlər. Sənəd yükləmə və selfie yoxlaması bu versiyada yoxdur — yalnız VÖEN tələb olunur.",
   "counted": false,
   "files": [
@@ -11349,8 +11290,7 @@
   "key": "Sahiblik təsdiqlənib",
   "counted": false,
   "files": [
-   "src/app/gym/claim.tsx",
-   "src/app/gym/index.tsx"
+   "src/app/gym/claim.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -11438,514 +11378,6 @@
   "placeholders": []
  },
  {
-  "key": "Ad Soyad",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Cədvəl saxlanılmadı — bağlantını yoxla",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Cədvəl saxlanılmadı — serverdə yazıla bilmədi",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Cədvəl yeniləndi",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Cədvəldən silinsin?",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Cədvələ əlavə et",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Dərsin adı",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "HIIT · 45 dəq",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Hələ cədvəl yoxdur",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Məşqçi (istəyə bağlı)",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Sətri redaktə et",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Sətri sil",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Sətrə toxun — redaktə et. Uzun bas və ya «×» — sil.",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalının dərs cədvəlini özün yazırsan — yazdığın sətirlər zal səhifəsində, «Haqqında» bölməsində müştərilərə görünür. Üzvlər tətbiq daxilində dərsə yazıla bilmir: yer sayı və növbə göstərmirik, çünki belə bir sistem yoxdur.",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "«+» düyməsi ilə saat, dərsin adı və məşqçini əlavə et. Yalnız sənin yazdıqların görünür.",
-  "counted": false,
-  "files": [
-   "src/app/gym/classes.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "1 günlük",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Avadanlıq və imkanlar",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Aylıq",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bir neçə cümlə ilə zalını təsvir et.",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Day-pass düyməsi zal səhifəsində yalnız bu açıq olanda və 1 günlük qiymət yazılanda görünür. «Üzvlər» bağlı olanda zal səhifəsində üzv siyahısı göstərilmir.",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Day-pass qəbul et",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Dəyişikliklər saxlanılmayıb",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Hələ işarə qoyulmayıb — koordinatı olmayan zal müştəri xəritəsində görünmür.",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Profil yeniləndi, amma zal səhifəsi seçimləri saxlanılmadı",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Profil yeniləndi, amma zalın yeri saxlanılmadı",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Profil yeniləndi, amma zalın yeri və zal səhifəsi seçimləri saxlanılmadı",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Qal",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Qalereya və xəritə koordinatları hazırda bazadan oxuna bilmir — dəyişiklik saxlanılmaya bilər.",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Qiymətlər yalnız məlumat üçündür — SPOT ödəniş qəbul etmir, komissiya tutmur, pul zalda ödənilir.",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Rayon",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Saxlamadan çıxmaq istəyirsən?",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Saxlanılmadı — bağlantını yoxla",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zal haqqında",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zal profili",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zal profili yeniləndi",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zal profilini redaktə et",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalın adı",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalın adı boş ola bilməz",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalın yeri",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx",
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalın şəkilləri",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalın əsas şəkli",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "{lat}; {lng} · «Saxla» ilə yadda saxlanılır",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "lat",
-   "lng"
-  ]
- },
- {
-  "key": "«Üzvlər» bölməsini göstər",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "«Üzvlər» bölməsini yuxarıdakı açarla bütövlükdə gizlədə bilərsən. Siyahıda görünüb-görünməməyi isə hər üzv özü Məxfilik ayarlarından seçir — zal bunu dəyişə bilmir.",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "İşarəni zalın üstünə qoymaq üçün xəritəyə toxun — işarəni basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal Kəşfdə dərc olunanda müştəri xəritəsində bu nöqtədə görünəcək.",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "İşarəni zalın üstünə qoymaq üçün xəritəyə toxun — işarəni basıb sürüşdürərək dəqiqləşdirə bilərsən. Zal müştəri xəritəsində məhz bu nöqtədə görünür.",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Şəkil oxunmadı · yenisini seç",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Şəkil zalın məlumatına yazılmadı — bu zalı dəyişməyə icazən yoxdur",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Əsas şəkil əlavə et",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Əsas şəkli dəyiş",
-  "counted": false,
-  "files": [
-   "src/app/gym/edit.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bu gün day-pass qeydə alınmayıb",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bu gün hələ check-in yoxdur",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bu, «check-in yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bu, «day-pass yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bugünkü check-in-lər oxunur.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bütün rəqəmlər real check-in və real üzvlərdən gəlir. Zal profilini tamamla — üzvlər SPOT-da zalını seçib öz telefonlarından check-in etdikcə panel özü dolacaq.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Day-pass",
   "counted": false,
   "files": [
@@ -11955,135 +11387,17 @@
   "placeholders": []
  },
  {
-  "key": "Day-pass bağlıdır",
+  "key": "Day-pass yoxla",
   "counted": false,
   "files": [
-   "src/app/gym/index.tsx"
+   "src/app/gym/index.tsx",
+   "src/app/gym/pass.tsx"
   ],
   "kind": "ui",
   "placeholders": []
  },
  {
-  "key": "Day-pass məlumatı yüklənmədi",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Day-pass qeydiyyatı oxunur.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Day-pass qiyməti yazılmayıb",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Doluluq yüklənmədi",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Doluluq üzv öz telefonundan SPOT-un «Check-in» ekranından check-in edəndə dolur. Zal kodu check-in-i işə salmır — SPOT-da zalını seçən üzvlərə check-in etməyi xatırlat.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Elan",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Elan göndərilmədi — bağlantını yoxla",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Elan icma lentində sənin öz adınla paylaşılır — {gym} adı yalnız adının altındakı kiçik sətirdə görünür. Push bildiriş göndərilmir.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "gym"
-  ]
- },
- {
-  "key": "Elan icmaya göndərildi",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Elan yaz",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Kodu göstər",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Kodu yoxla",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Koordinat olmadan zal müştəri xəritəsində görünmür. «Yeri dəyiş» ilə işarəni zalın üstünə qoy.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Koordinatlar bazadan gəlmədi — işarə qoyulub-qoyulmadığını deyə bilmirik. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.",
+  "key": "Dərs cədvəli, üzvlər, rəylər, qiymətlər, şəkillər və zalın xəritədəki yeri SPOT Zal panelində idarə olunur. Kompüterdə aç və eyni hesabla daxil ol.",
   "counted": false,
   "files": [
    "src/app/gym/index.tsx"
@@ -12119,87 +11433,6 @@
   "placeholders": []
  },
  {
-  "key": "Müştərilər zalı xəritədə məhz bu nöqtədə görür.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Məs: Bazar günü zal 09:00–18:00 işləyir.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Panel hələ boşdur — bu normaldır",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Profil",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Qiymət olmadan zal səhifəsində day-pass düyməsi görünmür. «Profil» bölməsində 1 günlük qiyməti yaz.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Resepsiyada təsdiqlənən",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "SPOT ödəniş qəbul etmir və komissiya tutmur — pul zalda ödənilir. Ona görə burada yalnız say göstərilir.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "SPOT-da bu zalı seçib",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Saat üzrə doluluq",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Sahiblik təsdiqi gözlənilir",
   "counted": false,
   "files": [
@@ -12227,15 +11460,6 @@
   "placeholders": []
  },
  {
-  "key": "Yeri dəyiş",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
   "key": "Zal hələ Kəşfdə görünmür",
   "counted": false,
   "files": [
@@ -12254,61 +11478,7 @@
   "placeholders": []
  },
  {
-  "key": "Zal səhifəsində day-pass düyməsi göstərilmir. «Profil» bölməsində yenidən aça bilərsən.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalın idarəsi tam səndədir",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalın koordinatları oxunur.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalın yeri oxuna bilmədi",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalın yeri xəritədə qeyd olunmayıb",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalın şəkli oxunmadı",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalın şəklini əlavə et",
+  "key": "Zalı kompüterdən idarə et",
   "counted": false,
   "files": [
    "src/app/gym/index.tsx"
@@ -12321,283 +11491,6 @@
   "counted": false,
   "files": [
    "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "bu gün check-in yoxdur",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "bu gün {n} check-in",
-  "counted": true,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
- },
- {
-  "key": "check-in məlumatı yüklənmədi",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "yüklənir…",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx",
-   "src/app/trainer/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Üzv olmayan biri zalını day-pass ilə seçəndə burada görünəcək. SPOT ödəniş qəbul etmir — pul zalda ödənilir.",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "üzv siyahısı yüklənmədi",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "İcmaya yaz",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "İndi keçərli",
-  "counted": false,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Ən sıx saat: {hour}:00 · {n} check-in. Rəqəmlər yalnız bugünkü real check-in-lərdən hesablanır.",
-  "counted": true,
-  "files": [
-   "src/app/gym/index.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "hour",
-   "n"
-  ]
- },
- {
-  "key": "30 gündə {n} check-in",
-  "counted": true,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
- },
- {
-  "key": "Adını zal siyahısında göstərməyə icazə verməyib",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Aşağıdakı siyahı əvvəlki yükləmədən qalıb — köhnə ola bilər. Bağlantını yoxla.",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bu, «üzv yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və yenidən cəhd et.",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bütün rəqəmlər son 30 günün real check-in-lərindən hesablanır — uydurma statistika göstərmirik. «Sadiq» = son 30 gündə ən azı {n} check-in. Üzvün bu zalı nə vaxt seçdiyini bilmirik, ona görə «yeni» və ya «risk» kimi status göstərmirik.",
-  "counted": true,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
- },
- {
-  "key": "Davamiyyət · son 30 gün",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Hələ {n} üzv var — faiz hesablamaq üçün az. Rəqəmlər 5 üzvdən sonra göstərilir ki, yanıltmasın.",
-  "counted": true,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
- },
- {
-  "key": "Hələ üzv yoxdur",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Sadiq",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Yetərli məlumat yoxdur.",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zal admini üzvün məşq detallarını, çəkisini və söhbətlərini GÖRMÜR — yalnız bu zaldakı check-in-lərini. Üzvə birbaşa yazmaq imkanı da yoxdur.",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Zalını SPOT-da seçən və zal siyahısında görünməyə icazə verən üzvlər burada check-in tezliyi ilə görünəcək. Siyahı üzvlər zalını özləri seçdikcə dolur.",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "aktiv üzv payı",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "bu gün check-in edib",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "dünən check-in edib",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "son 30 gündə check-in yoxdur",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "son check-in: {n} gün əvvəl",
-  "counted": true,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
- },
- {
-  "key": "Üzv siyahısı yüklənmədi",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Üzvlər · {n}",
-  "counted": true,
-  "files": [
-   "src/app/gym/members.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
- },
- {
-  "key": "üzv başına check-in",
-  "counted": false,
-  "files": [
-   "src/app/gym/members.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -12670,15 +11563,6 @@
  },
  {
   "key": "Day-pass yalnız alındığı gün keçərlidir.",
-  "counted": false,
-  "files": [
-   "src/app/gym/pass.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Day-pass yoxla",
   "counted": false,
   "files": [
    "src/app/gym/pass.tsx"
@@ -12968,209 +11852,6 @@
   "counted": false,
   "files": [
    "src/app/gym/qr.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Aşağıdakılar əvvəlki yükləmədən qalıb — yeni rəylər olmaya bilər. Bağlantını yoxla.",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Bu, «rəy yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və yenidən cəhd et.",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Cavab yazılmadı — serverdə saxlanıla bilmədi. Bağlantını yoxla və yenidən cəhd et.",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Cavabı redaktə et",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Cavabın rəyin altında {gym} adından görünəcək.",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "gym"
-  ]
- },
- {
-  "key": "Qeydin üçün təşəkkür edirik…",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Rəsmi cavab",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Rəsmi cavab yaz",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Rəsmi cavabın yazıldı",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Rəyi şikayət et",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Rəylər yüklənmədi",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Sahib rəyi silə bilmir — yalnız cavab yaza və ya şikayət edə bilər. Şikayət rəyi silmir, moderator yoxlayır.",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Saxta rəy",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Spam / reklam",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx",
-   "src/lib/moderation.ts"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Təhqir / söyüş",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Yaz",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Yazılır…",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "{n} rəy · rəyləri silə bilməzsən, yalnız cavab yaza bilərsən",
-  "counted": true,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": [
-   "n"
-  ]
- },
- {
-  "key": "Üzvlər zalında check-in etdikdən sonra rəy yaza bilir. Rəy gələndə burada real olaraq görünəcək — biz nümunə rəy göstərmirik.",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Şikayət göndərilmədi — bağlantını yoxla",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Şikayət moderatora göndərildi",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
-  ],
-  "kind": "ui",
-  "placeholders": []
- },
- {
-  "key": "Şikayət rəyi SİLMİR. SPOT moderatoru yoxlayır və qərar verir.",
-  "counted": false,
-  "files": [
-   "src/app/gym/reviews.tsx"
   ],
   "kind": "ui",
   "placeholders": []
@@ -13542,6 +12223,15 @@
   "placeholders": [
    "provider"
   ]
+ },
+ {
+  "key": "Panel",
+  "counted": false,
+  "files": [
+   "src/app/trainer/_layout.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
  },
  {
   "key": "Şagirdlər",
@@ -13941,6 +12631,15 @@
  },
  {
   "key": "məlum deyil",
+  "counted": false,
+  "files": [
+   "src/app/trainer/index.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "yüklənir…",
   "counted": false,
   "files": [
    "src/app/trainer/index.tsx"
@@ -18107,6 +16806,15 @@
  },
  {
   "key": "Saxta profil və ya məlumat",
+  "counted": false,
+  "files": [
+   "src/lib/moderation.ts"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
+  "key": "Spam / reklam",
   "counted": false,
   "files": [
    "src/lib/moderation.ts"

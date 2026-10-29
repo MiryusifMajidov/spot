@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 import { addPhoto, getMyClaim, PHOTO_MAX_BYTES, removePhoto, setCover, submitClaim, updateGym, type Gym } from '../lib/gym';
 import { useLoad } from '../lib/useLoad';
 import { Icon } from '../ui/icons';
+import { LocationPicker } from '../ui/LocationPicker';
 import { toast } from '../ui/toast';
 
 /** The app's amenity set (src/app/gym/edit.tsx) — the same words members filter by. */
@@ -227,13 +228,13 @@ export function Profile(_: ScreenProps) {
   const { gym } = useAuth();
   return (
     <div className="cols-2" key={gym!.id}>
-      <Details gym={gym!} />
+      <div className="page-grid">
+        <Details gym={gym!} />
+        <LocationPicker gym={gym!} />
+      </div>
       <div className="page-grid">
         <Photos gym={gym!} />
         <Ownership gym={gym!} />
-        <div className="p-card" style={{ fontSize: 12, padding: '0 4px' }}>
-          Zalın xəritədəki yerini SPOT tətbiqində Zal paneli → Zalı redaktə et bölməsindən dəqiqləşdirə bilərsən.
-        </div>
       </div>
     </div>
   );

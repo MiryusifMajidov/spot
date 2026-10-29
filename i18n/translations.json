@@ -11426,5 +11426,15 @@
   "key": "Pulsuz",
   "ru": "Бесплатно",
   "en": "Free"
+ },
+ {
+  "key": "Zalı kompüterdən idarə et",
+  "ru": "Управляй залом с компьютера",
+  "en": "Manage your gym from a computer"
+ },
+ {
+  "key": "Dərs cədvəli, üzvlər, rəylər, qiymətlər, şəkillər və zalın xəritədəki yeri SPOT Zal panelində idarə olunur. Kompüterdə aç və eyni hesabla daxil ol.",
+  "ru": "Расписание занятий, участники, отзывы, цены, фото и место зала на карте управляются в панели зала SPOT. Открой её на компьютере и войди с тем же аккаунтом.",
+  "en": "The class schedule, members, reviews, prices, photos and the gym's spot on the map are managed in the SPOT Gym panel. Open it on a computer and sign in with the same account."
  }
 ]

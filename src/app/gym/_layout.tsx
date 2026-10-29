@@ -1,23 +1,9 @@
-import { Redirect, Tabs } from 'expo-router';
-import { ColorValue } from 'react-native';
+import { Redirect, Stack } from 'expo-router';
 
-import { Icon, IconName } from '@/components/Icon';
-import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
-import { iconSize, palette } from '@/theme';
-
-function tab(name: IconName) {
-  // A named declaration rather than a bare arrow: the tab bar renders this as a
-  // component, and an anonymous component has no name anywhere it matters — in
-  // React DevTools, in a component stack, in a warning about the icon.
-  function TabIcon({ color }: { color: ColorValue }) {
-    return <Icon name={name} size={iconSize.tab} color={color as string} />;
-  }
-  return TabIcon;
-}
+import { palette } from '@/theme';
 
 export default function GymLayout() {
-  const t = useT();
   const hydrated = useAppStore((s) => s.hydrated);
   const ownsGym = useAppStore((s) => s.ownsGym);
 
@@ -30,29 +16,16 @@ export default function GymLayout() {
   if (!hydrated) return null;
   if (!ownsGym) return <Redirect href="/(tabs)/discover" />;
 
+  /* No tab bar any more: the phone keeps a mini panel (index) and the three
+     things it opens — the day-pass check, the check-in code and the ownership
+     claim. Schedule, members, reviews and the gym profile are in the web gym
+     panel (web/gym). */
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        /* The app's tab colours (README «Tab bar (yekun)»): the active tab is accent
-           green, the others #888888 — the design's caption grey, not the old #A0A0A8,
-           which was ~2.6:1 on white and could hardly be read. 11 pt labels, not 10.
-           This is a JS <Tabs> navigator, not the main capsule bar, so it keeps its
-           labels; it only borrows the look: a #FEFEFE bar with no top hairline and
-           no shadow (Android draws an elevation-8 shadow by default). */
-        tabBarActiveTintColor: palette.tabActive,
-        tabBarInactiveTintColor: palette.tertiary,
-        tabBarStyle: { backgroundColor: palette.white, borderTopWidth: 0, elevation: 0, shadowOpacity: 0 },
-        tabBarLabelStyle: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
-      }}>
-      <Tabs.Screen name="index" options={{ title: t('Panel'), tabBarIcon: tab('grid') }} />
-      <Tabs.Screen name="members" options={{ title: t('Üzvlər'), tabBarIcon: tab('users') }} />
-      <Tabs.Screen name="classes" options={{ title: t('Cədvəl'), tabBarIcon: tab('cal') }} />
-      <Tabs.Screen name="reviews" options={{ title: t('Rəylər'), tabBarIcon: tab('star') }} />
-      <Tabs.Screen name="edit" options={{ href: null }} />
-      <Tabs.Screen name="claim" options={{ href: null }} />
-      <Tabs.Screen name="qr" options={{ href: null }} />
-      <Tabs.Screen name="pass" options={{ href: null }} />
-    </Tabs>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.grouped } }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="pass" />
+      <Stack.Screen name="qr" />
+      <Stack.Screen name="claim" />
+    </Stack>
   );
 }

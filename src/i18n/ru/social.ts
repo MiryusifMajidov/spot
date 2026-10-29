@@ -105,6 +105,7 @@ export const social: Dict = {
   'Sorğular hazırda əlçatan deyil': 'Запросы сейчас недоступны',
   'Sorğular yüklənir…': 'Загружаем запросы…',
   'Sorğular': 'Запросы',
+  'Spam / reklam': 'Спам / реклама',
   'Söhbət yalnız təklif qəbul ediləndən sonra açılır.': 'Чат откроется только после того, как предложение примут.',
   'Söhbət yüklənmədi — neçə mesaj olduğunu bilmirik. İnternet qayıdanda yenidən aç.': 'Чат не загрузился — мы не знаем, сколько в нём сообщений. Открой снова, когда вернётся интернет.',
   'Söhbət': 'Чат',

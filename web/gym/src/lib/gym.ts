@@ -36,6 +36,9 @@ export interface Gym {
   showMembers: boolean;
   imageUrl: string | null;
   photos: string[];
+  /** The map pin. Without it the gym is not on the members' map. */
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface Owner {
@@ -64,6 +67,8 @@ function mapGym(r: Record<string, unknown>): Gym {
     showMembers: r.show_members == null ? true : Boolean(r.show_members),
     imageUrl: (r.image_url as string) ?? null,
     photos: Array.isArray(r.photos) ? (r.photos as string[]) : [],
+    lat: r.lat != null ? Number(r.lat) : null,
+    lng: r.lng != null ? Number(r.lng) : null,
   };
 }
 
@@ -313,6 +318,8 @@ export interface GymPatch {
   schedule?: ScheduleItem[];
   allow_day_pass?: boolean;
   show_members?: boolean;
+  lat?: number;
+  lng?: number;
 }
 
 /** RLS does not raise for a gym you do not own: the update matches nothing and

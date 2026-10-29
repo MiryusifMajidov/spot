@@ -1,139 +1,68 @@
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Icon, IconName } from '@/components/Icon';
-import { PlaceholderImage } from '@/components/PlaceholderImage';
-import { SpotMap } from '@/components/SpotMap';
+import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { StatusBarScrim } from '@/components/ui/StatusBarScrim';
 import { showAccountSwitcher } from '@/lib/accounts';
-import {
-  EmptyNote,
-  GymGate,
-  getGymRoster,
-  getMyGymClaim,
-  postGymAnnouncement,
-  useMyGym,
-  type GymClaimRow,
-} from '@/lib/gymOwner';
+import { GymGate, getMyGymClaim, useMyGym, type GymClaimRow } from '@/lib/gymOwner';
 import { getGymDayPasses, getGymOccupancy } from '@/lib/roles';
-import { supabase } from '@/lib/supabase';
-import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useT } from '@/lib/useT';
-import { toast } from '@/store/ui';
-import { palette, radius, spacing, inputTint } from '@/theme';
+import { palette, radius, spacing } from '@/theme';
 
-/** Hours drawn on the occupancy chart (the ones a gym is realistically open). */
-const FROM_HOUR = 6;
-const TO_HOUR = 23;
-
-interface PanelData {
-  members: number;
+/**
+ * The gym account on the phone — a mini panel (owner's decision, 2026-10-29).
+ *
+ * The phone keeps what reception does standing up: today's three numbers, the
+ * day-pass check and the check-in code. Everything that is real management —
+ * schedule, members, reviews, prices, photos, the map pin — lives in the web
+ * gym panel (web/gym), where it is done at a desk. The ownership claim stays
+ * here too: it is a one-time form that create-gym sends the owner to.
+ */
+interface Today {
   now: number;
-  today: number;
-  byHour: number[];
-  // Day-pass registrations are counts only. SPOT takes no money and shows no
-  // money total anywhere — a summed price is an earnings figure and is banned.
-  passes: { live: number; usedToday: number };
+  checkIns: number;
+  passesUsed: number;
 }
 
-const EMPTY: PanelData = { members: 0, now: 0, today: 0, byHour: new Array(24).fill(0), passes: { live: 0, usedToday: 0 } };
-
-/** Cover photo + map pin — read straight off the gym row (not part of OwnedGym). */
-interface GymMedia {
-  cover: string | null;
-  lat: number | null;
-  lng: number | null;
-}
-
-const NO_MEDIA: GymMedia = { cover: null, lat: null, lng: null };
-
-/** Which panel sources failed to load. A failure is NEVER drawn as a zero. */
-interface PanelErrors {
-  roster: boolean;
+/** Which reads failed. A failed read is shown as «—», never as a zero. */
+interface Failed {
   occupancy: boolean;
   passes: boolean;
-  location: boolean;
-  cover: boolean;
-}
-
-const NO_ERRORS: PanelErrors = { roster: false, occupancy: false, passes: false, location: false, cover: false };
-
-/** Resolve a promise into a result we can tell apart from an empty answer. */
-async function settle<T>(p: Promise<T>): Promise<{ ok: true; value: T } | { ok: false }> {
-  try {
-    return { ok: true, value: await p };
-  } catch {
-    return { ok: false };
-  }
 }
 
 export default function GymPanel() {
   const t = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  // Android edge-to-edge does not resize the window, so the announcement sheet
-  // has to lift itself clear of the IME by the measured overlap.
-  const kb = useKeyboardOverlap();
   const state = useMyGym();
   const gym = state.gym;
 
-  const [data, setData] = useState<PanelData>(EMPTY);
-  const [loaded, setLoaded] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [announce, setAnnounce] = useState(false);
-  const [announceText, setAnnounceText] = useState('');
-  const [sending, setSending] = useState(false);
-  const [media, setMedia] = useState<GymMedia>(NO_MEDIA);
-  const [errors, setErrors] = useState<PanelErrors>(NO_ERRORS);
+  const [today, setToday] = useState<Today | null>(null);
+  const [failed, setFailed] = useState<Failed>({ occupancy: false, passes: false });
   const [claim, setClaim] = useState<GymClaimRow | null>(null);
-  /** false = we could not read the ownership claim, so we assert nothing about it. */
+  /** false = the claim could not be read, so nothing is asserted about it. */
   const [claimKnown, setClaimKnown] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (gymId: string) => {
-    const [roster, occ, passes, claimRow] = await Promise.all([
-      settle(getGymRoster(gymId)),
-      settle(getGymOccupancy(gymId)),
-      settle(getGymDayPasses(gymId)),
-      settle(getMyGymClaim(gymId)),
+    const [occ, passes, claimRow] = await Promise.allSettled([
+      getGymOccupancy(gymId),
+      getGymDayPasses(gymId),
+      getMyGymClaim(gymId),
     ]);
-    // A failed query is reported as a failure below — never as 0 members, 0
-    // check-ins or "bu gün check-in yoxdur".
-    setData({
-      members: roster.ok ? roster.value.length : 0,
-      now: occ.ok ? occ.value.now : 0,
-      today: occ.ok ? occ.value.today : 0,
-      byHour: occ.ok ? occ.value.byHour : new Array(24).fill(0),
-      passes: passes.ok ? passes.value : { live: 0, usedToday: 0 },
+    setToday({
+      now: occ.status === 'fulfilled' ? occ.value.now : 0,
+      checkIns: occ.status === 'fulfilled' ? occ.value.today : 0,
+      passesUsed: passes.status === 'fulfilled' ? passes.value.usedToday : 0,
     });
-    setClaim(claimRow.ok ? claimRow.value : null);
-    setClaimKnown(claimRow.ok);
-
-    // Cover and coordinates are read separately: `lat`/`lng` arrive with a later
-    // migration, and a missing column must not cost us the cover photo as well.
-    const base = await supabase.from('gyms').select('image_url').eq('id', gymId).maybeSingle();
-    const geo = await supabase.from('gyms').select('lat, lng').eq('id', gymId).maybeSingle();
-    const g = (geo.error ? null : (geo.data as { lat?: number | null; lng?: number | null } | null)) ?? null;
-    // A failed cover read keeps the photo we already had: a pull-to-refresh on a
-    // bad connection used to swap the gym's real photo for «Zalın şəklini əlavə et».
-    setMedia((m) => ({
-      cover: base.error ? m.cover : (((base.data as { image_url?: string | null } | null)?.image_url as string) ?? null),
-      lat: g?.lat != null ? Number(g.lat) : null,
-      lng: g?.lng != null ? Number(g.lng) : null,
-    }));
-    setErrors({
-      roster: !roster.ok,
-      occupancy: !occ.ok,
-      passes: !passes.ok,
-      location: !!geo.error,
-      cover: !!base.error,
-    });
-    setLoaded(true);
+    setFailed({ occupancy: occ.status === 'rejected', passes: passes.status === 'rejected' });
+    setClaim(claimRow.status === 'fulfilled' ? claimRow.value : null);
+    setClaimKnown(claimRow.status === 'fulfilled');
   }, []);
 
   useEffect(() => {
@@ -151,21 +80,6 @@ export default function GymPanel() {
     setRefreshing(false);
   };
 
-  const sendAnnouncement = async () => {
-    const body = announceText.trim();
-    if (!gym || !body || sending) return;
-    setSending(true);
-    try {
-      await postGymAnnouncement(gym.name, body);
-      setAnnounce(false);
-      setAnnounceText('');
-      toast(t('Elan icmaya göndərildi'));
-    } catch {
-      toast(t('Elan göndərilmədi — bağlantını yoxla'), 'error');
-    }
-    setSending(false);
-  };
-
   if (!gym) {
     return (
       <View style={{ flex: 1, backgroundColor: palette.grouped, paddingTop: insets.top }}>
@@ -174,15 +88,7 @@ export default function GymPanel() {
     );
   }
 
-  const slice = data.byHour.slice(FROM_HOUR, TO_HOUR + 1);
-  const peak = Math.max(...slice);
-  const peakHour = peak > 0 ? slice.indexOf(peak) + FROM_HOUR : null;
-  const hasToday = data.today > 0;
-
-  // The gym row can be flagged `pending` the moment it is registered, so it is
-  // not proof that the owner ever sent a VÖEN. Only a claim row that really
-  // carries one is an application; anything else still needs to be submitted,
-  // and if we could not read the claim we promise nothing about it.
+  const claimed = gym.claimStatus === 'claimed';
   const claimRow = !claimKnown
     ? { title: t('Sahiblik təsdiqi'), sub: t('Müraciətinin statusuna bax') }
     : claim?.status === 'pending' && claim.voen
@@ -191,35 +97,21 @@ export default function GymPanel() {
         ? { title: t('Müraciət qəbul olunmadı'), sub: t('Səbəbə bax və yenidən göndər') }
         : { title: t('Sahibliyi təsdiqlə'), sub: t('VÖEN göndər · idarəni öz əlinə al') };
 
+  const stat = (label: string, value: number | undefined, bad: boolean, tint?: boolean) => (
+    <View style={[styles.stat, { backgroundColor: tint ? palette.voltTint : palette.white }]}>
+      <AppText variant="caption" color={tint ? palette.voltText : palette.textSecondary}>
+        {label}
+      </AppText>
+      <AppText style={styles.statBig}>{bad ? '—' : today ? String(value ?? 0) : '·'}</AppText>
+    </View>
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: palette.grouped }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.tertiary} />}
-        contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: spacing.screen, paddingBottom: 24 }}>
-        {/* The gym's own cover photo — a placeholder until the owner uploads one.
-            «Zalın şəklini əlavə et» says the gym HAS no photo, so it is drawn only
-            after a read that succeeded — not while loading, not after a failure. */}
-        <PressableScale activeScale={0.98} onPress={() => router.push('/gym/edit')} style={styles.coverWrap}>
-          {media.cover ? (
-            <Image source={{ uri: media.cover }} style={styles.cover} contentFit="cover" transition={140} />
-          ) : (
-            <>
-              <PlaceholderImage height={148} icon="cam" style={styles.cover} />
-              {errors.cover ? (
-                <View style={styles.coverBadge}>
-                  <AppText style={{ color: palette.onDark, fontSize: 12, fontWeight: '600' }}>{t('Zalın şəkli oxunmadı')}</AppText>
-                </View>
-              ) : loaded ? (
-                <View style={styles.coverBadge}>
-                  <Icon name="plus" size={15} color={palette.onDark} />
-                  <AppText style={{ color: palette.onDark, fontSize: 12, fontWeight: '600' }}>{t('Zalın şəklini əlavə et')}</AppText>
-                </View>
-              ) : null}
-            </>
-          )}
-        </PressableScale>
-
+        contentContainerStyle={{ paddingTop: insets.top + 12, paddingHorizontal: spacing.screen, paddingBottom: 28 }}>
         <View style={styles.header}>
           <View style={{ flex: 1, paddingRight: 12 }}>
             <AppText variant="caption" color={palette.tertiary}>
@@ -234,8 +126,6 @@ export default function GymPanel() {
               </AppText>
             ) : null}
           </View>
-          {/* 36 pt pill + 4 pt slop above and below = a 44 pt target. The slop
-              stays inside the header row, which the title column makes taller. */}
           <PressableScale
             activeScale={0.94}
             onPress={() => showAccountSwitcher(router)}
@@ -247,10 +137,6 @@ export default function GymPanel() {
           </PressableScale>
         </View>
 
-        {/* The first thing an unpublished gym's owner needs to know. A gym made
-            in the app starts unlisted (schema41) and nothing in this panel said
-            so: the owner filled the profile, dropped the pin, read «Zal profili
-            yeniləndi», and waited for members who could not find the gym at all. */}
         {!gym.listed ? (
           <PressableScale activeScale={0.98} onPress={() => router.push('/gym/claim')} style={styles.unlisted}>
             <Icon name="lock" size={20} color={palette.streakText} />
@@ -260,348 +146,60 @@ export default function GymPanel() {
                 {t('Müştərilər zalı axtarışda və xəritədə tapa bilmir. Moderator yoxlayandan və ya sahiblik (VÖEN) təsdiqlənəndən sonra dərc olunur.')}
               </AppText>
             </View>
-            <Icon name="chevR" size={17} color={palette.chevron} />
           </PressableScale>
         ) : null}
 
-        {/* Design 14.1: the highlighted card is #EDEDED with ink text and a green
-            label — no ink block — and its neighbour a #FEFEFE card. */}
         <View style={styles.statRow}>
-          <View style={[styles.statCard, { backgroundColor: palette.element }]}>
-            <AppText variant="overline" color={palette.voltText}>
-              {t('İndi zalda')}
-            </AppText>
-            <AppText style={styles.statBig}>{errors.occupancy || !loaded ? '—' : data.now}</AppText>
-            <AppText style={{ color: palette.textSecondary, fontSize: 11, marginTop: 6 }}>
-              {errors.occupancy
-                ? t('check-in məlumatı yüklənmədi')
-                : !loaded
-                  ? t('yüklənir…')
-                  : hasToday
-                    ? t('bu gün {n} check-in', { n: data.today, count: data.today })
-                    : t('bu gün check-in yoxdur')}
-            </AppText>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: palette.white }]}>
-            <AppText variant="overline" color={palette.caption}>
-              {t('Üzvlər')}
-            </AppText>
-            <AppText style={styles.statBig}>{errors.roster || !loaded ? '—' : data.members}</AppText>
-            {/* Accent green for the real figure's caption, as the design draws it;
-                grey while loading or after a failed read. */}
-            <AppText
-              style={{
-                color: errors.roster || !loaded ? palette.tertiary : palette.voltText,
-                fontSize: 11,
-                marginTop: 6,
-              }}>
-              {errors.roster ? t('üzv siyahısı yüklənmədi') : !loaded ? t('yüklənir…') : t('SPOT-da bu zalı seçib')}
-            </AppText>
-          </View>
+          {stat(t('İndi zalda'), today?.now, failed.occupancy, true)}
+          {stat(t('bu gün'), today?.checkIns, failed.occupancy)}
+          {stat(t('Day-pass'), today?.passesUsed, failed.passes)}
         </View>
 
-        {/* Occupancy — drawn only from today's real check-ins */}
-        <View style={styles.card}>
-          <View style={styles.cardHead}>
-            <AppText variant="headline">{t('Saat üzrə doluluq')}</AppText>
-            <AppText variant="caption" color={palette.tertiary}>
-              {t('bu gün')}
-            </AppText>
-          </View>
-          {errors.occupancy ? (
-            <EmptyNote
-              inset
-              title={t('Doluluq yüklənmədi')}
-              body={t('Bu, «check-in yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.')}
-            />
-          ) : hasToday ? (
-            <>
-              <View style={styles.chart}>
-                {slice.map((n, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.bar,
-                      {
-                        height: `${peak ? Math.max(6, Math.round((n / peak) * 100)) : 4}%`,
-                        /* Peak in accent green rather than an ink block; hours with
-                           check-ins volt; empty hours the neutral fill. */
-                        backgroundColor: n === peak && n > 0 ? palette.voltDeep : n > 0 ? palette.volt : palette.element,
-                      },
-                    ]}
-                  />
-                ))}
-              </View>
-              <View style={styles.chartLabels}>
-                {['06:00', '12:00', '18:00', '23:00'].map((l) => (
-                  <AppText key={l} style={{ fontSize: 10.5, fontWeight: '500', color: palette.caption }}>
-                    {l}
-                  </AppText>
-                ))}
-              </View>
-              {peakHour != null ? (
-                <View style={styles.tip}>
-                  <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.voltText, fontWeight: '500' }}>
-                    {t('Ən sıx saat: {hour}:00 · {n} check-in. Rəqəmlər yalnız bugünkü real check-in-lərdən hesablanır.', {
-                      hour: String(peakHour).padStart(2, '0'),
-                      n: peak,
-                      count: peak,
-                    })}
-                  </AppText>
-                </View>
-              ) : null}
-            </>
-          ) : (
-            <EmptyNote
-              inset
-              title={loaded ? t('Bu gün hələ check-in yoxdur') : t('Yüklənir…')}
-              body={
-                loaded
-                  ? t('Doluluq üzv öz telefonundan SPOT-un «Check-in» ekranından check-in edəndə dolur. Zal kodu check-in-i işə salmır — SPOT-da zalını seçən üzvlərə check-in etməyi xatırlat.')
-                  : t('Bugünkü check-in-lər oxunur.')
-              }
-            />
-          )}
-        </View>
+        <Button title={t('Day-pass yoxla')} icon="check" full onPress={() => router.push('/gym/pass')} />
+        <Button
+          title={t('Zal kodu')}
+          icon="qr"
+          variant="secondary"
+          full
+          onPress={() => router.push('/gym/qr')}
+          style={{ marginTop: 10 }}
+        />
 
-        {/* Day-pass — informational only. SPOT charges nothing and holds no money.
-            The two numbers are today's, not all time: nothing expires a pass, so
-            an all-time count only ever grew and said nothing about the door. */}
-        <View style={styles.card}>
-          <View style={styles.cardHead}>
-            <AppText variant="headline">{t('Day-pass')}</AppText>
-            <AppText variant="caption" color={palette.tertiary}>
-              {t('bu gün')}
-            </AppText>
-          </View>
-          {errors.passes ? (
-            <EmptyNote
-              inset
-              title={t('Day-pass məlumatı yüklənmədi')}
-              body={t('Bu, «day-pass yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.')}
-            />
-          ) : data.passes.live > 0 || data.passes.usedToday > 0 ? (
-            <View style={{ gap: 10 }}>
-              <Row label={t('İndi keçərli')} value={`${data.passes.live}`} />
-              <Row label={t('Resepsiyada təsdiqlənən')} value={`${data.passes.usedToday}`} />
-              <View style={styles.divider} />
-              <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.tertiary }}>
-                {t('SPOT ödəniş qəbul etmir və komissiya tutmur — pul zalda ödənilir. Ona görə burada yalnız say göstərilir.')}
-              </AppText>
-            </View>
-          ) : (
-            /* «…seçəndə burada görünəcək» promises passes that cannot come when
-               the gym page shows no day-pass button at all — which it does not
-               while the owner has day passes switched off, or has no price. */
-            <EmptyNote
-              inset
-              title={
-                !loaded
-                  ? t('Yüklənir…')
-                  : !gym.allowDayPass
-                    ? t('Day-pass bağlıdır')
-                    : gym.dayPass <= 0
-                      ? t('Day-pass qiyməti yazılmayıb')
-                      : t('Bu gün day-pass qeydə alınmayıb')
-              }
-              body={
-                !loaded
-                  ? t('Day-pass qeydiyyatı oxunur.')
-                  : !gym.allowDayPass
-                    ? t('Zal səhifəsində day-pass düyməsi göstərilmir. «Profil» bölməsində yenidən aça bilərsən.')
-                    : gym.dayPass <= 0
-                      ? t('Qiymət olmadan zal səhifəsində day-pass düyməsi görünmür. «Profil» bölməsində 1 günlük qiyməti yaz.')
-                      : t('Üzv olmayan biri zalını day-pass ilə seçəndə burada görünəcək. SPOT ödəniş qəbul etmir — pul zalda ödənilir.')
-              }
-            />
-          )}
-          <Button
-            title={t('Kodu yoxla')}
-            variant="secondary"
-            full
-            onPress={() => router.push('/gym/pass')}
-            style={{ marginTop: 14, height: 44 }}
-          />
-        </View>
-
-        {/* Where customers find this gym on the map */}
-        <View style={styles.card}>
-          <View style={styles.cardHead}>
-            <AppText variant="headline">{t('Zalın yeri')}</AppText>
-            {/* An 18 pt line of text on its own; the slop makes it a 44 pt target
-                and reaches only into the card's padding and the gap above the map. */}
-            <PressableScale
-              activeScale={0.94}
-              onPress={() => router.push('/gym/edit')}
-              hitSlop={{ top: 13, bottom: 13, left: 12, right: 12 }}
-              accessibilityRole="button">
-              <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.inkText }}>{t('Yeri dəyiş')}</AppText>
-            </PressableScale>
-          </View>
-          {errors.location ? (
-            <EmptyNote
-              inset
-              title={t('Zalın yeri oxuna bilmədi')}
-              body={t('Koordinatlar bazadan gəlmədi — işarə qoyulub-qoyulmadığını deyə bilmirik. Bağlantını yoxla və səhifəni aşağı çəkib yenilə.')}
-            />
-          ) : media.lat != null && media.lng != null ? (
-            <>
-              <SpotMap
-                markers={[{ id: gym.id, lat: media.lat, lng: media.lng, title: gym.name, subtitle: gym.district || undefined, active: true }]}
-                center={{ lat: media.lat, lng: media.lng }}
-                zoom={16}
-                style={styles.map}
-              />
-              <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.tertiary, marginTop: 10 }}>
-                {t('Müştərilər zalı xəritədə məhz bu nöqtədə görür.')}
-              </AppText>
-            </>
-          ) : (
-            <EmptyNote
-              inset
-              title={loaded ? t('Zalın yeri xəritədə qeyd olunmayıb') : t('Yüklənir…')}
-              body={
-                loaded
-                  ? t('Koordinat olmadan zal müştəri xəritəsində görünmür. «Yeri dəyiş» ilə işarəni zalın üstünə qoy.')
-                  : t('Zalın koordinatları oxunur.')
-              }
-            />
-          )}
-        </View>
-
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <QuickCard icon="qr" title={t('Zal kodu')} sub={t('Kodu göstər')} onPress={() => router.push('/gym/qr')} />
-          <QuickCard icon="bell" title={t('Elan')} sub={t('İcmaya yaz')} onPress={() => setAnnounce(true)} />
-          <QuickCard icon="edit" title={t('Profil')} sub={t('Redaktə et')} onPress={() => router.push('/gym/edit')} />
-        </View>
-
-        {gym.claimStatus === 'claimed' ? (
-          <View style={[styles.card, styles.claimRow, { marginTop: 14 }]}>
-            <Icon name="verified" size={22} color={palette.verified} />
+        {!claimed ? (
+          <PressableScale activeScale={0.98} onPress={() => router.push('/gym/claim')} style={[styles.card, styles.row]}>
+            <Icon name="shield" size={20} color={palette.rowIcon} />
             <View style={{ flex: 1 }}>
-              <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Sahiblik təsdiqlənib')}</AppText>
-              <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 3 }}>
-                {t('Zalın idarəsi tam səndədir')}
+              <AppText style={{ fontSize: 15, fontWeight: '600' }}>{claimRow.title}</AppText>
+              <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2 }}>
+                {claimRow.sub}
               </AppText>
-            </View>
-          </View>
-        ) : (
-          <PressableScale
-            activeScale={0.98}
-            onPress={() => router.push('/gym/claim')}
-            style={[styles.card, styles.claimRow, { marginTop: 14 }]}>
-            <Icon name="shield" size={22} color={palette.voltDeep} />
-            <View style={{ flex: 1 }}>
-              <AppText style={{ fontSize: 14, fontWeight: '600' }}>{claimRow.title}</AppText>
-              <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 3 }}>{claimRow.sub}</AppText>
             </View>
             <Icon name="chevR" size={17} color={palette.chevron} />
           </PressableScale>
-        )}
-
-        {loaded && !errors.roster && !errors.occupancy && data.members === 0 && !hasToday ? (
-          <View style={{ marginTop: 14 }}>
-            <EmptyNote
-              title={t('Panel hələ boşdur — bu normaldır')}
-              body={t('Bütün rəqəmlər real check-in və real üzvlərdən gəlir. Zal profilini tamamla — üzvlər SPOT-da zalını seçib öz telefonlarından check-in etdikcə panel özü dolacaq.')}
-            />
-          </View>
         ) : null}
+
+        <View style={[styles.card, { marginTop: claimed ? 18 : 12 }]}>
+          <View style={styles.row}>
+            <Icon name="browser" size={20} color={palette.rowIcon} />
+            <AppText style={{ fontSize: 15, fontWeight: '600', flex: 1 }}>{t('Zalı kompüterdən idarə et')}</AppText>
+          </View>
+          <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 8, lineHeight: 19 }}>
+            {t('Dərs cədvəli, üzvlər, rəylər, qiymətlər, şəkillər və zalın xəritədəki yeri SPOT Zal panelində idarə olunur. Kompüterdə aç və eyni hesabla daxil ol.')}
+          </AppText>
+        </View>
       </ScrollView>
       <StatusBarScrim />
-
-      <Modal visible={announce} animationType="slide" transparent onRequestClose={() => setAnnounce(false)}>
-        <View style={styles.modalBg}>
-          <View style={[styles.sheet, { paddingBottom: (kb > 0 ? kb : insets.bottom) + 16 }]}>
-            <AppText variant="headline">{t('Elan yaz')}</AppText>
-            {/* Not «{gym} adından»: the database stamps the post with the owner's
-                own profile name (schema47), and the gym is only the grey line
-                under it. Promising a gym-branded post the feed never draws is
-                how an owner ends up surprised to see their personal name. */}
-            <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 6 }}>
-              {t('Elan icma lentində sənin öz adınla paylaşılır — {gym} adı yalnız adının altındakı kiçik sətirdə görünür. Push bildiriş göndərilmir.', { gym: gym.name })}
-            </AppText>
-            <TextInput {...inputTint}
-              value={announceText}
-              onChangeText={setAnnounceText}
-              multiline
-              placeholder={t('Məs: Bazar günü zal 09:00–18:00 işləyir.')}
-              placeholderTextColor={palette.caption}
-              style={styles.input}
-            />
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
-              <View style={{ flex: 1 }}>
-                <Button title={t('Ləğv et')} variant="secondary" full onPress={() => setAnnounce(false)} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Button
-                  title={sending ? t('Göndərilir…') : t('Göndər')}
-                  variant="primary"
-                  full
-                  disabled={!announceText.trim() || sending}
-                  onPress={sendAnnouncement}
-                />
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.breakdownRow}>
-      <AppText style={{ fontSize: 13.5, color: palette.textSecondary }}>{label}</AppText>
-      <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.inkText }}>{value}</AppText>
-    </View>
-  );
-}
-
-function QuickCard({ icon, title, sub, onPress }: { icon: IconName; title: string; sub: string; onPress: () => void }) {
-  return (
-    <PressableScale activeScale={0.96} onPress={onPress} accessibilityRole="button" style={styles.quick}>
-      <Icon name={icon} size={20} color={palette.rowIcon} />
-      <AppText style={{ fontSize: 13.5, fontWeight: '600', marginTop: 9 }}>{title}</AppText>
-      <AppText style={{ fontSize: 11.5, color: palette.tertiary, marginTop: 3 }}>{sub}</AppText>
-    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
-  unlisted: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: palette.streakTint,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 14,
-  },
-  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 },
-  coverWrap: { borderRadius: radius.card, overflow: 'hidden', backgroundColor: palette.grouped, marginBottom: 14 },
-  cover: { width: '100%', height: 148 },
-  // A scrim over the photo: light text on it, as on any media.
-  coverBadge: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(11,11,14,0.72)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
-  map: { height: 170, borderRadius: 14 },
-  // The design's «Rejimi dəyiş» pill: #EDEDED with ink text, not an ink pill.
+  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 },
   modePill: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, backgroundColor: palette.element, borderRadius: 999, paddingHorizontal: 12, marginTop: 6 },
-  statRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  statCard: { flex: 1, borderRadius: radius.card, padding: 15 },
-  statBig: { fontSize: 26, fontWeight: '700', marginTop: 9, letterSpacing: -0.7, color: palette.inkText },
-  card: { backgroundColor: palette.white, borderRadius: radius.card, padding: 16, marginBottom: 12 },
-  cardHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 },
-  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 78 },
-  bar: { flex: 1, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
-  chartLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 9 },
-  tip: { backgroundColor: palette.voltTint, borderRadius: 12, padding: 12, marginTop: 13 },
-  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: palette.hairline },
-  quick: { flex: 1, backgroundColor: palette.white, borderRadius: radius.card, padding: 14 },
-  claimRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  modalBg: { flex: 1, backgroundColor: palette.overlay, justifyContent: 'flex-end' },
-  sheet: { backgroundColor: palette.grouped, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20 },
-  // A #FEFEFE field on the #F7F7F7 sheet — no outline, as the design draws fields.
-  input: { backgroundColor: palette.white, borderRadius: 14, padding: 14, fontSize: 15, color: palette.inkText, minHeight: 110, textAlignVertical: 'top', marginTop: 14 },
+  unlisted: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: palette.streakTint, borderRadius: radius.card, padding: 14, marginBottom: 14 },
+  statRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  stat: { flex: 1, borderRadius: radius.card, padding: 14 },
+  statBig: { fontSize: 28, fontWeight: '700', marginTop: 8, letterSpacing: -0.8, color: palette.inkText },
+  card: { backgroundColor: palette.white, borderRadius: radius.card, padding: 16, marginTop: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 });
