@@ -16,9 +16,10 @@ function GoogleG() {
 }
 
 export function Login() {
-  const { signIn, signInWithGoogle } = useAuth();
+  const { sendCode, verifyCode, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
-  const [pw, setPw] = useState('');
+  const [code, setCode] = useState('');
+  const [sent, setSent] = useState(false);
   // A failed Google round-trip comes back as ?error_description=… — say so.
   const [err, setErr] = useState<string | null>(() => {
     const q = new URLSearchParams(window.location.search);
@@ -40,12 +41,23 @@ export function Login() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !pw || busy) return;
+    if (busy) return;
+    if (!sent) {
+      if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setErr('E-poçt ünvanını düzgün yaz.');
+      setBusy(true);
+      setErr(null);
+      const msg = await sendCode(email.trim());
+      setBusy(false);
+      if (msg) return setErr('Kod göndərilmədi. Bu e-poçtla SPOT hesabı olmaya bilər, və ya bir az sonra yenidən cəhd et.');
+      setSent(true);
+      return;
+    }
+    if (code.trim().length < 6) return setErr('Məktubdakı kodu tam yaz.');
     setBusy(true);
     setErr(null);
-    const msg = await signIn(email.trim(), pw);
+    const msg = await verifyCode(email.trim(), code.trim());
     setBusy(false);
-    if (msg) setErr('Giriş uğursuz — e-poçt və ya parol yanlışdır. Google ilə qeydiyyatdan keçmisənsə, yuxarıdakı düyməni işlət.');
+    if (msg) setErr('Kod yanlışdır və ya vaxtı bitib. Yeni kod istə.');
   };
 
   return (
@@ -70,23 +82,34 @@ export function Login() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0 18px', color: 'var(--muted)', font: '500 11.5px/1 var(--font)' }}>
           <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
-          və ya e-poçt ilə
+          və ya e-poçt kodu ilə
           <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
         </div>
 
-        <label style={{ font: '600 13px/1.25 var(--font)', color: 'var(--muted)' }}>E-poçt</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-          style={{ width: '100%', height: 46, borderRadius: 12, border: '1px solid var(--line)', padding: '0 14px', marginTop: 7, marginBottom: 16, font: '400 15px/1 var(--font)', outline: 'none' }} />
-
-        <label style={{ font: '600 13px/1.25 var(--font)', color: 'var(--muted)' }}>Parol</label>
-        <input type="password" value={pw} onChange={(e) => setPw(e.target.value)}
-          style={{ width: '100%', height: 46, borderRadius: 12, border: '1px solid var(--line)', padding: '0 14px', marginTop: 7, font: '400 15px/1 var(--font)', outline: 'none' }} />
+        {!sent ? (
+          <>
+            <label htmlFor="a-email" style={{ font: '500 13px/1.25 var(--font)', color: 'var(--muted2)' }}>E-poçt</label>
+            <input id="a-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              style={{ width: '100%', height: 46, borderRadius: 12, border: 'none', background: 'var(--fill)', padding: '0 14px', marginTop: 7, font: '400 15px/1 var(--font)', outline: 'none' }} />
+          </>
+        ) : (
+          <>
+            <label htmlFor="a-code" style={{ font: '500 13px/1.25 var(--font)', color: 'var(--muted2)' }}>Məktubdakı kod</label>
+            <input id="a-code" inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={8} value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••"
+              style={{ width: '100%', height: 56, borderRadius: 12, border: 'none', background: 'var(--fill)', padding: '0 14px', marginTop: 7, font: '600 24px/1 var(--mono)', letterSpacing: 8, textAlign: 'center', outline: 'none' }} />
+            <div style={{ font: '400 12.5px/1.4 var(--font)', color: 'var(--muted)', marginTop: 8 }}>
+              {email.trim()} ünvanına göndərildi.{' '}
+              <button type="button" className="link" onClick={() => { setSent(false); setCode(''); setErr(null); }}>Başqa e-poçt</button>
+            </div>
+          </>
+        )}
 
         {err ? <div style={{ color: 'var(--red)', font: '500 12.5px/1.4 var(--font)', marginTop: 14 }}>{err}</div> : null}
 
         <button type="submit" disabled={busy}
           style={{ width: '100%', height: 48, borderRadius: 13, border: 'none', background: 'var(--volt)', color: 'var(--ink)', font: '600 15px/1 var(--font)', marginTop: 22, opacity: busy ? 0.6 : 1 }}>
-          {busy ? 'Yoxlanılır…' : 'Daxil ol'}
+          {busy ? (sent ? 'Yoxlanılır…' : 'Göndərilir…') : sent ? 'Daxil ol' : 'Kodu göndər'}
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 16, color: 'var(--muted)' }}>

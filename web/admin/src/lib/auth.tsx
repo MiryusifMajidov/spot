@@ -8,7 +8,9 @@ interface AuthState {
   session: Session | null;
   admin: Admin | null; // the admins-table row for this user (null = signed in but NOT an admin)
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<string | null>; // returns error msg or null
+  /** E-mail a one-time code to an EXISTING account (never creates one). */
+  sendCode: (email: string) => Promise<string | null>; // returns error msg or null
+  verifyCode: (email: string, code: string) => Promise<string | null>;
   /** Redirects to Google; resolves only with an error message if it could not start. */
   signInWithGoogle: () => Promise<string | null>;
   signOut: () => Promise<void>;
@@ -18,7 +20,8 @@ const Ctx = createContext<AuthState>({
   session: null,
   admin: null,
   loading: true,
-  signIn: async () => 'not ready',
+  sendCode: async () => 'not ready',
+  verifyCode: async () => 'not ready',
   signInWithGoogle: async () => 'not ready',
   signOut: async () => {},
 });
@@ -54,8 +57,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  /* A code by e-mail, not a password: the owner's admin account was made with
+     Google and has none, and a password form asked for something that does not
+     exist. `shouldCreateUser: false` — this page signs admins in, it never
+     opens an account; who is an admin is still decided by the `admins` table. */
+  const sendCode = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    return error ? error.message : null;
+  };
+  const verifyCode = async (email: string, code: string) => {
+    const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
     return error ? error.message : null;
   };
   /* The owner signs in to the app with Google and has no password of their own.
@@ -75,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAdmin(null);
   };
 
-  return <Ctx.Provider value={{ session, admin, loading, signIn, signInWithGoogle, signOut }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ session, admin, loading, sendCode, verifyCode, signInWithGoogle, signOut }}>{children}</Ctx.Provider>;
 }
 
 export const useAuth = () => useContext(Ctx);
