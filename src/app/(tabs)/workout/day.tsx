@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -101,8 +100,7 @@ export default function DayDetail() {
      nothing: content runs underneath it, and it hid «Məşqə başla». Inside a tab
      screen UIKit's safe area includes that bar, so `insets.bottom` on iOS is the
      bar's footprint plus the home indicator — the footer pads by exactly that. */
-  const insets = useSafeAreaInsets();
-  const bottomClearance = Platform.OS === 'ios' ? insets.bottom : 0;
+  const bottomClearance = 0;
   const hasFooter = exercises.length > 0;
 
   return (
@@ -221,8 +219,10 @@ function ExerciseRow({ ex, last, onPress }: { ex: LibExercise; last: { weight: n
             that set can be empty — «Keçən dəfə: 0 təkrar» says nothing, so no row. */}
         {last && (last.weight > 0 || last.reps > 0) ? (
           <View style={styles.lastRow}>
-            <Icon name="clock" size={12} color={palette.caption} />
-            <AppText variant="caption" color={palette.caption}>
+            {/* «Keçən dəfə» in accent green, as the design draws it: the line that
+                matters most for progressive overload. */}
+            <Icon name="clock" size={12} color={palette.voltDeep} />
+            <AppText variant="caption" color={palette.voltText}>
               {/* The set is written the way the history screen writes it: «22,5 kq × 8»
                   (the language's decimal mark, the app's own unit), and a bodyweight
                   move shows its reps alone instead of «0 kq × 15». */}
@@ -236,17 +236,18 @@ function ExerciseRow({ ex, last, onPress }: { ex: LibExercise; last: { weight: n
           </View>
         ) : null}
       </View>
-      {onPress ? <Icon name="chevR" size={18} color={palette.tertiary} /> : null}
+      {onPress ? <Icon name="chevR" size={17} color={palette.chevron} /> : null}
     </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: palette.white, borderRadius: 14, padding: 12, marginBottom: 10 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 12, marginBottom: 10 },
   thumb: { width: 56, height: 56, borderRadius: 12, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
   lastRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
   empty: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 16, padding: 22, marginTop: 20 },
   // paddingBottom is set inline: it carries the iOS floating-bar clearance.
-  footer: { paddingHorizontal: spacing.screen, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
+  // No rule above it: the design's footer sits straight on the screen's ground.
+  footer: { paddingHorizontal: spacing.screen, paddingTop: 12 },
 });

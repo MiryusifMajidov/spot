@@ -20,6 +20,6 @@ export function Card({ children, padded, elevated, style }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.card, borderRadius: radius.cardLg, overflow: 'hidden' },
+  card: { backgroundColor: colors.card, borderRadius: radius.card, overflow: 'hidden' }, // design: 16
   padded: { padding: 16 },
 });

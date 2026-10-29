@@ -1,7 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { COMPAT_UNKNOWN, MISMATCH_COLOR, compatOf, splitReasons } from '@/components/PartnerRow';
@@ -40,8 +39,7 @@ function PartnerDetail() {
      FLOATS over the content — «Məşq təklif et» sat behind the glass. Inside a tab
      screen UIKit's safe area already includes that bar, so the row pads by the
      inset instead of guessing the bar's height. */
-  const insets = useSafeAreaInsets();
-  const footerBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + spacing.sm;
+  const footerBottom = spacing.sm;
   const match = useDb((s) => s.matches[id]);
   // The block dialog promises this person disappears from the user's lists — the
   // profile must not go on offering «Məşq təklif et» as if nothing happened.
@@ -95,7 +93,7 @@ function PartnerDetail() {
               <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, maxWidth: 270, lineHeight: 21 }}>
                 {t('Bu adam profilini gizlədib və ya hesabı yoxdur.')}
               </AppText>
-              <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }} />
+              <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 18, paddingHorizontal: 26 }} />
             </>
           ) : (
             <>
@@ -112,7 +110,7 @@ function PartnerDetail() {
                 <Button
                   title={t('Yenidən cəhd et')}
                   onPress={() => void load()}
-                  style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }}
+                  style={{ marginTop: 18, paddingHorizontal: 26 }}
                 />
               ) : null}
             </>
@@ -188,22 +186,24 @@ function PartnerDetail() {
             <AppText variant="overline" color={palette.caption} style={styles.label}>
               {cons.length > 0 ? t('Uyğunluq təhlili') : t('Niyə uyğundur')}
             </AppText>
-            {pros.map((r) => (
-              <View key={r} style={styles.reasonRow}>
-                <Icon name="check" size={16} color={palette.voltDeep} />
-                <AppText variant="body">{t(r)}</AppText>
-              </View>
-            ))}
-            {/* A mismatch never gets the green check — that is what made the score
-                a black box in the first place. */}
-            {cons.map((r) => (
-              <View key={r} style={styles.reasonRow}>
-                <Icon name="x" size={16} color={MISMATCH_COLOR} />
-                <AppText variant="body" color={palette.textSecondary}>
-                  {t(r)}
-                </AppText>
-              </View>
-            ))}
+            <View style={styles.reasonsCard}>
+              {pros.map((r) => (
+                <View key={r} style={styles.reasonRow}>
+                  <Icon name="check" size={16} color={palette.voltDeep} />
+                  <AppText variant="body">{t(r)}</AppText>
+                </View>
+              ))}
+              {/* A mismatch never gets the green check — that is what made the score
+                  a black box in the first place. */}
+              {cons.map((r) => (
+                <View key={r} style={styles.reasonRow}>
+                  <Icon name="x" size={16} color={MISMATCH_COLOR} />
+                  <AppText variant="body" color={palette.textSecondary}>
+                    {t(r)}
+                  </AppText>
+                </View>
+              ))}
+            </View>
           </>
         ) : null}
 
@@ -283,19 +283,21 @@ const styles = StyleSheet.create({
   state: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 10 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  hereBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(198,255,61,0.28)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  hereBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: palette.voltTint, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.voltDeep },
   hereText: { fontSize: 10.5, fontWeight: '700', color: palette.voltText },
-  compatPill: { alignSelf: 'flex-start', backgroundColor: palette.ink, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginTop: 10 },
-  compatText: { color: palette.volt, fontSize: 13, fontWeight: '700' },
-  unknownPill: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: palette.grouped, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, marginTop: 10 },
+  compatPill: { alignSelf: 'flex-start', backgroundColor: palette.element, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginTop: 10 },
+  compatText: { color: palette.inkText, fontSize: 13, fontWeight: '700' },
+  unknownPill: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: palette.white, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, marginTop: 10 },
   unknownText: { color: palette.textSecondary, fontSize: 12, fontWeight: '600' },
   label: { marginTop: 22, marginBottom: 10 },
+  reasonsCard: { backgroundColor: palette.white, borderRadius: 16, paddingHorizontal: 15, paddingVertical: 8 },
   reasonRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7 },
   prRow: { flexDirection: 'row', gap: 9 },
-  prCard: { flex: 1, backgroundColor: palette.grouped, borderRadius: 14, padding: 14, alignItems: 'center' },
+  // White on the #F7F7F7 screen — they were #F7F7F7 and vanished into it.
+  prCard: { flex: 1, backgroundColor: palette.white, borderRadius: 16, padding: 14, alignItems: 'center' },
   tagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  softTag: { backgroundColor: palette.grouped, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
+  softTag: { backgroundColor: palette.white, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 7 },
   // paddingBottom is set inline from the safe-area inset (see `footerBottom`).
   footer: { paddingHorizontal: spacing.screen, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
   /* A 44 pt hit area around the 22 pt glyph. The negative margin gives back the 11 pt

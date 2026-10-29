@@ -229,25 +229,25 @@ export function buildSpotMapHtml(o: SpotMapHtmlOptions): string {
   .maplibregl-ctrl-bottom-left{position:absolute;left:0;right:${o.locateButton ? 64 : 0}px;bottom:var(--inset);z-index:2;pointer-events:none;
     transition:bottom .22s ease}
   .maplibregl-ctrl-bottom-left .maplibregl-ctrl{pointer-events:auto;margin:0 0 12px 12px}
-  .maplibregl-ctrl-attrib.maplibregl-compact{background:rgba(255,255,255,.88);color:${C.textSecondary};
-    box-shadow:0 1px 4px rgba(16,16,20,.12);font-size:10px;line-height:16px}
+  .maplibregl-ctrl-attrib.maplibregl-compact{background:rgba(254,254,254,.88);color:${C.textSecondary};
+    box-shadow:0 1px 4px rgba(26,26,26,.12);font-size:10px;line-height:16px}
   .maplibregl-ctrl-attrib a{color:${C.textSecondary};text-decoration:none}
   .maplibregl-ctrl-attrib-button{opacity:.75}
   /* the ⓘ is drawn 24 px but answers a 44 px touch */
   .maplibregl-ctrl-attrib-button:before{content:"";position:absolute;top:-10px;right:-10px;bottom:-10px;left:-10px}
   .spot-credit{position:absolute;left:8px;bottom:calc(var(--inset) + 8px);z-index:2;pointer-events:none;
-    font-size:9px;line-height:14px;color:${C.textSecondary};background:rgba(255,255,255,.85);padding:0 5px;border-radius:4px}
+    font-size:9px;line-height:14px;color:${C.textSecondary};background:rgba(254,254,254,.85);padding:0 5px;border-radius:4px}
 
   /* gym marker: 34 pt ink disc (30 + a 2 pt white ring) inside a 44 pt tap box */
   .gm{width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer}
   .gm i{box-sizing:content-box;width:30px;height:30px;border-radius:50%;border:2px solid ${C.white};
     background:${C.ink};color:${C.white};display:flex;align-items:center;justify-content:center;
-    box-shadow:0 2px 7px rgba(16,16,20,.28),0 0 0 .5px rgba(16,16,20,.10);
+    box-shadow:0 2px 7px rgba(26,26,26,.28),0 0 0 .5px rgba(26,26,26,.10);
     transition:transform .2s cubic-bezier(.3,1.4,.5,1),background-color .16s ease,color .16s ease}
   .gm svg{width:18px;height:18px;display:block}
   .gm.on i{background:${C.volt};color:${C.ink};transform:scale(1.1)}
   .gm.sel i{background:${C.volt};color:${C.ink};transform:scale(1.24);
-    box-shadow:0 4px 12px rgba(16,16,20,.32),0 0 0 .5px rgba(16,16,20,.12)}
+    box-shadow:0 4px 12px rgba(26,26,26,.32),0 0 0 .5px rgba(26,26,26,.12)}
   .gm:active i{transform:scale(.94)}
 
   /* No «position» on marker roots: MapLibre makes them absolute, and a
@@ -256,9 +256,9 @@ export function buildSpotMapHtml(o: SpotMapHtmlOptions): string {
   /* picker pin: a volt drop with the dumbbell, tip on the coordinate */
   .pp{width:44px;height:52px;cursor:grab}
   .pp svg{position:absolute;left:4px;bottom:0;width:36px;height:46px;overflow:visible;
-    filter:drop-shadow(0 3px 4px rgba(16,16,20,.30));transition:transform .18s ease}
+    filter:drop-shadow(0 3px 4px rgba(26,26,26,.30));transition:transform .18s ease}
   .pp s{position:absolute;left:50%;bottom:-3px;width:14px;height:6px;margin-left:-7px;border-radius:50%;
-    background:rgba(16,16,20,.28);filter:blur(1.5px);transition:transform .18s ease,opacity .18s ease}
+    background:rgba(26,26,26,.28);filter:blur(1.5px);transition:transform .18s ease,opacity .18s ease}
   .pp.lift svg{transform:translateY(-10px) scale(1.06)}
   .pp.lift s{transform:scale(.7);opacity:.5}
   .pp.drop svg{animation:drop .32s cubic-bezier(.3,1.5,.6,1)}
@@ -270,7 +270,7 @@ export function buildSpotMapHtml(o: SpotMapHtmlOptions): string {
   .ud{width:22px;height:22px;pointer-events:none}
   .ud b{position:absolute;top:0;left:0;right:0;bottom:0;box-sizing:border-box;border-radius:50%;
     background:${C.volt};border:3px solid ${C.white};
-    box-shadow:0 0 0 1px rgba(16,16,20,.55),0 1px 5px rgba(16,16,20,.35)}
+    box-shadow:0 0 0 1px rgba(26,26,26,.55),0 1px 5px rgba(26,26,26,.35)}
   .ud:before{content:"";position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;
     background:${C.voltDeep};opacity:0;animation:pulse 2.4s ease-out infinite}
   @keyframes pulse{0%{transform:scale(1);opacity:.32}70%,100%{transform:scale(2.6);opacity:0}}

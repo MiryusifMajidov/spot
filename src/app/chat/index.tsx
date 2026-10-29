@@ -181,10 +181,10 @@ export default function Chats() {
           </View>
           {incomingCount > 0 ? (
             <View style={styles.reqBadge}>
-              <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '700' }}>{incomingCount}</AppText>
+              <AppText style={{ color: palette.onDark, fontSize: 12, fontWeight: '700' }}>{incomingCount}</AppText>
             </View>
           ) : (
-            <Icon name="chevR" size={18} color={palette.tertiary} />
+            <Icon name="chevR" size={17} color={palette.chevron} />
           )}
         </PressableScale>
 
@@ -234,8 +234,9 @@ function ChatRow({ chat, onPress }: { chat: Row; onPress: () => void }) {
             {chat.name}
           </AppText>
           <View style={chat.kind === 'partner' ? styles.partnerTag : styles.trainerTag}>
-            <AppText style={{ fontSize: 9.5, fontWeight: '700', color: chat.kind === 'partner' ? palette.voltText : palette.textSecondary }}>
-              {chat.kind === 'partner' ? t('YOLDAŞ') : t('MÜƏLLİM')}
+            {/* Sentence case, as the design writes the tag («Yoldaş»): no caps. */}
+            <AppText style={{ fontSize: 9.5, fontWeight: '600', color: chat.kind === 'partner' ? palette.voltText : palette.textSecondary }}>
+              {chat.kind === 'partner' ? t('Yoldaş') : t('Müəllim')}
             </AppText>
           </View>
           <AppText variant="caption" color={palette.tertiary} style={{ marginLeft: 'auto' }}>
@@ -254,13 +255,16 @@ function ChatRow({ chat, onPress }: { chat: Row; onPress: () => void }) {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 40 },
   requests: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginBottom: 8 },
-  reqIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,107,53,0.14)', alignItems: 'center', justifyContent: 'center' },
+  reqIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: palette.streakTint, alignItems: 'center', justifyContent: 'center' },
   reqBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: palette.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   sep: { height: StyleSheet.hairlineWidth, backgroundColor: palette.separator, marginLeft: 64 },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  partnerTag: { backgroundColor: 'rgba(198,255,61,0.35)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
-  trainerTag: { backgroundColor: palette.grouped, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  // The design's partner tag: volt at 35 % (not the old off-volt 198,255,61).
+  partnerTag: { backgroundColor: 'rgba(197,254,1,0.35)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  /* #EDEDED, not the screen's #F7F7F7: these rows sit straight on the screen
+     background, where a #F7F7F7 tag had no edge at all. */
+  trainerTag: { backgroundColor: palette.element, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   unread: { width: 10, height: 10, borderRadius: 5, backgroundColor: palette.inkText },
   empty: { alignItems: 'center', paddingVertical: 40 },
   note: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 18, paddingHorizontal: 4 },

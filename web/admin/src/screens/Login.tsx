@@ -49,11 +49,12 @@ export function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#101014' }}>
-      <form onSubmit={submit} style={{ width: 380, background: '#fff', borderRadius: 22, padding: 30, boxShadow: '0 24px 70px rgba(0,0,0,.4)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--page)' }}>
+      {/* Light page, #FEFEFE card, hairline instead of a drop shadow (Kölgə qaydası). */}
+      <form onSubmit={submit} style={{ width: 380, background: 'var(--card)', borderRadius: 22, padding: 30, border: '1px solid var(--line2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 6 }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--volt)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: 13, height: 13, borderRadius: '50%', border: '3px solid #101014' }} />
+            <div style={{ width: 13, height: 13, borderRadius: '50%', border: '3px solid var(--ink)' }} />
           </div>
           <div style={{ font: '700 18px/1 var(--font)' }}>SPOT Admin</div>
         </div>
@@ -62,7 +63,7 @@ export function Login() {
         </div>
 
         <button type="button" onClick={google} disabled={busy}
-          style={{ width: '100%', height: 48, borderRadius: 13, border: '1px solid var(--line)', background: '#fff', color: 'var(--ink)', font: '600 15px/1 var(--font)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: busy ? 0.6 : 1, cursor: 'pointer' }}>
+          style={{ width: '100%', height: 48, borderRadius: 13, border: 'none', background: 'var(--fill2)', color: 'var(--ink)', font: '600 15px/1 var(--font)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: busy ? 0.6 : 1, cursor: 'pointer' }}>
           <GoogleG />
           Google ilə daxil ol
         </button>
@@ -73,18 +74,18 @@ export function Login() {
           <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
         </div>
 
-        <label style={{ font: '600 11px/1 var(--font)', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>E-poçt</label>
+        <label style={{ font: '600 13px/1.25 var(--font)', color: 'var(--muted)' }}>E-poçt</label>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
           style={{ width: '100%', height: 46, borderRadius: 12, border: '1px solid var(--line)', padding: '0 14px', marginTop: 7, marginBottom: 16, font: '400 15px/1 var(--font)', outline: 'none' }} />
 
-        <label style={{ font: '600 11px/1 var(--font)', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Parol</label>
+        <label style={{ font: '600 13px/1.25 var(--font)', color: 'var(--muted)' }}>Parol</label>
         <input type="password" value={pw} onChange={(e) => setPw(e.target.value)}
           style={{ width: '100%', height: 46, borderRadius: 12, border: '1px solid var(--line)', padding: '0 14px', marginTop: 7, font: '400 15px/1 var(--font)', outline: 'none' }} />
 
         {err ? <div style={{ color: 'var(--red)', font: '500 12.5px/1.4 var(--font)', marginTop: 14 }}>{err}</div> : null}
 
         <button type="submit" disabled={busy}
-          style={{ width: '100%', height: 48, borderRadius: 13, border: 'none', background: 'var(--ink)', color: '#fff', font: '600 15px/1 var(--font)', marginTop: 22, opacity: busy ? 0.6 : 1 }}>
+          style={{ width: '100%', height: 48, borderRadius: 13, border: 'none', background: 'var(--volt)', color: 'var(--ink)', font: '600 15px/1 var(--font)', marginTop: 22, opacity: busy ? 0.6 : 1 }}>
           {busy ? 'Yoxlanılır…' : 'Daxil ol'}
         </button>
 

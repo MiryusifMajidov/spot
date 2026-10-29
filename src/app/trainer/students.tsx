@@ -16,7 +16,7 @@ import { decideTrainerRequest, getMyStudents, type StudentRow } from '@/lib/role
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useFormat, useT, type Fmt } from '@/lib/useT';
 import { confirm, toast } from '@/store/ui';
-import { iconSize, palette, spacing } from '@/theme';
+import { iconSize, palette, radius, spacing } from '@/theme';
 
 /** «14 sentyabr» — a calendar date. The line used to be `timeAgo` glued to a
  *  suffix, which printed «14:30 əvvəldən» and «Dünən əvvəldən». The year is added
@@ -230,7 +230,7 @@ export default function Students() {
                           {[s.level && t(s.level), s.goals[0] && t(s.goals[0]), studentDateLine(s, fmt, t)].filter(Boolean).join(' · ')}
                         </AppText>
                       </View>
-                      <Icon name="chevR" size={18} color={palette.tertiary} />
+                      <Icon name="chevR" size={17} color={palette.chevron} />
                     </PressableScale>
 
                     <View style={styles.programRow}>
@@ -247,7 +247,7 @@ export default function Students() {
                         accessibilityLabel={t('{name} üçün proqram təyin et', { name: s.name })}
                         onPress={() => openStudent(s)}
                         style={styles.primaryBtn}>
-                        <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>
+                        <AppText variant="headline" color={palette.ctaText}>
                           {s.programTitle ? t('Proqramı yenilə') : t('Proqram təyin et')}
                         </AppText>
                       </PressableScale>
@@ -303,8 +303,8 @@ export default function Students() {
                       accessibilityRole="button"
                       accessibilityLabel={t('{name} sorğusunu qəbul et', { name: s.name })}
                       onPress={() => decide(s, true)}
-                      style={[styles.primaryBtn, { backgroundColor: palette.volt }, busy === s.requestId && { opacity: 0.5 }]}>
-                      <AppText style={{ color: palette.inkText, fontSize: 13, fontWeight: '600' }}>{t('Qəbul et')}</AppText>
+                      style={[styles.primaryBtn, busy === s.requestId && styles.primaryBtnOff]}>
+                      <AppText variant="headline" color={busy === s.requestId ? palette.tertiary : palette.ctaText}>{t('Qəbul et')}</AppText>
                     </PressableScale>
                     <PressableScale
                       activeScale={0.97}
@@ -312,8 +312,8 @@ export default function Students() {
                       accessibilityRole="button"
                       accessibilityLabel={t('{name} sorğusunu rədd et', { name: s.name })}
                       onPress={() => decide(s, false)}
-                      style={styles.declineBtn}>
-                      <AppText style={{ color: palette.textSecondary, fontSize: 13, fontWeight: '600' }}>{t('İmtina')}</AppText>
+                      style={[styles.declineBtn, busy === s.requestId && { opacity: 0.4 }]}>
+                      <AppText variant="headline" color={palette.inkText}>{t('İmtina')}</AppText>
                     </PressableScale>
                   </View>
                 </View>
@@ -338,7 +338,7 @@ function Notice({ title, body, action }: { title: string; body: string; action?:
           accessibilityLabel={action.label}
           onPress={action.onPress}
           style={styles.noticeBtn}>
-          <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{action.label}</AppText>
+          <AppText variant="headline" color={palette.ctaText}>{action.label}</AppText>
         </PressableScale>
       ) : null}
     </View>
@@ -346,14 +346,19 @@ function Notice({ title, body, action }: { title: string; body: string; action?:
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: palette.white, borderRadius: 16, padding: 14 },
+  card: { backgroundColor: palette.white, borderRadius: radius.card, padding: 14 },
   head: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   programRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   timeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 10, backgroundColor: palette.grouped, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   actions: { flexDirection: 'row', gap: 9, marginTop: 12, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.hairline },
-  primaryBtn: { flex: 1, height: 44, borderRadius: 12, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
-  declineBtn: { flex: 1, height: 38, borderRadius: 11, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
-  iconBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
-  notice: { backgroundColor: palette.white, borderRadius: 16, padding: 16 },
-  noticeBtn: { height: 38, borderRadius: 11, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center', marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 },
+  /* The design's button rules: the primary action is the volt CTA with ink text, a
+     disabled one turns #FEFEFE with grey text; the secondary beside it is #EDEDED
+     with no border, and the icon button matches the row's height. */
+  primaryBtn: { flex: 1, height: 50, borderRadius: radius.button, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+  primaryBtnOff: { backgroundColor: palette.ctaDisabled },
+  declineBtn: { flex: 1, height: 50, borderRadius: radius.button, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 50, height: 50, borderRadius: radius.button, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
+  notice: { backgroundColor: palette.white, borderRadius: radius.card, padding: 16 },
+  // An in-card CTA spans the card, as the design draws them.
+  noticeBtn: { height: 50, borderRadius: radius.button, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center', marginTop: 14, alignSelf: 'stretch', paddingHorizontal: 18 },
 });

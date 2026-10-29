@@ -518,8 +518,9 @@ export default function BecomeTrainer() {
               accessibilityRole="button"
               accessibilityLabel={t('Adını yaz')}
               onPress={() => router.push('/(tabs)/profile/edit')}
-              style={[styles.smallBtn, { backgroundColor: palette.ink, alignSelf: 'flex-start', marginTop: 12 }]}>
-              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Adını yaz')}</AppText>
+              hitSlop={smallSlop}
+              style={[styles.smallBtn, { backgroundColor: palette.cta, alignSelf: 'flex-start', marginTop: 12 }]}>
+              <AppText style={{ color: palette.ctaText, fontSize: 13, fontWeight: '600' }}>{t('Adını yaz')}</AppText>
             </PressableScale>
           </View>
         ) : null}
@@ -562,7 +563,7 @@ export default function BecomeTrainer() {
                     : sync === 'unsynced'
                       ? t('Elanın serverdə yoxdur, ona görə istifadəçilər səni tapa bilmir. Yenidən sinxronla.')
                       : status === 'approved' && !badge
-                        ? t('Doğrulama sorğun təsdiqlənib, amma elanında yaşıl nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.')
+                        ? t('Doğrulama sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Müəllim doğrulanması səhifəsindən yenidən müraciət et.')
                         : t('Doğrulama statusunu və sənədləri Müəllim doğrulanması səhifəsində görə bilərsən.')}
             </AppText>
             <View style={{ flexDirection: 'row', gap: 9, marginTop: 12 }}>
@@ -573,8 +574,9 @@ export default function BecomeTrainer() {
                   accessibilityLabel={t('Yenidən sinxronla')}
                   disabled={saving}
                   onPress={resync}
-                  style={[styles.smallBtn, { backgroundColor: palette.ink }, saving && { opacity: 0.5 }]}>
-                  <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Yenidən sinxronla')}</AppText>
+                  hitSlop={smallSlop}
+                  style={[styles.smallBtn, { backgroundColor: saving ? palette.ctaDisabled : palette.cta }]}>
+                  <AppText style={{ color: saving ? palette.tertiary : palette.ctaText, fontSize: 13, fontWeight: '600' }}>{t('Yenidən sinxronla')}</AppText>
                 </PressableScale>
               ) : null}
               <PressableScale
@@ -582,6 +584,7 @@ export default function BecomeTrainer() {
                 accessibilityRole="button"
                 accessibilityLabel={t('Müəllim doğrulanmasını aç')}
                 onPress={() => router.push('/trainer/verify')}
+                hitSlop={smallSlop}
                 style={[styles.smallBtn, { backgroundColor: palette.element }]}>
                 <AppText style={{ color: palette.inkText, fontSize: 13, fontWeight: '600' }}>{t('Doğrulanma')}</AppText>
               </PressableScale>
@@ -600,7 +603,7 @@ export default function BecomeTrainer() {
             style={[styles.photoWrap, photoBusy && { opacity: 0.6 }]}>
             <Avatar name={profile.name || 'Müəllim'} size={76} uri={photoLocal ?? photoUrl} />
             <View style={styles.camBadge}>
-              <Icon name="cam" size={13} color={palette.white} />
+              <Icon name="cam" size={13} color={palette.inkText} />
             </View>
           </PressableScale>
           <View style={{ flex: 1 }}>
@@ -616,6 +619,7 @@ export default function BecomeTrainer() {
               accessibilityRole="button"
               accessibilityLabel={t('Şəkli dəyiş')}
               onPress={changePhoto}
+              hitSlop={{ top: 5, bottom: 5 }}
               style={[styles.photoBtn, photoBusy && { opacity: 0.5 }]}>
               <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>
                 {photoBusy ? t('Yüklənir…') : photoLocal || photoUrl ? t('Şəkli dəyiş') : t('Şəkil əlavə et')}
@@ -655,6 +659,9 @@ export default function BecomeTrainer() {
   );
 }
 
+/* The 36 pt card buttons reach 44 pt with 4 pt above and below — the look stays. */
+const smallSlop = { top: 4, bottom: 4 };
+
 function Field({ label, value, onChangeText, placeholder, keyboardType, multiline }: { label: string; value: string; onChangeText: (t: string) => void; placeholder: string; keyboardType?: 'numeric'; multiline?: boolean }) {
   return (
     <View style={{ marginBottom: 18 }}>
@@ -689,7 +696,8 @@ const styles = StyleSheet.create({
     width: 27,
     height: 27,
     borderRadius: 14,
-    backgroundColor: palette.ink,
+    // The design's camera disc: #EDEDED, ink glyph, ringed in the card colour.
+    backgroundColor: palette.element,
     borderWidth: 2,
     borderColor: palette.white,
     alignItems: 'center',

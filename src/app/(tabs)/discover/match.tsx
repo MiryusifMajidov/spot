@@ -251,7 +251,7 @@ function Match() {
               </View>
             ) : (
               <View style={styles.compatPill}>
-                <AppText style={{ color: palette.volt, fontSize: 12.5, fontWeight: '700' }}>{t('{n}% uyğun', { n: score })}</AppText>
+                <AppText style={{ color: palette.inkText, fontSize: 12.5, fontWeight: '700' }}>{t('{n}% uyğun', { n: score })}</AppText>
               </View>
             )}
           </View>
@@ -375,7 +375,8 @@ function Match() {
                   <PressableScale
                     activeScale={0.96}
                     onPress={() => router.push('/(tabs)/profile/edit')}
-                    style={{ marginTop: 10, alignSelf: 'flex-start' }}>
+                    accessibilityRole="button"
+                    style={{ marginTop: 0, minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}>
                     <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>{t('Məşq günlərini seç')}</AppText>
                   </PressableScale>
                 </View>
@@ -387,8 +388,10 @@ function Match() {
                     key={s.iso}
                     activeScale={0.96}
                     onPress={() => setTime(i)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: timeIdx === i }}
                     style={[styles.time, timeIdx === i && styles.timeOn]}>
-                    <AppText style={{ fontSize: 13, fontWeight: '600', color: timeIdx === i ? palette.white : palette.inkText }}>
+                    <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>
                       {s.label}
                     </AppText>
                   </PressableScale>
@@ -434,15 +437,20 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingBottom: 24 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10 },
-  compatPill: { alignSelf: 'flex-start', backgroundColor: palette.ink, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 8 },
+  // Design: the score badge is #EDEDED with ink text (it was ink with volt).
+  compatPill: { alignSelf: 'flex-start', backgroundColor: palette.element, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 8 },
   reasons: { flexDirection: 'row', gap: 7, marginTop: 6, flexWrap: 'wrap' },
-  reason: { backgroundColor: 'rgba(198,255,61,0.30)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
+  reason: { backgroundColor: palette.voltTint, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
   reasonBad: { backgroundColor: palette.streakTint },
-  unknownPill: { alignSelf: 'flex-start', backgroundColor: palette.grouped, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 8 },
+  // White on the #F7F7F7 screen — #F7F7F7 vanished into it.
+  unknownPill: { alignSelf: 'flex-start', backgroundColor: palette.white, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 8 },
   stateCard: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: palette.white, borderRadius: 16, padding: 16, marginTop: 22 },
   times: { gap: 9 },
-  time: { height: 48, borderRadius: 13, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
-  timeOn: { backgroundColor: palette.ink, borderColor: palette.ink },
+  /* A resting option is a plain #FEFEFE card; the chosen one is the design's
+     selected outlined card — a 1.5 pt volt border on the volt tint. The border is
+     always there (transparent at rest) so choosing does not shift the text. */
+  time: { height: 48, borderRadius: 13, backgroundColor: palette.white, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  timeOn: { backgroundColor: palette.voltTint, borderColor: palette.volt },
   footer: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
 });
 

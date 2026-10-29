@@ -10,7 +10,6 @@ export const content: Dict = {
   'Addımlı çöküş (lunge)': 'Lunge',
   'Addımlı çöküş': 'Lunge',
   'Ardıcıl məşqçi': 'Trains consistently',
-  'Ardıcıllıq': 'Consistency',
   'Arxa ayaqla itələmək.': 'Pushing off with the back leg.',
   'Arxaya çox əyilmək. Gövdə demək olar sabit.': 'Leaning back too far. Keep your torso almost still.',
   'Arıqlama': 'Weight loss',

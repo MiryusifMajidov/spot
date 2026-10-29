@@ -7,7 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import { Gym } from '@/data/types';
 import { useFormat, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
-import { iconSize, palette, radius, shadow } from '@/theme';
+import { iconSize, palette, radius } from '@/theme';
 import { AppText } from './ui/AppText';
 import { PressableScale } from './ui/PressableScale';
 import { Tag } from './ui/Tag';
@@ -24,13 +24,13 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
 
   if (variant === 'compact') {
     return (
-      <PressableScale onPress={onPress} activeScale={0.98} style={[styles.card, shadow.card as object]}>
+      <PressableScale onPress={onPress} activeScale={0.98} style={styles.card}>
         <Cover gym={gym} height={110} />
         <View style={styles.bodySm}>
           <View style={styles.rowBetween}>
             <View style={styles.nameRow}>
               <AppText variant="title3">{gym.name}</AppText>
-              {gym.verified && <Icon name="verified" size={15} color={palette.voltDeep} />}
+              {gym.verified && <Icon name="verified" size={15} color={palette.verified} />}
             </View>
             <Price value={gym.priceMonth} />
           </View>
@@ -49,7 +49,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
   }
 
   return (
-    <PressableScale onPress={onPress} activeScale={0.98} style={[styles.card, shadow.card as object]}>
+    <PressableScale onPress={onPress} activeScale={0.98} style={styles.card}>
       <Cover gym={gym} height={132}>
         {/* A zero is "hələ məlum deyil", not a fact — the badge is dropped entirely. */}
         {gym.rating > 0 || gym.liveCount > 0 ? (
@@ -79,7 +79,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
           accessibilityLabel={t('Yadda saxla')}
           accessibilityState={{ selected: saved }}>
           <View style={styles.bookmarkCircle}>
-            <Icon name={saved ? 'bookmarkOn' : 'bookmark'} size={iconSize.inCircle} color={saved ? palette.volt : palette.white} />
+            <Icon name={saved ? 'bookmarkOn' : 'bookmark'} size={iconSize.inCircle} color={saved ? palette.volt : palette.onDark} />
           </View>
         </PressableScale>
       </Cover>
@@ -88,7 +88,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
         <View style={styles.rowBetween}>
           <View style={styles.nameRow}>
             <AppText variant="title3">{gym.name}</AppText>
-            {gym.verified && <Icon name="verified" size={15} color={palette.voltDeep} />}
+            {gym.verified && <Icon name="verified" size={15} color={palette.verified} />}
           </View>
           <Price value={gym.priceMonth} />
         </View>
@@ -110,7 +110,7 @@ export function GymCard({ gym, variant = 'hero', onPress }: { gym: Gym; variant?
         ) : null}
         <View style={styles.tags}>
           {gym.tags.map((t) => (
-            <Tag key={t} label={t} />
+            <Tag key={t} label={t} tone="card" />
           ))}
         </View>
       </View>
@@ -167,8 +167,8 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   badgeRow: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 6 },
   ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8, overflow: 'hidden' },
-  ratingText: { color: palette.white, fontSize: 11.5, fontWeight: '600' },
-  liveBadge: { backgroundColor: 'rgba(198,255,61,0.92)', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8, justifyContent: 'center' },
+  ratingText: { color: palette.onDark, fontSize: 11.5, fontWeight: '600' },
+  liveBadge: { backgroundColor: 'rgba(197,254,1,0.92)', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8, justifyContent: 'center' },
   liveText: { color: palette.inkText, fontSize: 11.5, fontWeight: '600' },
   bookmark: { position: 'absolute', top: 8, right: 8, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   bookmarkCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: palette.overlay, alignItems: 'center', justifyContent: 'center' },

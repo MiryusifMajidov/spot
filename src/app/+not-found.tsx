@@ -46,7 +46,7 @@ export default function NotFound() {
         <Button
           title={t('Ana səhifəyə qayıt')}
           onPress={() => router.replace('/(tabs)/discover')}
-          style={{ marginTop: 20, height: 46, paddingHorizontal: 22 }}
+          style={{ marginTop: 20, paddingHorizontal: 22 }}
         />
       </View>
     </Screen>

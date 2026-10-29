@@ -46,7 +46,7 @@ import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useLang, useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
-import { iconSize, palette, radius, shadow } from '@/theme';
+import { iconSize, palette, radius } from '@/theme';
 
 import {
   buildSpotMapHtml,
@@ -516,7 +516,7 @@ export function SpotMap({
             accessibilityRole="button"
             accessibilityLabel={t('Mənim yerim')}
             accessibilityState={{ busy: locating, selected: following }}
-            style={[styles.locate, shadow.card]}>
+            style={styles.locate}>
             {locating ? (
               <ActivityIndicator size="small" color={palette.inkText} />
             ) : (
@@ -542,7 +542,7 @@ export function SpotMap({
                 {t('İnternet bağlantını yoxla və yenidən cəhd et.')}
               </AppText>
               <PressableScale activeScale={0.95} onPress={retry} accessibilityRole="button" style={styles.retry}>
-                <AppText variant="subhead" color={palette.white} style={styles.retryText}>
+                <AppText variant="headline" color={palette.ctaText} style={styles.retryText}>
                   {t('Yenidən cəhd et')}
                 </AppText>
               </PressableScale>
@@ -566,13 +566,14 @@ const styles = StyleSheet.create({
     backgroundColor: palette.grouped,
   },
   failBody: { maxWidth: 280 },
-  // a real 44 pt box, not a hitSlop: the button sits in the map's corner
+  // a real 50 pt box, not a hitSlop: the button sits in the map's corner.
+  // The design's CTA: volt with ink text.
   retry: {
     marginTop: 10,
-    minHeight: 44,
+    minHeight: 50,
     paddingHorizontal: 20,
-    borderRadius: radius.pill,
-    backgroundColor: palette.ink,
+    borderRadius: radius.button,
+    backgroundColor: palette.cta,
     alignItems: 'center',
     justifyContent: 'center',
   },

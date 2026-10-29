@@ -26,7 +26,7 @@ const ROLE_LABEL: Record<string, { text: string; cls: string }> = {
 };
 
 const STATUS_META: Record<Profile['status'], { text: string; dot: string; color: string }> = {
-  active: { text: 'Aktiv', dot: '#5B7F00', color: '#3A3A42' },
+  active: { text: 'Aktiv', dot: '#527A01', color: '#3A3A42' },
   muted: { text: 'Susdurulub', dot: '#FF9500', color: '#8A5A00' },
   suspended: { text: 'Dayandırılıb', dot: '#FF9500', color: '#8A5A00' },
   banned: { text: 'Ban', dot: '#FF3B30', color: '#C42B22' },
@@ -469,7 +469,7 @@ export function Users({ search }: ScreenProps) {
           </button>
           <button className="btn primary" onClick={() => toast('Elan göndərmə tezliklə')}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <Icon name="bell" size={14} color="var(--volt)" />
+              <Icon name="bell" size={14} color="var(--ink)" />
               Elan göndər
             </span>
           </button>
@@ -504,7 +504,7 @@ export function Users({ search }: ScreenProps) {
             statsFailed
               ? { opacity: 0.45, cursor: 'not-allowed' }
               : onlyReported
-                ? { background: 'rgba(255,59,48,.1)', color: '#C42B22', borderColor: 'rgba(255,59,48,.25)' }
+                ? { background: 'rgba(255,59,48,.1)', color: 'var(--red-deep)' }
                 : undefined
           }
         >
@@ -621,7 +621,7 @@ export function Users({ search }: ScreenProps) {
                     {reports == null ? (
                       <span style={{ color: 'var(--muted)' }} title="Sayğaclar yüklənmədi — bu «0 şikayət» demək deyil">—</span>
                     ) : reports > 0 ? (
-                      <span className="badge red">{reports} ŞİKAYƏT</span>
+                      <span className="badge red">{reports} şikayət</span>
                     ) : (
                       <span style={{ color: 'var(--muted)' }}>0</span>
                     )}
@@ -670,8 +670,7 @@ export function Users({ search }: ScreenProps) {
             display: 'flex',
             alignItems: 'center',
             gap: 16,
-            color: '#fff',
-            boxShadow: '0 12px 30px rgba(0,0,0,.28)',
+            color: 'var(--on-ink)',
           }}
         >
           <div style={{ font: '600 13px/1 var(--font)' }}>{selected.size} seçildi</div>

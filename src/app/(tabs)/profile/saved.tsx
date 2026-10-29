@@ -103,7 +103,7 @@ export default function Saved() {
                     style={styles.tile}>
                     <VideoPoster id={v.id} videoUrl={v.videoUrl} gradient={v.gradient} />
                     <View style={styles.tilePlay}>
-                      <Icon name="play" size={16} color="rgba(255,255,255,0.9)" />
+                      <Icon name="play" size={16} color={palette.onDark} />
                     </View>
                     <AppText numberOfLines={2} style={styles.tileCaption}>
                       {v.caption}
@@ -156,7 +156,8 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   tile: { width: '48%', height: 190, borderRadius: 14, overflow: 'hidden', justifyContent: 'flex-end', padding: 10 },
-  tilePlay: { position: 'absolute', top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' },
-  tileCaption: { color: palette.white, fontSize: 12, fontWeight: '600', lineHeight: 16 },
-  tileAuthor: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 4 },
+  tilePlay: { position: 'absolute', top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(26,26,26,0.3)', alignItems: 'center', justifyContent: 'center' },
+  // Text on the video poster: the design's light-on-media #FAFAFA.
+  tileCaption: { color: palette.onDark, fontSize: 12, fontWeight: '600', lineHeight: 16 },
+  tileAuthor: { color: 'rgba(250,250,250,0.7)', fontSize: 11, marginTop: 4 },
 });

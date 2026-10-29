@@ -48,7 +48,7 @@ export default function Reserve() {
      tab screen UIKit's safe area already includes that bar, so the footer pads by
      the inset instead of guessing the bar's height. */
   const insets = useSafeAreaInsets();
-  const footerClearance = Platform.OS === 'ios' ? insets.bottom : 0;
+  const footerClearance = 0;
   /* Android edge-to-edge (SDK 54+) never resizes the window, so `adjustResize` and
      KeyboardAvoidingView both do nothing here — the note field and the «Sorğu göndər»
      footer used to sit under the IME with no way to scroll them out. The measured
@@ -132,7 +132,7 @@ export default function Reserve() {
                 : t('Müəllim tapılmadı.')}
           </AppText>
           {phase !== 'loading' ? (
-            <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, height: 44, paddingHorizontal: 24 }} />
+            <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, paddingHorizontal: 24 }} />
           ) : null}
         </View>
       </Screen>
@@ -260,8 +260,8 @@ export default function Reserve() {
                 style={{ marginHorizontal: -spacing.screen, paddingHorizontal: spacing.screen }}>
                 {days.map((dd, i) => (
                   <PressableScale key={dd.date.toISOString()} activeScale={0.94} onPress={() => setDay(i)} style={[styles.day, day === i && styles.dayOn]}>
-                    <AppText style={{ fontSize: 12, fontWeight: '600', color: day === i ? palette.white : palette.caption }}>{dayLabel(i)}</AppText>
-                    <AppText style={{ fontSize: 18, fontWeight: '700', color: day === i ? palette.white : palette.inkText, marginTop: 4 }}>{dd.num}</AppText>
+                    <AppText style={{ fontSize: 12, fontWeight: '600', color: day === i ? palette.inkText : palette.caption }}>{dayLabel(i)}</AppText>
+                    <AppText style={{ fontSize: 18, fontWeight: '700', color: palette.inkText, marginTop: 4 }}>{dd.num}</AppText>
                   </PressableScale>
                 ))}
               </ScrollView>
@@ -272,7 +272,7 @@ export default function Reserve() {
               <View style={styles.slots}>
                 {SLOTS.map((s) => (
                   <PressableScale key={s} activeScale={0.94} onPress={() => setSlot(s)} style={[styles.slot, slot === s && styles.slotOn]}>
-                    <AppText style={{ fontSize: 14, fontWeight: '600', color: slot === s ? palette.white : palette.inkText }}>{s}</AppText>
+                    <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.inkText }}>{s}</AppText>
                   </PressableScale>
                 ))}
               </View>
@@ -333,12 +333,13 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingBottom: 24 },
   trainer: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 14 },
   stateCard: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: palette.white, borderRadius: 16, padding: 16, marginTop: 18 },
-  day: { width: 62, height: 70, borderRadius: 14, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
-  dayOn: { backgroundColor: palette.ink, borderColor: palette.ink },
+  // Design: #FEFEFE tiles with no outline on the #F7F7F7 screen; the chosen one #EDEDED.
+  day: { width: 62, height: 70, borderRadius: 14, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  dayOn: { backgroundColor: palette.selected },
   slots: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  slot: { width: '22%', height: 44, borderRadius: 12, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
-  slotOn: { backgroundColor: palette.ink, borderColor: palette.ink },
-  noteInput: { minHeight: 80, borderRadius: 12, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, padding: 12, fontSize: 15, color: palette.inkText, textAlignVertical: 'top' },
+  slot: { width: '22%', height: 46, borderRadius: 13, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  slotOn: { backgroundColor: palette.selected },
+  noteInput: { minHeight: 80, borderRadius: 16, backgroundColor: palette.white, padding: 14, fontSize: 15, color: palette.inkText, textAlignVertical: 'top' },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
   // paddingBottom is set inline: spacing.sm plus the iOS tab-bar clearance.
   footer: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: spacing.screen, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },

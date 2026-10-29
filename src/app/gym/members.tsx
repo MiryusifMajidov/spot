@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { StatusBarScrim } from '@/components/ui/StatusBarScrim';
 import { EmptyNote, GymGate, getGymRoster, useMyGym, type RosterMember } from '@/lib/gymOwner';
 import { useFormat, useT } from '@/lib/useT';
-import { palette, spacing } from '@/theme';
+import { palette, radius, spacing } from '@/theme';
 
 /*
  * The roster used to tag members «YENİ» and «RİSK» and count them in filter
@@ -20,7 +20,7 @@ import { palette, spacing } from '@/theme';
  * carries only what the check-in table really says about this gym.
  */
 
-/** «SADİQ» = at least this many check-ins here in the last 30 days. Counted. */
+/** «Sadiq» = at least this many check-ins here in the last 30 days. Counted. */
 const LOYAL_CHECKINS = 12;
 
 /* Azerbaijan is UTC+4 all year, and «bu gün»/«dünən» are the gym's calendar days.
@@ -133,7 +133,7 @@ export default function GymMembers() {
           <>
             <View style={styles.card}>
               <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 13 }}>
-                {t('DAVAMİYYƏT · SON 30 GÜN')}
+                {t('Davamiyyət · son 30 gün')}
               </AppText>
               {stats && stats.enough ? (
                 <View style={{ flexDirection: 'row', gap: 11 }}>
@@ -197,7 +197,7 @@ export default function GymMembers() {
                         </View>
                         {loyal ? (
                           <View style={styles.tag}>
-                            <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.voltText }}>{t('SADİQ')}</AppText>
+                            <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.voltText }}>{t('Sadiq')}</AppText>
                           </View>
                         ) : null}
                       </View>
@@ -240,12 +240,13 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
-  failCard: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginBottom: 14 },
-  card: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 14 },
-  vdiv: { width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(60,60,67,0.12)' },
-  memberCard: { backgroundColor: palette.white, borderRadius: 16, padding: 13 },
+  failCard: { backgroundColor: palette.white, borderRadius: radius.card, padding: 16, marginBottom: 14 },
+  card: { backgroundColor: palette.white, borderRadius: radius.card, padding: 16, marginBottom: 14 },
+  vdiv: { width: StyleSheet.hairlineWidth, backgroundColor: palette.hairline },
+  memberCard: { backgroundColor: palette.white, borderRadius: radius.card, padding: 13 },
   memberHead: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   onlineDot: { position: 'absolute', right: 0, bottom: 0, width: 13, height: 13, borderRadius: 7, backgroundColor: palette.volt, borderWidth: 2.5, borderColor: palette.white },
-  tag: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7, backgroundColor: 'rgba(198,255,61,0.3)' },
+  // The success-chip tint with accent-green text (design 14.3 «Sadiq»).
+  tag: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7, backgroundColor: palette.voltTint },
   privacy: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', marginTop: 16, paddingHorizontal: 4 },
 });

@@ -150,8 +150,8 @@ export default function ExerciseLibrary() {
       <NavBar title={t('Hərəkətlər')} />
       <View style={{ paddingHorizontal: spacing.screen }}>
         <View style={styles.search}>
-          <Icon name="search" size={17} color={palette.tertiary} />
-          <TextInput {...inputTint} value={q} onChangeText={setQ} placeholder={t('Hərəkət və ya əzələ axtar')} placeholderTextColor={palette.tertiary} style={styles.searchInput} />
+          <Icon name="search" size={17} color={palette.caption} />
+          <TextInput {...inputTint} value={q} onChangeText={setQ} placeholder={t('Hərəkət və ya əzələ axtar')} placeholderTextColor={palette.caption} style={styles.searchInput} />
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7, paddingVertical: 12 }}>
           {MUSCLES.map((m) => (
@@ -164,7 +164,7 @@ export default function ExerciseLibrary() {
                  Android honours it too. */
               hitSlop={{ top: 5, bottom: 5 }}
               style={[styles.chip, muscle === m && styles.chipOn]}>
-              <AppText style={{ fontSize: 12.5, fontWeight: '600', color: muscle === m ? palette.white : palette.inkText }}>{t(m)}</AppText>
+              <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.inkText }}>{t(m)}</AppText>
             </PressableScale>
           ))}
         </ScrollView>
@@ -183,7 +183,7 @@ export default function ExerciseLibrary() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
-        <AppText variant="caption" color={palette.tertiary} style={{ marginBottom: 12 }}>
+        <AppText variant="caption" color={palette.caption} style={{ marginBottom: 12 }}>
           {q
             ? t('Axtarış · {n} nəticə', { n: list.length, count: list.length })
             : t('{muscle} · {n} hərəkət', { muscle: t(muscle), n: list.length, count: list.length })}
@@ -210,12 +210,12 @@ export default function ExerciseLibrary() {
                   }}
                   style={styles.thumb}>
                   <View style={styles.playDot}>
-                    <Icon name="play" size={13} color={palette.white} />
+                    <Icon name="play" size={13} color={palette.onDark} />
                   </View>
                 </PressableScale>
                 <View style={{ flex: 1 }}>
                   <AppText style={{ fontSize: 15, fontWeight: '600' }}>{t(e.name)}</AppText>
-                  <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 5 }}>{t(e.muscle)} · {t(e.equipment)}</AppText>
+                  <AppText style={{ fontSize: 12, color: palette.caption, marginTop: 5 }}>{t(e.muscle)} · {t(e.equipment)}</AppText>
                   {/* Wraps: «Avadanlıq lazım deyil» next to the sets tag is wider than
                       this column on a 375 pt phone, and unwrapped it slid under the «+». */}
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 7 }}>
@@ -223,7 +223,7 @@ export default function ExerciseLibrary() {
                       <AppText style={styles.tagText}>{e.defaultSets}×{t(e.reps)}</AppText>
                     </View>
                     {status ? (
-                      <View style={[styles.tag, { backgroundColor: 'rgba(198,255,61,0.3)' }]}>
+                      <View style={[styles.tag, styles.tagOk]}>
                         <AppText style={[styles.tagText, { color: palette.voltText }]}>
                           {status === 'own' ? t('Avadanlıq lazım deyil') : t('Zalında var')}
                         </AppText>
@@ -251,15 +251,17 @@ export default function ExerciseLibrary() {
 }
 
 const styles = StyleSheet.create({
-  search: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: 'rgba(118,118,128,0.12)', borderRadius: 11, height: 40, paddingHorizontal: 10 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: palette.fill, borderRadius: 11, height: 40, paddingHorizontal: 10 },
   searchInput: { flex: 1, fontSize: 15, color: palette.inkText },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: palette.white },
-  chipOn: { backgroundColor: palette.ink },
+  // Selected = #EDEDED with ink text (the design's rule), never an ink fill.
+  chipOn: { backgroundColor: palette.selected },
   row: { backgroundColor: palette.white, borderRadius: 16, padding: 12, flexDirection: 'row', gap: 12, alignItems: 'center' },
-  thumb: { width: 70, height: 70, borderRadius: 13, backgroundColor: '#D9D9DF', alignItems: 'center', justifyContent: 'center' },
+  thumb: { width: 70, height: 70, borderRadius: 13, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
   playDot: { width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(11,11,14,0.6)', alignItems: 'center', justifyContent: 'center' },
   tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: palette.grouped },
-  tagText: { fontSize: 10.5, fontWeight: '600', color: '#3A3A42' },
+  tagText: { fontSize: 10.5, fontWeight: '600', color: palette.text3 },
+  tagOk: { backgroundColor: 'rgba(197,254,1,0.3)' },
   /* «Add to a program». It was a 30 pt circle with a 16 px plus, and the circle was
      the whole target. The target is now a real 44 x 44 box (the 70 pt thumbnail
      makes the row taller than that, so it fits without growing it), with a 36 pt
@@ -267,6 +269,6 @@ const styles = StyleSheet.create({
      the circle stays flush with the row's content edge and the target reaches 4 pt
      into the row padding. */
   addBtn: { width: 44, height: 44, marginRight: -4, alignItems: 'center', justifyContent: 'center' },
-  addDot: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F0F0F3', alignItems: 'center', justifyContent: 'center' },
+  addDot: { width: 36, height: 36, borderRadius: 18, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 16, padding: 22, marginBottom: 12 },
 });

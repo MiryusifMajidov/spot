@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
@@ -369,7 +370,7 @@ export default function Requests() {
           <AppText style={{ color: palette.textSecondary, fontWeight: '600', fontSize: 14 }}>{t('Sil')}</AppText>
         </PressableScale>
         <PressableScale activeScale={0.97} onPress={() => accept(m)} style={styles.accept}>
-          <AppText style={{ color: palette.white, fontWeight: '600', fontSize: 14 }}>{t('Qəbul et')}</AppText>
+          <AppText style={{ color: palette.ctaText, fontWeight: '600', fontSize: 14 }}>{t('Qəbul et')}</AppText>
         </PressableScale>
       </View>
     </View>
@@ -404,9 +405,7 @@ export default function Requests() {
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, maxWidth: 280, lineHeight: 21 }}>
               {t('Serverlə əlaqə alınmadı, ona görə sənə kimin təklif göndərdiyini göstərə bilmirik. İnterneti yoxlayıb bu səhifəni yenidən aç.')}
             </AppText>
-            <PressableScale activeScale={0.96} onPress={load} style={styles.emptyBtn}>
-              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Yenidən cəhd et')}</AppText>
-            </PressableScale>
+            <Button title={t('Yenidən cəhd et')} onPress={load} style={styles.emptyBtn} />
           </View>
         ) : null}
 
@@ -432,9 +431,7 @@ export default function Requests() {
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 8, maxWidth: 280, lineHeight: 21 }}>
               {t('Kimsə sənə məşq təklif edəndə sorğu burada görünəcək. Sənin göndərdiyin təkliflər də cavab gözlədiyi müddətdə burada olur.')}
             </AppText>
-            <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/discover/cards')} style={styles.emptyBtn}>
-              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Yoldaş axtar')}</AppText>
-            </PressableScale>
+            <Button title={t('Yoldaş axtar')} onPress={() => router.push('/(tabs)/discover/cards')} style={styles.emptyBtn} />
           </View>
         ) : null}
 
@@ -567,10 +564,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   btns: { flexDirection: 'row', gap: 9, marginTop: 14 },
-  decline: { flex: 1, height: 42, borderRadius: 12, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
-  secondary: { flex: 1, height: 42, borderRadius: 12, backgroundColor: palette.grouped, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
-  accept: { flex: 1, height: 42, borderRadius: 12, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
+  /* The design's card buttons: «Qəbul et» is the volt CTA, the rest are the
+     #EDEDED secondary with no border. 44 pt tall — the 42 of the drawing is
+     under the minimum tap height. */
+  decline: { flex: 1, height: 44, borderRadius: 12, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
+  secondary: { flex: 1, height: 44, borderRadius: 12, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
+  accept: { flex: 1, height: 44, borderRadius: 12, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center' },
   hiddenHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 4, marginBottom: 2 },
   empty: { alignItems: 'center', paddingVertical: 40 },
-  emptyBtn: { marginTop: 18, height: 44, paddingHorizontal: 22, borderRadius: 13, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
+  // The shared volt CTA (<Button>), sized to its words under the empty state.
+  emptyBtn: { marginTop: 18, paddingHorizontal: 22 },
 });

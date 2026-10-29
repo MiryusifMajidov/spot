@@ -7,12 +7,11 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { KeyboardLift } from '@/components/ui/KeyboardLift';
 import { NavBar } from '@/components/ui/NavBar';
-import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { GymGate, getMyGymClaim, submitGymClaim, useMyGym, type GymClaimRow } from '@/lib/gymOwner';
 import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
-import { palette, spacing, inputTint } from '@/theme';
+import { palette, radius, spacing, inputTint } from '@/theme';
 
 /** What approval REALLY changes.
  *
@@ -119,19 +118,20 @@ export default function GymClaim() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 16 }}>
+        {/* Design 14.4: the gym card is #EDEDED with ink text — no ink block. */}
         <View style={styles.gymCard}>
           <View style={{ flexDirection: 'row', gap: 13, alignItems: 'center', marginBottom: 14 }}>
             <View style={styles.gymIcon}>
-              <Icon name="dumbbell" size={24} color="rgba(255,255,255,0.4)" />
+              <Icon name="dumbbell" size={24} color={palette.rowIcon} />
             </View>
             <View style={{ flex: 1 }}>
-              <AppText style={{ fontSize: 18, fontWeight: '700', color: palette.white }}>{gym.name}</AppText>
-              <AppText style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.55)', marginTop: 5 }}>
+              <AppText style={{ fontSize: 18, fontWeight: '700', color: palette.inkText }}>{gym.name}</AppText>
+              <AppText style={{ fontSize: 12.5, color: palette.textSecondary, marginTop: 5 }}>
                 {gym.district || t('Ünvan yazılmayıb')}
               </AppText>
             </View>
           </View>
-          <AppText style={{ fontSize: 13.5, lineHeight: 20, color: 'rgba(255,255,255,0.7)' }}>
+          <AppText style={{ fontSize: 13.5, lineHeight: 20, color: palette.textSecondary }}>
             {t('Bu zalı SPOT-da sən qeydiyyata almısan. Sahibliyi rəsmi təsdiqləmək üçün admin komandası VÖEN-i yoxlayır.')}
           </AppText>
         </View>
@@ -182,7 +182,7 @@ export default function GymClaim() {
 
             <View style={styles.card}>
               <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-                {t('VÖEN VƏ YA QEYDİYYAT NÖMRƏSİ')}
+                {t('VÖEN və ya qeydiyyat nömrəsi')}
               </AppText>
               <TextInput {...inputTint}
                 value={voen}
@@ -203,12 +203,12 @@ export default function GymClaim() {
 
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 13 }}>
-            {t('TƏSDİQ NƏ DEYİR')}
+            {t('Təsdiq nə deyir')}
           </AppText>
           <View style={{ gap: 10 }}>
             {APPROVAL_MEANS.map((u) => (
               <View key={u} style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                <Icon name="check" size={15} color="#5B7F00" />
+                <Icon name="check" size={15} color={palette.voltDeep} />
                 <AppText style={{ fontSize: 13.5, flex: 1 }}>{t(u)}</AppText>
               </View>
             ))}
@@ -234,21 +234,18 @@ export default function GymClaim() {
         // Android edge-to-edge does not resize the window, so this fixed footer would
         // sit under the IME the whole time the VÖEN is being typed.
         <KeyboardLift style={{ paddingHorizontal: spacing.screen, paddingBottom: 8, paddingTop: 8 }}>
-          <PressableScale
-            activeScale={0.98}
+          {/* The volt CTA; while sending it is the design's disabled CTA (#FEFEFE,
+              grey text) rather than a faded ink button. */}
+          <Button
+            title={sending ? t('Göndərilir…') : t('Sahibliyi təsdiqlə')}
+            full
             disabled={sending}
             onPress={submit}
-            style={[styles.confirmBtn, sending && { opacity: 0.5 }]}>
-            <AppText style={{ color: palette.white, fontSize: 16, fontWeight: '600' }}>
-              {sending ? t('Göndərilir…') : t('Sahibliyi təsdiqlə')}
-            </AppText>
-          </PressableScale>
+          />
         </KeyboardLift>
       ) : (
         <View style={{ paddingHorizontal: spacing.screen, paddingBottom: 8, paddingTop: 8 }}>
-          <PressableScale activeScale={0.98} onPress={() => router.back()} style={styles.secondaryBtn}>
-            <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>{t('Panelə qayıt')}</AppText>
-          </PressableScale>
+          <Button title={t('Panelə qayıt')} variant="secondary" full onPress={() => router.back()} />
         </View>
       )}
     </Screen>
@@ -280,12 +277,10 @@ function StatusCard({
 }
 
 const styles = StyleSheet.create({
-  gymCard: { backgroundColor: palette.ink, borderRadius: 20, padding: 18, marginBottom: 14 },
-  gymIcon: { width: 52, height: 52, borderRadius: 14, backgroundColor: '#3A3A42', alignItems: 'center', justifyContent: 'center' },
-  card: { backgroundColor: palette.white, borderRadius: 18, padding: 17, marginBottom: 14 },
+  gymCard: { backgroundColor: palette.element, borderRadius: radius.card, padding: 18, marginBottom: 14 },
+  gymIcon: { width: 52, height: 52, borderRadius: 14, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  card: { backgroundColor: palette.white, borderRadius: radius.card, padding: 17, marginBottom: 14 },
   status: { flexDirection: 'row', gap: 11, alignItems: 'flex-start', borderRadius: 16, padding: 15, marginBottom: 14 },
   input: { backgroundColor: palette.grouped, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, color: palette.inkText },
-  disclaimer: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: 'rgba(255,107,53,0.1)', borderRadius: 14, padding: 14 },
-  confirmBtn: { height: 50, borderRadius: 14, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
-  secondaryBtn: { height: 50, borderRadius: 14, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
+  disclaimer: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: palette.streakTint, borderRadius: 14, padding: 14 },
 });

@@ -176,7 +176,7 @@ export default function GymDetail() {
      so the inset is exactly what the content has to clear. Android: the Material
      bar reserves its own strip (the scene is padded above it) and the inset there
      is not the bar — adding it would leave a gap the size of a navigation bar. */
-  const scrollBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + spacing.xl;
+  const scrollBottom = spacing.xl;
 
   // Local-first: seed immediately, then let the real row win (gyms created in-app
   // have ids that are not in the seed catalogue at all).
@@ -497,10 +497,10 @@ export default function GymDetail() {
                 setResolved(false);
                 loadGym();
               }}
-              style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }}
+              style={{ marginTop: 18, paddingHorizontal: 26 }}
             />
           ) : null}
-          <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 18, height: 44, paddingHorizontal: 26 }} />
+          <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 18, paddingHorizontal: 26 }} />
         </View>
       </Screen>
     );
@@ -523,11 +523,10 @@ export default function GymDetail() {
      button is replaced by the reason it is gone. */
   const iAlreadyReviewed = !!myProfileId && reviews.some((r) => r.authorId === myProfileId);
 
-  /* 44 pt circles with 22–24 pt glyphs — the iOS 26 size for a floating glass
-     button, and the minimum touch target on both platforms. They were 34 pt with
-     17–20 pt glyphs and no hit slop: the icons read as too small and a thumb on the
-     edge of one missed it. The circle itself is the target (not hitSlop, which
-     Android clips to the parent row). */
+  /* Design: a 40 pt #FEFEFE disc with a 20 pt glyph, drawn inside a 44 pt
+     transparent box so the touch target stays at the minimum on both platforms.
+     The box itself is the target (not hitSlop, which Android clips to the parent
+     row). They were 34 pt with no hit slop once: a thumb on the edge missed. */
   const heroActions = (
     <View style={[styles.heroTop, { paddingTop: insets.top + 6 }]}>
       <PressableScale
@@ -535,8 +534,10 @@ export default function GymDetail() {
         onPress={() => router.back()}
         accessibilityRole="button"
         accessibilityLabel={t('Geri')}
-        style={styles.circleBtn}>
-        <Icon name="chevL" size={iconSize.inCircle} color={palette.inkText} />
+        style={styles.circleHit}>
+        <View style={styles.circleBtn}>
+          <Icon name="chevL" size={iconSize.inCircle} color={palette.inkText} />
+        </View>
       </PressableScale>
       <View style={styles.heroRight}>
         <PressableScale
@@ -551,8 +552,10 @@ export default function GymDetail() {
           }
           accessibilityRole="button"
           accessibilityLabel={t('Zalı paylaş')}
-          style={styles.circleBtn}>
-          <Icon name="share" size={iconSize.inCircle} color={palette.inkText} />
+          style={styles.circleHit}>
+          <View style={styles.circleBtn}>
+            <Icon name="share" size={iconSize.inCircle} color={palette.inkText} />
+          </View>
         </PressableScale>
         {/* Saved = the filled glyph, as on the feed. A colour change alone on an
             outline was easy to miss on the translucent circle. */}
@@ -562,16 +565,20 @@ export default function GymDetail() {
           accessibilityRole="button"
           accessibilityLabel={t('Yadda saxla')}
           accessibilityState={{ selected: saved }}
-          style={styles.circleBtn}>
-          <Icon name={saved ? 'bookmarkOn' : 'bookmark'} size={iconSize.inCircle} color={saved ? palette.voltDeep : palette.inkText} />
+          style={styles.circleHit}>
+          <View style={styles.circleBtn}>
+            <Icon name={saved ? 'bookmarkOn' : 'bookmark'} size={iconSize.inCircle} color={saved ? palette.voltDeep : palette.inkText} />
+          </View>
         </PressableScale>
         <PressableScale
           activeScale={0.9}
           onPress={() => showModerationSheet(gym.name, { type: 'gym', id: gym.id })}
           accessibilityRole="button"
           accessibilityLabel={t('Digər seçimlər')}
-          style={styles.circleBtn}>
-          <Icon name="more" size={iconSize.inCircle} color={palette.inkText} />
+          style={styles.circleHit}>
+          <View style={styles.circleBtn}>
+            <Icon name="more" size={iconSize.inCircle} color={palette.inkText} />
+          </View>
         </PressableScale>
       </View>
     </View>
@@ -619,7 +626,7 @@ export default function GymDetail() {
                 <View style={styles.nameRow}>
                   <AppText variant="title">{gym.name}</AppText>
                   {/* 20 beside the 27 pt title, as on the trainer page. */}
-                  {gym.verified && <Icon name="verified" size={20} color={palette.voltDeep} />}
+                  {gym.verified && <Icon name="verified" size={20} color={palette.verified} />}
                 </View>
                 <View style={styles.ratingRow}>
                   {avgRating !== null ? (
@@ -727,8 +734,8 @@ export default function GymDetail() {
               <View style={styles.passCard}>
                 <View style={styles.passHead}>
                   <Icon name="qr" size={15} color={palette.voltDeep} />
-                  <AppText variant="overline" color={palette.voltDeep}>
-                    {t('DAY-PASS KODU')}
+                  <AppText variant="overline" color={palette.voltText}>
+                    {t('Day-pass kodu')}
                   </AppText>
                 </View>
                 <AppText style={styles.passCode}>{dayPass.code}</AppText>
@@ -753,7 +760,7 @@ export default function GymDetail() {
                   variant="secondary"
                   disabled={passChecking}
                   onPress={() => void loadDayPass()}
-                  style={{ marginTop: 10, height: 44 }}
+                  style={{ marginTop: 10, backgroundColor: palette.white }}
                 />
               </View>
             ) : null}
@@ -775,7 +782,7 @@ export default function GymDetail() {
                         a «+2» that includes blocked people is a face by another name. */}
                     {visibleHere.length > 3 ? (
                       <View style={[styles.avatarDot, styles.avatarMore]}>
-                        <AppText style={{ fontSize: 10, fontWeight: '700', color: palette.volt }}>+{visibleHere.length - 3}</AppText>
+                        <AppText style={{ fontSize: 10, fontWeight: '700', color: palette.inkText }}>+{visibleHere.length - 3}</AppText>
                       </View>
                     ) : null}
                   </View>
@@ -1203,7 +1210,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    backgroundColor: palette.white,
     borderRadius: 11,
     paddingHorizontal: 12,
     paddingVertical: 9,
@@ -1211,12 +1218,13 @@ const styles = StyleSheet.create({
   mapCtaText: { fontSize: 13.5, fontWeight: '600', color: palette.inkText },
   heroTop: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.base },
   heroRight: { flexDirection: 'row', gap: spacing.sm },
-  circleBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.82)', alignItems: 'center', justifyContent: 'center' },
+  circleHit: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  circleBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
   sheet: { backgroundColor: palette.grouped, borderTopLeftRadius: 20, borderTopRightRadius: 20, marginTop: -SHEET_OVERLAP, paddingHorizontal: spacing.screen, paddingTop: 18 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 7, flexWrap: 'wrap' },
-  gateCard: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: palette.white, borderRadius: 14, padding: 15, marginBottom: 14 },
+  gateCard: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: palette.white, borderRadius: 16, padding: 15, marginBottom: 14 },
   composeCard: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginBottom: 14, gap: 12 },
   // Each star is its own 44 pt target, touching its neighbours. They were bare
   // 30 pt glyphs with dead 8 pt gaps between them, under the touch minimum.
@@ -1225,23 +1233,24 @@ const styles = StyleSheet.create({
   reviewInput: { minHeight: 80, borderRadius: 12, backgroundColor: palette.grouped, padding: 12, fontSize: 15, color: palette.inkText, textAlignVertical: 'top' },
   rating: { fontSize: 13.5, fontWeight: '600' },
   ctaRow: { flexDirection: 'row', gap: 9, marginTop: 15 },
-  liveBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(198,255,61,0.22)', borderRadius: 14, padding: 12, marginTop: 12 },
-  passCard: { backgroundColor: palette.white, borderRadius: 14, padding: 14, marginTop: 12, borderWidth: 1, borderColor: 'rgba(198,255,61,0.9)' },
+  liveBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.voltTint, borderRadius: 16, padding: 12, marginTop: 12 },
+  // The design's highlighted card (#EDEDED, radius 20, padding 18) — not an outline.
+  passCard: { backgroundColor: palette.element, borderRadius: 20, padding: 18, marginTop: 12 },
   passHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   passCode: { fontSize: 30, fontWeight: '800', letterSpacing: 3, marginTop: 8, color: palette.inkText },
   avatars: { flexDirection: 'row', alignItems: 'center' },
   avatarDot: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: palette.white },
-  avatarMore: { marginLeft: -10, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
+  avatarMore: { marginLeft: -10, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
   liveText: { flex: 1, fontSize: 13, fontWeight: '600', color: palette.voltText, lineHeight: 18 },
   infoRow: { flexDirection: 'row', gap: 9, marginTop: 14 },
-  infoCard: { flex: 1, backgroundColor: palette.white, borderRadius: 14, padding: 13 },
+  infoCard: { flex: 1, backgroundColor: palette.white, borderRadius: 16, padding: 13 },
   amenities: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  hintRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: palette.white, borderRadius: 12, padding: 12, marginBottom: 6 },
-  review: { backgroundColor: palette.white, borderRadius: 14, padding: 14, marginBottom: 10 },
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: palette.white, borderRadius: 16, padding: 12, marginBottom: 6 },
+  review: { backgroundColor: palette.white, borderRadius: 16, padding: 15, marginBottom: 10 },
   reviewHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   // Same card the owner panel draws its own reply in (src/app/gym/reviews.tsx).
   reply: { backgroundColor: palette.inkTint, borderRadius: 12, padding: 12, marginTop: 12 },
-  classRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 13 },
+  classRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 13 },
   classTime: { fontSize: 16, fontWeight: '700', width: 52 },
   classDiv: { width: 1, alignSelf: 'stretch', backgroundColor: palette.separator },
   tenure: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },

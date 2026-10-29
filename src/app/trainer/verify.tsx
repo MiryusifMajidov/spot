@@ -15,7 +15,7 @@ import { addTrainerCert, imageTooLargeMessage, pickImage, shootImage, signedCert
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { actionSheet, confirm, toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { palette, radius, spacing } from '@/theme';
 
 interface VerificationRow {
   id: string;
@@ -30,7 +30,7 @@ interface VerificationRow {
 }
 
 const BENEFITS = [
-  'Adının yanında yaşıl nişan görünür',
+  'Adının yanında mavi nişan görünür',
   'Proqramların «Doğrulanmış müəllim» kimi təqdim olunur',
   'Yeni istifadəçilər üçün daha etibarlı görünürsən',
 ];
@@ -301,7 +301,7 @@ export default function Verify() {
     approvedNoBadge
       ? { bg: palette.streakTint, fg: palette.streakText, icon: 'shield' as IconName, label: t('Nişan aktiv deyil') }
       : status === 'approved'
-      ? { bg: 'rgba(198,255,61,0.3)', fg: palette.voltDeep, icon: 'check' as IconName, label: t('Təsdiqləndi') }
+      ? { bg: palette.voltTint, fg: palette.voltDeep, icon: 'check' as IconName, label: t('Təsdiqləndi') }
       : status === 'rejected'
         ? { bg: 'rgba(255,59,48,0.1)', fg: palette.red, icon: 'x' as IconName, label: t('Rədd edildi') }
         : status === 'pending'
@@ -333,9 +333,9 @@ export default function Verify() {
                     : failed
                       ? t('Doğrulama statusunu gətirmək alınmadı.')
                       : approvedNoBadge
-                        ? t('Sorğun təsdiqlənib, amma elanında yaşıl nişan yoxdur. Yenidən müraciət et — sorğun yenidən yoxlamaya düşəcək.')
+                        ? t('Sorğun təsdiqlənib, amma elanında mavi nişan yoxdur. Yenidən müraciət et — sorğun yenidən yoxlamaya düşəcək.')
                         : status === 'approved'
-                        ? t('Profilin yaşıl nişanla görünür.')
+                        ? t('Profilin mavi nişanla görünür.')
                         : status === 'rejected'
                           ? (row?.reject_reason ?? t('Səbəb göstərilməyib.'))
                           : status === 'pending'
@@ -354,7 +354,7 @@ export default function Verify() {
                 accessibilityLabel={t('Yenidən cəhd et')}
                 onPress={() => void load()}
                 style={styles.primaryBtn}>
-                <AppText style={{ color: palette.white, fontSize: 13.5, fontWeight: '600' }}>{t('Yenidən cəhd et')}</AppText>
+                <AppText variant="headline" color={palette.ctaText}>{t('Yenidən cəhd et')}</AppText>
               </PressableScale>
             ) : hasSupabaseConfig && canApply ? (
               <PressableScale
@@ -366,8 +366,8 @@ export default function Verify() {
                 accessibilityRole="button"
                 accessibilityLabel={t('Doğrulama sorğusu göndər')}
                 onPress={() => void submit()}
-                style={[styles.primaryBtn, (sending || certBusy) && { opacity: 0.5 }]}>
-                <AppText style={{ color: palette.white, fontSize: 13.5, fontWeight: '600' }}>
+                style={[styles.primaryBtn, (sending || certBusy) && styles.primaryBtnOff]}>
+                <AppText variant="headline" color={sending || certBusy ? palette.tertiary : palette.ctaText}>
                   {sending ? t('Göndərilir…') : status === null ? t('Doğrulamaya başla') : t('Yenidən müraciət et')}
                 </AppText>
               </PressableScale>
@@ -378,7 +378,7 @@ export default function Verify() {
         {/* --- what the badge actually gives --- */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-            {t('MAVİ NİŞAN NƏ VERİR')}
+            {t('Mavi nişan nə verir')}
           </AppText>
           <View style={{ gap: 9 }}>
             {BENEFITS.map((b) => (
@@ -395,13 +395,13 @@ export default function Verify() {
 
         {/* --- real document state: certificates upload for real, the rest says the truth --- */}
         <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 10 }}>
-          {t('SƏNƏDLƏR')}
+          {t('Sənədlər')}
         </AppText>
         <View style={{ gap: 11 }}>
           {/* Certificates — real uploads into trainers.cert_urls */}
           <View style={styles.certCard}>
             <View style={styles.docHead}>
-              <View style={[styles.docIcon, { backgroundColor: certs.length ? 'rgba(198,255,61,0.3)' : palette.element }]}>
+              <View style={[styles.docIcon, { backgroundColor: certs.length ? palette.voltTint : palette.element }]}>
                 <Icon name={certs.length ? 'check' : 'shield'} size={19} color={certs.length ? palette.voltDeep : palette.tertiary} />
               </View>
               <View style={{ flex: 1 }}>
@@ -451,8 +451,8 @@ export default function Verify() {
                     accessibilityRole="button"
                     accessibilityLabel={t('Ən son şəkli sorğuna əlavə et')}
                     onPress={() => void attachNewest()}
-                    style={[styles.warnBtn, attaching && { opacity: 0.5 }]}>
-                    <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.inkText }}>
+                    style={[styles.warnBtn, attaching && styles.primaryBtnOff]}>
+                    <AppText variant="headline" color={attaching ? palette.tertiary : palette.ctaText} center>
                       {attaching ? t('Əlavə olunur…') : t('Ən son şəkli sorğuna əlavə et')}
                     </AppText>
                   </PressableScale>
@@ -481,8 +481,8 @@ export default function Verify() {
               accessibilityLabel={t('Sertifikat şəkli əlavə et')}
               onPress={pickCert}
               style={[styles.addBtn, (certBusy || loading) && { opacity: 0.5 }]}>
-              <Icon name={certBusy ? 'clock' : 'plus'} size={15} color={palette.inkText} />
-              <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>
+              <Icon name={certBusy ? 'clock' : 'plus'} size={20} color={palette.inkText} />
+              <AppText variant="headline" color={palette.inkText}>
                 {certBusy ? t('Yüklənir…') : certs.length ? t('Daha bir şəkil') : t('Sertifikat şəkli əlavə et')}
               </AppText>
             </PressableScale>
@@ -506,8 +506,8 @@ export default function Verify() {
         </View>
 
         <View style={styles.disclaimer}>
-          <Icon name="shield" size={16} color={palette.textSecondary} />
-          <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, flex: 1 }}>
+          <Icon name="shield" size={16} color={palette.streak} />
+          <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.streakText, flex: 1 }}>
             {t('Yüklədiyin sertifikatlar qapalı saxlancda saxlanılır. Yoxlayan sorğuna bağlanmış ən son sertifikatı görür — açıq sorğun varsa, yeni yüklədiyin şəkil ona özü əlavə olunur. Doğrulanma olmadan da profil yarada və pulsuz proqram paylaşa bilərsən; sadəcə nişansız görünürsən.')}
           </AppText>
         </View>
@@ -588,7 +588,7 @@ function DocRow({ title, done, pendingText }: { title: string; done: boolean; pe
   const t = useT();
   return (
     <View style={styles.docCardRow}>
-      <View style={[styles.docIcon, { backgroundColor: done ? 'rgba(198,255,61,0.3)' : palette.element }]}>
+      <View style={[styles.docIcon, { backgroundColor: done ? palette.voltTint : palette.element }]}>
         <Icon name={done ? 'check' : 'clock'} size={19} color={done ? palette.voltDeep : palette.tertiary} />
       </View>
       <View style={{ flex: 1 }}>
@@ -602,20 +602,26 @@ function DocRow({ title, done, pendingText }: { title: string; done: boolean; pe
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: palette.white, borderRadius: 18, padding: 17, marginBottom: 14 },
+  card: { backgroundColor: palette.white, borderRadius: radius.card, padding: 16, marginBottom: 14 },
   benefitHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   badgeIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  primaryBtn: { height: 44, borderRadius: 12, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center', marginTop: 14 },
-  docCardRow: { backgroundColor: palette.white, borderRadius: 16, padding: 15, flexDirection: 'row', gap: 13, alignItems: 'center' },
-  certCard: { backgroundColor: palette.white, borderRadius: 16, padding: 15 },
+  /* The volt CTA; a disabled one turns #FEFEFE with grey text instead of fading. */
+  primaryBtn: { height: 50, borderRadius: radius.button, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center', marginTop: 14, paddingHorizontal: 18 },
+  primaryBtnOff: { backgroundColor: palette.ctaDisabled },
+  docCardRow: { backgroundColor: palette.white, borderRadius: radius.card, padding: 15, flexDirection: 'row', gap: 13, alignItems: 'center' },
+  certCard: { backgroundColor: palette.white, borderRadius: radius.card, padding: 15 },
   docHead: { flexDirection: 'row', gap: 13, alignItems: 'center' },
   thumbs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 13 },
   thumb: { width: 72, height: 72, borderRadius: 12, backgroundColor: palette.element },
   thumbFallback: { alignItems: 'center', justifyContent: 'center' },
-  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, backgroundColor: palette.element, marginTop: 13 },
+  // The secondary button: #EDEDED, no border.
+  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: radius.button, backgroundColor: palette.element, marginTop: 13, paddingHorizontal: 18 },
   docIcon: { width: 40, height: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  disclaimer: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: palette.element, borderRadius: 14, padding: 14, marginTop: 16 },
+  // The design draws this note orange-tinted (13.4 «Doğrulanma addımları»).
+  disclaimer: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: palette.streakTint, borderRadius: 14, padding: 14, marginTop: 16 },
   warnRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: palette.streakTint, borderRadius: 12, padding: 11, marginTop: 12 },
-  warnBtn: { alignSelf: 'flex-start', height: 32, paddingHorizontal: 12, borderRadius: 10, backgroundColor: palette.white, justifyContent: 'center', marginTop: 9 },
+  /* The fix for this warning is its primary action: the volt CTA (the design's
+     in-card «Zala xatırlatma göndər»). It was a 32 pt white chip — under 44 pt. */
+  warnBtn: { minHeight: 50, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.button, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
   noteRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: palette.element, borderRadius: 12, padding: 11, marginTop: 12 },
 });

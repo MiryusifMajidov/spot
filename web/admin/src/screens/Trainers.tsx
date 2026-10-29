@@ -293,15 +293,16 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
     <>
       {/* segmented tabs (design top-bar) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-        <div style={{ display: 'flex', gap: 2, background: 'var(--fill)', borderRadius: 9, padding: 2 }}>
+        {/* Track is #EDEDED, not the design's #F7F7F7: the design draws this
+            control on the #FEFEFE top bar, here it sits on the #F7F7F7 page. */}
+        <div style={{ display: 'flex', gap: 2, background: 'var(--fill2)', borderRadius: 9, padding: 2 }}>
           {tabs.map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
               style={{
                 border: 'none', padding: '7px 13px', borderRadius: 7, cursor: 'pointer',
                 font: `${tab === t.id ? 600 : 500} 12.5px/1 var(--font)`,
-                background: tab === t.id ? '#fff' : 'transparent',
-                color: tab === t.id ? 'var(--ink2)' : 'var(--muted2)',
-                boxShadow: tab === t.id ? '0 1px 2px rgba(0,0,0,.08)' : 'none',
+                background: tab === t.id ? 'var(--card)' : 'transparent',
+                color: tab === t.id ? 'var(--ink)' : 'var(--muted2)',
               }}>
               {t.label} {t.count > 0 ? t.count : ''}
             </button>
@@ -340,7 +341,7 @@ export function Trainers({ search, refreshCounts }: ScreenProps) {
                   style={{
                     display: 'block', width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
                     padding: '12px 16px', borderBottom: '1px solid var(--line2)',
-                    background: isSel ? 'rgba(198,255,61,.1)' : '#fff',
+                    background: isSel ? 'rgba(197,254,1,.1)' : 'var(--card)',
                     borderLeft: isSel ? '3px solid var(--volt)' : '3px solid transparent',
                   }}>
                   <div style={{ display: 'flex', gap: 11, alignItems: 'center' }}>
@@ -559,7 +560,7 @@ function VerificationDetail({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <div style={{ font: '700 20px/1.2 var(--font)', letterSpacing: '-.4px' }}>{name}</div>
-            <span className="badge orange">YOXLANILIR</span>
+            <span className="badge orange">Yoxlanılır</span>
           </div>
           <div style={{ font: '400 12.5px/1.3 var(--font)', color: 'var(--muted)', marginTop: 6 }}>{meta}</div>
         </div>
@@ -568,7 +569,7 @@ function VerificationDetail({
             style={!canDecide ? { opacity: .45, cursor: 'not-allowed' } : undefined}>Rədd et</button>
           <button className="btn primary" disabled={!canDecide || busy} onClick={onApprove}
             style={{ display: 'flex', alignItems: 'center', gap: 7, ...(!canDecide ? { opacity: .45, cursor: 'not-allowed' } : {}) }}>
-            <Icon name="check" size={15} color="var(--volt)" /> Təsdiqlə
+            <Icon name="check" size={15} color="var(--ink)" /> Təsdiqlə
           </button>
         </div>
       </div>
@@ -587,9 +588,9 @@ function VerificationDetail({
         {docs.map((d) => (
           <div key={d.title} className="card"
             style={{ overflow: 'hidden', border: d.flag ? '1.5px solid var(--orange)' : '1px solid var(--line2)' }}>
-            <div style={{ height: 150, background: 'linear-gradient(135deg,#DCDCE1,#EFEFF2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, position: 'relative' }}>
+            <div style={{ height: 150, background: 'linear-gradient(135deg,#DCDCE1,#F7F7F7)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, position: 'relative' }}>
               {d.url ? <Icon name="doc" size={26} color="#B4B4BB" /> : <Icon name={d.ok ? 'check' : 'clock'} size={24} color={d.ok ? 'var(--green)' : '#C0C0C6'} />}
-              <div style={{ position: 'absolute', top: 9, left: 9, padding: '4px 8px', borderRadius: 6, background: 'rgba(11,11,14,.7)', color: '#fff', font: '600 10px/1 var(--font)' }}>{d.title.split(' ')[0]}</div>
+              <div style={{ position: 'absolute', top: 9, left: 9, padding: '4px 8px', borderRadius: 6, background: 'rgba(11,11,14,.7)', color: 'var(--on-ink)', font: '600 10px/1 var(--font)' }}>{d.title.split(' ')[0]}</div>
               {d.ok ? (
                 <div style={{ position: 'absolute', top: 9, right: 9, width: 22, height: 22, borderRadius: '50%', background: 'var(--volt)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Icon name="check" size={13} color="var(--ink2)" />

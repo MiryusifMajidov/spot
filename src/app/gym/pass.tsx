@@ -119,6 +119,9 @@ export default function GymPass() {
 
   const info = result ? stateText(result, t, fmt) : null;
   const toneColor = info?.tone === 'ok' ? palette.voltDeep : palette.red;
+  /* The verdict card is an outlined card: a good pass the design's success look
+     (volt border on the volt tint), anything else a red outline on white. */
+  const toneCard = info?.tone === 'ok' ? styles.cardOk : styles.cardBad;
 
   return (
     <Screen edges={['top', 'bottom']}>
@@ -164,7 +167,7 @@ export default function GymPass() {
         ) : null}
 
         {info ? (
-          <View style={[styles.card, { borderColor: toneColor }]}>
+          <View style={[styles.card, toneCard]}>
             <View style={styles.cardHead}>
               <Icon name={info.tone === 'ok' ? 'check' : 'x'} size={22} color={toneColor} />
               <AppText variant="headline" style={{ flexShrink: 1 }}>
@@ -202,10 +205,9 @@ const styles = StyleSheet.create({
   body: { padding: spacing.screen, paddingBottom: 40 },
   input: {
     marginTop: 18,
+    // A #FEFEFE field on the #F7F7F7 screen — no outline, as the design draws fields.
     backgroundColor: palette.white,
     borderRadius: radius.field,
-    borderWidth: 1,
-    borderColor: palette.separator,
     paddingVertical: 16,
     textAlign: 'center',
     fontSize: 28,
@@ -218,8 +220,8 @@ const styles = StyleSheet.create({
     backgroundColor: palette.white,
     borderRadius: radius.card,
     padding: 16,
-    borderWidth: 1,
-    borderColor: palette.separator,
   },
+  cardOk: { borderWidth: 1.5, borderColor: palette.volt, backgroundColor: palette.voltTint },
+  cardBad: { borderWidth: 1.5, borderColor: palette.red },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 });

@@ -337,7 +337,7 @@ export default function EditProfile() {
             style={[styles.avatarWrap, uploading && { opacity: 0.6 }]}>
             <Avatar name={profile.name || t('Sən')} size={88} uri={avatar} />
             <View style={styles.camBadge}>
-              <Icon name="cam" size={16} color={palette.white} />
+              <Icon name="cam" size={15} color={palette.inkText} />
             </View>
           </PressableScale>
           <View style={{ flex: 1 }}>
@@ -404,25 +404,27 @@ export default function EditProfile() {
         <Label text={t('Əsas zal')} />
         <PressableScale activeScale={0.98} onPress={pickGym} style={styles.pickRow}>
           <View style={styles.pickIcon}>
-            <Icon name="dumbbell" size={20} color={palette.textSecondary} />
+            <Icon name="dumbbell" size={20} color={palette.rowIcon} />
           </View>
           <AppText variant="callout" style={{ flex: 1 }}>
             {gymName}
           </AppText>
-          <Icon name="chevR" size={18} color={palette.tertiary} />
+          <Icon name="chevR" size={17} color={palette.chevron} />
         </PressableScale>
 
+        {/* Default tone: these chips sit on the #F7F7F7 screen, not inside a card,
+            so they rest #FEFEFE ('card' is #F7F7F7 now and would vanish). */}
         <Label text={t('Məqsəd')} />
         <View style={styles.chips}>
           {GOALS.map((g) => (
-            <Chip key={g} label={t(g)} tone="card" selected={profile.goals.includes(g)} onPress={() => setProfile({ goals: toggle(profile.goals, g) })} />
+            <Chip key={g} label={t(g)} selected={profile.goals.includes(g)} onPress={() => setProfile({ goals: toggle(profile.goals, g) })} />
           ))}
         </View>
 
         <Label text={t('Məşq növü')} />
         <View style={styles.chips}>
           {WORKOUT_TYPES.map((w) => (
-            <Chip key={w} label={t(w)} tone="card" selected={profile.types.includes(w)} onPress={() => setProfile({ types: toggle(profile.types, w) })} />
+            <Chip key={w} label={t(w)} selected={profile.types.includes(w)} onPress={() => setProfile({ types: toggle(profile.types, w) })} />
           ))}
         </View>
 
@@ -432,7 +434,6 @@ export default function EditProfile() {
             <Chip
               key={d}
               label={t(d)}
-              tone="card"
               selected={profile.days.includes(i)}
               onPress={() => setProfile({ days: profile.days.includes(i) ? profile.days.filter((x) => x !== i) : [...profile.days, i].sort((a, b) => a - b) })}
             />
@@ -442,7 +443,7 @@ export default function EditProfile() {
         <Label text={t('Vaxt')} />
         <View style={styles.chips}>
           {TIME_SLOTS.map((slot) => (
-            <Chip key={slot} label={t(slot)} tone="card" selected={profile.timeSlot === slot} onPress={() => setProfile({ timeSlot: slot })} />
+            <Chip key={slot} label={t(slot)} selected={profile.timeSlot === slot} onPress={() => setProfile({ timeSlot: slot })} />
           ))}
         </View>
 
@@ -486,22 +487,25 @@ const styles = StyleSheet.create({
   handleInput: { flex: 1, height: 52, fontSize: 16, color: palette.inkText, padding: 0 },
   chips:{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pickRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 14 },
-  pickIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
+  // The design's row glyph: a bare 20 pt outline, no tile.
+  pickIcon: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
   avatarBlock: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 12 },
   avatarWrap: { width: 88, height: 88 },
   camBadge: {
     position: 'absolute',
     right: -2,
     bottom: -2,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: palette.ink,
-    borderWidth: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    // The design's camera disc: #EDEDED with an ink glyph, ringed in the screen colour.
+    backgroundColor: palette.element,
+    borderWidth: 3,
     borderColor: palette.grouped,
     alignItems: 'center',
     justifyContent: 'center',
   },
   // 44, not 38: the minimum tap height (the avatar beside it is a second way in).
-  photoBtn: { alignSelf: 'flex-start', height: 44, paddingHorizontal: 16, borderRadius: 12, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
+  // A secondary button: #EDEDED, no border.
+  photoBtn: { alignSelf: 'flex-start', height: 44, paddingHorizontal: 16, borderRadius: 12, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
 });

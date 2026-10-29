@@ -212,7 +212,7 @@ export default function Share() {
           hitSlop={hitSlop}
           accessibilityRole="button"
           style={styles.headerBtn}>
-          <AppText variant="body" color={palette.inkText} style={{ fontWeight: '500' }}>
+          <AppText variant="body" color={palette.textSecondary}>
             {t('Bağla')}
           </AppText>
         </PressableScale>
@@ -231,26 +231,29 @@ export default function Share() {
           {/* While uploading, the label stays in the layout (just invisible) with
               the spinner over it, so the button keeps its width and the title does
               not jump sideways. */}
-          <AppText variant="headline" color={uri ? palette.inkText : palette.tertiary} style={uploading && styles.hidden}>
+          <AppText variant="headline" color={uri ? palette.voltText : palette.tertiary} style={uploading && styles.hidden}>
             {t('Paylaş')}
           </AppText>
-          {uploading && <ActivityIndicator color={palette.inkText} style={StyleSheet.absoluteFill} />}
+          {uploading && <ActivityIndicator color={palette.voltDeep} style={StyleSheet.absoluteFill} />}
         </PressableScale>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {/* Light, like every screen: a #FEFEFE card that turns into the design's
+            selected outline (volt border on the volt tint, volt check disc) once a
+            clip is chosen. */}
         <PressableScale activeScale={0.98} onPress={pick} disabled={preparing} style={[styles.videoPick, uri && styles.videoPicked]}>
-          <View style={[styles.videoIcon, uri && { backgroundColor: 'rgba(198,255,61,0.30)' }]}>
+          <View style={[styles.videoIcon, uri && { backgroundColor: palette.volt }]}>
             {preparing ? (
-              <ActivityIndicator color={palette.volt} />
+              <ActivityIndicator color={palette.inkText} />
             ) : (
-              <Icon name={uri ? 'check' : 'cam'} size={26} color={uri ? palette.volt : palette.white} />
+              <Icon name={uri ? 'check' : 'cam'} size={26} color={palette.inkText} />
             )}
           </View>
-          <AppText variant="headline" color={palette.white} style={{ marginTop: 12 }}>
+          <AppText variant="headline" color={palette.inkText} style={{ marginTop: 12 }}>
             {preparing ? t('Video hazırlanır…') : uri ? t('Video seçildi') : t('Video çək və ya seç')}
           </AppText>
-          <AppText variant="footnote" color="rgba(255,255,255,0.5)" style={{ marginTop: 4 }}>
+          <AppText variant="footnote" color={palette.caption} style={{ marginTop: 4 }}>
             {preparing
               ? t('Daha tez yüklənsin deyə 720p-yə salınır')
               : uri
@@ -275,16 +278,15 @@ export default function Share() {
           {t('Proqrama bağla · istəyə bağlı')}
         </AppText>
         <PressableScale activeScale={0.98} onPress={pickProgram} style={styles.linkRow}>
-          <View style={[styles.linkIcon, linked && { backgroundColor: 'rgba(198,255,61,0.30)' }]}>
-            <Icon name="dumbbell" size={18} color={linked ? palette.voltDeep : palette.textSecondary} />
-          </View>
+          {/* A plain 20 pt row glyph, no tile — green once a program is linked. */}
+          <Icon name="dumbbell" size={20} color={linked ? palette.voltDeep : palette.rowIcon} />
           <View style={{ flex: 1 }}>
             <AppText variant="callout">{linked?.title ?? t('Proqram seç')}</AppText>
             <AppText variant="footnote" color={palette.caption} style={{ marginTop: 2 }}>
               {t('Feed strukturlu olur — videonun altında proqrama keçid görünür')}
             </AppText>
           </View>
-          <Icon name={linked ? 'check' : 'chevR'} size={18} color={linked ? palette.voltDeep : palette.tertiary} />
+          <Icon name={linked ? 'check' : 'chevR'} size={linked ? 18 : 17} color={linked ? palette.voltDeep : palette.chevron} />
         </PressableScale>
 
         <View style={styles.note}>
@@ -309,13 +311,12 @@ const styles = StyleSheet.create({
   headerBtnEnd: { alignItems: 'flex-end' },
   hidden: { opacity: 0 },
   content: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 24 },
-  videoPick: { height: 200, borderRadius: 18, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
-  videoPicked: { borderWidth: 2, borderColor: palette.volt },
-  videoIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  videoPick: { height: 200, borderRadius: radius.cardLg, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent' },
+  videoPicked: { borderColor: palette.volt, backgroundColor: palette.voltTint },
+  videoIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
   label: { marginTop: 22, marginBottom: 10 },
-  input: { backgroundColor: palette.white, borderRadius: radius.field, borderWidth: 1, borderColor: palette.separator, paddingHorizontal: 14, paddingTop: 12, height: 88, fontSize: 16, color: palette.inkText, textAlignVertical: 'top' },
-  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 14 },
-  linkIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
+  input: { backgroundColor: palette.white, borderRadius: radius.field, paddingHorizontal: 14, paddingTop: 12, height: 88, fontSize: 16, color: palette.inkText, textAlignVertical: 'top' },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: radius.card, padding: 14 },
   note: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 18, paddingHorizontal: 4 },
   noteIcon: { marginTop: 1 },
 });

@@ -70,6 +70,6 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', alignItems: 'center', marginRight: -9.5, marginBottom: -3.5 },
   iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   // On the glyph's top-right shoulder (a 31 glyph's ink starts ~6 pt in from the box corner).
-  badge: { position: 'absolute', top: 3, right: 2, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: palette.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  badgeText: { color: palette.white, fontSize: 10.5, fontWeight: '700' },
+  badge: { position: 'absolute', top: 6, right: 5, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: palette.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  badgeText: { color: palette.onDark, fontSize: 10.5, fontWeight: '700' },
 });

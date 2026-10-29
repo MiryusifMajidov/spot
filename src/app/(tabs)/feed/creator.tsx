@@ -126,7 +126,7 @@ export default function Creator() {
               <Avatar name={shown} size={84} />
               <View style={styles.nameRow}>
                 <AppText variant="title2">{shown}</AppText>
-                {params.verified === '1' ? <Icon name="verified" size={18} color={palette.voltDeep} /> : null}
+                {params.verified === '1' ? <Icon name="verified" size={18} color={palette.verified} /> : null}
               </View>
               {/* Own profile only, and only if a handle really exists. */}
               {myHandle ? (
@@ -136,8 +136,8 @@ export default function Creator() {
               ) : null}
               {isTrainer ? (
                 <View style={styles.trainerTag}>
-                  <Icon name="users" size={12} color={palette.inkText} />
-                  <AppText style={{ color: palette.inkText, fontSize: 12, fontWeight: '700' }}>{trainer ? t('MÜƏLLİM · {specialty}', { specialty: trainer.specialty }) : t('MÜƏLLİM')}</AppText>
+                  <Icon name="users" size={12} color={palette.textSecondary} />
+                  <AppText style={{ color: palette.textSecondary, fontSize: 12, fontWeight: '600' }}>{trainer ? t('Müəllim · {specialty}', { specialty: trainer.specialty }) : t('Müəllim')}</AppText>
                 </View>
               ) : null}
               {trainer?.bio ? (
@@ -171,7 +171,7 @@ export default function Creator() {
               </View>
             </View>
             <AppText variant="overline" color={palette.caption} style={{ paddingHorizontal: spacing.screen, marginTop: 22, marginBottom: 12 }}>
-              {t('VİDEOLAR')}
+              {t('Videolar')}
             </AppText>
           </View>
         }
@@ -214,7 +214,7 @@ function VideoTile({ v }: { v: FeedVideo }) {
       style={styles.tile}>
       <VideoPoster id={v.id} videoUrl={v.videoUrl} gradient={v.gradient} />
       <View style={styles.tilePlay}>
-        <Icon name="play" size={16} color="rgba(255,255,255,0.9)" />
+        <Icon name="play" size={16} color="rgba(250,250,250,0.9)" />
       </View>
       <AppText numberOfLines={2} style={styles.tileCaption}>
         {v.caption}
@@ -226,7 +226,7 @@ function VideoTile({ v }: { v: FeedVideo }) {
 const styles = StyleSheet.create({
   header: { alignItems: 'center', paddingTop: 6 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 14 },
-  trainerTag: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: palette.inkTint, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 10 },
+  trainerTag: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: palette.element, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 10 },
   stats: { flexDirection: 'row', gap: 30, marginTop: 18 },
   /* A 44 pt hit area around the 22 pt glyph — it was the bare glyph, so a thumb on
      its edge hit nothing. The negative margin gives back the 11 pt of padding on the
@@ -235,6 +235,6 @@ const styles = StyleSheet.create({
      slot is only as tall as its content.) Same box as the partner / trainer pages. */
   moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -11 },
   tile: { flex: 1, height: 190, borderRadius: 14, overflow: 'hidden', marginBottom: 10, justifyContent: 'flex-end', padding: 10 },
-  tilePlay: { position: 'absolute', top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' },
-  tileCaption: { color: palette.white, fontSize: 12, fontWeight: '600', lineHeight: 16 },
+  tilePlay: { position: 'absolute', top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(11,11,14,0.45)', alignItems: 'center', justifyContent: 'center' },
+  tileCaption: { color: palette.onDark, fontSize: 12, fontWeight: '600', lineHeight: 16 },
 });

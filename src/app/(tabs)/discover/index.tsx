@@ -8,6 +8,7 @@ import { Icon } from '@/components/Icon';
 import { PartnerRow } from '@/components/PartnerRow';
 import { TrainerRow } from '@/components/TrainerRow';
 import { AppText } from '@/components/ui/AppText';
+import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { HeaderIcon, LargeHeader } from '@/components/ui/LargeHeader';
 import { LiveDot } from '@/components/ui/LiveDot';
@@ -25,7 +26,7 @@ import { useIsGuest } from '@/lib/authGate';
 import { useAppStore } from '@/store/appStore';
 import { applyGymFilter, applyPartnerFilter, gymFilterCount, partnerFilterCount, useDiscoverPrefs, womenOnlyAllowed } from '@/store/discoverPrefs';
 import { palette, spacing, inputTint } from '@/theme';
-import { searchKey, azUpper } from '@/lib/az';
+import { searchKey } from '@/lib/az';
 import { getUnreadCount } from '@/lib/notifications';
 import { useT } from '@/lib/useT';
 
@@ -191,7 +192,7 @@ export default function Discover() {
               style={styles.signInHit}
               accessibilityRole="button">
               <View style={styles.signIn}>
-                <AppText variant="subhead" style={{ color: palette.inkText, fontWeight: '700' }}>
+                <AppText variant="subhead" style={{ color: palette.ctaText, fontWeight: '700' }}>
                   {t('Daxil ol')}
                 </AppText>
               </View>
@@ -275,7 +276,7 @@ export default function Discover() {
               style={styles.chipRow}>
               {/* The map is the second way to browse gyms — it must be visible in the
                   Zallar segment itself, not only behind the header pin. */}
-              <Chip label={t('Xəritə')} icon="pin" tone="card" onPress={() => router.push('/(tabs)/discover/map')} />
+              <Chip label={t('Xəritə')} icon="pin" onPress={() => router.push('/(tabs)/discover/map')} />
               <Chip
                 label={filterN > 0 ? t('Filtr · {n}', { n: filterN, count: filterN }) : t('Filtr')}
                 icon="sliders"
@@ -284,19 +285,16 @@ export default function Discover() {
               />
               <Chip
                 label={t('2 km-ə qədər')}
-                tone="card"
                 selected={gymFilter.maxDistanceKm === 2}
                 onPress={() => setGymFilter({ maxDistanceKm: gymFilter.maxDistanceKm === 2 ? null : 2 })}
               />
               <Chip
                 label={t('50 ₼-dək')}
-                tone="card"
                 selected={gymFilter.maxPrice === 50}
                 onPress={() => setGymFilter({ maxPrice: gymFilter.maxPrice === 50 ? null : 50 })}
               />
               <Chip
                 label={t('24 saat')}
-                tone="card"
                 selected={gymFilter.hours === '24h'}
                 onPress={() => setGymFilter({ hours: gymFilter.hours === '24h' ? null : '24h' })}
               />
@@ -304,7 +302,6 @@ export default function Discover() {
                 <Chip
                   key={a}
                   label={t(a)}
-                  tone="card"
                   selected={gymFilter.amenities.includes(a)}
                   onPress={() =>
                     setGymFilter({
@@ -355,10 +352,10 @@ export default function Discover() {
                               <View style={styles.liveRow}>
                                 <LiveDot />
                                 <AppText style={styles.liveLabel}>
-                                  {t('İNDİ ZALDA {n} NƏFƏR · {gym}', {
+                                  {t('İndi zalda {n} nəfər · {gym}', {
                                     n: homeGym.liveCount,
                                     count: homeGym.liveCount,
-                                    gym: azUpper(homeGym.name),
+                                    gym: homeGym.name,
                                   })}
                                 </AppText>
                               </View>
@@ -387,7 +384,7 @@ export default function Discover() {
                                 {t('Zalını seç — yoldaşlar zala görə tapılır.')}
                               </AppText>
                             </View>
-                            <Icon name="chevR" size={18} color={palette.tertiary} />
+                            <Icon name="chevR" size={17} color={palette.chevron} />
                           </PressableScale>
                         ) : null}
                         {otherGyms.map((g) => (
@@ -441,11 +438,10 @@ export default function Discover() {
                   selected={partnerFilterN > 0}
                   onPress={() => router.push('/(tabs)/discover/partner-filter')}
                 />
-                <Chip label={t('Kartlar')} icon="grid" tone="card" onPress={() => router.push('/(tabs)/discover/cards')} />
+                <Chip label={t('Kartlar')} icon="grid" onPress={() => router.push('/(tabs)/discover/cards')} />
                 {pendingOut > 0 ? (
                   <Chip
                     label={t('Gözləyən təklif · {n}', { n: pendingOut, count: pendingOut })}
-                    tone="card"
                     onPress={() => router.push('/chat/requests')}
                   />
                 ) : null}
@@ -462,7 +458,7 @@ export default function Discover() {
                       {t('Bu həftənin ən uyğun yoldaşları')}
                     </AppText>
                   </View>
-                  <Icon name="chevR" size={18} color={palette.tertiary} />
+                  <Icon name="chevR" size={17} color={palette.chevron} />
                 </PressableScale>
               ) : null}
 
@@ -577,9 +573,7 @@ function EmptyBlock({
         {text}
       </AppText>
       {action ? (
-        <PressableScale activeScale={0.96} onPress={action.onPress} style={styles.emptyBtn}>
-          <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{action.label}</AppText>
-        </PressableScale>
+        <Button title={action.label} onPress={action.onPress} style={styles.emptyBtn} />
       ) : null}
     </View>
   );
@@ -597,7 +591,7 @@ const styles = StyleSheet.create({
     height: 34,
     paddingHorizontal: 14,
     borderRadius: 17,
-    backgroundColor: palette.volt,
+    backgroundColor: palette.cta,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -616,9 +610,11 @@ const styles = StyleSheet.create({
   chipRow: { marginHorizontal: -spacing.screen, marginBottom: 14, flexGrow: 0 },
   content: { paddingHorizontal: spacing.screen, paddingTop: 14, paddingBottom: 40 },
   liveRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 },
-  liveLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.6, color: palette.voltDeep },
-  weeklyBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 14, marginBottom: 12 },
-  weeklyIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(198,255,61,0.22)', alignItems: 'center', justifyContent: 'center' },
+  // Design: the live line is 13 / 600 accent green in sentence case — no tracked caps.
+  liveLabel: { fontSize: 13, fontWeight: '600', color: palette.voltText },
+  weeklyBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginBottom: 12 },
+  weeklyIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: palette.voltTint, alignItems: 'center', justifyContent: 'center' },
   emptyPartners: { alignItems: 'center', paddingVertical: 40 },
-  emptyBtn: { marginTop: 16, height: 44, paddingHorizontal: 22, borderRadius: 13, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
+  // The volt CTA is <Button>; only its spacing is set here.
+  emptyBtn: { marginTop: 16, paddingHorizontal: 22 },
 });

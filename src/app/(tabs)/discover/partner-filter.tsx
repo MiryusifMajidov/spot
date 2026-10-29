@@ -49,11 +49,11 @@ export default function PartnerFilter() {
     <Screen edges={['top', 'bottom']}>
       <View style={styles.grabber} />
       <View style={styles.header}>
-        <PressableScale haptic={false} activeScale={0.94} onPress={reset}>
+        <PressableScale haptic={false} activeScale={0.94} onPress={reset} style={styles.headerBtn} accessibilityRole="button">
           <AppText variant="body" color={palette.inkText} style={{ fontWeight: '500' }}>{t('Sıfırla')}</AppText>
         </PressableScale>
         <AppText variant="headline">{t('Yoldaş filtri')}</AppText>
-        <PressableScale haptic={false} activeScale={0.94} onPress={() => router.back()}>
+        <PressableScale haptic={false} activeScale={0.94} onPress={() => router.back()} style={styles.headerBtn} accessibilityRole="button">
           <AppText variant="body" color={palette.inkText} style={{ fontWeight: '500' }}>{t('Bağla')}</AppText>
         </PressableScale>
       </View>
@@ -77,7 +77,7 @@ export default function PartnerFilter() {
             <Switch
               value={f.womenOnly}
               onValueChange={(v) => setFilter({ womenOnly: v })}
-              trackColor={{ true: palette.voltDeep, false: palette.separator }}
+              trackColor={{ true: palette.toggleOn, false: palette.separator }}
             />
           </View>
         ) : null}
@@ -137,10 +137,12 @@ export default function PartnerFilter() {
   );
 }
 
+/* Design (4.4 Yoldaş filtri): each group is a #FEFEFE card with a 15 / 600 title;
+   the chips inside a card rest on #F7F7F7 (tone="card"), a chosen one is #EDEDED. */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <View style={{ marginBottom: 20 }}>
-      <AppText variant="overline" color={palette.caption} style={{ marginBottom: 12 }}>
+    <View style={styles.section}>
+      <AppText variant="callout" style={{ marginBottom: 13 }}>
         {title}
       </AppText>
       <View style={styles.chipWrap}>{children}</View>
@@ -150,9 +152,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   grabber: { alignSelf: 'center', width: 38, height: 5, borderRadius: 3, backgroundColor: palette.separator, marginTop: 8, marginBottom: 6 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.screen, paddingVertical: 8 },
-  content: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 24 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.screen, paddingVertical: 2 },
+  headerBtn: { minHeight: 44, justifyContent: 'center' },
+  section: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginBottom: 12 },
+  content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 24 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  safetyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 16, marginBottom: 20 },
+  safetyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 16, marginBottom: 12 },
   footer: { paddingHorizontal: spacing.screen, paddingTop: 10, paddingBottom: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
 });

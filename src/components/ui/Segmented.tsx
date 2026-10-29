@@ -3,7 +3,7 @@ import { tapFeedback } from '@/lib/feedback';
 import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { Easing, SharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
-import { palette, shadow, type } from '@/theme';
+import { palette, type } from '@/theme';
 import { AppText } from './AppText';
 
 type Props = {
@@ -58,7 +58,8 @@ export function Segmented({ options, value, onChange, progress }: Props) {
 }
 
 const styles = StyleSheet.create({
-  track: { flexDirection: 'row', backgroundColor: palette.element2, borderRadius: 11, padding: 2, height: 36 },
-  thumb: { position: 'absolute', top: 2, bottom: 2, left: 2, backgroundColor: palette.white, borderRadius: 9, ...(shadow.card as object) },
+  // Design: a #F7F7F7 track (the screen's own colour) with a #FEFEFE thumb, no shadow.
+  track: { flexDirection: 'row', backgroundColor: palette.grouped, borderRadius: 11, padding: 2, height: 36 },
+  thumb: { position: 'absolute', top: 2, bottom: 2, left: 2, backgroundColor: palette.white, borderRadius: 9 },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

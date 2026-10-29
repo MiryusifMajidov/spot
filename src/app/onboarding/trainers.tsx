@@ -200,7 +200,7 @@ function TrainerRow({ trainer, on, onToggle }: { trainer: SuggestedTrainer; on: 
           <AppText variant="headline" numberOfLines={1} style={{ flexShrink: 1 }}>
             {trainer.name}
           </AppText>
-          {trainer.verified ? <Icon name="verified" size={15} color={palette.voltDeep} /> : null}
+          {trainer.verified ? <Icon name="verified" size={15} color={palette.verified} /> : null}
         </View>
         <AppText variant="footnote" color={palette.textSecondary} numberOfLines={1} style={{ marginTop: 2 }}>
           {trainer.specialty || t('Məşqçi')}
@@ -226,20 +226,24 @@ function TrainerRow({ trainer, on, onToggle }: { trainer: SuggestedTrainer; on: 
 
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.base, height: 44 },
-  skip: { paddingHorizontal: 8, paddingVertical: 6 },
+  // 44 pt tall: the text plus 6 pt padding was a 33 pt target.
+  skip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
   content: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 24 },
+  /* The design's selected option card: a 1.5 pt volt border on the volt tint.
+     Unselected it is a plain #FEFEFE card — the border is still there but
+     transparent, so selecting does not shift the row by 1.5 pt. */
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     backgroundColor: palette.white,
     borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: palette.separator,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
     padding: 12,
     marginBottom: 10,
   },
-  rowOn: { borderColor: palette.ink },
+  rowOn: { backgroundColor: palette.voltTint, borderColor: palette.volt },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   check: {

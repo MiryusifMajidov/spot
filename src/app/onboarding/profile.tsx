@@ -233,8 +233,11 @@ function Hint({ text, bad }: { text: string; bad?: boolean }) {
 
 const styles = StyleSheet.create({
   label: { marginTop: 18, marginBottom: 10 },
-  input: { backgroundColor: palette.white, borderRadius: radius.field, borderWidth: 1, borderColor: palette.separator, paddingHorizontal: 14, height: 52, fontSize: 16, color: palette.inkText },
-  handleRow: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: palette.white, borderRadius: radius.field, borderWidth: 1, borderColor: palette.separator, paddingHorizontal: 14, height: 52 },
+  /* The design's fields are #FEFEFE surfaces on the #F7F7F7 screen with no
+     outline, like its cards. The 1 pt border stays, transparent, so the red one
+     on a taken @ad does not shift the text when it appears. */
+  input: { backgroundColor: palette.white, borderRadius: radius.field, borderWidth: 1, borderColor: 'transparent', paddingHorizontal: 14, height: 52, fontSize: 16, color: palette.inkText },
+  handleRow: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: palette.white, borderRadius: radius.field, borderWidth: 1, borderColor: 'transparent', paddingHorizontal: 14, height: 52 },
   handleRowBad: { borderColor: palette.red },
   handleInput: { flex: 1, height: 52, fontSize: 16, color: palette.inkText, padding: 0 },
   hint: { marginTop: 8, lineHeight: 18 },

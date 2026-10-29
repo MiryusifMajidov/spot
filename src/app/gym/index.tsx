@@ -26,7 +26,7 @@ import { supabase } from '@/lib/supabase';
 import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
-import { palette, spacing, inputTint } from '@/theme';
+import { palette, radius, spacing, inputTint } from '@/theme';
 
 /** Hours drawn on the occupancy chart (the ones a gym is realistically open). */
 const FROM_HOUR = 6;
@@ -208,12 +208,12 @@ export default function GymPanel() {
               <PlaceholderImage height={148} icon="cam" style={styles.cover} />
               {errors.cover ? (
                 <View style={styles.coverBadge}>
-                  <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>{t('Zalın şəkli oxunmadı')}</AppText>
+                  <AppText style={{ color: palette.onDark, fontSize: 12, fontWeight: '600' }}>{t('Zalın şəkli oxunmadı')}</AppText>
                 </View>
               ) : loaded ? (
                 <View style={styles.coverBadge}>
-                  <Icon name="plus" size={15} color={palette.white} />
-                  <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>{t('Zalın şəklini əlavə et')}</AppText>
+                  <Icon name="plus" size={15} color={palette.onDark} />
+                  <AppText style={{ color: palette.onDark, fontSize: 12, fontWeight: '600' }}>{t('Zalın şəklini əlavə et')}</AppText>
                 </View>
               ) : null}
             </>
@@ -242,8 +242,8 @@ export default function GymPanel() {
             hitSlop={{ top: 4, bottom: 4 }}
             accessibilityRole="button"
             style={styles.modePill}>
-            <Icon name="user" size={16} color={palette.volt} />
-            <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Hesabı dəyiş')}</AppText>
+            <Icon name="user" size={15} color={palette.inkText} />
+            <AppText style={{ color: palette.inkText, fontSize: 13, fontWeight: '600' }}>{t('Hesabı dəyiş')}</AppText>
           </PressableScale>
         </View>
 
@@ -253,22 +253,26 @@ export default function GymPanel() {
             yeniləndi», and waited for members who could not find the gym at all. */}
         {!gym.listed ? (
           <PressableScale activeScale={0.98} onPress={() => router.push('/gym/claim')} style={styles.unlisted}>
-            <Icon name="lock" size={20} color="#B25E00" />
+            <Icon name="lock" size={20} color={palette.streakText} />
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Zal hələ Kəşfdə görünmür')}</AppText>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 3 }}>
                 {t('Müştərilər zalı axtarışda və xəritədə tapa bilmir. Moderator yoxlayandan və ya sahiblik (VÖEN) təsdiqlənəndən sonra dərc olunur.')}
               </AppText>
             </View>
-            <Icon name="chevR" size={18} color={palette.tertiary} />
+            <Icon name="chevR" size={17} color={palette.chevron} />
           </PressableScale>
         ) : null}
 
+        {/* Design 14.1: the highlighted card is #EDEDED with ink text and a green
+            label — no ink block — and its neighbour a #FEFEFE card. */}
         <View style={styles.statRow}>
-          <View style={[styles.statCard, { backgroundColor: palette.ink }]}>
-            <AppText style={styles.statCapVolt}>{t('İNDİ ZALDA')}</AppText>
-            <AppText style={styles.statBigDark}>{errors.occupancy || !loaded ? '—' : data.now}</AppText>
-            <AppText style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 6 }}>
+          <View style={[styles.statCard, { backgroundColor: palette.element }]}>
+            <AppText variant="overline" color={palette.voltText}>
+              {t('İndi zalda')}
+            </AppText>
+            <AppText style={styles.statBig}>{errors.occupancy || !loaded ? '—' : data.now}</AppText>
+            <AppText style={{ color: palette.textSecondary, fontSize: 11, marginTop: 6 }}>
               {errors.occupancy
                 ? t('check-in məlumatı yüklənmədi')
                 : !loaded
@@ -279,9 +283,18 @@ export default function GymPanel() {
             </AppText>
           </View>
           <View style={[styles.statCard, { backgroundColor: palette.white }]}>
-            <AppText style={styles.statCap}>{t('ÜZVLƏR')}</AppText>
+            <AppText variant="overline" color={palette.caption}>
+              {t('Üzvlər')}
+            </AppText>
             <AppText style={styles.statBig}>{errors.roster || !loaded ? '—' : data.members}</AppText>
-            <AppText style={{ color: palette.tertiary, fontSize: 11, marginTop: 6 }}>
+            {/* Accent green for the real figure's caption, as the design draws it;
+                grey while loading or after a failed read. */}
+            <AppText
+              style={{
+                color: errors.roster || !loaded ? palette.tertiary : palette.voltText,
+                fontSize: 11,
+                marginTop: 6,
+              }}>
               {errors.roster ? t('üzv siyahısı yüklənmədi') : !loaded ? t('yüklənir…') : t('SPOT-da bu zalı seçib')}
             </AppText>
           </View>
@@ -311,7 +324,9 @@ export default function GymPanel() {
                       styles.bar,
                       {
                         height: `${peak ? Math.max(6, Math.round((n / peak) * 100)) : 4}%`,
-                        backgroundColor: n === peak && n > 0 ? palette.ink : n > 0 ? palette.volt : '#DCDCE1',
+                        /* Peak in accent green rather than an ink block; hours with
+                           check-ins volt; empty hours the neutral fill. */
+                        backgroundColor: n === peak && n > 0 ? palette.voltDeep : n > 0 ? palette.volt : palette.element,
                       },
                     ]}
                   />
@@ -319,7 +334,7 @@ export default function GymPanel() {
               </View>
               <View style={styles.chartLabels}>
                 {['06:00', '12:00', '18:00', '23:00'].map((l) => (
-                  <AppText key={l} style={{ fontSize: 10.5, fontWeight: '500', color: '#A0A0A8' }}>
+                  <AppText key={l} style={{ fontSize: 10.5, fontWeight: '500', color: palette.caption }}>
                     {l}
                   </AppText>
                 ))}
@@ -462,7 +477,7 @@ export default function GymPanel() {
 
         {gym.claimStatus === 'claimed' ? (
           <View style={[styles.card, styles.claimRow, { marginTop: 14 }]}>
-            <Icon name="verified" size={22} color={palette.voltDeep} />
+            <Icon name="verified" size={22} color={palette.verified} />
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Sahiblik təsdiqlənib')}</AppText>
               <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 3 }}>
@@ -480,7 +495,7 @@ export default function GymPanel() {
               <AppText style={{ fontSize: 14, fontWeight: '600' }}>{claimRow.title}</AppText>
               <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 3 }}>{claimRow.sub}</AppText>
             </View>
-            <Icon name="chevR" size={18} color={palette.tertiary} />
+            <Icon name="chevR" size={17} color={palette.chevron} />
           </PressableScale>
         )}
 
@@ -547,8 +562,8 @@ function Row({ label, value }: { label: string; value: string }) {
 function QuickCard({ icon, title, sub, onPress }: { icon: IconName; title: string; sub: string; onPress: () => void }) {
   return (
     <PressableScale activeScale={0.96} onPress={onPress} accessibilityRole="button" style={styles.quick}>
-      <Icon name={icon} size={24} color={palette.textSecondary} />
-      <AppText style={{ fontSize: 13.5, fontWeight: '600', marginTop: 10 }}>{title}</AppText>
+      <Icon name={icon} size={20} color={palette.rowIcon} />
+      <AppText style={{ fontSize: 13.5, fontWeight: '600', marginTop: 9 }}>{title}</AppText>
       <AppText style={{ fontSize: 11.5, color: palette.tertiary, marginTop: 3 }}>{sub}</AppText>
     </PressableScale>
   );
@@ -565,28 +580,28 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 },
-  coverWrap: { borderRadius: 18, overflow: 'hidden', backgroundColor: palette.grouped, marginBottom: 14 },
+  coverWrap: { borderRadius: radius.card, overflow: 'hidden', backgroundColor: palette.grouped, marginBottom: 14 },
   cover: { width: '100%', height: 148 },
+  // A scrim over the photo: light text on it, as on any media.
   coverBadge: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(11,11,14,0.72)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
   map: { height: 170, borderRadius: 14 },
-  modePill: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, backgroundColor: palette.ink, borderRadius: 999, paddingHorizontal: 12, marginTop: 6 },
+  // The design's «Rejimi dəyiş» pill: #EDEDED with ink text, not an ink pill.
+  modePill: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, backgroundColor: palette.element, borderRadius: 999, paddingHorizontal: 12, marginTop: 6 },
   statRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  statCard: { flex: 1, borderRadius: 18, padding: 15 },
-  statCap: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.6, color: palette.tertiary },
-  statCapVolt: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.6, color: palette.volt },
-  statBig: { fontSize: 26, fontWeight: '700', marginTop: 9, letterSpacing: -0.7 },
-  statBigDark: { color: palette.white, fontSize: 26, fontWeight: '700', marginTop: 9, letterSpacing: -0.7 },
-  card: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 12 },
+  statCard: { flex: 1, borderRadius: radius.card, padding: 15 },
+  statBig: { fontSize: 26, fontWeight: '700', marginTop: 9, letterSpacing: -0.7, color: palette.inkText },
+  card: { backgroundColor: palette.white, borderRadius: radius.card, padding: 16, marginBottom: 12 },
   cardHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 },
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 78 },
-  bar: { flex: 1, borderRadius: 3 },
+  bar: { flex: 1, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
   chartLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 9 },
-  tip: { backgroundColor: 'rgba(198,255,61,0.18)', borderRadius: 12, padding: 12, marginTop: 13 },
+  tip: { backgroundColor: palette.voltTint, borderRadius: 12, padding: 12, marginTop: 13 },
   breakdownRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(60,60,67,0.12)' },
-  quick: { flex: 1, backgroundColor: palette.white, borderRadius: 16, padding: 14 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: palette.hairline },
+  quick: { flex: 1, backgroundColor: palette.white, borderRadius: radius.card, padding: 14 },
   claimRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   modalBg: { flex: 1, backgroundColor: palette.overlay, justifyContent: 'flex-end' },
   sheet: { backgroundColor: palette.grouped, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20 },
-  input: { backgroundColor: palette.white, borderRadius: 14, padding: 14, fontSize: 15, color: palette.inkText, minHeight: 110, textAlignVertical: 'top', marginTop: 14, borderWidth: 1, borderColor: palette.separator },
+  // A #FEFEFE field on the #F7F7F7 sheet — no outline, as the design draws fields.
+  input: { backgroundColor: palette.white, borderRadius: 14, padding: 14, fontSize: 15, color: palette.inkText, minHeight: 110, textAlignVertical: 'top', marginTop: 14 },
 });

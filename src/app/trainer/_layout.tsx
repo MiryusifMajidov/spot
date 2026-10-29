@@ -32,12 +32,15 @@ export default function TrainerLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: palette.inkText,
-        /* textSecondary, not #A0A0A8: that grey was ~2.6:1 on white, so the tabs you
-           were not on could hardly be read — the same fix the main tab bar got. And
-           11 pt labels, not 10. */
-        tabBarInactiveTintColor: palette.textSecondary,
-        tabBarStyle: { backgroundColor: palette.white, borderTopColor: palette.separator },
+        /* The app's tab bar colours (README «Tab bar (yekun)»): the active tab is
+           accent green, the others #888888 — still well clear of the old #A0A0A8,
+           which was ~2.6:1 on white and could hardly be read. 11 pt labels, not 10. */
+        tabBarActiveTintColor: palette.tabActive,
+        tabBarInactiveTintColor: palette.tertiary,
+        /* A plain #FEFEFE bar: no hairline on top and no shadow («Kölgə qaydası») —
+           the bar sits apart from the #F7F7F7 screen by colour alone. The JS tab
+           bar draws a top hairline and an Android elevation of 8 by default. */
+        tabBarStyle: { backgroundColor: palette.white, borderTopWidth: 0, elevation: 0, shadowOpacity: 0 },
         tabBarLabelStyle: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
       }}>
       <Tabs.Screen name="index" options={{ title: t('Panel'), tabBarIcon: tab('grid') }} />

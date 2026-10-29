@@ -332,7 +332,7 @@ export default function CreateGym() {
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 15, fontWeight: '600' }}>{t('{name} qeydə alındı', { name: name.trim() })}</AppText>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.tertiary, marginTop: 3 }}>
-                {t('Zal panelin açıqdır — amma zal HƏLƏ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, saxta və reklam xarakterli elanların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.')}
+                {t('Zal panelin açıqdır — amma zal hələ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, saxta və reklam xarakterli elanların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.')}
               </AppText>
             </View>
           </View>
@@ -355,7 +355,7 @@ export default function CreateGym() {
                 {t('VÖEN və ya qeydiyyat nömrəsini yaz — admin komandası yoxlayacaq.')}
               </AppText>
             </View>
-            <Icon name="chevR" size={18} color={palette.tertiary} />
+            <Icon name="chevR" size={17} color={palette.chevron} />
           </PressableScale>
 
           {!locSaved ? (
@@ -375,7 +375,7 @@ export default function CreateGym() {
             )}
             {coverBusy ? (
               <View style={styles.coverBusy}>
-                <ActivityIndicator color={palette.white} />
+                <ActivityIndicator color={palette.onDark} />
               </View>
             ) : null}
           </View>
@@ -447,8 +447,8 @@ export default function CreateGym() {
             <PlaceholderImage height={168} icon="cam" style={styles.cover} />
           )}
           <View style={styles.coverBadge}>
-            <Icon name={coverUri ? 'edit' : 'plus'} size={13} color={palette.white} />
-            <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>
+            <Icon name={coverUri ? 'edit' : 'plus'} size={13} color={palette.onDark} />
+            <AppText style={{ color: palette.onDark, fontSize: 12, fontWeight: '600' }}>
               {coverUri ? t('Şəkli dəyiş') : t('Şəkil əlavə et')}
             </AppText>
           </View>
@@ -524,9 +524,8 @@ export default function CreateGym() {
           {AMENITIES.map((a) => {
             const on = amenities.includes(a);
             return (
-              /* 41 pt tall (9 + 21 + 9, plus the border); the slop takes it past
-                 44 with no change to the look, and 4 + 4 stays inside the 9 pt
-                 row gap. */
+              /* 39 pt tall (9 + 21 + 9); the slop takes it past 44 with no change
+                 to the look, and 4 + 4 stays inside the 9 pt row gap. */
               <PressableScale
                 key={a}
                 activeScale={0.95}
@@ -594,7 +593,7 @@ function Gallery({
             accessibilityLabel={t('Şəkli sil')}
             style={styles.thumbX}>
             <View style={styles.thumbXDot}>
-              <Icon name="x" size={16} color={palette.white} />
+              <Icon name="x" size={16} color={palette.onDark} />
             </View>
           </PressableScale>
         </View>
@@ -627,22 +626,23 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 24 },
   input: { backgroundColor: palette.white, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, color: palette.inkText, borderWidth: 1, borderColor: palette.separator },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  chip: { backgroundColor: palette.white, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, borderWidth: 1, borderColor: palette.separator },
-  chipOn: { backgroundColor: palette.volt, borderColor: palette.volt },
+  // The design's chips: #FEFEFE at rest, #EDEDED + ink text when picked — no border, no volt fill.
+  chip: { backgroundColor: palette.white, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
+  chipOn: { backgroundColor: palette.selected },
   sectionLabel: { marginBottom: 8, fontWeight: '600' },
   hint: { fontSize: 12, lineHeight: 17, color: palette.tertiary, marginTop: 8 },
   warn: { fontSize: 12.5, lineHeight: 18, color: palette.streakText, marginBottom: 10, fontWeight: '500' },
   coverWrap: { borderRadius: 16, overflow: 'hidden', backgroundColor: palette.grouped },
   cover: { width: '100%', height: 168 },
-  coverBadge: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(11,11,14,0.72)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
-  coverBusy: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(11,11,14,0.45)' },
+  coverBadge: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(26,26,26,0.72)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
+  coverBusy: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(26,26,26,0.45)' },
   map: { height: 240, borderRadius: 16 },
   pinRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10 },
   thumbWrap: { width: 92, height: 92, borderRadius: 12, overflow: 'hidden', backgroundColor: palette.grouped },
   thumb: { width: '100%', height: '100%' },
   // 44x44 target in the tile's corner; the padding keeps the dot 5 pt in from the edges.
   thumbX: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, padding: 5, alignItems: 'flex-end' },
-  thumbXDot: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(11,11,14,0.7)' },
+  thumbXDot: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(26,26,26,0.7)' },
   addTile: { width: 92, height: 92, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, borderStyle: 'dashed' },
   doneCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginBottom: 18 },
   claimRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginBottom: 18 },

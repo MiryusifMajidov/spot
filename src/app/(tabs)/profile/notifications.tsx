@@ -13,7 +13,7 @@ import { pushPermission, pushRegistrationProblem, registerPush } from '@/lib/pus
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { palette, radius, spacing } from '@/theme';
 
 type State = 'loading' | 'ready' | 'failed';
 
@@ -129,7 +129,7 @@ export default function NotificationSettings() {
               {t('Hansı bildirişlərin açıq olduğunu oxuya bilmədik — ona görə açarları göstərmirik.')}
             </AppText>
             <PressableScale onPress={load} accessibilityRole="button" style={styles.retry}>
-              <AppText variant="callout" color={palette.white}>{t('Yenidən cəhd et')}</AppText>
+              <AppText variant="headline" color={palette.ctaText}>{t('Yenidən cəhd et')}</AppText>
             </PressableScale>
           </View>
         ) : (
@@ -151,7 +151,7 @@ export default function NotificationSettings() {
                     accessibilityLabel={t(nt.label)}
                     disabled={busy === nt.type}
                     onValueChange={(v) => void toggle(nt.type, v)}
-                    trackColor={{ false: palette.separator, true: palette.voltDeep }}
+                    trackColor={{ false: palette.separator, true: palette.toggleOn }}
                   />
                 </View>
               ))}
@@ -187,9 +187,9 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.lg, paddingBottom: 28 },
   note: { textAlign: 'center', marginTop: 40 },
   failed: { alignItems: 'center', marginTop: 60, paddingHorizontal: 20 },
-  // minHeight 44: 11 + 20 + 11 left the only way out of this state 2 pt short of a tap target.
-  retry: { marginTop: 16, backgroundColor: palette.inkText, borderRadius: 12, paddingHorizontal: 20, minHeight: 44, justifyContent: 'center' },
-  card: { backgroundColor: palette.white, borderRadius: 18, paddingHorizontal: 14, marginTop: 6 },
+  // The design's CTA: volt, 50 pt, r16 — the only way out of this state, so a full tap target.
+  retry: { marginTop: 16, backgroundColor: palette.cta, borderRadius: radius.button, paddingHorizontal: 20, height: 50, alignItems: 'center', justifyContent: 'center' },
+  card: { backgroundColor: palette.white, borderRadius: radius.card, paddingHorizontal: 14, marginTop: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13 },
   rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator },
   footer: { marginTop: 12, lineHeight: 18, paddingHorizontal: 4 },

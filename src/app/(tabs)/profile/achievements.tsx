@@ -51,7 +51,7 @@ export default function Achievements() {
     { icon: 'dumbbell' as IconName, label: '100 t həcm', cur: Math.min(Math.round(volumeT), 100), total: 100 },
   ];
   // The section lists only goals still open, so it is gated on those. Gating it on
-  // the locked badges drew a bare «YAXINDIR» heading when every goal here was met
+  // the locked badges drew a bare «Yaxındır» heading when every goal here was met
   // but a badge (100 kq skvat, 21 gün seriya) was still locked — and hid goals
   // still open (50 məşq) once every badge was earned.
   const upcoming = close.filter((c) => c.cur < c.total);
@@ -76,24 +76,24 @@ export default function Achievements() {
           <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
             <View style={styles.streakBadge}>
               <Icon name="flame" size={24} color={palette.streak} />
-              <AppText style={{ fontSize: 15, fontWeight: '700', color: palette.white, marginTop: 5 }}>{stats.streakDays}</AppText>
+              <AppText style={{ fontSize: 15, fontWeight: '700', color: palette.inkText, marginTop: 5 }}>{stats.streakDays}</AppText>
             </View>
             <View style={{ flex: 1 }}>
-              <AppText style={{ fontSize: 18, fontWeight: '700', color: palette.white }}>{t('{n} günlük seriya', { n: stats.streakDays, count: stats.streakDays })}</AppText>
-              <AppText style={{ fontSize: 12.5, lineHeight: 18, color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>
+              <AppText style={{ fontSize: 18, fontWeight: '700', color: palette.inkText }}>{t('{n} günlük seriya', { n: stats.streakDays, count: stats.streakDays })}</AppText>
+              <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.textSecondary, marginTop: 6 }}>
                 {stats.streakDays > 0 ? t('Davam et — hər gün check-in və ya məşq seriyanı saxlayır.') : t('Check-in et və ya məşq qeyd et — seriya bu gün başlayır.')}
               </AppText>
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 4, marginTop: 16 }}>
             {week.map((on, i) => (
-              <View key={i} style={[styles.weekSeg, { backgroundColor: on ? palette.volt : 'rgba(255,255,255,0.14)' }]} />
+              <View key={i} style={[styles.weekSeg, { backgroundColor: on ? palette.volt : palette.inkTint }]} />
             ))}
           </View>
         </View>
 
-        <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-          {t('QAZANILMIŞ · {n}', { n: earned.length, count: earned.length })}
+        <AppText variant="overline" color={palette.caption} style={{ marginBottom: 12 }}>
+          {t('Qazanılmış · {n}', { n: earned.length, count: earned.length })}
         </AppText>
         {earned.length === 0 ? (
           <AppText variant="body" color={palette.textSecondary} style={{ marginBottom: 16, lineHeight: 21 }}>
@@ -104,7 +104,7 @@ export default function Achievements() {
             {earned.map((b) => (
               <View key={b.label} style={[styles.badge, { width: badgeW }]}>
                 <View style={styles.badgeIcon}>
-                  <Icon name={b.icon} size={22} color="#5B7F00" />
+                  <Icon name={b.icon} size={22} color={palette.voltDeep} />
                 </View>
                 <AppText style={{ fontSize: 12, fontWeight: '600', textAlign: 'center', lineHeight: 15 }}>{t(b.label)}</AppText>
               </View>
@@ -114,15 +114,15 @@ export default function Achievements() {
 
         {upcoming.length > 0 ? (
           <>
-            <AppText variant="overline" color={palette.tertiary} style={{ marginTop: 16, marginBottom: 12 }}>
-              {t('YAXINDIR')}
+            <AppText variant="overline" color={palette.caption} style={{ marginTop: 16, marginBottom: 12 }}>
+              {t('Yaxındır')}
             </AppText>
             <View style={{ gap: 10 }}>
               {upcoming.map((c) => (
                 <View key={c.label} style={styles.closeRow}>
                   {/* Same 44 box and 22 px glyph as the earned badges above. */}
                   <View style={styles.closeIcon}>
-                    <Icon name={c.icon} size={22} color="#B4B4BB" />
+                    <Icon name={c.icon} size={22} color={palette.tertiary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t(c.label)}</AppText>
@@ -153,16 +153,18 @@ export default function Achievements() {
 }
 
 const styles = StyleSheet.create({
-  streakCard: { backgroundColor: palette.ink, borderRadius: 20, padding: 18, marginBottom: 14 },
+  // Was an ink hero; the design draws it #EDEDED with ink text on the light screen.
+  streakCard: { backgroundColor: palette.element, borderRadius: 20, padding: 18, marginBottom: 14 },
   streakBadge: { width: 70, height: 70, borderRadius: 20, backgroundColor: 'rgba(255,107,53,0.22)', alignItems: 'center', justifyContent: 'center' },
   weekSeg: { flex: 1, height: 24, borderRadius: 5 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP, marginBottom: 4 },
   // width is set per render from the window (badgeW).
   badge: { backgroundColor: palette.white, borderRadius: 16, padding: 14, alignItems: 'center' },
-  badgeIcon: { width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(198,255,61,0.3)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  badgeIcon: { width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(197,254,1,0.3)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   closeRow: { backgroundColor: palette.white, borderRadius: 16, padding: 14, flexDirection: 'row', gap: 13, alignItems: 'center' },
-  closeIcon: { width: 44, height: 44, borderRadius: 13, backgroundColor: '#F0F0F3', alignItems: 'center', justifyContent: 'center' },
-  progressTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: '#EFEFF2', overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: palette.ink },
+  closeIcon: { width: 44, height: 44, borderRadius: 13, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
+  // The design's progress bar: #EDEDED on a #F7F7F7 track — no black fill.
+  progressTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: palette.grouped, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: palette.element },
   note: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', marginTop: 16, paddingHorizontal: 4 },
 });

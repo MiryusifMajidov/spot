@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
+import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { afterTransition } from '@/lib/afterTransition';
@@ -170,16 +171,21 @@ export default function WorkoutToday() {
         </View>
 
         {/* ---------- 1. today, and the one button ---------- */}
+        {/* The design's «Bugünkü məşq» card: #EDEDED, not the old ink block — a
+            6 pt volt dot and a green label, an ink title, the volt CTA. */}
         <View style={styles.todayCard}>
-          <AppText variant="overline" style={{ color: palette.volt }}>
-            {active && dayCount > 1
-              ? t('BUGÜNKÜ MƏŞQ · GÜN {n}/{total}', { n: todayDayIndex + 1, total: dayCount })
-              : t('BUGÜNKÜ MƏŞQ')}
-          </AppText>
-          <AppText variant="title2" style={{ color: palette.white, marginTop: 8 }}>
+          <View style={styles.todayLabel}>
+            <View style={styles.todayDot} />
+            <AppText variant="overline" color={palette.voltText}>
+              {active && dayCount > 1
+                ? t('Bugünkü məşq · Gün {n}/{total}', { n: todayDayIndex + 1, total: dayCount })
+                : t('Bugünkü məşq')}
+            </AppText>
+          </View>
+          <AppText variant="title2" style={styles.todayTitle}>
             {t(todayTitle)}
           </AppText>
-          <AppText variant="footnote" style={{ color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>
+          <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 7, fontSize: 13.5, lineHeight: 19 }}>
             {active
               ? todayExercises.length
                 ? t('{n} hərəkət · ~{min} dəq · {title}', {
@@ -192,13 +198,10 @@ export default function WorkoutToday() {
               : t('Hərəkətləri özün seçəcəksən')}
           </AppText>
 
-          <PressableScale activeScale={0.97} onPress={start} style={styles.startBtn}>
-            <Icon name="play" size={18} color={palette.ink} />
-            <AppText style={{ fontSize: 16, fontWeight: '700', color: palette.ink }}>{t('Məşqə başla')}</AppText>
-          </PressableScale>
+          <Button title={t('Məşqə başla')} icon="play" onPress={start} style={{ marginTop: 16 }} />
 
           {!active ? (
-            <AppText variant="caption" style={{ color: 'rgba(255,255,255,0.5)', marginTop: 10, lineHeight: 17 }}>
+            <AppText variant="caption" color={palette.textSecondary} style={{ marginTop: 10, lineHeight: 17 }}>
               {t('Proqram seçsən, hər dəfə bura növbəti günün çıxacaq.')}
             </AppText>
           ) : null}
@@ -218,7 +221,7 @@ export default function WorkoutToday() {
             }
             style={styles.row}>
             <View style={styles.rowIcon}>
-              <Icon name="user" size={17} color={palette.voltDeep} />
+              <Icon name="user" size={20} color={palette.rowIcon} />
             </View>
             <View style={{ flex: 1 }}>
               <AppText variant="subhead">{assigned.title}</AppText>
@@ -226,12 +229,12 @@ export default function WorkoutToday() {
                 {assigned.trainerName ? t('{name} sənə təyin etdi', { name: assigned.trainerName }) : t('Müəllimin sənə təyin etdi')}
               </AppText>
             </View>
-            {assigned.programId ? <Icon name="chevR" size={16} color={palette.tertiary} /> : null}
+            {assigned.programId ? <Icon name="chevR" size={17} color={palette.chevron} /> : null}
           </PressableScale>
         ) : assignedFailed ? (
           <View style={styles.row}>
             <View style={styles.rowIcon}>
-              <Icon name="x" size={16} color={palette.red} />
+              <Icon name="x" size={20} color={palette.red} />
             </View>
             <AppText variant="caption" color={palette.textSecondary} style={{ flex: 1, lineHeight: 17 }}>
               {t('Müəllim təyinatı yüklənmədi — bu, təyinat olmadığı demək deyil.')}
@@ -268,7 +271,7 @@ export default function WorkoutToday() {
             onPress={() => router.push({ pathname: '/(tabs)/workout/program/[id]', params: { id: active.id } })}
             style={styles.row}>
             <View style={styles.rowIcon}>
-              <Icon name="dumbbell" size={17} color={palette.voltDeep} />
+              <Icon name="dumbbell" size={20} color={palette.rowIcon} />
             </View>
             <View style={{ flex: 1 }}>
               <AppText variant="subhead">{t(active.title)}</AppText>
@@ -276,12 +279,12 @@ export default function WorkoutToday() {
                 {active.creatorName} · {t('{n} gün', { n: dayCount, count: dayCount })}
               </AppText>
             </View>
-            <Icon name="chevR" size={16} color={palette.tertiary} />
+            <Icon name="chevR" size={17} color={palette.chevron} />
           </PressableScale>
         ) : (
           <PressableScale activeScale={0.98} onPress={() => router.push('/(tabs)/workout/library')} style={styles.row}>
             <View style={styles.rowIcon}>
-              <Icon name="search" size={17} color={palette.voltDeep} />
+              <Icon name="search" size={20} color={palette.rowIcon} />
             </View>
             <View style={{ flex: 1 }}>
               <AppText variant="subhead">{t('Proqram seç')}</AppText>
@@ -289,13 +292,13 @@ export default function WorkoutToday() {
                 {t('SPOT-un, müəllimlərin və istifadəçilərin proqramları')}
               </AppText>
             </View>
-            <Icon name="chevR" size={16} color={palette.tertiary} />
+            <Icon name="chevR" size={17} color={palette.chevron} />
           </PressableScale>
         )}
 
         <PressableScale activeScale={0.98} onPress={() => router.push('/(tabs)/workout/create')} style={styles.row}>
           <View style={styles.rowIcon}>
-            <Icon name="plus" size={17} color={palette.voltDeep} />
+            <Icon name="plus" size={20} color={palette.rowIcon} />
           </View>
           <View style={{ flex: 1 }}>
             <AppText variant="subhead">{t('Proqram yarat')}</AppText>
@@ -303,12 +306,12 @@ export default function WorkoutToday() {
               {t('Günləri yaz, hərəkətləri seç — istəsən paylaş')}
             </AppText>
           </View>
-          <Icon name="chevR" size={16} color={palette.tertiary} />
+          <Icon name="chevR" size={17} color={palette.chevron} />
         </PressableScale>
 
         <PressableScale activeScale={0.98} onPress={() => router.push('/(tabs)/workout/exercises')} style={styles.row}>
           <View style={styles.rowIcon}>
-            <Icon name="grid" size={17} color={palette.voltDeep} />
+            <Icon name="grid" size={20} color={palette.rowIcon} />
           </View>
           <View style={{ flex: 1 }}>
             <AppText variant="subhead">{t('Hərəkət kitabxanası')}</AppText>
@@ -316,7 +319,7 @@ export default function WorkoutToday() {
               {t('{n} hərəkət · texnika və səhvlər', { n: exerciseLibrary.length, count: exerciseLibrary.length })}
             </AppText>
           </View>
-          <Icon name="chevR" size={16} color={palette.tertiary} />
+          <Icon name="chevR" size={17} color={palette.chevron} />
         </PressableScale>
       </ScrollView>
     </Screen>
@@ -343,17 +346,10 @@ const styles = StyleSheet.create({
   /* A 44 pt target around a 24 px glyph. The negative margin keeps the GLYPH on
      the cards' right edge; only the invisible target reaches into the gutter. */
   headerBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
-  todayCard: { backgroundColor: palette.ink, borderRadius: 20, padding: 20 },
-  startBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: palette.volt,
-    marginTop: 18,
-  },
+  todayCard: { backgroundColor: palette.element, borderRadius: 20, padding: 18 },
+  todayLabel: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 },
+  todayDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.volt },
+  todayTitle: { fontSize: 22, lineHeight: 25, letterSpacing: -0.4 },
   week: {
     flexDirection: 'row',
     /* Top, not centre: if one label wraps (large system text, a longer
@@ -375,11 +371,14 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 10,
   },
+  /* A neutral tile with the row's outline glyph. It was a volt-tinted tile with
+     a green glyph; the design keeps volt for energy and success, never as
+     decoration. */
   rowIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    backgroundColor: 'rgba(198,255,61,0.22)',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: palette.grouped,
     alignItems: 'center',
     justifyContent: 'center',
   },

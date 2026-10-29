@@ -168,7 +168,7 @@ export default function RootLayout() {
             </Stack>
           </AppErrorBoundary>
         ) : (
-          <View style={{ flex: 1, backgroundColor: palette.inkText }} />
+          <View style={{ flex: 1, backgroundColor: palette.grouped }} />
         )}
         {/* Its own boundary. `UiHost` is a SIBLING of the Stack, not a
             descendant, so the boundary around the Stack cannot catch anything it
@@ -182,13 +182,13 @@ export default function RootLayout() {
         <AppErrorBoundary label={t('Bu pəncərə açılmadı')}>
           <UiHost />
         </AppErrorBoundary>
-        {/* The app's base clock colour: dark, for the light screens. While the
-            fonts load, though, what is on screen is the near-black placeholder
-            above (it carries on the dark splash), and a dark clock on it was
-            black on black. This entry is the first one on React Native's status
-            bar stack and a prop change replaces it IN PLACE, so flipping it here
-            never overrides the light entries a dark screen pushes on focus. */}
-        <StatusBar style={fontsSettled ? 'dark' : 'light'} />
+        {/* The app's base clock colour: dark, for the light screens. It used to
+            be light while the fonts loaded, because the placeholder above was
+            near-black; the final design makes every screen light, the
+            placeholder included (#F7F7F7), so the clock is dark from the first
+            frame. This entry is the first one on React Native's status bar
+            stack, so it never overrides an entry a screen pushes on focus. */}
+        <StatusBar style="dark" />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

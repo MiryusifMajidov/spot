@@ -110,22 +110,20 @@ function Weekly() {
                     : t('Bu həftə üçün hələ uyğun təklif yoxdur. Profilini tamamla — uyğun adam çıxan kimi burada görünəcək.')}
             </AppText>
             {!homeGymId ? (
-              <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.emptyBtn}>
-                <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Zalını seç')}</AppText>
-              </PressableScale>
+              <Button title={t('Zalını seç')} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.emptyBtn} />
             ) : null}
           </View>
         ) : (
           <>
-            {/* Top pick — ink */}
+            {/* Top pick — the design's highlighted #EDEDED card (it was an ink card) */}
             <View style={styles.topCard}>
               <View style={styles.topHead}>
                 <Avatar name={top.name} size={54} />
                 <View style={{ flex: 1 }}>
-                  <AppText variant="title3" color={palette.white}>
+                  <AppText variant="title3" color={palette.inkText}>
                     {nameWithAge(top.name, top.age)}
                   </AppText>
-                  <AppText variant="footnote" color="rgba(255,255,255,0.55)" style={{ marginTop: 2 }}>
+                  <AppText variant="footnote" color={palette.textSecondary} style={{ marginTop: 2 }}>
                     {[top.level ? t(top.level) : t('Səviyyə göstərilməyib'), t(top.usualTime)].filter(Boolean).join(' · ')}
                   </AppText>
                 </View>
@@ -133,7 +131,7 @@ function Weekly() {
                     is the absence of one, so it is never printed as a number. */}
                 {topScore === null ? (
                   <View style={styles.unknownBadge}>
-                    <AppText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '700' }}>?</AppText>
+                    <AppText style={{ color: palette.textSecondary, fontSize: 11, fontWeight: '700' }}>?</AppText>
                   </View>
                 ) : (
                   <View style={styles.matchBadge}>
@@ -142,12 +140,12 @@ function Weekly() {
                 )}
               </View>
               {topScore === null ? (
-                <AppText variant="body" color="rgba(255,255,255,0.82)" style={{ marginTop: 14, lineHeight: 21 }}>
+                <AppText variant="body" color={palette.text3} style={{ marginTop: 14, lineHeight: 21 }}>
                   {t('{unknown} — onda bu adamın sənə nə qədər uyğun gəldiyini göstərə bilərik.', { unknown: t(COMPAT_UNKNOWN) })}
                 </AppText>
               ) : (
                 <>
-                  <AppText variant="body" color="rgba(255,255,255,0.82)" style={{ marginTop: 14, lineHeight: 21 }}>
+                  <AppText variant="body" color={palette.text3} style={{ marginTop: 14, lineHeight: 21 }}>
                     {topReasons.pros.length > 0
                       ? t('{reasons} — bu həftənin ən uyğun yoldaşı.', { reasons: topReasons.pros.map((r) => t(r)).join(' · ') })
                       : t('Bu həftənin ən uyğun yoldaşı.')}
@@ -162,8 +160,8 @@ function Weekly() {
               )}
               {stateLabel(top.id) ? (
                 <View style={styles.topState}>
-                  <Icon name="check" size={15} color={palette.volt} />
-                  <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.volt }}>{stateLabel(top.id)}</AppText>
+                  <Icon name="check" size={15} color={palette.voltDeep} />
+                  <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.voltText }}>{stateLabel(top.id)}</AppText>
                 </View>
               ) : (
                 <Button title={t('Məşq təklif et')} variant="volt" icon="dumbbell" full onPress={() => open(top)} style={{ marginTop: 16 }} />
@@ -198,8 +196,8 @@ function Weekly() {
                   onPress={() => open(p)}
                   accessibilityRole="button"
                   accessibilityLabel={stateLabel(p.id) ? p.name : t('Məşq təklif et')}
-                  style={styles.smallBtn}>
-                  <Icon name={stateLabel(p.id) ? 'chevR' : 'dumbbell'} size={22} color={palette.white} />
+                  style={[styles.smallBtn, stateLabel(p.id) ? styles.smallBtnDone : null]}>
+                  <Icon name={stateLabel(p.id) ? 'chevR' : 'dumbbell'} size={22} color={palette.ctaText} />
                 </PressableScale>
               </View>
               );
@@ -213,15 +211,17 @@ function Weekly() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 40 },
-  topCard: { backgroundColor: palette.ink, borderRadius: 20, padding: 18, marginBottom: 14 },
+  topCard: { backgroundColor: palette.element, borderRadius: 20, padding: 18, marginBottom: 14 },
   topHead: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   topState: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 16 },
   matchBadge: { backgroundColor: palette.volt, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
-  unknownBadge: { backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
+  unknownBadge: { backgroundColor: palette.white, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginBottom: 11 },
-  smallBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
+  smallBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center' },
+  smallBtnDone: { backgroundColor: palette.element },
   empty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
-  emptyBtn: { marginTop: 16, height: 44, paddingHorizontal: 22, borderRadius: 13, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
+  // The volt CTA is <Button>; only its spacing is set here.
+  emptyBtn: { marginTop: 16, paddingHorizontal: 22 },
 });
 
 // Real people on this screen: not reachable as a guest by any route.

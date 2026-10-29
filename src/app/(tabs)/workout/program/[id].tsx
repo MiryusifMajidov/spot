@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreatorBadge } from '@/components/CreatorBadge';
@@ -35,7 +35,7 @@ export default function ProgramDetail() {
      and `insets.bottom` there is the system navigation bar, which the tab bar
      already covers — adding it would lift the footer twice. */
   const insets = useSafeAreaInsets();
-  const bottomClearance = Platform.OS === 'ios' ? insets.bottom : 0;
+  const bottomClearance = 0;
   const remote = useProgram(id);
   const all = useAllPrograms();
   const saved = useDb((s) => s.savedPrograms);
@@ -357,7 +357,7 @@ export default function ProgramDetail() {
                   onPress={() => router.push({ pathname: '/(tabs)/workout/day', params: { programId: p.id, dayIndex: String(i), title: day.title, focus: day.focus } })}
                   style={styles.dayRow}>
                   <View style={styles.dayIndex}>
-                    <AppText style={{ fontSize: 14, fontWeight: '700', color: palette.voltDeep }}>{i + 1}</AppText>
+                    <AppText style={{ fontSize: 15, fontWeight: '700', color: palette.textSecondary }}>{i + 1}</AppText>
                   </View>
                   <View style={{ flex: 1 }}>
                     <AppText variant="callout">{t(day.title)}</AppText>
@@ -376,7 +376,7 @@ export default function ProgramDetail() {
                         .join(' · ')}
                     </AppText>
                   </View>
-                  <Icon name="chevR" size={18} color={palette.tertiary} />
+                  <Icon name="chevR" size={17} color={palette.chevron} />
                 </PressableScale>
               );
             })
@@ -447,8 +447,9 @@ const styles = StyleSheet.create({
   statBar: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 },
   statItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   vsep: { width: StyleSheet.hairlineWidth, height: 16, backgroundColor: palette.separator },
-  dayRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 14, marginBottom: 10 },
-  dayIndex: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(198,255,61,0.22)', alignItems: 'center', justifyContent: 'center' },
+  dayRow: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginBottom: 10 },
+  // The design's day number: a grey tile, not a volt-tinted one.
+  dayIndex: { width: 42, height: 42, borderRadius: 11, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 16, padding: 22 },
   headerActions: { flexDirection: 'row', alignItems: 'center', marginRight: -11 },
   activeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },

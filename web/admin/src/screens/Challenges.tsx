@@ -219,7 +219,7 @@ export function Challenges({ search, refreshCounts }: ScreenProps) {
         </div>
         {canManage ? (
           <button className="btn primary" onClick={() => { setDraft(emptyDraft); setShowNew(true); }}>
-            <Icon name="trophy" size={13} color="var(--volt)" /> Yeni challenge
+            <Icon name="trophy" size={13} color="var(--ink)" /> Yeni challenge
           </button>
         ) : null}
       </div>
@@ -331,13 +331,13 @@ const inputStyle: React.CSSProperties = {
   font: '400 13.5px/1 var(--font)',
   color: 'var(--ink2)',
   outline: 'none',
-  background: '#fff',
+  background: 'var(--card)',
 };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ font: '600 11px/1 var(--font)', letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 7 }}>
+      <div style={{ font: '600 13px/1.25 var(--font)', color: 'var(--muted)', marginBottom: 7 }}>
         {label}
       </div>
       {children}
@@ -385,7 +385,7 @@ function ChallengeCard({ c, canManage, busy, onToggle }: {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <div style={{ font: '600 15px/1.2 var(--font)' }}>{c.title}</div>
-            <span className={'badge ' + (c.active ? 'green' : 'grey')}>{c.active ? 'AKTİV' : 'PASSİV'}</span>
+            <span className={'badge ' + (c.active ? 'green' : 'grey')}>{c.active ? 'Aktiv' : 'Passiv'}</span>
           </div>
           <div style={{ font: '400 12px/1.3 var(--font)', color: 'var(--muted)', marginTop: 6 }}>
             {c.scope_label || scopeLabelFor(c.scope)}

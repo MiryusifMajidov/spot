@@ -33,9 +33,10 @@ export function NavBar({ title, right, onBack }: { title?: string; right?: React
         activeScale={0.9}
         onPress={onBack ?? (() => router.back())}
         style={styles.back}
+        hitSlop={4}
         accessibilityRole="button"
         accessibilityLabel={t('Geri')}>
-        <Icon name="chevL" size={iconSize.action} color={palette.inkText} />
+        <Icon name="chevL" size={iconSize.inCircle} color={palette.inkText} />
       </PressableScale>
       {title ? (
         <AppText variant="headline" numberOfLines={1} style={styles.title}>
@@ -50,11 +51,11 @@ export function NavBar({ title, right, onBack }: { title?: string; right?: React
 }
 
 const styles = StyleSheet.create({
-  bar: { height: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.base, gap: 8 },
-  // 44x44 hit area; -10 / +10 keeps the glyph at the bar's gutter and lets the box
-  // reach toward the screen edge, where a thumb coming from the side lands.
-  back: { width: 44, height: 44, marginLeft: -10, paddingLeft: 10, justifyContent: 'center' },
+  bar: { height: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.base, gap: 8 },
+  /* Design: a 40 pt #FEFEFE disc with a 20 pt chevron; the 4 pt slop makes the
+     target 48. */
+  back: { width: 40, height: 40, borderRadius: 20, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, textAlign: 'center' },
-  // 34 = the room the back box takes in the row (44 - 10), so the title is centred.
-  right: { minWidth: 34, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 14 },
+  // Held at the disc's width so the title sits on the real centre line.
+  right: { minWidth: 40, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 14 },
 });

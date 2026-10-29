@@ -66,16 +66,17 @@ export function OnboardingScaffold({
             activeScale={0.9}
             onPress={() => router.back()}
             style={styles.back}
+            hitSlop={4}
             accessibilityRole="button"
             accessibilityLabel={t('Geri')}>
-            <Icon name="chevL" size={iconSize.action} color={palette.inkText} />
+            <Icon name="chevL" size={iconSize.inCircle} color={palette.inkText} />
           </PressableScale>
         ) : (
           <View style={styles.skipSpacer} />
         )}
         <View style={styles.progress}>
           {Array.from({ length: totalSteps }).map((_, i) => (
-            <View key={i} style={[styles.progressSeg, { backgroundColor: i < step ? palette.ink : palette.separator }]} />
+            <View key={i} style={[styles.progressSeg, { backgroundColor: i < step ? palette.volt : palette.element }]} />
           ))}
         </View>
         {/* Without onSkip there is no button at all — an invisible «Keç» used to sit
@@ -126,12 +127,13 @@ const styles = StyleSheet.create({
      only as tall as its text). Same geometry as NavBar: each box grows 10 pt toward
      the screen edge (negative margin + matching padding), so the glyphs stay at the
      gutter and each takes 34 pt of the row. */
-  back: { width: 44, height: 44, marginLeft: -10, paddingLeft: 10, justifyContent: 'center' },
+  // The design's back button: a 40 pt #FEFEFE disc, 20 pt chevron.
+  back: { width: 40, height: 40, borderRadius: 20, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
   progress: { flex: 1, flexDirection: 'row', gap: 5 },
   progressSeg: { flex: 1, height: 4, borderRadius: 2 },
   // minWidth, not width: «Пропустить» is far wider than «Keç» and did not fit in 36 pt.
   skip: { minWidth: 44, height: 44, marginRight: -10, paddingRight: 10, alignItems: 'flex-end', justifyContent: 'center' },
-  skipSpacer: { width: 34 },
+  skipSpacer: { width: 40 },
   content: { paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 24 },
   footer: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 6 },
 });

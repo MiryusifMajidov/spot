@@ -10,6 +10,7 @@ import { SpotMap } from '@/components/SpotMap';
 import { HoursField, composeHours, splitHours } from '@/components/HoursField';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
@@ -430,7 +431,7 @@ export default function GymEdit() {
         {/* Photos — uploaded immediately, no «Saxla» needed */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-            {t('ZALIN ŞƏKİLLƏRİ')}
+            {t('Zalın şəkilləri')}
           </AppText>
           <PressableScale activeScale={0.98} disabled={coverBusy} onPress={chooseCover} style={styles.coverWrap}>
             {cover ? (
@@ -443,8 +444,8 @@ export default function GymEdit() {
                 but the badge does not pretend the old one is missing. */}
             {cover || coverRead !== 'loading' ? (
               <View style={styles.coverBadge}>
-                <Icon name={cover || coverRead === 'failed' ? 'edit' : 'plus'} size={13} color={palette.white} />
-                <AppText style={{ color: palette.white, fontSize: 12, fontWeight: '600' }}>
+                <Icon name={cover || coverRead === 'failed' ? 'edit' : 'plus'} size={13} color={palette.onDark} />
+                <AppText style={{ color: palette.onDark, fontSize: 12, fontWeight: '600' }}>
                   {cover
                     ? t('Əsas şəkli dəyiş')
                     : coverRead === 'failed'
@@ -455,7 +456,7 @@ export default function GymEdit() {
             ) : null}
             {coverBusy ? (
               <View style={styles.coverBusy}>
-                <ActivityIndicator color={palette.white} />
+                <ActivityIndicator color={palette.onDark} />
               </View>
             ) : null}
           </PressableScale>
@@ -477,7 +478,7 @@ export default function GymEdit() {
                   accessibilityLabel={t('Şəkli sil')}
                   style={styles.thumbX}>
                   <View style={styles.thumbXDot}>
-                    <Icon name="x" size={16} color={palette.white} />
+                    <Icon name="x" size={16} color={palette.onDark} />
                   </View>
                 </PressableScale>
               </View>
@@ -531,7 +532,7 @@ export default function GymEdit() {
         {/* About */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-            {t('ZAL HAQQINDA')}
+            {t('Zal haqqında')}
           </AppText>
           <TextInput {...inputTint}
             value={about}
@@ -546,28 +547,21 @@ export default function GymEdit() {
         {/* Amenities */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 12 }}>
-            {t('AVADANLIQ VƏ İMKANLAR')}
+            {t('Avadanlıq və imkanlar')}
           </AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {[...new Set([...AMENITIES, ...amenities])].map((a) => {
-              const on = amenities.includes(a);
-              return (
-                <PressableScale
-                  key={a}
-                  activeScale={0.95}
-                  onPress={() => toggleAmenity(a)}
-                  style={[styles.chip, on && { backgroundColor: palette.ink }]}>
-                  <AppText style={{ fontSize: 12.5, fontWeight: '600', color: on ? palette.white : '#3A3A42' }}>{t(a)}</AppText>
-                </PressableScale>
-              );
-            })}
+            {/* The shared chip: #FEFEFE at rest, #EDEDED + ink when chosen (design
+                14.2) — no black fill for a selection. */}
+            {[...new Set([...AMENITIES, ...amenities])].map((a) => (
+              <Chip key={a} label={t(a)} selected={amenities.includes(a)} onPress={() => toggleAmenity(a)} />
+            ))}
           </View>
         </View>
 
         {/* Location on a live map */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 6 }}>
-            {t('ZALIN YERİ')}
+            {t('Zalın yeri')}
           </AppText>
           <AppText style={[styles.hint, { marginBottom: 12 }]}>
             {gym.listed
@@ -662,7 +656,7 @@ function SwitchRow({ label, value, onChange }: { label: string; value: boolean; 
   return (
     <View style={styles.priceRow}>
       <AppText style={{ flex: 1, fontSize: 15, color: palette.inkText }}>{label}</AppText>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: palette.voltDeep, false: palette.separator }} />
+      <Switch value={value} onValueChange={onChange} trackColor={{ true: palette.toggleOn, false: palette.separator }} />
     </View>
   );
 }
@@ -689,16 +683,16 @@ const styles = StyleSheet.create({
   saveBtn: { height: 44, justifyContent: 'center', paddingHorizontal: 10, marginRight: -10 },
   listCard: { backgroundColor: palette.white, borderRadius: 16, overflow: 'hidden', marginBottom: 12 },
   priceRow: { flexDirection: 'row', alignItems: 'center', height: 50, paddingHorizontal: 15, gap: 12 },
-  rowDiv: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(60,60,67,0.12)', marginLeft: 15 },
+  rowDiv: { height: StyleSheet.hairlineWidth, backgroundColor: palette.hairline, marginLeft: 15 },
   card: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginBottom: 12 },
   about: { fontSize: 14.5, lineHeight: 21, color: palette.inkText, minHeight: 90, textAlignVertical: 'top' },
-  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: '#F0F0F3' },
   note: { fontSize: 11.5, lineHeight: 16, color: palette.tertiary, marginTop: -4, marginBottom: 14, paddingHorizontal: 4 },
   noteLast: { marginTop: 2 },
   hint: { fontSize: 12, lineHeight: 17, color: palette.tertiary },
   warn: { fontSize: 12, lineHeight: 17, color: palette.streakText, fontWeight: '500', marginTop: 10 },
   coverWrap: { borderRadius: 14, overflow: 'hidden', backgroundColor: palette.grouped },
   cover: { width: '100%', height: 160 },
+  // Scrims over the photo: light text and glyphs on them, as on any media.
   coverBadge: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(11,11,14,0.72)', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
   coverBusy: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(11,11,14,0.45)' },
   thumbWrap: { width: 88, height: 88, borderRadius: 12, overflow: 'hidden', backgroundColor: palette.grouped },
@@ -706,7 +700,8 @@ const styles = StyleSheet.create({
   // 44x44 target in the tile's corner; the padding keeps the dot 5 pt in from the edges.
   thumbX: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, padding: 5, alignItems: 'flex-end' },
   thumbXDot: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(11,11,14,0.7)' },
-  addTile: { width: 88, height: 88, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.grouped, borderWidth: 1, borderColor: palette.separator, borderStyle: 'dashed' },
+  // Design 14.2: a 1.5 pt dashed outline around a 20 pt grey «+».
+  addTile: { width: 88, height: 88, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.grouped, borderWidth: 1.5, borderColor: palette.separator, borderStyle: 'dashed' },
   map: { height: 240, borderRadius: 14 },
   mapLoading: { alignItems: 'center', justifyContent: 'center', backgroundColor: palette.grouped },
   pinRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10 },

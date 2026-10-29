@@ -11215,5 +11215,216 @@
   "key": "Adının yanında yaşıl nişan görünür",
   "ru": "Рядом с твоим именем виден зелёный значок",
   "en": "A green badge shows next to your name"
+ },
+ {
+  "key": "Davamiyyət · son 30 gün",
+  "ru": "Посещаемость · последние 30 дней",
+  "en": "Attendance · last 30 days"
+ },
+ {
+  "key": "Sadiq",
+  "ru": "Постоянный",
+  "en": "Loyal"
+ },
+ {
+  "key": "VÖEN və ya qeydiyyat nömrəsi",
+  "ru": "VÖEN или регистрационный номер",
+  "en": "VÖEN or registration number"
+ },
+ {
+  "key": "Təsdiq nə deyir",
+  "ru": "Что означает подтверждение",
+  "en": "What verification means"
+ },
+ {
+  "key": "Zalın şəkilləri",
+  "ru": "Фото зала",
+  "en": "Gym photos"
+ },
+ {
+  "key": "Zal haqqında",
+  "ru": "О зале",
+  "en": "About the gym"
+ },
+ {
+  "key": "Avadanlıq və imkanlar",
+  "ru": "Оборудование и удобства",
+  "en": "Equipment and amenities"
+ },
+ {
+  "key": "Yeni sorğu",
+  "ru": "Новые запросы",
+  "en": "New requests"
+ },
+ {
+  "key": "Səninlə məşq etmək istəyirlər",
+  "ru": "Хотят тренироваться с тобой",
+  "en": "Want to train with you"
+ },
+ {
+  "key": "Alətlərin",
+  "ru": "Твои инструменты",
+  "en": "Your tools"
+ },
+ {
+  "key": "Mavi nişan nə verir",
+  "ru": "Что даёт синий значок",
+  "en": "What the blue badge gives you"
+ },
+ {
+  "key": "Sənədlər",
+  "ru": "Документы",
+  "en": "Documents"
+ },
+ {
+  "key": "Sorğusunda yazdığı",
+  "ru": "Написано в запросе",
+  "en": "From their request"
+ },
+ {
+  "key": "Təyin edilmiş proqram",
+  "ru": "Назначенная программа",
+  "en": "Assigned program"
+ },
+ {
+  "key": "Proqramların",
+  "ru": "Твои программы",
+  "en": "Your programs"
+ },
+ {
+  "key": "Qeyd · şagird bunu oxuyur",
+  "ru": "Заметка · ученик это прочитает",
+  "en": "Note · the student reads this"
+ },
+ {
+  "key": "Yoldaş",
+  "ru": "Напарник",
+  "en": "Partner"
+ },
+ {
+  "key": "Və ya məktubdakı kodu yaz",
+  "ru": "Или введи код из письма",
+  "en": "Or enter the code from the email"
+ },
+ {
+  "key": "E-poçt ilə",
+  "ru": "Через e-mail",
+  "en": "With email"
+ },
+ {
+  "key": "İndi zalda {n} nəfər · {gym}",
+  "ru_one": "Сейчас в зале {n} человек · {gym}",
+  "ru_few": "Сейчас в зале {n} человека · {gym}",
+  "ru_many": "Сейчас в зале {n} человек · {gym}",
+  "en_one": "{n} person at the gym now · {gym}",
+  "en_other": "{n} people at the gym now · {gym}"
+ },
+ {
+  "key": "Day-pass kodu",
+  "ru": "Код разового посещения",
+  "en": "Day pass code"
+ },
+ {
+  "key": "Təklif",
+  "ru": "Предложить",
+  "en": "Invite"
+ },
+ {
+  "key": "Fərqlər",
+  "ru": "Различия",
+  "en": "Differences"
+ },
+ {
+  "key": "Əzələ qrupu üzrə həcm · 4 həftə",
+  "ru": "Объём по группам мышц · 4 недели",
+  "en": "Volume by muscle group · 4 weeks"
+ },
+ {
+  "key": "Seriya",
+  "ru": "Серия",
+  "en": "Streak"
+ },
+ {
+  "key": "Ümumi həcm",
+  "ru": "Общий объём",
+  "en": "Total volume"
+ },
+ {
+  "key": "Qazanılmış · {n}",
+  "ru_one": "Получено · {n}",
+  "ru_few": "Получено · {n}",
+  "ru_many": "Получено · {n}",
+  "en_one": "Earned · {n}",
+  "en_other": "Earned · {n}"
+ },
+ {
+  "key": "Yaxındır",
+  "ru": "Осталось немного",
+  "en": "Almost there"
+ },
+ {
+  "key": "Mövzu",
+  "ru": "Тема",
+  "en": "Topic"
+ },
+ {
+  "key": "Nə baş verdi?",
+  "ru": "Что произошло?",
+  "en": "What happened?"
+ },
+ {
+  "key": "Məşq, check-in, saxlanılanlar və filtrlər bu telefondan silinir. Hesabın silinmir — serverdəki profilin, videoların və şərhlərin yerində qalır və tətbiqi yenidən açanda geri gəlir. Hesabı həmişəlik silmək üçün aşağıdakı «Hesabı tamamilə sil» düyməsindən istifadə et.",
+  "ru": "Тренировки, check-in, сохранённое и фильтры удаляются с этого телефона. Аккаунт не удаляется — твой профиль, видео и комментарии на сервере остаются на месте и вернутся, когда ты снова откроешь приложение. Чтобы удалить аккаунт навсегда, используй кнопку «Удалить аккаунт полностью» ниже.",
+  "en": "Workouts, check-ins, saved items and filters are deleted from this phone. Your account is not deleted — your profile, videos and comments on the server stay where they are and come back when you reopen the app. To delete your account for good, use the \"Delete account completely\" button below."
+ },
+ {
+  "key": "Zal panelin açıqdır — amma zal hələ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, spam və saxta zalların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.",
+  "ru": "Панель зала открыта — но зал пока не виден в Обзоре. Залы, созданные в приложении, попадают в список после проверки модератором; это защищает от спама и фейковых залов. Подтверждение владения — отдельный шаг: VÖEN тебе нужно отправить самостоятельно.",
+  "en": "Your gym panel is open — but the gym isn't in Discover yet. Gyms created in the app show up in the list after a moderator reviews them; this keeps out spam and fake gyms. Ownership verification is a separate step — you need to send your VÖEN yourself."
+ },
+ {
+  "key": "Zal panelin açıqdır — amma zal hələ Kəşfdə görünmür. Tətbiqdən yaradılan zallar moderator baxandan sonra siyahıya düşür; bu, saxta və reklam xarakterli elanların qarşısını alır. Sahiblik təsdiqi ayrı addımdır — VÖEN-i özün göndərməlisən.",
+  "ru": "Панель зала открыта — но зал пока не виден в Обзоре. Залы, созданные в приложении, попадают в список после проверки модератором; это отсекает фейковые и рекламные объявления. Подтверждение владения — отдельный шаг: VÖEN тебе нужно отправить самостоятельно.",
+  "en": "Your gym panel is open — but the gym isn't in Discover yet. Gyms created in the app show up in the list after a moderator reviews them; this keeps out fake and promotional listings. Ownership verification is a separate step — you need to send your VÖEN yourself."
+ },
+ {
+  "key": "Bugünkü məşq · Gün {n}/{total}",
+  "ru": "Тренировка на сегодня · день {n}/{total}",
+  "en": "Today's workout · day {n}/{total}"
+ },
+ {
+  "key": "Bugünkü məşq",
+  "ru": "Тренировка на сегодня",
+  "en": "Today's workout"
+ },
+ {
+  "key": "Əvvəlki",
+  "ru": "Предыдущий",
+  "en": "Previous"
+ },
+ {
+  "key": "kq",
+  "ru": "кг",
+  "en": "kg"
+ },
+ {
+  "key": "Saniyə",
+  "ru": "Сек",
+  "en": "Sec"
+ },
+ {
+  "key": "Əsas",
+  "ru": "Базовое",
+  "en": "Compound"
+ },
+ {
+  "key": "Müəllim · {specialty}",
+  "ru": "Тренер · {specialty}",
+  "en": "Trainer · {specialty}"
+ },
+ {
+  "key": "Pulsuz",
+  "ru": "Бесплатно",
+  "en": "Free"
  }
 ]

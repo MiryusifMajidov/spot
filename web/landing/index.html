@@ -6,8 +6,8 @@
 <title>SPOT — Yoldaşını tap. Tək məşq etmə.</title>
 <meta name="description" content="Eyni saatda məşq edən yoldaşını tap, müəllimə sorğu göndər, zalda QR ilə check-in et. SPOT ödəniş qəbul etmir — qiymətlər yalnız məlumat üçündür.">
 <style>
-body{margin:0;background:#fff;font-family:-apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased}
-a{color:#0B0B0E;text-decoration:none}a:hover{color:#5B7F00}
+body{margin:0;color:#1A1A1A;background:#FEFEFE;font-family:-apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#1A1A1A;text-decoration:none}a:hover{color:#527A01}
 /* Full-bleed bands, centred content. The whole page used to sit in a 1440px
    box with white on either side, so on a wide screen the dark hero and the
    header stopped short of the edges. Backgrounds now run edge to edge; what is
@@ -46,7 +46,7 @@ html,body{overflow-x:clip}          /* safety net only — widths are capped bel
 .hdr-burger,.nav-drawer,.nav-backdrop{display:none}
 
 .hdr-burger{width:44px;height:44px;flex:none;align-items:center;justify-content:center;
-  padding:0;margin:0;border:0;border-radius:12px;background:transparent;color:#0B0B0E;
+  padding:0;margin:0;border:0;border-radius:12px;background:transparent;color:#1A1A1A;
   cursor:pointer;-webkit-tap-highlight-color:transparent}
 .hdr-burger-box{position:relative;display:block;width:22px;height:16px}
 .hdr-bar{position:absolute;left:0;width:22px;height:2px;border-radius:2px;background:currentColor;
@@ -57,15 +57,15 @@ html,body{overflow-x:clip}          /* safety net only — widths are capped bel
 .hdr-burger[aria-expanded="true"] .hdr-bar:nth-child(1){transform:translateY(7px) rotate(45deg)}
 .hdr-burger[aria-expanded="true"] .hdr-bar:nth-child(2){opacity:0;transform:scaleX(.3)}
 .hdr-burger[aria-expanded="true"] .hdr-bar:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-.hdr-burger:focus-visible,.nav-drawer a:focus-visible{outline:2px solid #5B7F00;outline-offset:3px}
+.hdr-burger:focus-visible,.nav-drawer a:focus-visible{outline:2px solid #527A01;outline-offset:3px}
 
-.nav-backdrop{position:fixed;left:0;right:0;top:0;bottom:0;z-index:40;background:rgba(11,11,14,.45);
+.nav-backdrop{position:fixed;left:0;right:0;top:0;bottom:0;z-index:40;background:rgba(26,26,26,.45);
   opacity:0;visibility:hidden;transition:opacity .26s ease,visibility 0s linear .26s}
 .nav-backdrop.open{opacity:1;visibility:visible;transition:opacity .26s ease,visibility 0s}
 
 .nav-drawer{position:fixed;top:64px;left:0;right:0;z-index:45;box-sizing:border-box;
-  background:#fff;border-bottom:1px solid rgba(60,60,67,.1);border-radius:0 0 18px 18px;
-  box-shadow:0 24px 48px rgba(11,11,14,.2);padding:6px 20px 22px;
+  background:#FEFEFE;border-bottom:1px solid rgba(60,60,67,.1);border-radius:0 0 18px 18px;
+  padding:6px 20px 22px;
   max-height:calc(100vh - 80px);max-height:calc(100svh - 80px);
   overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   opacity:0;visibility:hidden;transform:translateY(-14px);
@@ -74,19 +74,19 @@ html,body{overflow-x:clip}          /* safety net only — widths are capped bel
   transition:opacity .25s ease,transform .28s ease,visibility 0s}
 .nav-drawer-links{display:flex;flex-direction:column}
 .nav-drawer-links a{display:flex;align-items:center;justify-content:space-between;gap:14px;
-  box-sizing:border-box;min-height:54px;padding:8px 2px;color:#0B0B0E;
+  box-sizing:border-box;min-height:54px;padding:8px 2px;color:#1A1A1A;
   font:600 17px/1.3 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;
   border-bottom:1px solid rgba(60,60,67,.1)}
 .nav-drawer-links a:last-child{border-bottom:0}
 .nav-drawer-links a svg{color:#C0C0C6;flex:none}
-.nav-drawer-links a:active{color:#5B7F00}
+.nav-drawer-links a:active{color:#527A01}
 .nav-drawer-cta{display:flex;flex-direction:column;gap:10px;margin-top:14px;padding-top:16px;
   border-top:1px solid rgba(60,60,67,.14)}
 .drawer-btn{display:flex;align-items:center;justify-content:center;gap:9px;min-height:52px;
-  box-sizing:border-box;border-radius:14px;font:600 16px/1 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif}
-.drawer-btn-sec{background:#F4F4F6;color:#0B0B0E}
-.drawer-btn-pri{background:#101014;color:#fff}
-.drawer-btn-pri:hover{color:#fff}
+  box-sizing:border-box;border-radius:16px;font:600 16px/1 -apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif}
+.drawer-btn-sec{background:#EDEDED;color:#1A1A1A}
+.drawer-btn-pri{background:#C5FE01;color:#1A1A1A}
+.drawer-btn-pri:hover{color:#1A1A1A}
 html.nav-open,body.nav-open{overflow:hidden}
 
 /* ---------- ~1024px: tablet — the big 2-col blocks still work ---------- */
@@ -151,7 +151,7 @@ html.nav-open,body.nav-open{overflow:hidden}
   .hero-inner h1{font-size:clamp(31px,8.4vw,40px)!important;letter-spacing:-1.4px!important}
   .hero-inner > div:first-of-type > p{font-size:16.5px!important;margin-top:18px!important}
   .hero-cta{margin-top:26px!important;gap:10px!important;flex-wrap:wrap!important}
-  .hero-cta a{height:52px!important;font-size:15.5px!important;padding:0 20px!important}
+  .hero-cta a,.hero-cta>span{height:52px!important;font-size:15.5px!important;padding:0 20px!important}
   .hero-stats{margin-top:30px!important;gap:16px 22px!important;flex-wrap:wrap!important}
   .hstat-div{display:none!important}
   .hero-stats > div > div:first-child{font-size:24px!important}
@@ -188,7 +188,7 @@ html.nav-open,body.nav-open{overflow:hidden}
 
   .hero-inner{padding:28px 16px 34px!important}
   .hero-cta{flex-direction:column!important;align-items:stretch!important}
-  .hero-cta a{justify-content:center!important}
+  .hero-cta a,.hero-cta>span{justify-content:center!important}
   .hero-phone{width:100%!important;max-width:268px!important}
   .g-footer{grid-template-columns:minmax(0,1fr)!important}
   .g-gym-stats{gap:10px!important}
@@ -219,22 +219,22 @@ html.nav-open,body.nav-open{overflow:hidden}
 <body>
 
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><defs>
-<symbol id="l-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></g></symbol>
-<symbol id="l-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.4"/><path d="M3 19.5c.7-3.2 3-4.8 6-4.8s5.3 1.6 6 4.8"/><path d="M16 5.6a3.4 3.4 0 0 1 0 5.8M17.5 15.2c2 .6 3.2 2.1 3.5 4.3"/></g></symbol>
-<symbol id="l-dumbbell" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 9.5v5M6 7v10M18 7v10M21 9.5v5M6 12h12"/></g></symbol>
-<symbol id="l-play" viewBox="0 0 24 24"><path d="M7 4.5l13 7.5L7 19.5z" fill="currentColor"/></symbol>
-<symbol id="l-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-<symbol id="l-verified" viewBox="0 0 24 24"><path d="M12 2.2l2.5 1.6 3-.2 1 2.8 2.3 1.9-1 2.8 1 2.8-2.3 1.9-1 2.8-3-.2L12 21.8 9.5 20.2l-3 .2-1-2.8L3.2 15.7l1-2.8-1-2.8 2.3-1.9 1-2.8 3 .2z" fill="currentColor"/><path d="M8.4 12.2l2.6 2.6 4.8-5.2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-<symbol id="l-qr" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8.5V6a2 2 0 0 1 2-2h2.5M15.5 4H18a2 2 0 0 1 2 2v2.5M20 15.5V18a2 2 0 0 1-2 2h-2.5M8.5 20H6a2 2 0 0 1-2-2v-2.5"/><path d="M7.5 12h9" stroke-linecap="round"/></g></symbol>
-<symbol id="l-flame" viewBox="0 0 24 24"><path d="M13 2.5c.6 3.4-1.4 4.6-2.8 6.2C8.4 10.7 8 12 8 13.4A6 6 0 0 0 20 14c0-4.4-3.5-6.4-7-11.5z" fill="currentColor"/></symbol>
-<symbol id="l-trophy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 4h9v4.5a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 5.5H5a2.5 2.5 0 0 0 2.5 4.5M16.5 5.5H19a2.5 2.5 0 0 1-2.5 4.5M12 13v3.5M8.5 20h7l-.8-3.5h-5.4z"/></g></symbol>
-<symbol id="l-meal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 3.5v7a2.5 2.5 0 0 0 5 0v-7M8.5 13v7.5"/><path d="M16.5 3.5c2 0 2.5 2.5 2.5 5s-1 3.5-2.5 3.5S14 10.5 14 8.5s.5-5 2.5-5zM16.5 12v8.5"/></g></symbol>
-<symbol id="l-apple" viewBox="0 0 24 24"><path d="M16.4 12.6c0-2.4 1.9-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.9-1.5-.1-2.8.8-3.5.8s-1.9-.8-3.1-.8C6.8 7.2 5 8.5 5 11.4c0 1.8.7 3.7 1.6 5 .8 1.1 1.5 2 2.5 2s1.4-.6 2.7-.6 1.6.6 2.7.6 1.8-1 2.5-2.1c.6-.9.9-1.7 1-1.8-.1 0-2.6-1-2.6-3.9zM13.9 5.7c.6-.7 1-1.6.9-2.6-.9 0-2 .6-2.6 1.3-.6.6-1 1.6-.9 2.5 1 .1 2-.5 2.6-1.2z" fill="currentColor"/></symbol>
-<symbol id="l-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></symbol>
-<symbol id="l-chev-d" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-<symbol id="l-arrow-r" viewBox="0 0 24 24"><path d="M4 12h15m-6-6.5L19.5 12 13 18.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-<symbol id="l-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2l7 2.6v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9v-6z"/><path d="M9 12l2.2 2.2L15.2 10"/></g></symbol>
-<symbol id="l-pin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></g></symbol>
+<symbol id="l-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></g></symbol>
+<symbol id="l-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/></g></symbol>
+<symbol id="l-dumbbell" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h1"/><path d="M6 8h-2a1 1 0 0 0 -1 1v6a1 1 0 0 0 1 1h2"/><path d="M6 7v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1 -1v-10a1 1 0 0 0 -1 -1h-1a1 1 0 0 0 -1 1z"/><path d="M9 12h6"/><path d="M15 7v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1 -1v-10a1 1 0 0 0 -1 -1h-1a1 1 0 0 0 -1 1z"/><path d="M18 8h2a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-2"/><path d="M22 12h-1"/></g></symbol>
+<symbol id="l-play" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16l13 -8z"/></g></symbol>
+<symbol id="l-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></g></symbol>
+<symbol id="l-verified" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7.2a2.2 2.2 0 0 1 2.2 -2.2h1a2.2 2.2 0 0 0 1.55 -.64l.7 -.7a2.2 2.2 0 0 1 3.12 0l.7 .7c.412 .41 .97 .64 1.55 .64h1a2.2 2.2 0 0 1 2.2 2.2v1c0 .58 .23 1.138 .64 1.55l.7 .7a2.2 2.2 0 0 1 0 3.12l-.7 .7a2.2 2.2 0 0 0 -.64 1.55v1a2.2 2.2 0 0 1 -2.2 2.2h-1a2.2 2.2 0 0 0 -1.55 .64l-.7 .7a2.2 2.2 0 0 1 -3.12 0l-.7 -.7a2.2 2.2 0 0 0 -1.55 -.64h-1a2.2 2.2 0 0 1 -2.2 -2.2v-1a2.2 2.2 0 0 0 -.64 -1.55l-.7 -.7a2.2 2.2 0 0 1 0 -3.12l.7 -.7a2.2 2.2 0 0 0 .64 -1.55v-1"/><path d="M9 12l2 2l4 -4"/></g></symbol>
+<symbol id="l-qr" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7v-1a2 2 0 0 1 2 -2h2"/><path d="M4 17v1a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v1"/><path d="M16 20h2a2 2 0 0 0 2 -2v-1"/><path d="M5 12l14 0"/></g></symbol>
+<symbol id="l-flame" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10.941c2.333 -3.308 .167 -7.823 -1 -8.941c0 3.395 -2.235 5.299 -3.667 6.706c-1.43 1.408 -2.333 3.621 -2.333 5.588c0 3.704 3.134 6.706 7 6.706s7 -3.002 7 -6.706c0 -1.712 -1.232 -4.403 -2.333 -5.588c-2.084 3.353 -3.257 3.353 -4.667 2.235"/></g></symbol>
+<symbol id="l-trophy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21l8 0"/><path d="M12 17l0 4"/><path d="M7 4l10 0"/><path d="M17 4v8a5 5 0 0 1 -10 0v-8"/><path d="M5 9m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M19 9m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/></g></symbol>
+<symbol id="l-meal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M19 3v12h-5c-.023 -3.681 .184 -7.406 5 -12zm0 12v6h-1v-3m-10 -14v17m-3 -17v3a3 3 0 1 0 6 0v-3"/></g></symbol>
+<symbol id="l-apple" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M8.286 7.008c-3.216 0 -4.286 3.23 -4.286 5.92c0 3.229 2.143 8.072 4.286 8.072c1.165 -.05 1.799 -.538 3.214 -.538c1.406 0 1.607 .538 3.214 .538s4.286 -3.229 4.286 -5.381c-.03 -.011 -2.649 -.434 -2.679 -3.23c-.02 -2.335 2.589 -3.179 2.679 -3.228c-1.096 -1.606 -3.162 -2.113 -3.75 -2.153c-1.535 -.12 -3.032 1.077 -3.75 1.077c-.729 0 -2.036 -1.077 -3.214 -1.077z"/><path d="M12 4a2 2 0 0 0 2 -2a2 2 0 0 0 -2 2"/></g></symbol>
+<symbol id="l-plus" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></g></symbol>
+<symbol id="l-chev-d" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6"/></g></symbol>
+<symbol id="l-arrow-r" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l14 0"/><path d="M13 18l6 -6"/><path d="M13 6l6 6"/></g></symbol>
+<symbol id="l-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M11.46 20.846a12 12 0 0 1 -7.96 -14.846a12 12 0 0 0 8.5 -3a12 12 0 0 0 8.5 3a12 12 0 0 1 -.09 7.06"/><path d="M15 19l2 2l4 -4"/></g></symbol>
+<symbol id="l-pin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"/></g></symbol>
 </defs></svg>
 
 <div>
@@ -242,7 +242,7 @@ html.nav-open,body.nav-open{overflow:hidden}
 <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);backdrop-filter:blur(18px);border-bottom:1px solid rgba(60,60,67,.1)">
   <div class="hdr-row" style="display:flex;align-items:center;gap:clamp(14px,2vw,34px);padding:16px clamp(20px,3.3vw,48px);flex-wrap:wrap;row-gap:12px">
     <div style="display:flex;align-items:center;gap:11px">
-      <div style="width:34px;height:34px;border-radius:10px;background:#101014;display:flex;align-items:center;justify-content:center"><div style="width:15px;height:15px;border-radius:50%;border:3px solid #C6FF3D;position:relative"><div style="position:absolute;inset:3px;border-radius:50%;background:#C6FF3D"></div></div></div>
+      <div style="width:34px;height:34px;border-radius:10px;background:#1A1A1A;display:flex;align-items:center;justify-content:center"><div style="width:15px;height:15px;border-radius:50%;border:3px solid #C5FE01;position:relative"><div style="position:absolute;inset:3px;border-radius:50%;background:#C5FE01"></div></div></div>
       <div style="font:700 19px/1 -apple-system,system-ui;letter-spacing:-.5px">SPOT</div>
     </div>
     <nav class="hdr-nav" style="display:flex;gap:26px;margin-left:14px">
@@ -254,7 +254,7 @@ html.nav-open,body.nav-open{overflow:hidden}
     </nav>
     <div class="hdr-actions" style="margin-left:auto;display:flex;align-items:center;gap:14px">
       <a class="hdr-partner" href="#zallar" style="font:600 14.5px/1 -apple-system,system-ui;color:#4A4A52;white-space:nowrap">Zalını əlavə et</a>
-      <span class="hdr-store" style="display:flex;align-items:center;gap:8px;height:42px;padding:0 18px;border-radius:12px;background:#101014;color:#fff;font:600 14.5px/1 -apple-system,system-ui;white-space:nowrap"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#C6FF3D"><use href="#l-apple"></use></svg>Tezliklə mağazalarda</span>
+      <span class="hdr-store" style="display:flex;align-items:center;gap:8px;height:42px;padding:0 18px;border-radius:12px;background:#C5FE01;color:#1A1A1A;font:600 14.5px/1 -apple-system,system-ui;white-space:nowrap"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#1A1A1A"><use href="#l-apple"></use></svg>Tezliklə mağazalarda</span>
       <button class="hdr-burger" type="button" aria-label="Menyu" aria-expanded="false" aria-controls="mobile-menu"><span class="hdr-burger-box"><span class="hdr-bar"></span><span class="hdr-bar"></span><span class="hdr-bar"></span></span></button>
     </div>
   </div>
@@ -271,23 +271,23 @@ html.nav-open,body.nav-open{overflow:hidden}
   </nav>
   <div class="nav-drawer-cta">
     <a class="drawer-btn drawer-btn-sec" href="#zallar">Zalını əlavə et</a>
-    <span class="drawer-btn drawer-btn-pri"><svg width="18" height="18" viewBox="0 0 24 24" style="color:#C6FF3D" aria-hidden="true"><use href="#l-apple"></use></svg>Tezliklə mağazalarda</span>
+    <span class="drawer-btn drawer-btn-pri"><svg width="18" height="18" viewBox="0 0 24 24" style="color:#1A1A1A" aria-hidden="true"><use href="#l-apple"></use></svg>Tezliklə mağazalarda</span>
   </div>
 </div>
 
-<section class="sec-hero" style="position:relative;overflow:hidden;background:#0B0B0E;color:#fff">
-  <div style="position:absolute;inset:0;background:radial-gradient(70% 90% at 78% 10%,rgba(198,255,61,.22),transparent 62%)"></div>
+<section class="sec-hero" style="position:relative;overflow:hidden;background:#1A1A1A;color:#FAFAFA">
+  <div style="position:absolute;inset:0;background:radial-gradient(70% 90% at 78% 10%,rgba(197,254,1,.22),transparent 62%)"></div>
   <div class="hero-inner" style="position:relative;display:flex;flex-wrap:wrap;gap:40px;align-items:center;padding:82px clamp(20px,3.3vw,48px) 78px">
     <div style="flex:1 1 480px;min-width:0">
-      <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(198,255,61,.14);border:1px solid rgba(198,255,61,.28);margin-bottom:28px">
-        <div style="width:7px;height:7px;border-radius:50%;background:#C6FF3D;animation:spotPulse 1.8s infinite"></div>
-        <div style="font:600 12.5px/1 -apple-system,system-ui;color:#C6FF3D;letter-spacing:.02em">Bakı üçün · yeni açılır</div>
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(197,254,1,.14);border:1px solid rgba(197,254,1,.28);margin-bottom:28px">
+        <div style="width:7px;height:7px;border-radius:50%;background:#C5FE01;animation:spotPulse 1.8s infinite"></div>
+        <div style="font:600 12.5px/1 -apple-system,system-ui;color:#C5FE01;letter-spacing:.02em">Bakı üçün · yeni açılır</div>
       </div>
-      <h1 style="margin:0;font:700 clamp(40px,4.6vw,66px)/1.03 -apple-system,system-ui;letter-spacing:-2.6px;text-wrap:balance">Zalını tap.<br>Yoldaşını tap.<br><span style="color:#C6FF3D">Tək məşq etmə.</span></h1>
+      <h1 style="margin:0;font:700 clamp(40px,4.6vw,66px)/1.03 -apple-system,system-ui;letter-spacing:-2.6px;text-wrap:balance">Zalını tap.<br>Yoldaşını tap.<br><span style="color:#C5FE01">Tək məşq etmə.</span></h1>
       <p style="margin:26px 0 0;font:400 19px/1.55 -apple-system,system-ui;color:rgba(255,255,255,.62);max-width:520px;text-wrap:pretty">Eyni saatda məşq edən adamı tap. Müəllimə sorğu göndər, təyin etdiyi proqramı telefonunda gör, zalda QR ilə check-in et. SPOT ödəniş qəbul etmir — qiymətlər yalnız məlumat üçündür.</p>
       <div class="hero-cta" style="display:flex;gap:13px;margin-top:34px">
-        <span style="display:flex;align-items:center;gap:9px;height:56px;padding:0 26px;border-radius:15px;background:#C6FF3D;color:#0B0B0E;font:600 16.5px/1 -apple-system,system-ui"><svg width="19" height="19" viewBox="0 0 24 24"><use href="#l-apple"></use></svg>Google Play və App Store-da tezliklə</span>
-        <a href="#nasil" style="display:flex;align-items:center;gap:9px;height:56px;padding:0 24px;border-radius:15px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:#fff;font:600 16.5px/1 -apple-system,system-ui">Necə işləyir<svg width="18" height="18" viewBox="0 0 24 24"><use href="#l-arrow-r"></use></svg></a>
+        <span style="display:flex;align-items:center;gap:9px;height:56px;padding:0 26px;border-radius:16px;background:#C5FE01;color:#1A1A1A;font:600 16.5px/1 -apple-system,system-ui"><svg width="19" height="19" viewBox="0 0 24 24"><use href="#l-apple"></use></svg>Google Play və App Store-da tezliklə</span>
+        <a href="#nasil" style="display:flex;align-items:center;gap:9px;height:56px;padding:0 24px;border-radius:15px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:#FAFAFA;font:600 16.5px/1 -apple-system,system-ui">Necə işləyir<svg width="18" height="18" viewBox="0 0 24 24"><use href="#l-arrow-r"></use></svg></a>
       </div>
       <div class="hero-stats" style="display:flex;gap:34px;margin-top:44px">
         <div><div style="font:700 22px/1.15 -apple-system,system-ui;letter-spacing:-.6px">Pulsuz</div><div style="font:500 13px/1.3 -apple-system,system-ui;color:rgba(255,255,255,.45);margin-top:8px">həmişə, tam</div></div>
@@ -298,38 +298,38 @@ html.nav-open,body.nav-open{overflow:hidden}
       </div>
     </div>
     <div class="hero-phones" style="flex:1 1 560px;min-width:0;display:flex;justify-content:center;gap:22px;align-items:flex-start;flex-wrap:wrap">
-      <div class="hero-phone hero-phone-1" style="width:268px;border-radius:34px;background:#F4F4F6;box-shadow:0 0 0 7px #1C1C22,0 30px 60px rgba(0,0,0,.5);overflow:hidden;color:#0B0B0E;animation:spotFloat 6s ease-in-out infinite">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 4px"><span style="font:600 12px/1 -apple-system,system-ui">9:41</span><div style="display:flex;gap:3px"><div style="width:14px;height:8px;border-radius:2px;background:#0B0B0E"></div></div></div>
+      <div class="hero-phone hero-phone-1" style="width:268px;border-radius:34px;background:#F7F7F7;box-shadow:0 0 0 7px #1C1C22;overflow:hidden;color:#1A1A1A;animation:spotFloat 6s ease-in-out infinite">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 4px"><span style="font:600 12px/1 -apple-system,system-ui">9:41</span><div style="display:flex;gap:3px"><div style="width:14px;height:8px;border-radius:2px;background:#C5FE01"></div></div></div>
         <div style="padding:6px 15px 0"><div style="font:700 22px/1.05 -apple-system,system-ui;letter-spacing:-.7px">Kəşf</div>
-          <div style="display:flex;background:#EFEFF2;border-radius:9px;padding:2px;margin-top:11px"><div style="flex:1;text-align:center;padding:6px 0;background:#fff;border-radius:7px;font:600 11px/1 -apple-system,system-ui">Zallar</div><div style="flex:1;text-align:center;padding:6px 0;font:500 11px/1 -apple-system,system-ui;color:#6E6E76">Müəllim</div><div style="flex:1;text-align:center;padding:6px 0;font:500 11px/1 -apple-system,system-ui;color:#6E6E76">Yoldaş</div></div>
+          <div style="display:flex;background:#F7F7F7;border-radius:9px;padding:2px;margin-top:11px"><div style="flex:1;text-align:center;padding:6px 0;background:#FEFEFE;border-radius:7px;font:600 11px/1 -apple-system,system-ui">Zallar</div><div style="flex:1;text-align:center;padding:6px 0;font:500 11px/1 -apple-system,system-ui;color:#6B6B6B">Müəllim</div><div style="flex:1;text-align:center;padding:6px 0;font:500 11px/1 -apple-system,system-ui;color:#6B6B6B">Yoldaş</div></div>
         </div>
         <div style="padding:12px 15px 16px">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:9px"><div style="width:6px;height:6px;border-radius:50%;background:#C6FF3D"></div><div style="font:600 9.5px/1 -apple-system,system-ui;letter-spacing:.06em;text-transform:uppercase;color:#5B7F00">İndi zalda 12 nəfər</div></div>
-          <div style="background:#fff;border-radius:14px;overflow:hidden;margin-bottom:10px">
-            <div style="height:88px;background:linear-gradient(135deg,#D6D6DC,#EDEDF0);position:relative"><div style="position:absolute;top:8px;left:8px;padding:4px 7px;border-radius:6px;background:rgba(198,255,61,.94);font:700 9px/1 -apple-system,system-ui">12 nəfər burada</div></div>
-            <div style="padding:10px 12px 12px"><div style="display:flex;align-items:center;gap:5px"><div style="font:700 13.5px/1.2 -apple-system,system-ui">Iron Bay</div><svg width="11" height="11" viewBox="0 0 24 24" style="color:#5B7F00"><use href="#l-verified"></use></svg><div style="margin-left:auto;font:700 12.5px/1 -apple-system,system-ui">45 ₼</div></div><div style="font:400 10.5px/1.3 -apple-system,system-ui;color:#8A8A93;margin-top:5px">0.4 km · 6:00–24:00 · 4.8</div></div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:9px"><div style="width:6px;height:6px;border-radius:50%;background:#C5FE01"></div><div style="font:600 13px/1.25 -apple-system,system-ui;color:#527A01">İndi zalda 12 nəfər</div></div>
+          <div style="background:#FEFEFE;border-radius:14px;overflow:hidden;margin-bottom:10px">
+            <div style="height:88px;background:linear-gradient(135deg,#D6D6DC,#EDEDF0);position:relative"><div style="position:absolute;top:8px;left:8px;padding:4px 7px;border-radius:6px;background:rgba(197,254,1,.94);font:700 9px/1 -apple-system,system-ui">12 nəfər burada</div></div>
+            <div style="padding:10px 12px 12px"><div style="display:flex;align-items:center;gap:5px"><div style="font:700 13.5px/1.2 -apple-system,system-ui">Iron Bay</div><svg width="11" height="11" viewBox="0 0 24 24" style="color:#0A84FF"><use href="#l-verified"></use></svg><div style="margin-left:auto;font:700 12.5px/1 -apple-system,system-ui">45 ₼</div></div><div style="font:400 10.5px/1.3 -apple-system,system-ui;color:#888888;margin-top:5px">0.4 km · 6:00–24:00 · 4.8</div></div>
           </div>
-          <div style="background:#fff;border-radius:14px;padding:10px;display:flex;gap:9px;align-items:center">
+          <div style="background:#FEFEFE;border-radius:14px;padding:10px;display:flex;gap:9px;align-items:center">
             <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#D2D2D8,#EDEDF0);flex:none"></div>
-            <div style="flex:1"><div style="font:600 11.5px/1.2 -apple-system,system-ui">Volt Gym</div><div style="font:400 10px/1.2 -apple-system,system-ui;color:#8A8A93;margin-top:4px">1.1 km · 24 saat</div></div>
+            <div style="flex:1"><div style="font:600 11.5px/1.2 -apple-system,system-ui">Volt Gym</div><div style="font:400 10px/1.2 -apple-system,system-ui;color:#888888;margin-top:4px">1.1 km · 24 saat</div></div>
             <div style="font:700 11.5px/1 -apple-system,system-ui">60 ₼</div>
           </div>
         </div>
       </div>
-      <div class="hero-phone hero-phone-2" style="width:268px;border-radius:34px;background:#0B0B0E;box-shadow:0 0 0 7px #1C1C22,0 30px 60px rgba(0,0,0,.5);overflow:hidden;color:#fff;margin-top:48px;animation:spotFloat 6s ease-in-out .8s infinite">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 4px"><span style="font:600 12px/1 -apple-system,system-ui">9:41</span><div style="width:14px;height:8px;border-radius:2px;background:#fff"></div></div>
-        <div style="padding:10px 15px 0;display:flex;align-items:center;justify-content:space-between"><div style="font:500 11px/1 -apple-system,system-ui;color:rgba(255,255,255,.55)">Fasilə</div><div style="text-align:center"><div style="font:700 14px/1 -apple-system,system-ui">24:18</div></div><div style="font:600 11px/1 -apple-system,system-ui;color:#C6FF3D">Bitir</div></div>
+      <div class="hero-phone hero-phone-2" style="width:268px;border-radius:34px;background:#1A1A1A;box-shadow:0 0 0 7px #1C1C22;overflow:hidden;color:#FAFAFA;margin-top:48px;animation:spotFloat 6s ease-in-out .8s infinite">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 4px"><span style="font:600 12px/1 -apple-system,system-ui">9:41</span><div style="width:14px;height:8px;border-radius:2px;background:#FEFEFE"></div></div>
+        <div style="padding:10px 15px 0;display:flex;align-items:center;justify-content:space-between"><div style="font:500 11px/1 -apple-system,system-ui;color:rgba(255,255,255,.55)">Fasilə</div><div style="text-align:center"><div style="font:700 14px/1 -apple-system,system-ui">24:18</div></div><div style="font:600 11px/1 -apple-system,system-ui;color:#C5FE01">Bitir</div></div>
         <div style="padding:14px 15px 16px">
-          <div style="display:flex;gap:4px;margin-bottom:14px"><div style="flex:1;height:3px;border-radius:2px;background:#C6FF3D"></div><div style="flex:1;height:3px;border-radius:2px;background:#C6FF3D"></div><div style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.2)"></div><div style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.2)"></div></div>
+          <div style="display:flex;gap:4px;margin-bottom:14px"><div style="flex:1;height:3px;border-radius:2px;background:#C5FE01"></div><div style="flex:1;height:3px;border-radius:2px;background:#C5FE01"></div><div style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.2)"></div><div style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.2)"></div></div>
           <div style="font:700 16px/1.2 -apple-system,system-ui;letter-spacing:-.3px">Ştanqla sinə pressi</div>
           <div style="font:400 10.5px/1.3 -apple-system,system-ui;color:rgba(255,255,255,.5);margin-top:6px">Hərəkət 3 / 6 · hədəf 8–10</div>
           <div style="display:flex;flex-direction:column;gap:7px;margin-top:14px">
-            <div style="display:flex;align-items:center;gap:8px;background:rgba(198,255,61,.14);border:1px solid rgba(198,255,61,.3);border-radius:11px;padding:10px 11px"><div style="width:20px;height:20px;border-radius:6px;background:#C6FF3D;color:#0B0B0E;display:flex;align-items:center;justify-content:center;font:700 10px/1 -apple-system,system-ui">1</div><div style="flex:1;font:600 12px/1 -apple-system,system-ui">70 kq · 10</div><svg width="14" height="14" viewBox="0 0 24 24" style="color:#C6FF3D"><use href="#l-check"></use></svg></div>
-            <div style="display:flex;align-items:center;gap:8px;background:rgba(198,255,61,.14);border:1px solid rgba(198,255,61,.3);border-radius:11px;padding:10px 11px"><div style="width:20px;height:20px;border-radius:6px;background:#C6FF3D;color:#0B0B0E;display:flex;align-items:center;justify-content:center;font:700 10px/1 -apple-system,system-ui">2</div><div style="flex:1;font:600 12px/1 -apple-system,system-ui">72.5 kq · 9</div><svg width="14" height="14" viewBox="0 0 24 24" style="color:#C6FF3D"><use href="#l-check"></use></svg></div>
+            <div style="display:flex;align-items:center;gap:8px;background:rgba(197,254,1,.14);border:1px solid rgba(197,254,1,.3);border-radius:11px;padding:10px 11px"><div style="width:20px;height:20px;border-radius:6px;background:#C5FE01;color:#1A1A1A;display:flex;align-items:center;justify-content:center;font:700 10px/1 -apple-system,system-ui">1</div><div style="flex:1;font:600 12px/1 -apple-system,system-ui">70 kq · 10</div><svg width="14" height="14" viewBox="0 0 24 24" style="color:#C5FE01"><use href="#l-check"></use></svg></div>
+            <div style="display:flex;align-items:center;gap:8px;background:rgba(197,254,1,.14);border:1px solid rgba(197,254,1,.3);border-radius:11px;padding:10px 11px"><div style="width:20px;height:20px;border-radius:6px;background:#C5FE01;color:#1A1A1A;display:flex;align-items:center;justify-content:center;font:700 10px/1 -apple-system,system-ui">2</div><div style="flex:1;font:600 12px/1 -apple-system,system-ui">72.5 kq · 9</div><svg width="14" height="14" viewBox="0 0 24 24" style="color:#C5FE01"><use href="#l-check"></use></svg></div>
             <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 11px"><div style="width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font:700 10px/1 -apple-system,system-ui">3</div><div style="flex:1;font:600 12px/1 -apple-system,system-ui">72.5 kq · 8</div><div style="width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3)"></div></div>
           </div>
           <div style="background:rgba(255,255,255,.07);border-radius:12px;padding:10px;margin-top:13px;display:flex;gap:9px;align-items:center">
-            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#3A3A42,#5A5A66);flex:none;position:relative"><div style="position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border-radius:50%;background:#C6FF3D;border:1.5px solid #0B0B0E"></div></div>
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#3A3A42,#5A5A66);flex:none;position:relative"><div style="position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border-radius:50%;background:#C5FE01;border:1.5px solid #C5FE01"></div></div>
             <div style="flex:1"><div style="font:600 10.5px/1.2 -apple-system,system-ui">Tural da məşqdədir</div><div style="font:400 9px/1.2 -apple-system,system-ui;color:rgba(255,255,255,.45);margin-top:3px">Pull günü</div></div>
           </div>
         </div>
@@ -340,21 +340,21 @@ html.nav-open,body.nav-open{overflow:hidden}
 
 <section class="sec-problem" style="padding:78px clamp(20px,3.3vw,48px) 74px">
   <div style="text-align:center;max-width:720px;margin:0 auto 48px">
-    <div style="font:600 12px/1 -apple-system,system-ui;letter-spacing:.14em;text-transform:uppercase;color:#8A8A93;margin-bottom:16px">Problem</div>
+    <div style="font:600 13px/1.25 -apple-system,system-ui;color:#888888;margin-bottom:16px">Problem</div>
     <h2 style="margin:0;font:700 clamp(30px,3vw,42px)/1.1 -apple-system,system-ui;letter-spacing:-1.4px;text-wrap:balance">Zala başlamaq niyə bu qədər çətindir?</h2>
   </div>
   <div class="g-problem" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:22px">
-    <div style="background:#F4F4F6;border-radius:22px;padding:30px 28px">
+    <div style="background:#F7F7F7;border-radius:22px;padding:30px 28px">
       <div style="font:700 42px/1 -apple-system,system-ui;color:#C0C0C6;letter-spacing:-1.5px">01</div>
       <div style="font:600 21px/1.25 -apple-system,system-ui;letter-spacing:-.4px;margin:20px 0 12px">Axtarış dağınıqdır</div>
       <div style="font:400 15.5px/1.55 -apple-system,system-ui;color:#4A4A52">Zalların qiyməti Instagram DM-də, iş saatı bio-da, rəylər isə heç yerdə. Hansı zalın hansı avadanlığı var — bilinmir.</div>
     </div>
-    <div style="background:#F4F4F6;border-radius:22px;padding:30px 28px">
+    <div style="background:#F7F7F7;border-radius:22px;padding:30px 28px">
       <div style="font:700 42px/1 -apple-system,system-ui;color:#C0C0C6;letter-spacing:-1.5px">02</div>
       <div style="font:600 21px/1.25 -apple-system,system-ui;letter-spacing:-.4px;margin:20px 0 12px">Nə edəcəyini bilmirsən</div>
       <div style="font:400 15.5px/1.55 -apple-system,system-ui;color:#4A4A52">Müəllim tutmağa pul çatmır. YouTube-da yüz video var, hansı sənə uyğundur — məlum deyil. Səhv formada zədə alırsan.</div>
     </div>
-    <div style="background:#F4F4F6;border-radius:22px;padding:30px 28px">
+    <div style="background:#F7F7F7;border-radius:22px;padding:30px 28px">
       <div style="font:700 42px/1 -apple-system,system-ui;color:#C0C0C6;letter-spacing:-1.5px">03</div>
       <div style="font:600 21px/1.25 -apple-system,system-ui;letter-spacing:-.4px;margin:20px 0 12px">Tək qalırsan</div>
       <div style="font:400 15.5px/1.55 -apple-system,system-ui;color:#4A4A52">Ağır setdə spot verən yoxdur, gəlmək istəmədiyin gün səni çağıran yoxdur. 3 həftədən sonra ardıcıllıq itir.</div>
@@ -363,36 +363,36 @@ html.nav-open,body.nav-open{overflow:hidden}
 </section>
 
 <section id="nasil" class="sec-steps" style="padding:16px clamp(20px,3.3vw,48px) 78px">
-  <div class="dark-panel" style="background:#101014;border-radius:32px;padding:56px clamp(22px,3vw,48px);color:#fff">
+  <div class="dark-panel" style="background:#1A1A1A;border-radius:32px;padding:56px clamp(22px,3vw,48px);color:#FAFAFA">
     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:40px;margin-bottom:44px;flex-wrap:wrap">
       <div>
-        <div style="font:600 12px/1 -apple-system,system-ui;letter-spacing:.14em;text-transform:uppercase;color:#C6FF3D;margin-bottom:16px">Necə işləyir</div>
+        <div style="font:600 13px/1.25 -apple-system,system-ui;color:#C5FE01;margin-bottom:16px">Necə işləyir</div>
         <h2 style="margin:0;font:700 clamp(29px,2.9vw,40px)/1.1 -apple-system,system-ui;letter-spacing:-1.3px;max-width:560px;text-wrap:balance">Dörd addım — 90 saniyə</h2>
       </div>
       <p style="margin:0;font:400 16px/1.55 -apple-system,system-ui;color:rgba(255,255,255,.55);max-width:340px">Qeydiyyatda yalnız 4 sual: məqsəd, səviyyə, qrafik, zal. Bu cavablar həm proqramı, həm yoldaş təkliflərini qurur.</p>
     </div>
     <div class="g-steps" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:20px">
       <div style="background:rgba(255,255,255,.06);border-radius:20px;padding:26px 24px">
-        <div style="width:44px;height:44px;border-radius:13px;background:#C6FF3D;display:flex;align-items:center;justify-content:center;margin-bottom:22px"><svg width="22" height="22" viewBox="0 0 24 24" style="color:#0B0B0E"><use href="#l-search"></use></svg></div>
-        <div style="font:600 12px/1 -apple-system,system-ui;color:#C6FF3D;letter-spacing:.06em;margin-bottom:10px">ADDIM 1</div>
+        <div style="width:44px;height:44px;border-radius:13px;background:#C5FE01;display:flex;align-items:center;justify-content:center;margin-bottom:22px"><svg width="22" height="22" viewBox="0 0 24 24" style="color:#1A1A1A"><use href="#l-search"></use></svg></div>
+        <div style="font:600 12px/1 -apple-system,system-ui;color:#C5FE01;letter-spacing:.06em;margin-bottom:10px">Addım 1</div>
         <div style="font:600 18.5px/1.25 -apple-system,system-ui;letter-spacing:-.3px;margin-bottom:11px">Zalını seç</div>
         <div style="font:400 14.5px/1.5 -apple-system,system-ui;color:rgba(255,255,255,.55)">Qiymət, iş saatı, avadanlıq, rəylər. 1 günlük keçidlə risksiz sına.</div>
       </div>
       <div style="background:rgba(255,255,255,.06);border-radius:20px;padding:26px 24px">
-        <div style="width:44px;height:44px;border-radius:13px;background:#C6FF3D;display:flex;align-items:center;justify-content:center;margin-bottom:22px"><svg width="22" height="22" viewBox="0 0 24 24" style="color:#0B0B0E"><use href="#l-qr"></use></svg></div>
-        <div style="font:600 12px/1 -apple-system,system-ui;color:#C6FF3D;letter-spacing:.06em;margin-bottom:10px">ADDIM 2</div>
+        <div style="width:44px;height:44px;border-radius:13px;background:#C5FE01;display:flex;align-items:center;justify-content:center;margin-bottom:22px"><svg width="22" height="22" viewBox="0 0 24 24" style="color:#1A1A1A"><use href="#l-qr"></use></svg></div>
+        <div style="font:600 12px/1 -apple-system,system-ui;color:#C5FE01;letter-spacing:.06em;margin-bottom:10px">Addım 2</div>
         <div style="font:600 18.5px/1.25 -apple-system,system-ui;letter-spacing:-.3px;margin-bottom:11px">Zalda QR oxut</div>
         <div style="font:400 14.5px/1.5 -apple-system,system-ui;color:rgba(255,255,255,.55)">Streak başlayır, zalda kim olduğunu görürsən, rəy yazmaq hüququ açılır.</div>
       </div>
       <div style="background:rgba(255,255,255,.06);border-radius:20px;padding:26px 24px">
-        <div style="width:44px;height:44px;border-radius:13px;background:#C6FF3D;display:flex;align-items:center;justify-content:center;margin-bottom:22px"><svg width="22" height="22" viewBox="0 0 24 24" style="color:#0B0B0E"><use href="#l-users"></use></svg></div>
-        <div style="font:600 12px/1 -apple-system,system-ui;color:#C6FF3D;letter-spacing:.06em;margin-bottom:10px">ADDIM 3</div>
+        <div style="width:44px;height:44px;border-radius:13px;background:#C5FE01;display:flex;align-items:center;justify-content:center;margin-bottom:22px"><svg width="22" height="22" viewBox="0 0 24 24" style="color:#1A1A1A"><use href="#l-users"></use></svg></div>
+        <div style="font:600 12px/1 -apple-system,system-ui;color:#C5FE01;letter-spacing:.06em;margin-bottom:10px">Addım 3</div>
         <div style="font:600 18.5px/1.25 -apple-system,system-ui;letter-spacing:-.3px;margin-bottom:11px">Yoldaş tap</div>
         <div style="font:400 14.5px/1.5 -apple-system,system-ui;color:rgba(255,255,255,.55)">Eyni zal, eyni saat, uyğun səviyyə. «Birlikdə məşq» təklif et.</div>
       </div>
       <div style="background:rgba(255,255,255,.06);border-radius:20px;padding:26px 24px">
-        <div style="width:44px;height:44px;border-radius:13px;background:#C6FF3D;display:flex;align-items:center;justify-content:center;margin-bottom:22px"><svg width="22" height="22" viewBox="0 0 24 24" style="color:#0B0B0E"><use href="#l-dumbbell"></use></svg></div>
-        <div style="font:600 12px/1 -apple-system,system-ui;color:#C6FF3D;letter-spacing:.06em;margin-bottom:10px">ADDIM 4</div>
+        <div style="width:44px;height:44px;border-radius:13px;background:#C5FE01;display:flex;align-items:center;justify-content:center;margin-bottom:22px"><svg width="22" height="22" viewBox="0 0 24 24" style="color:#1A1A1A"><use href="#l-dumbbell"></use></svg></div>
+        <div style="font:600 12px/1 -apple-system,system-ui;color:#C5FE01;letter-spacing:.06em;margin-bottom:10px">Addım 4</div>
         <div style="font:600 18.5px/1.25 -apple-system,system-ui;letter-spacing:-.3px;margin-bottom:11px">Proqramla məşq et</div>
         <div style="font:400 14.5px/1.5 -apple-system,system-ui;color:rgba(255,255,255,.55)">Setləri qeyd et, çəkilər özü artır. Müəllimin öz texnika videosunu hərəkətə bağlaya bilər.</div>
       </div>
@@ -402,30 +402,30 @@ html.nav-open,body.nav-open{overflow:hidden}
 
 <section class="sec-features" style="padding:16px clamp(20px,3.3vw,48px) 40px">
   <div class="grid-2 g-features" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:22px">
-    <div class="feat-panel" style="background:#F4F4F6;border-radius:26px;padding:40px 38px 0;overflow:hidden">
-      <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:#fff;margin-bottom:22px"><svg width="15" height="15" viewBox="0 0 24 24" style="color:#5B7F00"><use href="#l-users"></use></svg><div style="font:600 12.5px/1 -apple-system,system-ui">Məşq yoldaşı</div></div>
+    <div class="feat-panel" style="background:#F7F7F7;border-radius:26px;padding:40px 38px 0;overflow:hidden">
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:#FEFEFE;margin-bottom:22px"><svg width="15" height="15" viewBox="0 0 24 24" style="color:#527A01"><use href="#l-users"></use></svg><div style="font:600 12.5px/1 -apple-system,system-ui">Məşq yoldaşı</div></div>
       <h3 style="margin:0 0 14px;font:700 clamp(24px,2.3vw,30px)/1.15 -apple-system,system-ui;letter-spacing:-1px;max-width:400px">Dating deyil. Uyğunluq məşq datasından hesablanır.</h3>
       <p style="margin:0 0 26px;font:400 16px/1.55 -apple-system,system-ui;color:#4A4A52;max-width:420px">Zal, saat, günlər, səviyyə, məqsəd. Foto və cins heç bir çəki daşımır. Kartda niyə uyğun olduğunuz açıq yazılır.</p>
-      <div style="background:#fff;border-radius:18px 18px 0 0;padding:20px;box-shadow:0 -6px 30px rgba(0,0,0,.06)">
+      <div style="background:#FEFEFE;border-radius:18px 18px 0 0;padding:20px">
         <div style="display:flex;gap:13px;align-items:center;margin-bottom:16px">
-          <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#D2D2D8,#EDEDF0);flex:none;position:relative"><div style="position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;background:#C6FF3D;border:2.5px solid #fff"></div></div>
-          <div style="flex:1"><div style="display:flex;align-items:center;gap:8px"><div style="font:600 16px/1.2 -apple-system,system-ui">Tural, 26</div><div style="padding:3px 8px;border-radius:6px;background:#101014;color:#C6FF3D;font:700 11px/1 -apple-system,system-ui">92%</div></div><div style="font:400 13px/1.3 -apple-system,system-ui;color:#8A8A93;margin-top:5px">Iron Bay · orta · əzələ kütləsi</div></div>
+          <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#D2D2D8,#EDEDF0);flex:none;position:relative"><div style="position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;background:#C5FE01;border:2.5px solid #FAFAFA"></div></div>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:8px"><div style="font:600 16px/1.2 -apple-system,system-ui">Tural, 26</div><div style="padding:3px 8px;border-radius:6px;background:#EDEDED;color:#1A1A1A;font:700 11px/1 -apple-system,system-ui">92%</div></div><div style="font:400 13px/1.3 -apple-system,system-ui;color:#888888;margin-top:5px">Iron Bay · orta · əzələ kütləsi</div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="display:flex;align-items:center;gap:10px"><svg width="16" height="16" viewBox="0 0 24 24" style="color:#5B7F00"><use href="#l-check"></use></svg><div style="font:400 14.5px/1.3 -apple-system,system-ui">Eyni zal · Iron Bay</div></div>
-          <div style="display:flex;align-items:center;gap:10px"><svg width="16" height="16" viewBox="0 0 24 24" style="color:#5B7F00"><use href="#l-check"></use></svg><div style="font:400 14.5px/1.3 -apple-system,system-ui">Eyni saat · B.e/Ç/C 19:00</div></div>
-          <div style="display:flex;align-items:center;gap:10px"><svg width="16" height="16" viewBox="0 0 24 24" style="color:#5B7F00"><use href="#l-check"></use></svg><div style="font:400 14.5px/1.3 -apple-system,system-ui">Eyni məqsəd · əzələ kütləsi</div></div>
+          <div style="display:flex;align-items:center;gap:10px"><svg width="16" height="16" viewBox="0 0 24 24" style="color:#527A01"><use href="#l-check"></use></svg><div style="font:400 14.5px/1.3 -apple-system,system-ui">Eyni zal · Iron Bay</div></div>
+          <div style="display:flex;align-items:center;gap:10px"><svg width="16" height="16" viewBox="0 0 24 24" style="color:#527A01"><use href="#l-check"></use></svg><div style="font:400 14.5px/1.3 -apple-system,system-ui">Eyni saat · B.e/Ç/C 19:00</div></div>
+          <div style="display:flex;align-items:center;gap:10px"><svg width="16" height="16" viewBox="0 0 24 24" style="color:#527A01"><use href="#l-check"></use></svg><div style="font:400 14.5px/1.3 -apple-system,system-ui">Eyni məqsəd · əzələ kütləsi</div></div>
         </div>
       </div>
     </div>
-    <div class="feat-panel" style="background:#F4F4F6;border-radius:26px;padding:40px 38px 0;overflow:hidden">
-      <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:#fff;margin-bottom:22px"><svg width="15" height="15" viewBox="0 0 24 24" style="color:#5B7F00"><use href="#l-play"></use></svg><div style="font:600 12.5px/1 -apple-system,system-ui">Texnika videoları</div></div>
+    <div class="feat-panel" style="background:#F7F7F7;border-radius:26px;padding:40px 38px 0;overflow:hidden">
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:#FEFEFE;margin-bottom:22px"><svg width="15" height="15" viewBox="0 0 24 24" style="color:#527A01"><use href="#l-play"></use></svg><div style="font:600 12.5px/1 -apple-system,system-ui">Texnika videoları</div></div>
       <h3 style="margin:0 0 14px;font:700 clamp(24px,2.3vw,30px)/1.15 -apple-system,system-ui;letter-spacing:-1px;max-width:400px">Texnikanı göstərən video — hərəkətin özünə bağlı.</h3>
       <p style="margin:0 0 26px;font:400 16px/1.55 -apple-system,system-ui;color:#4A4A52;max-width:420px">Müəllim proqramdakı hərəkətə 30 saniyəlik video əlavə edir: «bunu belə et». Şagird onu məşq ekranında görür.</p>
-      <div style="background:#0B0B0E;border-radius:18px 18px 0 0;padding:20px;color:#fff">
+      <div style="background:#1A1A1A;border-radius:18px 18px 0 0;padding:20px;color:#FAFAFA">
         <div style="display:flex;gap:14px;align-items:center;margin-bottom:16px">
-          <div style="width:82px;height:60px;border-radius:11px;background:linear-gradient(150deg,#2E2E38,#4A4A56);flex:none;display:flex;align-items:center;justify-content:center"><div style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" style="color:#0B0B0E"><use href="#l-play"></use></svg></div></div>
-          <div style="flex:1"><div style="font:600 15px/1.2 -apple-system,system-ui">Ştanqla sinə pressi</div><div style="display:flex;align-items:center;gap:6px;margin-top:6px"><div style="font:400 12px/1 -apple-system,system-ui;color:rgba(255,255,255,.5)">Elvin Q.</div><svg width="12" height="12" viewBox="0 0 24 24" style="color:#C6FF3D"><use href="#l-verified"></use></svg></div></div>
+          <div style="width:82px;height:60px;border-radius:11px;background:linear-gradient(150deg,#2E2E38,#4A4A56);flex:none;display:flex;align-items:center;justify-content:center"><div style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" style="color:#1A1A1A"><use href="#l-play"></use></svg></div></div>
+          <div style="flex:1"><div style="font:600 15px/1.2 -apple-system,system-ui">Ştanqla sinə pressi</div><div style="display:flex;align-items:center;gap:6px;margin-top:6px"><div style="font:400 12px/1 -apple-system,system-ui;color:rgba(255,255,255,.5)">Elvin Q.</div><svg width="12" height="12" viewBox="0 0 24 24" style="color:#0A84FF"><use href="#l-verified"></use></svg></div></div>
           <div style="padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.14);font:600 11.5px/1 -apple-system,system-ui">0.5x</div>
         </div>
         <div style="background:rgba(255,107,53,.16);border-radius:13px;padding:13px 14px;display:flex;gap:10px">
@@ -440,22 +440,22 @@ html.nav-open,body.nav-open{overflow:hidden}
 <section class="sec-cards" style="padding:0 clamp(20px,3.3vw,48px) 78px">
   <div class="g-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:18px">
     <div style="border:1px solid rgba(60,60,67,.12);border-radius:20px;padding:26px 24px">
-      <svg width="24" height="24" viewBox="0 0 24 24" style="color:#0B0B0E"><use href="#l-trophy"></use></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" style="color:#1A1A1A"><use href="#l-trophy"></use></svg>
       <div style="font:600 17.5px/1.25 -apple-system,system-ui;letter-spacing:-.3px;margin:18px 0 10px">Challenge və leaderboard</div>
       <div style="font:400 14.5px/1.5 -apple-system,system-ui;color:#4A4A52">Zal daxilində rəqabət, zallar arası liqa. Nəticələr QR check-in ilə doğrulanır.</div>
     </div>
     <div style="border:1px solid rgba(60,60,67,.12);border-radius:20px;padding:26px 24px">
-      <svg width="24" height="24" viewBox="0 0 24 24" style="color:#0B0B0E"><use href="#l-users"></use></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" style="color:#1A1A1A"><use href="#l-users"></use></svg>
       <div style="font:600 17.5px/1.25 -apple-system,system-ui;letter-spacing:-.3px;margin:18px 0 10px">Müəllimlə yazışma</div>
       <div style="font:400 14.5px/1.5 -apple-system,system-ui;color:#4A4A52">Sorğu qəbul olunandan sonra çat açılır. Proqramını, sualını, videonu orada danışırsan.</div>
     </div>
     <div style="border:1px solid rgba(60,60,67,.12);border-radius:20px;padding:26px 24px">
-      <svg width="24" height="24" viewBox="0 0 24 24" style="color:#0B0B0E"><use href="#l-flame"></use></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" style="color:#1A1A1A"><use href="#l-flame"></use></svg>
       <div style="font:600 17.5px/1.25 -apple-system,system-ui;letter-spacing:-.3px;margin:18px 0 10px">Progress və streak</div>
       <div style="font:400 14.5px/1.5 -apple-system,system-ui;color:#4A4A52">Şəxsi rekordlar, həftəlik həcm, streak. Məşq tarixçən yalnız sənə görünür.</div>
     </div>
     <div style="border:1px solid rgba(60,60,67,.12);border-radius:20px;padding:26px 24px">
-      <svg width="24" height="24" viewBox="0 0 24 24" style="color:#0B0B0E"><use href="#l-shield"></use></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" style="color:#1A1A1A"><use href="#l-shield"></use></svg>
       <div style="font:600 17.5px/1.25 -apple-system,system-ui;letter-spacing:-.3px;margin:18px 0 10px">Təhlükəsizlik</div>
       <div style="font:400 14.5px/1.5 -apple-system,system-ui;color:#4A4A52">Yazışma yalnız qarşılıqlı razılıqdan sonra açılır; müəllimə isə bir mesaj yazırsan və cavab gələnə qədər ikincisi getmir. Blok, şikayət, gizli profil. Dəqiq lokasiya heç vaxt paylaşılmır.</div>
     </div>
@@ -464,85 +464,85 @@ html.nav-open,body.nav-open{overflow:hidden}
 
 <section id="muellim" class="sec-audience" style="padding:0 clamp(20px,3.3vw,48px) 22px">
   <div class="grid-2 g-audience" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:22px">
-    <div class="aud-panel" style="background:#101014;border-radius:26px;padding:42px 38px;color:#fff">
-      <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:rgba(198,255,61,.14);margin-bottom:24px"><svg width="15" height="15" viewBox="0 0 24 24" style="color:#C6FF3D"><use href="#l-verified"></use></svg><div style="font:600 12.5px/1 -apple-system,system-ui;color:#C6FF3D">Müəllimlər üçün</div></div>
+    <div class="aud-panel" style="background:#1A1A1A;border-radius:26px;padding:42px 38px;color:#FAFAFA">
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:rgba(197,254,1,.14);margin-bottom:24px"><svg width="15" height="15" viewBox="0 0 24 24" style="color:#C5FE01"><use href="#l-verified"></use></svg><div style="font:600 12.5px/1 -apple-system,system-ui;color:#C5FE01">Müəllimlər üçün</div></div>
       <h3 style="margin:0 0 16px;font:700 clamp(25px,2.4vw,32px)/1.15 -apple-system,system-ui;letter-spacing:-1.1px">Şagird axtarmağı dayandır. Onlar səni tapsın.</h3>
       <p style="margin:0 0 28px;font:400 16px/1.55 -apple-system,system-ui;color:rgba(255,255,255,.6)">Doğrulanmış profil, şəffaf qiymət, birbaşa sorğu. Ödənişi şagirdlə birbaşa özün həll edirsən — SPOT ödəniş qəbul etmir. Şagirdin real datası — çəki, RPE, zədə qeydi — sənin ekranında.</p>
       <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:30px">
-        <div style="display:flex;gap:12px;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="color:#C6FF3D;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui;color:rgba(255,255,255,.82)">Sorğu və yazışma tətbiqin içində · nömrəni verməyə ehtiyac yox</div></div>
-        <div style="display:flex;gap:12px;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="color:#C6FF3D;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui;color:rgba(255,255,255,.82)">Proqramını yerləşdir · SPOT komissiya götürmür</div></div>
-        <div style="display:flex;gap:12px;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="color:#C6FF3D;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui;color:rgba(255,255,255,.82)">Şagird risk siqnalı · paket yarımçıq qalmasın</div></div>
-        <div style="display:flex;gap:12px;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="color:#C6FF3D;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui;color:rgba(255,255,255,.82)">Qiyməti sən təyin edirsən · ödəniş app-dan kənarda</div></div>
+        <div style="display:flex;gap:12px;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="color:#C5FE01;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui;color:rgba(255,255,255,.82)">Sorğu və yazışma tətbiqin içində · nömrəni verməyə ehtiyac yox</div></div>
+        <div style="display:flex;gap:12px;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="color:#C5FE01;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui;color:rgba(255,255,255,.82)">Proqramını yerləşdir · SPOT komissiya götürmür</div></div>
+        <div style="display:flex;gap:12px;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="color:#C5FE01;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui;color:rgba(255,255,255,.82)">Şagird risk siqnalı · paket yarımçıq qalmasın</div></div>
+        <div style="display:flex;gap:12px;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="color:#C5FE01;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui;color:rgba(255,255,255,.82)">Qiyməti sən təyin edirsən · ödəniş app-dan kənarda</div></div>
       </div>
-      <span style="display:inline-flex;align-items:center;gap:9px;height:52px;padding:0 24px;border-radius:14px;background:#C6FF3D;color:#0B0B0E;font:600 15.5px/1 -apple-system,system-ui">Tətbiqdə: Profil → Məşqçi ol<svg width="18" height="18" viewBox="0 0 24 24"><use href="#l-arrow-r"></use></svg></span>
+      <span style="display:inline-flex;align-items:center;gap:9px;height:52px;padding:0 24px;border-radius:16px;background:#C5FE01;color:#1A1A1A;font:600 15.5px/1 -apple-system,system-ui">Tətbiqdə: Profil → Məşqçi ol<svg width="18" height="18" viewBox="0 0 24 24"><use href="#l-arrow-r"></use></svg></span>
     </div>
-    <div id="zallar" class="aud-panel" style="background:#F4F4F6;border-radius:26px;padding:42px 38px">
-      <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:#fff;margin-bottom:24px"><svg width="15" height="15" viewBox="0 0 24 24" style="color:#5B7F00"><use href="#l-pin"></use></svg><div style="font:600 12.5px/1 -apple-system,system-ui">Zallar üçün</div></div>
+    <div id="zallar" class="aud-panel" style="background:#F7F7F7;border-radius:26px;padding:42px 38px">
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:#FEFEFE;margin-bottom:24px"><svg width="15" height="15" viewBox="0 0 24 24" style="color:#527A01"><use href="#l-pin"></use></svg><div style="font:600 12.5px/1 -apple-system,system-ui">Zallar üçün</div></div>
       <h3 style="margin:0 0 16px;font:700 clamp(25px,2.4vw,32px)/1.15 -apple-system,system-ui;letter-spacing:-1.1px">SPOT zala pulsuzdur. Yeni üzv gətirir.</h3>
       <p style="margin:0 0 28px;font:400 16px/1.55 -apple-system,system-ui;color:#4A4A52">Profilini idarə et, 1 günlük keçid sat, doluluq statistikasını gör, gedən üzvü vaxtında xəbər tut.</p>
       <div class="g-gym-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px">
-        <div style="background:#fff;border-radius:16px;padding:20px"><div style="font:700 26px/1 -apple-system,system-ui;letter-spacing:-.8px">Profil</div><div style="font:400 13.5px/1.35 -apple-system,system-ui;color:#6E6E76;margin-top:9px">zalını axtarışda<br>görünən et</div></div>
-        <div style="background:#fff;border-radius:16px;padding:20px"><div style="font:700 26px/1 -apple-system,system-ui;letter-spacing:-.8px">0 ₼</div><div style="font:400 13.5px/1.35 -apple-system,system-ui;color:#6E6E76;margin-top:9px">abunə haqqı<br>komissiya da yoxdur</div></div>
-        <div style="background:#fff;border-radius:16px;padding:20px"><div style="font:700 26px/1 -apple-system,system-ui;letter-spacing:-.8px">QR</div><div style="font:400 13.5px/1.35 -apple-system,system-ui;color:#6E6E76;margin-top:9px">check-in ilə real<br>doluluq datası</div></div>
-        <div style="background:#fff;border-radius:16px;padding:20px"><div style="font:700 26px/1 -apple-system,system-ui;letter-spacing:-.8px">Liqa</div><div style="font:400 13.5px/1.35 -apple-system,system-ui;color:#6E6E76;margin-top:9px">zallar arası reytinq<br>marketinq aləti kimi</div></div>
+        <div style="background:#FEFEFE;border-radius:16px;padding:20px"><div style="font:700 26px/1 -apple-system,system-ui;letter-spacing:-.8px">Profil</div><div style="font:400 13.5px/1.35 -apple-system,system-ui;color:#6B6B6B;margin-top:9px">zalını axtarışda<br>görünən et</div></div>
+        <div style="background:#FEFEFE;border-radius:16px;padding:20px"><div style="font:700 26px/1 -apple-system,system-ui;letter-spacing:-.8px">0 ₼</div><div style="font:400 13.5px/1.35 -apple-system,system-ui;color:#6B6B6B;margin-top:9px">abunə haqqı<br>komissiya da yoxdur</div></div>
+        <div style="background:#FEFEFE;border-radius:16px;padding:20px"><div style="font:700 26px/1 -apple-system,system-ui;letter-spacing:-.8px">QR</div><div style="font:400 13.5px/1.35 -apple-system,system-ui;color:#6B6B6B;margin-top:9px">check-in ilə real<br>doluluq datası</div></div>
+        <div style="background:#FEFEFE;border-radius:16px;padding:20px"><div style="font:700 26px/1 -apple-system,system-ui;letter-spacing:-.8px">Liqa</div><div style="font:400 13.5px/1.35 -apple-system,system-ui;color:#6B6B6B;margin-top:9px">zallar arası reytinq<br>marketinq aləti kimi</div></div>
       </div>
-      <span style="display:inline-flex;align-items:center;gap:9px;height:52px;padding:0 24px;border-radius:14px;background:#101014;color:#fff;font:600 15.5px/1 -apple-system,system-ui">Tətbiqdə: Profil → Zal əlavə et<svg width="18" height="18" viewBox="0 0 24 24" style="color:#C6FF3D"><use href="#l-arrow-r"></use></svg></span>
+      <span style="display:inline-flex;align-items:center;gap:9px;height:52px;padding:0 24px;border-radius:16px;background:#C5FE01;color:#1A1A1A;font:600 15.5px/1 -apple-system,system-ui">Tətbiqdə: Profil → Zal əlavə et<svg width="18" height="18" viewBox="0 0 24 24" style="color:#1A1A1A"><use href="#l-arrow-r"></use></svg></span>
     </div>
   </div>
 </section>
 
 <section id="qiymet" class="sec-pricing" style="padding:56px clamp(20px,3.3vw,48px) 78px">
   <div style="text-align:center;max-width:680px;margin:0 auto 44px">
-    <div style="font:600 12px/1 -apple-system,system-ui;letter-spacing:.14em;text-transform:uppercase;color:#8A8A93;margin-bottom:16px">Qiymət</div>
+    <div style="font:600 13px/1.25 -apple-system,system-ui;color:#888888;margin-bottom:16px">Qiymət</div>
     <h2 style="margin:0 0 14px;font:700 clamp(30px,3vw,42px)/1.1 -apple-system,system-ui;letter-spacing:-1.4px">SPOT pulsuzdur</h2>
     <p style="margin:0;font:400 17px/1.55 -apple-system,system-ui;color:#4A4A52">Zal axtarışı, yoldaş tapma, proqramlar, hərəkət videoları, məşq qeydi — hamısı pulsuzdur və elə qalacaq. SPOT app-da ödəniş qəbul etmir.</p>
   </div>
   <div class="g-pricing" style="display:grid;grid-template-columns:1fr;gap:22px;max-width:560px;margin:0 auto">
     <div class="price-card" style="border:1px solid rgba(60,60,67,.14);border-radius:24px;padding:34px 32px">
       <div style="font:600 17px/1 -apple-system,system-ui">Hər şey</div>
-      <div style="display:flex;align-items:baseline;gap:8px;margin:18px 0 26px"><div style="font:700 40px/1 -apple-system,system-ui;letter-spacing:-1.4px">0 ₼</div><div style="font:400 14px/1 -apple-system,system-ui;color:#8A8A93">həmişə</div></div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin:18px 0 26px"><div style="font:700 40px/1 -apple-system,system-ui;letter-spacing:-1.4px">0 ₼</div><div style="font:400 14px/1 -apple-system,system-ui;color:#888888">həmişə</div></div>
       <div style="display:flex;flex-direction:column;gap:13px">
-        <div style="display:flex;gap:11px;align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#5B7F00;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui">Bütün zallar və müəllimlər</div></div>
-        <div style="display:flex;gap:11px;align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#5B7F00;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui">Yoldaş tapma · bütün filtrlər</div></div>
-        <div style="display:flex;gap:11px;align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#5B7F00;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui">Proqramlar və hərəkət videoları</div></div>
-        <div style="display:flex;gap:11px;align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#5B7F00;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui">Məşq qeydi, streak, challenge</div></div>
-        <div style="display:flex;gap:11px;align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#5B7F00;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui">Zal kataloqu və check-in</div></div>
+        <div style="display:flex;gap:11px;align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#527A01;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui">Bütün zallar və müəllimlər</div></div>
+        <div style="display:flex;gap:11px;align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#527A01;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui">Yoldaş tapma · bütün filtrlər</div></div>
+        <div style="display:flex;gap:11px;align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#527A01;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui">Proqramlar və hərəkət videoları</div></div>
+        <div style="display:flex;gap:11px;align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#527A01;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui">Məşq qeydi, streak, challenge</div></div>
+        <div style="display:flex;gap:11px;align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="color:#527A01;flex:none"><use href="#l-check"></use></svg><div style="font:400 15px/1.4 -apple-system,system-ui">Zal kataloqu və check-in</div></div>
       </div>
     </div>
     </div>
-  <div style="text-align:center;font:400 13.5px/1.6 -apple-system,system-ui;color:#8A8A93;margin-top:26px;max-width:660px;margin-left:auto;margin-right:auto">Müəllim və zal qiymətlərini özləri təyin edir və ödəniş birbaşa onlara, app-dan kənarda edilir. SPOT nə ödəniş qəbul edir, nə də komissiya götürür — app-dakı qiymətlər yalnız məlumat üçündür.</div>
+  <div style="text-align:center;font:400 13.5px/1.6 -apple-system,system-ui;color:#888888;margin-top:26px;max-width:660px;margin-left:auto;margin-right:auto">Müəllim və zal qiymətlərini özləri təyin edir və ödəniş birbaşa onlara, app-dan kənarda edilir. SPOT nə ödəniş qəbul edir, nə də komissiya götürür — app-dakı qiymətlər yalnız məlumat üçündür.</div>
 </section>
 
 <section id="faq" class="sec-faq" style="padding:0 clamp(20px,3.3vw,48px) 78px">
   <div class="g-faq" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:clamp(28px,3vw,48px);align-items:start">
     <div>
-      <div style="font:600 12px/1 -apple-system,system-ui;letter-spacing:.14em;text-transform:uppercase;color:#8A8A93;margin-bottom:16px">FAQ</div>
+      <div style="font:600 13px/1.25 -apple-system,system-ui;color:#888888;margin-bottom:16px">FAQ</div>
       <h2 style="margin:0 0 16px;font:700 clamp(28px,2.8vw,38px)/1.1 -apple-system,system-ui;letter-spacing:-1.3px">Tez-tez verilən suallar</h2>
-      <p style="margin:0;font:400 16px/1.55 -apple-system,system-ui;color:#4A4A52">Cavabını tapmadınsa <a href="mailto:mecidovyusif079@gmail.com" style="color:#5B7F00;text-decoration:underline">dəstəyə yaz</a> — oxuyuruq.</p>
+      <p style="margin:0;font:400 16px/1.55 -apple-system,system-ui;color:#4A4A52">Cavabını tapmadınsa <a href="mailto:mecidovyusif079@gmail.com" style="color:#527A01;text-decoration:underline">dəstəyə yaz</a> — oxuyuruq.</p>
     </div>
     <div style="display:flex;flex-direction:column;gap:2px">
       <div class="faq-item open" style="border-top:1px solid rgba(60,60,67,.14);padding:22px 4px">
-        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">SPOT tanışlıq tətbiqidir?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#8A8A93;flex:none;transform:rotate(180deg)"><use href="#l-chev-d"></use></svg></div>
+        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">SPOT tanışlıq tətbiqidir?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#888888;flex:none;transform:rotate(180deg)"><use href="#l-chev-d"></use></svg></div>
         <div class="faq-a" style="font:400 15.5px/1.6 -apple-system,system-ui;color:#4A4A52;margin-top:14px;max-width:640px">Xeyr. Uyğunluq yalnız məşq parametrlərindən — zal, saat, günlər, səviyyə, məqsəd — hesablanır. Foto və cins heç bir çəki daşımır, əsas düymə «Birlikdə məşq»dir. Bu qaydayı pozan hesablar bağlanır.</div>
       </div>
       <div class="faq-item" style="border-top:1px solid rgba(60,60,67,.14);padding:22px 4px">
-        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">Zala yazılmamışam, app mənə lazımdır?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#8A8A93;flex:none"><use href="#l-chev-d"></use></svg></div>
+        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">Zala yazılmamışam, app mənə lazımdır?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#888888;flex:none"><use href="#l-chev-d"></use></svg></div>
         <div class="faq-a" style="font:400 15.5px/1.6 -apple-system,system-ui;color:#4A4A52;margin-top:14px;max-width:640px">Bəli. Kəşf-də yaxınlıqdakı zalları qiymətə, iş saatına və reytinqə görə müqayisə edə, müəllim tapa bilərsən. Proqramla məşq etmək və məşq tarixçəni aparmaq üçün zal lazım deyil — evdə və ya açıq havada da işləyir. Zal seçəndə orada eyni saatlarda məşq edən yoldaşlar görünür.</div>
       </div>
       <div class="faq-item" style="border-top:1px solid rgba(60,60,67,.14);padding:22px 4px">
-        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">Kim mənim profilimi görür?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#8A8A93;flex:none"><use href="#l-chev-d"></use></svg></div>
+        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">Kim mənim profilimi görür?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#888888;flex:none"><use href="#l-chev-d"></use></svg></div>
         <div class="faq-a" style="font:400 15.5px/1.6 -apple-system,system-ui;color:#4A4A52;margin-top:14px;max-width:640px">Yoldaş axtaranlar yalnız məşq məlumatını görür: zal, saat, səviyyə, məqsəd. Parametrlərdə «Zalda göründüyümü göstər» söndürülsə, zalın siyahısında görünmürsən. Söhbət yalnız hər iki tərəf məşq təklifini qəbul edəndə açılır. Çəki ölçmələrin, tərəqqi şəkillərin və mesajların yalnız sənindir — onları SPOT komandası da görmür.</div>
       </div>
       <div class="faq-item" style="border-top:1px solid rgba(60,60,67,.14);padding:22px 4px">
-        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">Müəllimlər necə doğrulanır?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#8A8A93;flex:none"><use href="#l-chev-d"></use></svg></div>
-        <div class="faq-a" style="font:400 15.5px/1.6 -apple-system,system-ui;color:#4A4A52;margin-top:14px;max-width:640px">Müəllim profilini hər kəs yarada bilər və o, Kəşf-də dərhal görünür. Yaşıl «Doğrulanmış müəllim» nişanı isə yalnız sertifikat və sənədlərini göndərən, SPOT komandasının yoxlayıb təsdiqlədiyi müəllimlərdə olur. Sənədlər yalnız yoxlama üçündür və heç kimə göstərilmir.</div>
+        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">Müəllimlər necə doğrulanır?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#888888;flex:none"><use href="#l-chev-d"></use></svg></div>
+        <div class="faq-a" style="font:400 15.5px/1.6 -apple-system,system-ui;color:#4A4A52;margin-top:14px;max-width:640px">Müəllim profilini hər kəs yarada bilər və o, Kəşf-də dərhal görünür. Mavi «Doğrulanmış müəllim» nişanı isə yalnız sertifikat və sənədlərini göndərən, SPOT komandasının yoxlayıb təsdiqlədiyi müəllimlərdə olur. Sənədlər yalnız yoxlama üçündür və heç kimə göstərilmir.</div>
       </div>
       <div class="faq-item" style="border-top:1px solid rgba(60,60,67,.14);padding:22px 4px">
-        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">Zalımı necə əlavə edim?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#8A8A93;flex:none"><use href="#l-chev-d"></use></svg></div>
+        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">Zalımı necə əlavə edim?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#888888;flex:none"><use href="#l-chev-d"></use></svg></div>
         <div class="faq-a" style="font:400 15.5px/1.6 -apple-system,system-ui;color:#4A4A52;margin-top:14px;max-width:640px">Tətbiqdə Profil → Parametrlər → «Zal hesabı yarat». Zalın adını, qiymətini və iş saatlarını yazıb xəritədə yerini qeyd edirsən. Zal moderator baxandan sonra Kəşf-də görünür; sahibliyini təsdiqləmək üçün VÖEN göndərirsən. Qoşulmaq pulsuzdur, SPOT komissiya götürmür.</div>
       </div>
       <div class="faq-item" style="border-top:1px solid rgba(60,60,67,.14);border-bottom:1px solid rgba(60,60,67,.14);padding:22px 4px">
-        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">Android versiyası olacaq?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#8A8A93;flex:none"><use href="#l-chev-d"></use></svg></div>
+        <div class="faq-q" style="display:flex;align-items:center;gap:16px"><div style="flex:1;font:600 18px/1.35 -apple-system,system-ui;letter-spacing:-.3px">Android versiyası olacaq?</div><svg class="faq-chev" width="20" height="20" viewBox="0 0 24 24" style="color:#888888;flex:none"><use href="#l-chev-d"></use></svg></div>
         <div class="faq-a" style="font:400 15.5px/1.6 -apple-system,system-ui;color:#4A4A52;margin-top:14px;max-width:640px">Bəli. SPOT həm Android, həm iPhone üçün hazırlanır — hər ikisi tezliklə Google Play və App Store-da olacaq.</div>
       </div>
     </div>
@@ -550,14 +550,14 @@ html.nav-open,body.nav-open{overflow:hidden}
 </section>
 
 <section class="sec-final" style="padding:0 clamp(20px,3.3vw,48px) 60px">
-  <div class="dark-panel cta-panel" style="position:relative;overflow:hidden;background:#0B0B0E;border-radius:32px;padding:70px clamp(22px,3vw,48px);text-align:center;color:#fff">
-    <div style="position:absolute;inset:0;background:radial-gradient(60% 100% at 50% 0%,rgba(198,255,61,.22),transparent 65%)"></div>
+  <div class="dark-panel cta-panel" style="position:relative;overflow:hidden;background:#1A1A1A;border-radius:32px;padding:70px clamp(22px,3vw,48px);text-align:center;color:#FAFAFA">
+    <div style="position:absolute;inset:0;background:radial-gradient(60% 100% at 50% 0%,rgba(197,254,1,.22),transparent 65%)"></div>
     <div style="position:relative">
       <h2 style="margin:0 0 18px;font:700 clamp(32px,3.3vw,46px)/1.1 -apple-system,system-ui;letter-spacing:-1.6px;text-wrap:balance">Bu həftə birinci məşqin.<br>Tək olmayacaqsan.</h2>
       <p style="margin:0 auto 34px;font:400 18px/1.55 -apple-system,system-ui;color:rgba(255,255,255,.6);max-width:500px">Yükləmə pulsuzdur, qeydiyyat 90 saniyə çəkir.</p>
       <div style="display:flex;gap:13px;justify-content:center;flex-wrap:wrap">
-        <span style="display:flex;align-items:center;gap:9px;height:56px;padding:0 26px;border-radius:15px;background:#C6FF3D;color:#0B0B0E;font:600 16.5px/1 -apple-system,system-ui"><svg width="19" height="19" viewBox="0 0 24 24"><use href="#l-apple"></use></svg>Google Play-də tezliklə</span>
-        <span style="display:flex;align-items:center;gap:9px;height:56px;padding:0 24px;border-radius:15px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:#fff;font:600 16.5px/1 -apple-system,system-ui">App Store-da tezliklə</span>
+        <span style="display:flex;align-items:center;gap:9px;height:56px;padding:0 26px;border-radius:16px;background:#C5FE01;color:#1A1A1A;font:600 16.5px/1 -apple-system,system-ui"><svg width="19" height="19" viewBox="0 0 24 24"><use href="#l-play"></use></svg>Google Play-də tezliklə</span>
+        <span style="display:flex;align-items:center;gap:9px;height:56px;padding:0 24px;border-radius:15px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:#FAFAFA;font:600 16.5px/1 -apple-system,system-ui">App Store-da tezliklə</span>
       </div>
     </div>
   </div>
@@ -567,31 +567,31 @@ html.nav-open,body.nav-open{overflow:hidden}
   <div class="g-footer" style="border-top:1px solid rgba(60,60,67,.12);padding-top:44px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:34px">
     <div>
       <div style="display:flex;align-items:center;gap:11px;margin-bottom:16px">
-        <div style="width:30px;height:30px;border-radius:9px;background:#101014;display:flex;align-items:center;justify-content:center"><div style="width:13px;height:13px;border-radius:50%;border:3px solid #C6FF3D;position:relative"><div style="position:absolute;inset:2px;border-radius:50%;background:#C6FF3D"></div></div></div>
+        <div style="width:30px;height:30px;border-radius:9px;background:#1A1A1A;display:flex;align-items:center;justify-content:center"><div style="width:13px;height:13px;border-radius:50%;border:3px solid #C5FE01;position:relative"><div style="position:absolute;inset:2px;border-radius:50%;background:#C5FE01"></div></div></div>
         <div style="font:700 17px/1 -apple-system,system-ui;letter-spacing:-.4px">SPOT</div>
       </div>
-      <div style="font:400 14px/1.6 -apple-system,system-ui;color:#6E6E76;max-width:280px">Zalını tap, məşq yoldaşını tap, proqramla məşq et. Bakı, Azərbaycan.</div>
+      <div style="font:400 14px/1.6 -apple-system,system-ui;color:#6B6B6B;max-width:280px">Zalını tap, məşq yoldaşını tap, proqramla məşq et. Bakı, Azərbaycan.</div>
     </div>
     <div>
-      <div style="font:600 12px/1 -apple-system,system-ui;letter-spacing:.1em;text-transform:uppercase;color:#8A8A93;margin-bottom:16px">Məhsul</div>
+      <div style="font:600 13px/1.25 -apple-system,system-ui;color:#888888;margin-bottom:16px">Məhsul</div>
       <div class="foot-links" style="display:flex;flex-direction:column;gap:11px">
         <a href="#nasil" style="font:400 14.5px/1 -apple-system,system-ui;color:#4A4A52">Necə işləyir</a>
         <a href="#qiymet" style="font:400 14.5px/1 -apple-system,system-ui;color:#4A4A52">Qiymət</a>
-        <span style="font:400 14.5px/1 -apple-system,system-ui;color:#8A8A93">Hərəkət kitabxanası</span>
-        <span style="font:400 14.5px/1 -apple-system,system-ui;color:#8A8A93">Challenge-lər</span>
+        <span style="font:400 14.5px/1 -apple-system,system-ui;color:#888888">Hərəkət kitabxanası</span>
+        <span style="font:400 14.5px/1 -apple-system,system-ui;color:#888888">Challenge-lər</span>
       </div>
     </div>
     <div>
-      <div style="font:600 12px/1 -apple-system,system-ui;letter-spacing:.1em;text-transform:uppercase;color:#8A8A93;margin-bottom:16px">Tərəfdaşlar</div>
+      <div style="font:600 13px/1.25 -apple-system,system-ui;color:#888888;margin-bottom:16px">Tərəfdaşlar</div>
       <div class="foot-links" style="display:flex;flex-direction:column;gap:11px">
         <a href="#zallar" style="font:400 14.5px/1 -apple-system,system-ui;color:#4A4A52">Zallar üçün</a>
         <a href="#muellim" style="font:400 14.5px/1 -apple-system,system-ui;color:#4A4A52">Müəllimlər üçün</a>
-        <span style="font:400 14.5px/1 -apple-system,system-ui;color:#8A8A93">Zalını əlavə et</span>
-        <span style="font:400 14.5px/1 -apple-system,system-ui;color:#8A8A93">Korporativ</span>
+        <span style="font:400 14.5px/1 -apple-system,system-ui;color:#888888">Zalını əlavə et</span>
+        <span style="font:400 14.5px/1 -apple-system,system-ui;color:#888888">Korporativ</span>
       </div>
     </div>
     <div>
-      <div style="font:600 12px/1 -apple-system,system-ui;letter-spacing:.1em;text-transform:uppercase;color:#8A8A93;margin-bottom:16px">Şirkət</div>
+      <div style="font:600 13px/1.25 -apple-system,system-ui;color:#888888;margin-bottom:16px">Şirkət</div>
       <div class="foot-links" style="display:flex;flex-direction:column;gap:11px">
         <a href="/legal/rules.html" style="font:400 14.5px/1 -apple-system,system-ui;color:#4A4A52">İcma qaydaları</a>
         <a href="/legal/privacy.html" style="font:400 14.5px/1 -apple-system,system-ui;color:#4A4A52">Məxfilik siyasəti</a>
@@ -602,7 +602,7 @@ html.nav-open,body.nav-open{overflow:hidden}
     </div>
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-top:38px;padding-top:22px;border-top:1px solid rgba(60,60,67,.1);gap:16px;flex-wrap:wrap">
-    <div style="font:400 13px/1 -apple-system,system-ui;color:#8A8A93">© 2026 SPOT. Bütün hüquqlar qorunur.</div>
+    <div style="font:400 13px/1 -apple-system,system-ui;color:#888888">© 2026 SPOT. Bütün hüquqlar qorunur.</div>
     <div class="foot-social" style="display:flex;gap:20px">
       
       

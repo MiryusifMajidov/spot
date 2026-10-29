@@ -16,6 +16,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
+import { setTabBand } from '@/components/SpotTabBar';
 import { SwipePager, usePagerLock } from '@/components/ui/SwipePager';
 import { CommunityPost, FeedVideo } from '@/data/feed';
 import { useAuthGate } from '@/lib/authGate';
@@ -28,7 +29,7 @@ import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { findProgram, gymById } from '@/store/db';
 import { actionSheet, openComments, toast, useUi } from '@/store/ui';
-import { iconSize, palette, spacing } from '@/theme';
+import { iconSize, palette, radius, spacing } from '@/theme';
 import { azLower } from '@/lib/az';
 import { cachedVideo, LEAN_BUFFER } from '@/lib/videoCache';
 import { likeVideo, unlikeVideo, myVideoLikes, myVideoSaves, saveVideo, unsaveVideo, videoSaveCount, likePost, unlikePost, myPostLikes, followProfile, unfollowProfile } from '@/lib/social';
@@ -217,8 +218,8 @@ function Toggle({
   dark?: boolean;
 }) {
   const t = useT();
-  const on = isDark ? palette.white : palette.inkText;
-  const off = isDark ? 'rgba(255,255,255,0.5)' : palette.caption;
+  const on = isDark ? palette.onDark : palette.inkText;
+  const off = isDark ? 'rgba(250,250,250,0.5)' : palette.caption;
   // "Zalım" only when there really is a gym behind the tab; otherwise the tab shows
   // every gym's posts, so it must not call itself "my gym".
   const communityLabel = homeGymName ? t('Zalım') : t('İcma');
@@ -312,11 +313,15 @@ function VideoFeed({
       }
       if (!pageActive) {
         if (Platform.OS === 'ios') StatusBar.setBarStyle('dark-content', true);
+        setTabBand('feed', null);
         return;
       }
       if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
       const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
+      // The tab bar's band follows this ink page (see SpotTabBar).
+      setTabBand('feed', palette.inkText);
       return () => {
+        setTabBand('feed', null);
         const state = navigation.getState();
         const front = state?.routes[state.index]?.name;
         if (Platform.OS === 'ios' && front === 'share') heldBarEntry.current = entry;
@@ -332,7 +337,7 @@ function VideoFeed({
   }, []);
 
   /* See BOTTOM_GAP: the floating Liquid Glass bar on iOS, a small gap on Android. */
-  const bottomGap = Platform.OS === 'ios' ? insets.bottom : BOTTOM_GAP;
+  const bottomGap = BOTTOM_GAP; // the tab bar takes its own row now — see (tabs)/_layout
   /* Ordering is done in `useFeedVideos` now: followed authors first (by profile
      id, from the `follows` table), then newest first.
 
@@ -485,11 +490,11 @@ function VideoFeed({
                  reports which one it was (lib/focusFetch), so a failed read no
                  longer claims nobody has ever posted anything. */
               <View style={[styles.videoEmpty, { height: h, paddingTop: insets.top + 80 }]}>
-                <Icon name={videoPhase === 'failed' ? 'x' : 'video'} size={30} color="rgba(255,255,255,0.6)" />
-                <AppText style={{ color: palette.white, fontSize: 17, fontWeight: '700', marginTop: 14 }}>
+                <Icon name={videoPhase === 'failed' ? 'x' : 'video'} size={30} color="rgba(250,250,250,0.6)" />
+                <AppText style={{ color: palette.onDark, fontSize: 17, fontWeight: '700', marginTop: 14 }}>
                   {videoPhase === 'failed' ? t('Videolar yüklənmədi') : t('Hələ video yoxdur')}
                 </AppText>
-                <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 8, maxWidth: 260 }}>
+                <AppText style={{ color: 'rgba(250,250,250,0.6)', fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 8, maxWidth: 260 }}>
                   {videoPhase === 'failed'
                     ? t('Serverlə əlaqə alınmadı — bu, lentin boş olduğu demək deyil. İnterneti yoxlayıb yenidən aç.')
                     : t('Bu lentdə hələ heç nə paylaşılmayıb. Birinci sən ol — texnika videonu yüklə.')}
@@ -506,11 +511,11 @@ function VideoFeed({
             bounds — React Native drops touches that land outside the parent. */}
         <View style={[styles.videoHeader, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
           <PressableScale activeScale={0.9} onPress={openShare} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Video paylaş')}>
-            <Icon name="cam" size={iconSize.action} color={palette.white} />
+            <Icon name="cam" size={iconSize.action} color={palette.onDark} />
           </PressableScale>
           <Toggle mode={mode} setMode={setMode} homeGymName={homeGymName} dark />
           <PressableScale activeScale={0.9} onPress={() => router.push('/(tabs)/discover')} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Axtar')}>
-            <Icon name="search" size={iconSize.action} color={palette.white} />
+            <Icon name="search" size={iconSize.action} color={palette.onDark} />
           </PressableScale>
         </View>
 
@@ -649,9 +654,9 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
         <VideoView player={player} contentFit="contain" nativeControls={false} surfaceType="textureView" style={stage} />
       ) : (
         <View style={[stage, { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }]}>
-          <Icon name="video" size={30} color="rgba(255,255,255,0.6)" />
-          <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600', marginTop: 12 }}>{t('Video açılmadı')}</AppText>
-          <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 }}>
+          <Icon name="video" size={30} color="rgba(250,250,250,0.6)" />
+          <AppText style={{ color: palette.onDark, fontSize: 15, fontWeight: '600', marginTop: 12 }}>{t('Video açılmadı')}</AppText>
+          <AppText style={{ color: 'rgba(250,250,250,0.6)', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 }}>
             {t('Bu paylaşımın video faylı yüklənməyib.')}
           </AppText>
         </View>
@@ -662,7 +667,7 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
         {paused && active ? (
           <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
             <View style={styles.playBadge}>
-              <Icon name="play" size={30} color={palette.white} />
+              <Icon name="play" size={30} color={palette.onDark} />
             </View>
           </View>
         ) : null}
@@ -671,7 +676,7 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
       {/* 40pt disc + 2pt hitSlop = a 44pt target; the glyph was 17px in a 34pt
           disc, too small to read or hit over a moving picture. */}
       <PressableScale activeScale={0.85} onPress={onToggleMute} hitSlop={2} style={[styles.muteBtn, { top: topInset + 52 }]}>
-        <Icon name={muted ? 'mute' : 'sound'} size={iconSize.inCircle} color={palette.white} />
+        <Icon name={muted ? 'mute' : 'sound'} size={iconSize.inCircle} color={palette.onDark} />
       </PressableScale>
 
       {/* The shade is the one layer that runs on under the bar: it is not content,
@@ -694,8 +699,8 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
               <Avatar name={displayAuthor(v.author)} size={36} />
               <View>
                 <View style={styles.authorNameRow}>
-                  <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600' }}>{displayAuthor(v.author)}</AppText>
-                  {v.verified ? <Icon name="verified" size={14} color={palette.volt} /> : null}
+                  <AppText style={{ color: palette.onDark, fontSize: 15, fontWeight: '600' }}>{displayAuthor(v.author)}</AppText>
+                  {v.verified ? <Icon name="verified" size={14} color={palette.verified} /> : null}
                 </View>
                 {/* Only your own handle, and only once it really exists. */}
                 {isMine && me.username ? <AppText style={styles.authorHandle}>@{me.username}</AppText> : null}
@@ -727,8 +732,8 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
                 }
                 // ~30pt pill + 7pt slop: a 44pt target inside the 36pt author row.
                 hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}
-                style={[styles.follow, following && { backgroundColor: palette.volt, borderColor: palette.volt }]}>
-                <AppText style={{ fontSize: 12, fontWeight: '600', color: following ? palette.inkText : palette.white }}>{following ? t('İzlənir') : t('İzlə')}</AppText>
+                style={[styles.follow, following && { backgroundColor: palette.selected, borderColor: palette.selected }]}>
+                <AppText style={{ fontSize: 12, fontWeight: '600', color: following ? palette.inkText : palette.onDark }}>{following ? t('İzlənir') : t('İzlə')}</AppText>
               </PressableScale>
             )}
           </View>
@@ -737,7 +742,7 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
             <View style={styles.hashtags}>
               {v.hashtags.map((t) => (
                 <View key={t} style={styles.hashtag}>
-                  <AppText style={{ color: palette.white, fontSize: 11.5, fontWeight: '600' }}>{t}</AppText>
+                  <AppText style={{ color: palette.onDark, fontSize: 11.5, fontWeight: '600' }}>{t}</AppText>
                 </View>
               ))}
             </View>
@@ -749,10 +754,10 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
               style={styles.programCard}>
               <Icon name="dumbbell" size={18} color={palette.volt} />
               <View style={{ flex: 1 }}>
-                <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{v.linkedProgramTitle || linkedProgram.title}</AppText>
-                <AppText style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11.5, marginTop: 3 }}>{t('Proqrama bax →')}</AppText>
+                <AppText style={{ color: palette.onDark, fontSize: 13, fontWeight: '600' }}>{v.linkedProgramTitle || linkedProgram.title}</AppText>
+                <AppText style={{ color: 'rgba(250,250,250,0.6)', fontSize: 11.5, marginTop: 3 }}>{t('Proqrama bax →')}</AppText>
               </View>
-              <Icon name="chevR" size={17} color="rgba(255,255,255,0.7)" />
+              <Icon name="chevR" size={17} color="rgba(250,250,250,0.7)" />
             </PressableScale>
           ) : null}
         </View>
@@ -761,7 +766,7 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
           <RailBtn
             icon="heart"
             active={liked}
-            activeColor={palette.red}
+            activeColor={palette.streak}
             count={likeCount}
             onPress={() =>
               gate(() => {
@@ -853,8 +858,9 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
 /** One action in the right-hand rail — an icon, and nothing else unless there is
  *  a real number to show.
  *
- *  State is carried by COLOUR, not by a word: the heart fills red when liked, the
- *  bookmark fills volt when saved. The labels it used to carry («Bəyəndin»,
+ *  State is carried by COLOUR, not by a word: the heart turns the design's like
+ *  orange (palette.streak) when liked, the bookmark fills volt when saved.
+ *  The labels it used to carry («Bəyəndin»,
  *  «Saxlanıldı») were both noise and a layout problem — they are wider than the
  *  inactive words, so acting on a video reflowed the whole overlay sideways. */
 function RailBtn({
@@ -872,7 +878,7 @@ function RailBtn({
 }) {
   return (
     <PressableScale activeScale={0.85} onPress={onPress} style={styles.railBtn}>
-      <Icon name={icon} size={30} color={active ? (activeColor ?? palette.volt) : palette.white} />
+      <Icon name={icon} size={30} color={active ? (activeColor ?? palette.volt) : palette.onDark} />
       {/* A count of 0 or an unknown one shows nothing — a bare «0» would state
           that nobody commented, which is not the same as not having counted. */}
       {count ? (
@@ -892,8 +898,7 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
      SafeAreaProvider counts the bar) — otherwise the last post's actions end up
      behind the glass. On Android the Material bar reserves its own space and that
      inset is not the bar (see BOTTOM_GAP), so only the breathing room applies. */
-  const insets = useSafeAreaInsets();
-  const listBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + 40;
+  const listBottom = 40;
   const router = useRouter();
   const gate = useAuthGate();
   const allPosts = useCommunityPosts();
@@ -940,7 +945,7 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
         <View style={{ flex: 1, marginVertical: -2 }}>
           <Toggle mode={mode} setMode={setMode} homeGymName={homeGymName} />
         </View>
-        {/* 40pt disc + 4pt hitSlop: at least 44pt to hit. */}
+        {/* 40pt #FEFEFE disc + 4pt hitSlop: at least 44pt to hit. */}
         <PressableScale activeScale={0.9} onPress={openCompose} hitSlop={4} style={styles.composeBtn}>
           <Icon name="plus" size={iconSize.inCircle} color={palette.inkText} />
         </PressableScale>
@@ -950,11 +955,11 @@ function CommunityFeed({ mode, setMode, homeGymName }: { mode: Mode; setMode: (m
           activeScale={0.98}
           onPress={() => router.push('/(tabs)/profile/edit')}
           style={styles.noGymBanner}>
-          <Icon name="dumbbell" size={17} color={palette.textSecondary} />
+          <Icon name="dumbbell" size={20} color={palette.rowIcon} />
           <AppText variant="footnote" color={palette.textSecondary} style={{ flex: 1, lineHeight: 18 }}>
             {t('Əsas zalın seçilməyib — burada bütün zalların postları görünür. Zalını seç, yalnız onun postlarını göstərək.')}
           </AppText>
-          <Icon name="chevR" size={16} color={palette.tertiary} />
+          <Icon name="chevR" size={17} color={palette.chevron} />
         </PressableScale>
       ) : null}
       <FlatList
@@ -1052,7 +1057,7 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
   return (
     <View style={styles.post}>
       <View style={styles.postHead}>
-        <Avatar name={displayAuthor(post.author)} size={40} />
+        <Avatar name={displayAuthor(post.author)} size={42} />
         <View style={{ flex: 1 }}>
           <AppText variant="headline">{displayAuthor(post.author)}</AppText>
           <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>
@@ -1060,7 +1065,7 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
           </AppText>
         </View>
         <PressableScale activeScale={0.9} haptic={false} onPress={onMore} hitSlop={10}>
-          <Icon name="more" size={iconSize.action} color={palette.tertiary} />
+          <Icon name="more" size={iconSize.action} color={palette.chevron} />
         </PressableScale>
       </View>
 
@@ -1084,18 +1089,18 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
       <View style={styles.postActions}>
         {/* Colour, not a word — same reason as the video rail. */}
         <PressableScale activeScale={0.9} onPress={onLike} style={styles.postAction}>
-          <Icon name="heart" size={20} color={liked ? palette.red : palette.textSecondary} />
+          <Icon name="heart" size={20} color={liked ? palette.streak : palette.caption} />
           {/* A real count only. Zero shows nothing — «0 bəyənmə» under someone's
               first post is a verdict nobody asked for. */}
           {likeCount ? (
-            <AppText variant="subhead" color={palette.textSecondary}>
+            <AppText variant="subhead" color={liked ? palette.inkText : palette.caption} style={styles.postCount}>
               {likeCount}
             </AppText>
           ) : null}
         </PressableScale>
         <PressableScale activeScale={0.9} haptic={false} onPress={onOpenComments} style={styles.postAction}>
-          <Icon name="msg" size={19} color={palette.textSecondary} />
-          <AppText variant="subhead" color={palette.textSecondary}>
+          <Icon name="msg" size={19} color={palette.caption} />
+          <AppText variant="subhead" color={palette.caption} style={styles.postCount}>
             {commentLabel(commentCount)}
           </AppText>
         </PressableScale>
@@ -1103,8 +1108,8 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
         {/* «Feedback ver» was English, under every single post — the most repeated
             piece of copy in the app. It opens the comments sheet, so it says what
             the «Şərh» action beside it says. */}
-        <PressableScale activeScale={0.95} onPress={onOpenComments} style={styles.feedbackBtn}>
-          <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.inkText }}>{t('Rəy yaz')}</AppText>
+        <PressableScale activeScale={0.95} onPress={onOpenComments} hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }} style={styles.feedbackBtn}>
+          <AppText style={{ fontSize: 12, fontWeight: '600', color: palette.ctaText }}>{t('Rəy yaz')}</AppText>
         </PressableScale>
       </View>
     </View>
@@ -1126,39 +1131,58 @@ const styles = StyleSheet.create({
   playBadge: { width: 68, height: 68, borderRadius: 999, backgroundColor: 'rgba(11,11,14,0.42)', alignItems: 'center', justifyContent: 'center' },
   muteBtn: { position: 'absolute', right: spacing.screen, width: 44, height: 44, borderRadius: 999, backgroundColor: 'rgba(11,11,14,0.4)', alignItems: 'center', justifyContent: 'center' },
   scrubHit: { position: 'absolute', left: 0, right: 0, height: SCRUB_H, justifyContent: 'flex-end', paddingBottom: 6 },
-  scrubTrack: { height: 3, backgroundColor: 'rgba(255,255,255,0.28)', justifyContent: 'center' },
+  scrubTrack: { height: 3, backgroundColor: 'rgba(250,250,250,0.28)', justifyContent: 'center' },
   scrubTrackActive: { height: 5 },
   scrubFill: { height: '100%', backgroundColor: palette.volt },
-  scrubKnob: { position: 'absolute', width: 14, height: 14, borderRadius: 7, backgroundColor: palette.white, marginLeft: -7, top: -4.5 },
+  scrubKnob: { position: 'absolute', width: 14, height: 14, borderRadius: 7, backgroundColor: palette.onDark, marginLeft: -7, top: -4.5 },
   pageBottom: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', gap: 14, alignItems: 'flex-end', paddingHorizontal: 16, paddingBottom: 6 },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   authorTap: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   authorNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  authorHandle: { color: 'rgba(255,255,255,0.62)', fontSize: 12, marginTop: 1 },
-  follow: { borderWidth: 1.2, borderColor: 'rgba(255,255,255,0.5)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  caption: { color: 'rgba(255,255,255,0.92)', fontSize: 14.5, lineHeight: 21, marginTop: 11 },
+  authorHandle: { color: 'rgba(250,250,250,0.62)', fontSize: 12, marginTop: 1 },
+  follow: { borderWidth: 1.2, borderColor: 'rgba(250,250,250,0.5)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  caption: { color: 'rgba(250,250,250,0.92)', fontSize: 14.5, lineHeight: 21, marginTop: 11 },
   hashtags: { flexDirection: 'row', gap: 7, marginTop: 11, flexWrap: 'wrap' },
-  hashtag: { backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  programCard: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 13, padding: 11, marginTop: 13 },
-  rail: { alignItems: 'center', gap: 22, paddingBottom: 8 },
-  railBtn: { alignItems: 'center', gap: 5, minWidth: 44 },
-  railLabel: { color: palette.white, fontSize: 11.5, fontWeight: '600', textAlign: 'center' },
-  communityTop: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.screen, paddingBottom: 8 },
+  hashtag: { backgroundColor: 'rgba(250,250,250,0.16)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  programCard: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: 'rgba(250,250,250,0.14)', borderRadius: 13, paddingVertical: 11, paddingHorizontal: 13, marginTop: 13 },
+  rail: { alignItems: 'center', gap: 20, paddingBottom: 8 },
+  railBtn: { alignItems: 'center', gap: 6, minWidth: 44 },
+  railLabel: { color: palette.onDark, fontSize: 11.5, fontWeight: '600', textAlign: 'center' },
+  /* The design closes the header with a hairline and starts the cards 14 pt below it. */
+  communityTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.screen,
+    paddingBottom: 8,
+    marginBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.separator,
+  },
   communityEmpty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 20 },
   noGymBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     backgroundColor: palette.white,
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: radius.card,
+    padding: 14,
     marginHorizontal: spacing.screen,
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  composeBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
-  post: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 12 },
-  postHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  postActions: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 14 },
-  postAction: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 34 },
-  feedbackBtn: { backgroundColor: palette.grouped, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  composeBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  post: { backgroundColor: palette.white, borderRadius: radius.cardLg, padding: 15, marginBottom: 13 },
+  postHead: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+  /* The action row sits under a hairline, as in the design's post card. */
+  postActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18,
+    marginTop: 12,
+    paddingTop: 5,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: palette.hairline,
+  },
+  postAction: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38 },
+  postCount: { fontWeight: '600' },
+  feedbackBtn: { backgroundColor: palette.cta, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 8 },
 });

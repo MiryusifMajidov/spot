@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Program } from '@/data/types';
 import { useFormat, useT } from '@/lib/useT';
-import { palette, radius, shadow } from '@/theme';
+import { palette, radius } from '@/theme';
 import { CreatorBadge } from './CreatorBadge';
 import { Icon } from './Icon';
 import { PlaceholderImage } from './PlaceholderImage';
@@ -13,14 +13,14 @@ function PriceOrFree({ program }: { program: Program }) {
   const t = useT();
   if (program.paid && program.price) {
     return (
-      <View style={[styles.cornerBadge, { backgroundColor: palette.ink }]}>
-        <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.volt }}>{program.price} ₼</AppText>
+      <View style={[styles.cornerBadge, { backgroundColor: palette.element }]}>
+        <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.inkText }}>{program.price} ₼</AppText>
       </View>
     );
   }
   return (
     <View style={[styles.cornerBadge, { backgroundColor: palette.volt }]}>
-      <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.inkText }}>{t('PULSUZ')}</AppText>
+      <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.inkText }}>{t('Pulsuz')}</AppText>
     </View>
   );
 }
@@ -34,7 +34,7 @@ export function ProgramCard({ program, variant = 'row', onPress }: { program: Pr
   const t = useT();
   if (variant === 'featured') {
     return (
-      <PressableScale onPress={onPress} activeScale={0.98} style={[styles.card, shadow.card as object]}>
+      <PressableScale onPress={onPress} activeScale={0.98} style={styles.card}>
         <View style={{ padding: 16 }}>
           <View style={styles.featuredTop}>
             <AppText variant="title3" style={{ flex: 1 }}>
@@ -52,15 +52,15 @@ export function ProgramCard({ program, variant = 'row', onPress }: { program: Pr
   }
 
   return (
-    <PressableScale onPress={onPress} activeScale={0.98} style={[styles.rowCard, shadow.card as object]}>
+    <PressableScale onPress={onPress} activeScale={0.98} style={styles.rowCard}>
       <View style={{ flex: 1 }}>
         <View style={styles.rowTop}>
           <AppText variant="headline" style={{ flex: 1 }}>
             {t(program.title)}
           </AppText>
           {program.paid && program.price ? (
-            <View style={[styles.cornerBadge, { backgroundColor: palette.ink, position: 'relative', top: 0, left: 0 }]}>
-              <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.volt }}>{program.price} ₼</AppText>
+            <View style={[styles.cornerBadge, { backgroundColor: palette.element, position: 'relative', top: 0, left: 0 }]}>
+              <AppText style={{ fontSize: 10.5, fontWeight: '700', color: palette.inkText }}>{program.price} ₼</AppText>
             </View>
           ) : null}
         </View>
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   rowCard: { backgroundColor: palette.white, borderRadius: radius.cardLg, padding: 14, flexDirection: 'row', gap: 13 },
   thumb: { width: 76, height: 76, borderRadius: 14, overflow: 'hidden' },
   topBadge: { position: 'absolute', top: 11, left: 11, backgroundColor: 'rgba(11,11,14,0.72)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
-  videoCount: { color: palette.white, fontSize: 11, fontWeight: '600' },
+  videoCount: { color: palette.onDark, fontSize: 11, fontWeight: '600' },
   topRight: { position: 'absolute', top: 11, right: 11 },
   cornerBadge: { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
   rowTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },

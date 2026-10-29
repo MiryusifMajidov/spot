@@ -335,7 +335,7 @@ export default function CreateProgram() {
           <View key={d.key} style={styles.dayCard}>
             <View style={styles.dayHead}>
               <View style={styles.dayIndex}>
-                <AppText style={{ fontSize: 13, fontWeight: '700', color: palette.voltDeep }}>{i + 1}</AppText>
+                <AppText style={{ fontSize: 13, fontWeight: '700', color: palette.inkText }}>{i + 1}</AppText>
               </View>
               <TextInput {...inputTint}
                 value={d.title}
@@ -412,7 +412,7 @@ export default function CreateProgram() {
             value={draft.isPublic}
             onValueChange={(v) => draft.set({ isPublic: v })}
             accessibilityLabel={t('Hamı görsün')}
-            trackColor={{ false: palette.separator, true: palette.voltDeep }}
+            trackColor={{ false: palette.separator, true: palette.toggleOn }}
           />
         </View>
         <View style={styles.note}>
@@ -535,7 +535,7 @@ function ItemEditor({
                 accessibilityRole="button"
                 accessibilityState={{ selected: item.mode === m }}
                 style={[styles.mode, item.mode === m ? styles.modeOn : null]}>
-                <AppText variant="caption" color={item.mode === m ? palette.ink : palette.caption}>
+                <AppText variant="caption" color={item.mode === m ? palette.inkText : palette.caption}>
                   {m === 'reps' ? t('Təkrar') : t('Müddət')}
                 </AppText>
               </PressableScale>
@@ -581,11 +581,10 @@ function Label({ text, first }: { text: string; first?: boolean }) {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingBottom: 40 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // A white field on the #F7F7F7 screen — no outline: depth is the colour step.
   input: {
     backgroundColor: palette.white,
     borderRadius: radius.field,
-    borderWidth: 1,
-    borderColor: palette.separator,
     paddingHorizontal: 14,
     height: 52,
     fontSize: 16,
@@ -595,7 +594,7 @@ const styles = StyleSheet.create({
   // 44 = the «x» box below. Held with or without it, so adding a second day does
   // not make the first card's header jump by the box's extra height.
   dayHead: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
-  dayIndex: { width: 28, height: 28, borderRadius: 9, backgroundColor: 'rgba(198,255,61,0.22)', alignItems: 'center', justifyContent: 'center' },
+  dayIndex: { width: 28, height: 28, borderRadius: 9, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
   dayTitleInput: { flex: 1, fontSize: 16, fontWeight: '600', color: palette.inkText, paddingVertical: 6 },
   focusInput: { fontSize: 13.5, color: palette.textSecondary, paddingVertical: 6, marginLeft: 38 },
 
@@ -616,7 +615,8 @@ const styles = StyleSheet.create({
   },
   modeRow: { flexDirection: 'row', gap: 6 },
   mode: { paddingHorizontal: 9, height: 22, borderRadius: 11, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
-  modeOn: { backgroundColor: palette.volt },
+  // Selected = #EDEDED + ink (the design's chip rule), not a volt fill.
+  modeOn: { backgroundColor: palette.selected },
   valueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   valueInput: {
     flex: 1,
@@ -650,7 +650,8 @@ const styles = StyleSheet.create({
      margin, so the word stays where it was and the target reaches toward the edge. */
   navAction: { height: 44, justifyContent: 'center', paddingHorizontal: spacing.sm, marginRight: -spacing.sm },
   addMove: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 40, marginTop: 12, borderRadius: 11, backgroundColor: palette.grouped },
-  addDay: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator },
+  // A secondary button: #EDEDED, no border.
+  addDay: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: radius.button, backgroundColor: palette.element },
   note: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: palette.grouped, borderRadius: 14, padding: 14, marginTop: 10 },
-  publicRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 14, marginTop: 22 },
+  publicRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginTop: 22 },
 });

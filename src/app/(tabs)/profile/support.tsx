@@ -114,7 +114,7 @@ export default function Support() {
       />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
         <AppText variant="overline" color={palette.caption}>
-          {t('MÖVZU')}
+          {t('Mövzu')}
         </AppText>
         <View style={styles.cats}>
           {CATEGORIES.map((c) => {
@@ -138,7 +138,7 @@ export default function Support() {
         </View>
 
         <AppText variant="overline" color={palette.caption} style={{ marginTop: 22 }}>
-          {t('NƏ BAŞ VERDİ?')}
+          {t('Nə baş verdi?')}
         </AppText>
         <TextInput {...inputTint}
           value={note}
@@ -173,11 +173,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: radius.pill,
-    backgroundColor: palette.grouped,
+    // On the #F7F7F7 screen a resting chip is #FEFEFE; picked is #EDEDED + ink, never black.
+    backgroundColor: palette.white,
   },
-  catOn: { backgroundColor: palette.inkText },
+  catOn: { backgroundColor: palette.selected },
   catLabel: { fontSize: 14, fontWeight: '600', color: palette.text3 },
-  catLabelOn: { color: palette.white },
+  catLabelOn: { color: palette.inkText },
   input: {
     fontSize: 17,
     color: palette.inkText,

@@ -37,23 +37,24 @@ export default function Index() {
   // for the server; everything else waits only for the store to load.
   const waiting = !hydrated || !ready || (!guest && !onboarded && !profileChecked);
 
-  /* The splash is black, and the root layout's <StatusBar style="dark" /> drew a
-     black clock on it for as long as the server took to answer. A light entry is
-     pushed only while the splash is actually on screen and popped the moment it
-     turns into a redirect (or the gate loses focus), so it never outlives the
-     splash and never sits over the white screen that follows. On iOS the native
-     style is also set directly — same approach and reason as
-     onboarding/welcome.tsx and workout/exercise.tsx. */
+  /* The waiting screen was black, and the root layout's dark clock was black on
+     it, so a light entry was pushed while it showed. The final design makes
+     every screen light — this one is now the #F7F7F7 of the screen that follows —
+     so the entry asks for the DARK clock instead. It is still pushed only while
+     the gate is actually waiting and popped the moment it turns into a redirect
+     (or loses focus), so it never outlives it. On iOS the native style is also
+     set directly — same approach and reason as onboarding/welcome.tsx and
+     workout/exercise.tsx. */
   useFocusEffect(
     useCallback(() => {
       if (!waiting) return;
-      if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
-      const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
+      if (Platform.OS === 'ios') StatusBar.setBarStyle('dark-content', true);
+      const entry = StatusBar.pushStackEntry({ barStyle: 'dark-content', animated: true });
       return () => StatusBar.popStackEntry(entry);
     }, [waiting])
   );
 
-  if (waiting) return <View style={{ flex: 1, backgroundColor: palette.inkText }} />;
+  if (waiting) return <View style={{ flex: 1, backgroundColor: palette.grouped }} />;
 
   if (!guest && !onboarded) return <Redirect href="/onboarding/welcome" />;
 

@@ -1,8 +1,7 @@
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { useMemo, useRef, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -83,8 +82,7 @@ export default function PickExercises() {
      rather than a guessed bar height. On Android the Material bar reserves its own
      space (the tab scene is already padded by the navigation-bar inset), so adding
      it here would lift the footer twice. */
-  const insets = useSafeAreaInsets();
-  const footerBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + 10;
+  const footerBottom = 10;
 
   const list = useMemo(() => {
     const key = searchKey(q.trim());
@@ -205,7 +203,7 @@ export default function PickExercises() {
                  inside the row's 12 pt vertical padding, so Android honours it too. */
               hitSlop={{ top: 5, bottom: 5 }}
               style={[styles.chip, i === group ? styles.chipOn : null]}>
-              <AppText variant="subhead" color={i === group ? palette.white : palette.textSecondary}>
+              <AppText variant="subhead" color={palette.inkText} style={{ fontWeight: '600' }}>
                 {t(g.label)}
               </AppText>
             </PressableScale>
@@ -236,7 +234,7 @@ export default function PickExercises() {
                 </AppText>
               </View>
               <View style={[styles.check, on ? styles.checkOn : null]}>
-                {on ? <Icon name="check" size={14} color={palette.ink} /> : null}
+                {on ? <Icon name="check" size={14} color={palette.ctaText} /> : null}
               </View>
             </PressableScale>
           );
@@ -301,7 +299,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     height: 44,
     borderRadius: radius.field,
-    backgroundColor: palette.grouped,
+    // The search-field grey: #F7F7F7 was the screen's own colour, so the field had no edge.
+    backgroundColor: palette.fill,
   },
   search: { flex: 1, fontSize: 16, color: palette.inkText, padding: 0 },
   /* A 44 pt target for the clear «x», not the bare glyph. The negative margin
@@ -310,8 +309,9 @@ const styles = StyleSheet.create({
   clear: { width: 44, height: 44, marginRight: -13, alignItems: 'center', justifyContent: 'center' },
   chipRow: { flexGrow: 0, flexShrink: 0 },
   chips: { paddingHorizontal: spacing.screen, gap: 8, paddingVertical: 12 },
-  chip: { paddingHorizontal: 14, height: 34, borderRadius: 17, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
-  chipOn: { backgroundColor: palette.ink },
+  // Resting #FEFEFE on the #F7F7F7 screen, selected #EDEDED — never an ink fill.
+  chip: { paddingHorizontal: 14, height: 34, borderRadius: 17, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  chipOn: { backgroundColor: palette.selected },
   content: { paddingHorizontal: spacing.screen, paddingTop: 6, paddingBottom: 30 },
   row: {
     flexDirection: 'row',
@@ -319,18 +319,21 @@ const styles = StyleSheet.create({
     gap: 12,
     backgroundColor: palette.white,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: palette.separator,
+    /* Always 1.5 wide so a pick does not shift the row; transparent until picked.
+       A picked row is the design's selected outlined card: volt border on the
+       volt tint. */
+    borderWidth: 1.5,
+    borderColor: 'transparent',
     padding: 13,
     marginBottom: 8,
   },
-  rowOn: { borderColor: palette.ink },
+  rowOn: { borderColor: palette.volt, backgroundColor: palette.voltTint },
   check: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: palette.separator,
+    borderColor: palette.chevron,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -23,26 +23,31 @@ export function CreatorBadge({
   avatarSize?: number;
 }) {
   const t = useT();
+  /* The design: «Doğrulanmış müəllim» is tinted blue, to read with the blue
+     verified badge beside it; every other tag is grey (#F7F7F7 inside the card). */
   const tag =
     type === 'spot'
-      ? { label: t('SPOT proqramı'), color: palette.textSecondary, bg: palette.element }
+      ? { label: t('SPOT proqramı'), color: palette.textSecondary, bg: palette.grouped }
       : type === 'trainer'
         ? verified
-          ? { label: t('Doğrulanmış müəllim'), color: palette.voltText, bg: palette.voltTint }
-          : { label: t('Müəllim'), color: palette.textSecondary, bg: palette.element }
-        : { label: t('İstifadəçi'), color: palette.textSecondary, bg: palette.element };
+          ? { label: t('Doğrulanmış müəllim'), color: palette.verified, bg: VERIFIED_TINT }
+          : { label: t('Müəllim'), color: palette.textSecondary, bg: palette.grouped }
+        : { label: t('İstifadəçi'), color: palette.textSecondary, bg: palette.grouped };
 
   return (
     <View style={styles.row}>
       <Avatar name={name} size={avatarSize} />
       <AppText style={styles.name}>{name}</AppText>
-      {verified && type !== 'spot' && <Icon name="verified" size={13} color={palette.voltDeep} />}
+      {verified && type !== 'spot' && <Icon name="verified" size={13} color={palette.verified} />}
       <View style={[styles.tag, { backgroundColor: tag.bg }]}>
         <AppText style={[styles.tagText, { color: tag.color }]}>{tag.label}</AppText>
       </View>
     </View>
   );
 }
+
+/** palette.verified (#0A84FF) at 12 % — the design's verified-trainer tag. */
+const VERIFIED_TINT = 'rgba(10,132,255,0.12)';
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },

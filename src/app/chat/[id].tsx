@@ -291,7 +291,7 @@ export default function Conversation() {
               {messages.map((m) => (
                 <View key={m.id} style={[styles.bubbleWrap, m.mine ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }]}>
                   <View style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}>
-                    <AppText variant="body" color={m.mine ? palette.white : palette.inkText}>
+                    <AppText variant="body" color={palette.inkText}>
                       {m.body}
                     </AppText>
                   </View>
@@ -315,7 +315,7 @@ export default function Conversation() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quick}>
             {QUICK.map((q) => (
               <PressableScale key={q} activeScale={0.95} onPress={() => send(t(q))} style={styles.quickChip}>
-                <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.text3 }}>{t(q)}</AppText>
+                <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>{t(q)}</AppText>
               </PressableScale>
             ))}
           </ScrollView>
@@ -334,7 +334,10 @@ export default function Conversation() {
               onPress={() => send(text)}
               accessibilityRole="button"
               accessibilityLabel={t('Mesajı göndər')}
-              style={styles.sendBtn}>
+              /* The design's send disc is #EDEDED over an empty field; with
+                 something to send it is the volt CTA. Colour only — the press
+                 does what it always did (send() ignores an empty field). */
+              style={[styles.sendBtn, { backgroundColor: text.trim() ? palette.cta : palette.element }]}>
               <Icon name="arrowU" size={iconSize.inCircle} color={palette.inkText} />
             </PressableScale>
           </View>
@@ -356,12 +359,13 @@ const styles = StyleSheet.create({
   startNote: { paddingVertical: 24, paddingHorizontal: 20 },
   bubbleWrap: { marginBottom: 8 },
   bubble: { maxWidth: '82%', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
-  mine: { backgroundColor: palette.ink, borderBottomRightRadius: 5 },
+  // The design's own bubble: #EDEDED with ink text — no ink fill on a light screen.
+  mine: { backgroundColor: palette.element, borderBottomRightRadius: 5 },
   theirs: { backgroundColor: palette.white, borderBottomLeftRadius: 5 },
   inputArea: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator, paddingTop: 8 },
   quick: { paddingHorizontal: spacing.screen, gap: 7, paddingBottom: 8 },
   quickChip: { backgroundColor: palette.white, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: palette.separator },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: spacing.screen, paddingBottom: 4 },
   input: { flex: 1, backgroundColor: palette.white, borderRadius: 999, paddingHorizontal: 16, height: 44, fontSize: 15, color: palette.inkText, borderWidth: 1, borderColor: palette.separator },
-  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
+  sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

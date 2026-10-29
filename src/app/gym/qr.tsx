@@ -14,7 +14,7 @@ import { GymGate, useMyGym } from '@/lib/gymOwner';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { confirm, toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { palette, radius, spacing } from '@/theme';
 
 /**
  * The gym's check-in QR.
@@ -122,7 +122,7 @@ export default function GymQr() {
           {code.k === 'ready' ? (
             <>
               <View style={styles.qrBox}>
-                <QRCode value={code.code} size={210} backgroundColor="#FFFFFF" color={palette.ink} />
+                <QRCode value={code.code} size={210} backgroundColor={palette.white} color={palette.ink} />
               </View>
               <AppText variant="title3" style={{ marginTop: 18, letterSpacing: 2 }}>
                 {code.code}
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingBottom: 40 },
   card: {
     backgroundColor: palette.white,
-    borderRadius: 20,
+    borderRadius: radius.card,
     paddingVertical: 28,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -203,7 +203,8 @@ const styles = StyleSheet.create({
     minHeight: 260,
     justifyContent: 'center',
   },
-  qrBox: { padding: 14, backgroundColor: '#FFFFFF', borderRadius: 14 },
+  // #FEFEFE, not pure white (design rule) — the scan contrast is unchanged.
+  qrBox: { padding: 14, backgroundColor: palette.white, borderRadius: 14 },
   rotate: { alignSelf: 'center', paddingVertical: 16, paddingHorizontal: 20, marginTop: 6 },
   note: {
     flexDirection: 'row',

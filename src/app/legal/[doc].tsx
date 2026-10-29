@@ -72,7 +72,8 @@ export default function LegalScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingTop: 8, paddingBottom: 48 },
   intro: { marginTop: 10, lineHeight: 22 },
-  notice: { backgroundColor: palette.grouped, borderRadius: 12, padding: 12, marginTop: 12 },
+  // #FEFEFE: on the #F7F7F7 screen a #F7F7F7 box had no edge at all.
+  notice: { backgroundColor: palette.white, borderRadius: 12, padding: 12, marginTop: 12 },
   section: { marginTop: 26 },
   line: { lineHeight: 22, marginBottom: 8 },
 });

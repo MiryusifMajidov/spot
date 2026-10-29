@@ -63,16 +63,16 @@ export default function App() {
   }, [admin, refreshCounts]);
 
   if (loading) {
-    return <div style={{ minHeight: '100vh', background: '#101014', display: 'grid', placeItems: 'center' }}><div className="spinner" style={{ borderTopColor: '#C6FF3D' }} /></div>;
+    return <div style={{ minHeight: '100vh', background: 'var(--page)', display: 'grid', placeItems: 'center' }}><div className="spinner" /></div>;
   }
   if (!session) return <Login />;
   if (!admin) {
     return (
-      <div style={{ minHeight: '100vh', background: '#101014', display: 'grid', placeItems: 'center', color: '#fff', textAlign: 'center' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--page)', display: 'grid', placeItems: 'center', color: 'var(--ink)', textAlign: 'center' }}>
         <div>
-          <Icon name="shield" size={40} color="#C6FF3D" />
+          <Icon name="shield" size={40} color="var(--volt-deep)" />
           <div style={{ font: '700 20px/1 var(--font)', marginTop: 16 }}>İcazə yoxdur</div>
-          <div style={{ font: '400 14px/1.5 var(--font)', color: 'rgba(255,255,255,.6)', marginTop: 8, maxWidth: 320 }}>
+          <div style={{ font: '400 14px/1.5 var(--font)', color: 'var(--muted2)', marginTop: 8, maxWidth: 320 }}>
             Bu hesab admin deyil. Owner səni <code>admins</code> cədvəlinə əlavə etməlidir.
           </div>
           <button className="btn" onClick={signOut} style={{ marginTop: 20 }}>Çıxış</button>

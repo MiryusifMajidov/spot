@@ -8,16 +8,16 @@ import { Icon } from '../ui/icons';
 import type { Report, ReportMessage } from '../lib/types';
 import type { ScreenProps } from '../App';
 
-// ---- category → AZ uppercase label + tone -----------------------------------
+// ---- category → AZ label (sentence case — no caps labels) + tone ----------
 const CAT: Record<Report['category'], { label: string; tone: 'red' | 'orange' | 'grey' }> = {
-  safety: { label: 'TƏHLÜKƏSİZLİK', tone: 'red' },
-  harassment: { label: 'TƏQİB', tone: 'red' },
-  spam: { label: 'SPAM', tone: 'grey' },
-  fake: { label: 'SAXTA PROFİL', tone: 'grey' },
+  safety: { label: 'Təhlükəsizlik', tone: 'red' },
+  harassment: { label: 'Təqib', tone: 'red' },
+  spam: { label: 'Spam', tone: 'grey' },
+  fake: { label: 'Saxta profil', tone: 'grey' },
   // Legacy only: SPOT processes no payments, so nothing in the app can raise
   // this category any more. Kept so historical rows still render a real label.
-  payment: { label: 'ÖDƏNİŞ (KÖHNƏ)', tone: 'orange' },
-  other: { label: 'DİGƏR', tone: 'grey' },
+  payment: { label: 'Ödəniş (köhnə)', tone: 'orange' },
+  other: { label: 'Digər', tone: 'grey' },
 };
 
 const TARGET_LABEL: Record<Report['target_type'], string> = {
@@ -347,7 +347,8 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
     <>
       <div className="section-head" style={{ marginBottom: 4 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ display: 'flex', gap: 2, background: 'var(--fill)', borderRadius: 9, padding: 2 }}>
+          {/* #EDEDED track: on the #F7F7F7 page a #F7F7F7 track would vanish. */}
+          <div style={{ display: 'flex', gap: 2, background: 'var(--fill2)', borderRadius: 9, padding: 2 }}>
             <TabBtn active={tab === 'open'} onClick={() => setTab('open')} label={`Şikayətlər ${open.length || ''}`.trim()} />
             <TabBtn active={tab === 'closed'} onClick={() => setTab('closed')} label="Bağlanmış" />
             <TabBtn active={false} onClick={() => go('content')} label="Məzmun" />
@@ -362,7 +363,7 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, margin: '16px 0 18px' }}>
         {kpis.map((c) => (
           <div key={c.label} className="card" style={{ padding: '15px 17px', border: c.accent ? '1px solid rgba(255,59,48,.25)' : undefined }}>
-            <div style={{ font: '600 10.5px/1 var(--font)', letterSpacing: '.06em', textTransform: 'uppercase', color: c.accent ? 'var(--red-deep)' : 'var(--muted)' }}>{c.label}</div>
+            <div style={{ font: '600 13px/1.25 var(--font)', color: c.accent ? 'var(--red-deep)' : 'var(--muted)' }}>{c.label}</div>
             <div style={{ font: '700 24px/1 var(--font)', letterSpacing: '-.7px', marginTop: 10 }}>{loading ? '—' : c.val}</div>
           </div>
         ))}
@@ -441,14 +442,14 @@ export function Moderation({ go, refreshCounts }: ScreenProps) {
             {AUTO_FLAG.map((r, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                 <span className={'badge ' + (r.live ? 'green' : 'grey')} style={{ flex: 'none' }}>
-                  {r.live ? 'İŞLƏYİR' : 'İŞLƏMİR'}
+                  {r.live ? 'İşləyir' : 'İşləmir'}
                 </span>
                 <span style={{ color: r.live ? 'var(--muted2)' : 'var(--muted)' }}>{r.text}</span>
               </div>
             ))}
           </div>
           <div style={{ font: '400 11.5px/1.5 var(--font)', color: 'var(--orange-deep)', marginTop: 12 }}>
-            «İŞLƏMİR» qeyd olunanlar planlaşdırılıb, amma qurulmayıb: heç bir hesab avtomatik
+            «İşləmir» qeyd olunanlar planlaşdırılıb, amma qurulmayıb: heç bir hesab avtomatik
             susdurulmur, heç bir şərh avtomatik növbəyə düşmür. Növbədəki hər şikayət əl ilə
             yoxlanılmalıdır.
           </div>
@@ -490,9 +491,8 @@ function TabBtn({ active, onClick, label }: { active: boolean; onClick: () => vo
       onClick={onClick}
       style={{
         padding: '7px 13px', borderRadius: 7, border: 'none',
-        background: active ? '#fff' : 'transparent',
-        boxShadow: active ? '0 1px 2px rgba(0,0,0,.08)' : 'none',
-        font: `${active ? 600 : 500} 12.5px/1 var(--font)`, color: active ? 'var(--ink2)' : 'var(--muted2)',
+        background: active ? 'var(--card)' : 'transparent',
+        font: `${active ? 600 : 500} 12.5px/1 var(--font)`, color: active ? 'var(--ink)' : 'var(--muted2)',
       }}
     >{label}</button>
   );
@@ -541,7 +541,7 @@ function ReportDetail({
       )}
 
       {!lockFailed && r.locked_until && (
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: mine ? 'rgba(198,255,61,.28)' : 'var(--fill)', borderRadius: 7, padding: '5px 10px', margin: '4px 0 14px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: mine ? 'rgba(197,254,1,.28)' : 'var(--fill)', borderRadius: 7, padding: '5px 10px', margin: '4px 0 14px' }}>
           <Icon name="clock" size={13} color={mine ? 'var(--volt-deep)' : 'var(--muted2)'} />
           <span style={{ font: '600 11.5px/1 var(--font)', color: mine ? 'var(--volt-deep)' : 'var(--muted2)' }}>
             {lockLabel} kilid · {mine ? (admLabel(myUid)) : 'başqa moderator'}
@@ -560,7 +560,7 @@ function ReportDetail({
       )}
 
       {/* attached chat evidence — the ONLY place message text is shown */}
-      <div style={{ font: '600 12px/1 var(--font)', letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 9 }}>
+      <div style={{ font: '600 13px/1.25 var(--font)', color: 'var(--muted)', marginBottom: 9 }}>
         Əlavə edilmiş sübut · söhbət
       </div>
       {msgLoading ? (
@@ -641,7 +641,7 @@ function ReportDetail({
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div style={{ font: '600 10px/1 var(--font)', letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--muted)' }}>{label}</div>
+      <div style={{ font: '600 12px/1.25 var(--font)', color: 'var(--muted)' }}>{label}</div>
       <div style={{ font: '500 12.5px/1.3 var(--font)', color: 'var(--ink2)', marginTop: 5, wordBreak: 'break-all' }}>{value}</div>
     </div>
   );

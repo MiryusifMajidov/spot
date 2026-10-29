@@ -54,8 +54,8 @@ export default function Compose() {
           /* A compact pill sized for the 44 pt NavBar row. The shared <Button> is a
              52 pt tall CTA — in this row it overflowed the bar and was clipped by
              the sheet's rounded top-right corner on iOS. hitSlop keeps the tap
-             area at 34 + 16 = 50 pt. Empty text greys the pill out (not just fades
-             it); while posting it stays lime and shows a spinner. */
+             area at 34 + 16 = 50 pt. Empty text turns it into the design's disabled
+             CTA (not just faded); while posting it stays volt and shows a spinner. */
           <PressableScale
             activeScale={0.94}
             hitSlop={hitSlop}
@@ -66,9 +66,9 @@ export default function Compose() {
             accessibilityState={{ disabled: !hasText || posting, busy: posting }}
             style={[styles.postPill, !hasText && !posting && styles.postPillOff]}>
             {posting ? (
-              <ActivityIndicator size="small" color={palette.inkText} />
+              <ActivityIndicator size="small" color={palette.ctaText} />
             ) : (
-              <AppText variant="callout" color={hasText ? palette.inkText : palette.tertiary}>
+              <AppText variant="callout" color={hasText ? palette.ctaText : palette.tertiary}>
                 {t('Paylaş')}
               </AppText>
             )}
@@ -105,13 +105,13 @@ const styles = StyleSheet.create({
     height: 34,
     paddingHorizontal: spacing.base,
     borderRadius: radius.pill,
-    backgroundColor: palette.volt,
+    backgroundColor: palette.cta,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* palette.fill, not palette.element: element (#F0F0F3) on this screen's
-     #F4F4F6 background is invisible, so the "grey pill" read as a stray word. */
-  postPillOff: { backgroundColor: palette.fill },
+  /* The design's disabled CTA: #FEFEFE with grey text, a pill against the #F7F7F7
+     sheet rather than a faded volt one. */
+  postPillOff: { backgroundColor: palette.ctaDisabled },
   body: { paddingHorizontal: spacing.screen, flex: 1, paddingTop: 8 },
   input: { fontSize: 17, color: palette.inkText, lineHeight: 24, minHeight: 120, textAlignVertical: 'top' },
 });

@@ -302,7 +302,7 @@ export function Gyms({ search }: ScreenProps) {
           background: 'var(--ink)',
           borderRadius: 14,
           padding: '18px 20px',
-          color: '#fff',
+          color: 'var(--on-ink)',
           marginBottom: 18,
         }}
       >
@@ -392,7 +392,7 @@ export function Gyms({ search }: ScreenProps) {
                           borderRadius: 9,
                           border: 'none',
                           background: 'var(--volt)',
-                          color: '#0B0B0E',
+                          color: 'var(--ink)',
                           font: '600 12.5px/1 var(--font)',
                           cursor: 'pointer',
                         }}

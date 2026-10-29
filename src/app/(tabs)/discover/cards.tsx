@@ -10,9 +10,9 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { Icon } from '@/components/Icon';
-import { azUpper } from '@/lib/az';
 import { COMPAT_UNKNOWN_SHORT, MISMATCH_COLOR, compatOf, splitReasons } from '@/components/PartnerRow';
 import { AppText } from '@/components/ui/AppText';
+import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
@@ -236,7 +236,7 @@ function Cards() {
        the physical bottom edge and the tab scene's padding does not apply. Without the
        'bottom' edge the action row and the hint below it land on the home indicator —
        the sibling modals (filter, partner-filter, match) all take both edges. */
-    <Screen edges={['top', 'bottom']} style={{ backgroundColor: palette.element2 }}>
+    <Screen edges={['top', 'bottom']}>
       <NavBar
         title={t('Kartlar')}
         right={
@@ -264,9 +264,7 @@ function Cards() {
             <AppText variant="body" color={palette.textSecondary} center style={{ marginTop: 6, maxWidth: 250, lineHeight: 21 }}>
               {t('Zalını seç — yoldaşlar zala görə tapılır.')}
             </AppText>
-            <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.emptyBtn}>
-              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Zalını seç')}</AppText>
-            </PressableScale>
+            <Button title={t('Zalını seç')} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.emptyBtn} />
           </View>
         ) : !current ? (
           /* Four different reasons the deck is empty, and the user is told which one:
@@ -309,13 +307,9 @@ function Cards() {
                         : t('Bu zalda cavab vermədiyin yoldaş qalmadı. Yeni adam qoşulanda burada görünəcək.')}
             </AppText>
             {phase === 'failed' || phase === 'loading' ? null : emptyKind === 'filter' ? (
-              <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/discover/partner-filter')} style={styles.emptyBtn}>
-                <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Filtri dəyiş')}</AppText>
-              </PressableScale>
+              <Button title={t('Filtri dəyiş')} onPress={() => router.push('/(tabs)/discover/partner-filter')} style={styles.emptyBtn} />
             ) : emptyKind === 'gate' ? (
-              <PressableScale activeScale={0.96} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.emptyBtn}>
-                <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Profilini tamamla')}</AppText>
-              </PressableScale>
+              <Button title={t('Profilini tamamla')} onPress={() => router.push('/(tabs)/profile/edit')} style={styles.emptyBtn} />
             ) : null}
             {emptyKind !== 'cap' && usedToday > 0 ? (
               <AppText variant="caption" color={palette.caption} center style={{ marginTop: 14 }}>
@@ -334,10 +328,10 @@ function Cards() {
               <Animated.View style={[styles.cardWrap, topStyle]}>
                 <CardFace partner={current} />
                 <Animated.View style={[styles.stamp, styles.likeStamp, likeStyle]}>
-                  <AppText style={[styles.stampText, { color: palette.voltDeep }]}>{t('TƏKLİF')}</AppText>
+                  <AppText style={[styles.stampText, { color: palette.voltDeep }]}>{t('Təklif')}</AppText>
                 </Animated.View>
                 <Animated.View style={[styles.stamp, styles.nopeStamp, nopeStyle]}>
-                  <AppText style={[styles.stampText, { color: palette.textSecondary }]}>{t('KEÇ')}</AppText>
+                  <AppText style={[styles.stampText, { color: palette.textSecondary }]}>{t('Keç')}</AppText>
                 </Animated.View>
               </Animated.View>
             </GestureDetector>
@@ -362,7 +356,7 @@ function Cards() {
               accessibilityRole="button"
               accessibilityLabel={t('Məşq təklif et')}
               style={[styles.ctrl, styles.ctrlLg]}>
-              <Icon name="dumbbell" size={32} color={palette.volt} />
+              <Icon name="dumbbell" size={32} color={palette.inkText} />
             </PressableScale>
             <PressableScale
               activeScale={0.9}
@@ -401,7 +395,7 @@ function CardFace({ partner }: { partner: Partner }) {
           <Icon name="user" size={34} color="rgba(11,11,14,0.14)" />
         </View>
         <View style={styles.matchBadge}>
-          <AppText style={{ color: score === null ? 'rgba(255,255,255,0.75)' : palette.volt, fontSize: 13, fontWeight: '700' }}>
+          <AppText style={{ color: score === null ? palette.textSecondary : palette.inkText, fontSize: 13, fontWeight: '700' }}>
             {score === null ? t(COMPAT_UNKNOWN_SHORT) : t('{n}% uyğun', { n: score })}
           </AppText>
         </View>
@@ -414,7 +408,7 @@ function CardFace({ partner }: { partner: Partner }) {
         ) : null}
         <LinearGradient colors={['transparent', 'rgba(11,11,14,0.72)']} style={styles.photoScrim} />
         <View style={styles.nameOverlay}>
-          <AppText style={{ color: palette.white, fontSize: 24, fontWeight: '700', letterSpacing: -0.5 }}>
+          <AppText style={{ color: palette.onDark, fontSize: 24, fontWeight: '700', letterSpacing: -0.5 }}>
             {nameWithAge(partner.name, partner.age)}
           </AppText>
           <AppText style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13.5, marginTop: 5 }}>
@@ -447,8 +441,8 @@ function CardFace({ partner }: { partner: Partner }) {
           <>
             {pros.length > 0 ? (
               <>
-                <AppText variant="caption" color={palette.caption} style={{ marginTop: 13 }}>
-                  {t('NİYƏ UYĞUNDUR')}
+                <AppText variant="overline" color={palette.caption} style={{ marginTop: 13 }}>
+                  {t('Niyə uyğundur')}
                 </AppText>
                 <AppText variant="body" color={palette.text3} style={{ marginTop: 5, lineHeight: 20 }}>
                   {pros.map((r) => t(r)).join(' · ')}
@@ -458,8 +452,8 @@ function CardFace({ partner }: { partner: Partner }) {
             {/* Mismatches are shown, and never in the «niyə uyğundur» voice. */}
             {cons.length > 0 ? (
               <>
-                <AppText variant="caption" color={MISMATCH_COLOR} style={{ marginTop: 11 }}>
-                  {t('FƏRQLƏR')}
+                <AppText variant="overline" color={MISMATCH_COLOR} style={{ marginTop: 11 }}>
+                  {t('Fərqlər')}
                 </AppText>
                 <AppText variant="body" color={palette.textSecondary} style={{ marginTop: 5, lineHeight: 20 }}>
                   {cons.slice(0, 3).map((r) => t(r)).join(' · ')}
@@ -475,8 +469,8 @@ function CardFace({ partner }: { partner: Partner }) {
 
 function DataCell({ label, value, volt }: { label: string; value: string; volt?: boolean }) {
   return (
-    <View style={[styles.cell, volt && { backgroundColor: 'rgba(198,255,61,0.26)' }]}>
-      <AppText style={[styles.cellLabel, volt && { color: palette.voltDeep }]}>{azUpper(label)}</AppText>
+    <View style={[styles.cell, volt && { backgroundColor: palette.voltTint }]}>
+      <AppText style={[styles.cellLabel, volt && { color: palette.voltText }]}>{label}</AppText>
       <AppText style={[styles.cellValue, volt && { color: palette.voltText }]} numberOfLines={1}>
         {value}
       </AppText>
@@ -489,28 +483,31 @@ const styles = StyleSheet.create({
   deck: { flex: 1, paddingHorizontal: 18, paddingTop: 8 },
   cardWrap: { position: 'absolute', left: 18, right: 18, top: 8 },
   behind: { top: 16 },
-  card: { backgroundColor: palette.white, borderRadius: 24, overflow: 'hidden', ...(({ shadowColor: '#101014', shadowOpacity: 0.16, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 8 }) as object) },
+  // No drop shadow (the design's rule) — the #FEFEFE card on the #F7F7F7 screen is the depth.
+  card: { backgroundColor: palette.white, borderRadius: 24, overflow: 'hidden' },
   photo: { height: 300 },
-  matchBadge: { position: 'absolute', top: 14, left: 14, backgroundColor: palette.ink, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 6 },
-  hereBadge: { position: 'absolute', top: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(198,255,61,0.94)', borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6 },
+  matchBadge: { position: 'absolute', top: 14, left: 14, backgroundColor: palette.element, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 6 },
+  hereBadge: { position: 'absolute', top: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: palette.volt, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6 },
   hereDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.voltText },
   photoScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 110 },
   nameOverlay: { position: 'absolute', left: 16, bottom: 14 },
   body: { padding: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   cell: { width: '47.5%', backgroundColor: palette.grouped, borderRadius: 12, padding: 11 },
-  cellLabel: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.5, color: palette.caption },
+  // Sentence case, 13 / 600 grey — it was 10.5 pt tracked caps.
+  cellLabel: { fontSize: 13, fontWeight: '600', color: palette.caption },
   cellValue: { fontSize: 14, fontWeight: '600', marginTop: 7 },
   stamp: { position: 'absolute', top: 26, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 3 },
   likeStamp: { left: 20, borderColor: palette.voltDeep, transform: [{ rotate: '-12deg' }] },
   nopeStamp: { right: 20, borderColor: palette.textSecondary, transform: [{ rotate: '12deg' }] },
-  stampText: { fontSize: 20, fontWeight: '800', letterSpacing: 1 },
+  stampText: { fontSize: 20, fontWeight: '800' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
-  emptyBtn: { marginTop: 18, height: 44, paddingHorizontal: 20, borderRadius: 13, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
+  // The volt CTA is <Button>; only its spacing is set here.
+  emptyBtn: { marginTop: 18, paddingHorizontal: 20 },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, paddingTop: 14, paddingBottom: 6 },
-  ctrl: { borderRadius: 40, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center', ...(({ shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 }) as object) },
+  ctrl: { borderRadius: 40, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
   ctrlSm: { width: 58, height: 58 },
-  ctrlLg: { width: 72, height: 72, backgroundColor: palette.ink },
+  ctrlLg: { width: 72, height: 72, backgroundColor: palette.element },
 });
 
 // Real people on this screen: not reachable as a guest by any route.

@@ -23,13 +23,16 @@ export function SelectCard({
     <PressableScale
       activeScale={0.98}
       onPress={onPress}
-      style={[styles.card, { backgroundColor: selected ? palette.ink : palette.white, borderColor: selected ? palette.ink : palette.separator }]}>
+      /* The design's selected option card: a 1.5 pt volt border on the volt tint,
+         never an ink fill. Unselected, the border is there but transparent, so
+         selecting does not shift the card's content by 1.5 pt. */
+      style={[styles.card, { backgroundColor: selected ? palette.voltTint : palette.white, borderColor: selected ? palette.volt : 'transparent' }]}>
       <View style={{ flex: 1 }}>
-        <AppText variant="headline" color={selected ? palette.white : palette.inkText}>
+        <AppText variant="headline" color={palette.inkText}>
           {label}
         </AppText>
         {sublabel ? (
-          <AppText variant="footnote" color={selected ? 'rgba(255,255,255,0.6)' : palette.caption} style={{ marginTop: 3 }}>
+          <AppText variant="footnote" color={palette.caption} style={{ marginTop: 3 }}>
             {sublabel}
           </AppText>
         ) : null}
@@ -42,6 +45,6 @@ export function SelectCard({
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: radius.field, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 10 },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: radius.card, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 10 },
   marker: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
 });

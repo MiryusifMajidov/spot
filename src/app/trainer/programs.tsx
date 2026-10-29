@@ -12,7 +12,7 @@ import { removeProgram } from '@/lib/removeProgram';
 import { useT } from '@/lib/useT';
 import { useDb } from '@/store/db';
 import { actionSheet, confirm, toast } from '@/store/ui';
-import { iconSize, palette, spacing } from '@/theme';
+import { iconSize, palette, radius, spacing } from '@/theme';
 
 /**
  * A trainer's programs.
@@ -109,6 +109,7 @@ export default function TrainerPrograms() {
             accessibilityRole="button"
             accessibilityLabel={t('Yeni proqram yarat')}
             onPress={openNew}
+            hitSlop={2}
             style={styles.fab}>
             <Icon name="plus" size={iconSize.inCircle} color={palette.inkText} />
           </PressableScale>
@@ -126,8 +127,8 @@ export default function TrainerPrograms() {
               accessibilityRole="button"
               accessibilityLabel={t('İlk proqramı yarat')}
               onPress={openNew}
-              style={[styles.primaryBtn, { marginTop: 15, alignSelf: 'flex-start', paddingHorizontal: 18 }]}>
-              <AppText style={{ color: palette.white, fontSize: 13.5, fontWeight: '600' }}>{t('Proqram yarat')}</AppText>
+              style={[styles.primaryBtn, { marginTop: 15 }]}>
+              <AppText variant="headline" color={palette.ctaText}>{t('Proqram yarat')}</AppText>
             </PressableScale>
           </View>
         ) : (
@@ -170,13 +171,17 @@ export default function TrainerPrograms() {
 }
 
 const styles = StyleSheet.create({
-  /* A real 44 pt volt button — it was 36 with an 8 pt slop and a 20 px «+». The
-     LargeHeader's action row gives back the empty half of a 44 box on the right. */
-  fab: { width: 44, height: 44, borderRadius: 14, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center', marginRight: 9.5 },
-  empty: { backgroundColor: palette.white, borderRadius: 16, padding: 18 },
-  primaryBtn: { backgroundColor: palette.ink, borderRadius: 12, height: 44, alignItems: 'center', justifyContent: 'center' },
-  card: { backgroundColor: palette.white, borderRadius: 16, padding: 13 },
-  thumb: { width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(198,255,61,0.22)', alignItems: 'center', justifyContent: 'center' },
+  /* The design's «+» in a header: a 40 pt #FEFEFE disc with a 20 pt ink glyph
+     (theme iconSize.inCircle); the 2 pt slop makes the target 44. It was a 44 pt
+     volt square. The LargeHeader's action row pulls its last box 9.5 pt toward the
+     edge (it is sized for a bare 44 box), so the margin puts the disc's edge back
+     on the gutter. */
+  fab: { width: 40, height: 40, borderRadius: 20, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center', marginRight: 9.5 },
+  empty: { backgroundColor: palette.white, borderRadius: radius.card, padding: 16 },
+  // The volt CTA, spanning the card as the design draws an in-card CTA.
+  primaryBtn: { backgroundColor: palette.cta, borderRadius: radius.button, height: 50, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
+  card: { backgroundColor: palette.white, borderRadius: radius.card, padding: 14 },
+  thumb: { width: 44, height: 44, borderRadius: 13, backgroundColor: palette.voltTint, alignItems: 'center', justifyContent: 'center' },
   // 44 pt, with the empty half given back so the «⋯» stays on the card's edge.
   moreBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
 });

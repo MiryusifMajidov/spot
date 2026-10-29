@@ -9,11 +9,12 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StatusBar, StyleSheet, TextInput, View } from 'react-native';
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
+import { Button } from '@/components/ui/Button';
 import { useKeyboardLift } from '@/components/ui/KeyboardLift';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { logPR, logWorkout as logWorkoutApi } from '@/lib/api';
@@ -35,7 +36,7 @@ import {
 } from '@/store/db';
 import { useSessionPick } from '@/store/sessionPick';
 import { confirm, toast } from '@/store/ui';
-import { dark, iconSize, palette, radius, spacing, inputTintDark } from '@/theme';
+import { iconSize, palette, radius, spacing, inputTint } from '@/theme';
 import { resolveDayExercises } from './day';
 
 /* `id` is the set's identity for its whole life on this screen — the React key of
@@ -86,7 +87,7 @@ const newSetId = () => `s${Date.now().toString(36)}${(setSeq++).toString(36)}`;
 function MinusGlyph({ size, color }: { size: number; color: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d="M5 12h14" fill="none" stroke={color} strokeWidth={2.1} strokeLinecap="round" />
+      <Path d="M5 12h14" fill="none" stroke={color} strokeWidth={1} strokeLinecap="round" />
     </Svg>
   );
 }
@@ -301,7 +302,8 @@ export default function Session() {
      rep gets miscounted. */
   useKeepAwake();
 
-  /* Light clock over this dark screen, only while it is the one in front.
+  /* Dark clock over this light screen (the design's active workout; it used to be
+     an ink screen with a light clock), only while it is the one in front.
      A mount-time <StatusBar style="light" /> pushed its entry onto React Native's
      status-bar stack once and kept it for as long as the session stayed mounted —
      and a workout in progress stays mounted while the person switches tabs, so the
@@ -314,8 +316,8 @@ export default function Session() {
      as the exercise card (workout/exercise.tsx). */
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
-      const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
+      if (Platform.OS === 'ios') StatusBar.setBarStyle('dark-content', true);
+      const entry = StatusBar.pushStackEntry({ barStyle: 'dark-content', animated: true });
       return () => StatusBar.popStackEntry(entry);
     }, [])
   );
@@ -330,8 +332,7 @@ export default function Session() {
      bottom edge), and useSafeAreaInsets().bottom there is not the bar — the test
      device reports ~220px under NativeTabs (see feed/index.tsx BOTTOM_GAP) — so
      adding it would float the row into the middle of the screen. */
-  const insets = useSafeAreaInsets();
-  const navBottom = Platform.OS === 'ios' ? insets.bottom + 8 : 6;
+  const navBottom = 6;
 
   const clearDraft = () => AsyncStorage.removeItem(draftKey).catch(() => {});
   useEffect(() => () => { if (restRef.current) clearInterval(restRef.current); }, []);
@@ -641,21 +642,17 @@ export default function Session() {
     return (
       <View style={styles.root}>
         <SafeAreaView edges={['top']} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 }}>
-          <Icon name="dumbbell" size={26} color={dark.textTertiary} />
-          <AppText style={{ color: palette.white, fontSize: 17, fontWeight: '600', marginTop: 12, textAlign: 'center' }}>
+          <Icon name="dumbbell" size={26} color={palette.caption} />
+          <AppText style={{ color: palette.inkText, fontSize: 17, fontWeight: '600', marginTop: 12, textAlign: 'center' }}>
             {t('Bu günə hərəkət təyin olunmayıb')}
           </AppText>
           {/* It used to send the person to the exercise library to «build their own
               workout» — a browsing screen that cannot start one. The picker can. */}
-          <AppText style={{ color: dark.textSecondary, fontSize: 13.5, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
+          <AppText style={{ color: palette.textSecondary, fontSize: 13.5, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
             {t('Proqramın bu gününə hərəkət əlavə olunmayıb. Hərəkətləri özün seçib məşqə başlaya bilərsən.')}
           </AppText>
-          <PressableScale onPress={addExercise} style={[styles.nextBtn, { marginTop: 20, paddingHorizontal: 24, flex: undefined, backgroundColor: palette.volt }]}>
-            <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '700' }}>{t('Hərəkət seç')}</AppText>
-          </PressableScale>
-          <PressableScale onPress={() => router.back()} style={[styles.nextBtn, { marginTop: 10, paddingHorizontal: 24, flex: undefined }]}>
-            <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '600' }}>{t('Geri')}</AppText>
-          </PressableScale>
+          <Button title={t('Hərəkət seç')} onPress={addExercise} style={{ marginTop: 20, paddingHorizontal: 24 }} />
+          <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 10, paddingHorizontal: 24 }} />
         </SafeAreaView>
       </View>
     );
@@ -704,19 +701,19 @@ export default function Session() {
         {/* Header */}
         <View style={styles.header}>
           <PressableScale activeScale={0.9} onPress={quit} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t('Bağla')}>
-            <Icon name="x" size={iconSize.action} color={palette.white} />
+            <Icon name="x" size={iconSize.action} color={palette.inkText} />
           </PressableScale>
           {/* flex: 1 — a long day title («Sinə, çiyin və triseps…») is truncated by
               numberOfLines instead of pushing the timer off the screen edge. */}
           <View style={{ flex: 1, alignItems: 'center', marginHorizontal: 8 }}>
-            <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>{t(title)}</AppText>
-            <AppText style={{ color: dark.textTertiary, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+            <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>{t(title)}</AppText>
+            <AppText style={{ color: palette.caption, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
               {t('Hərəkət {n} / {total}', { n: ci + 1, total: logs.length })}{partner ? ` · ${t('{name} ilə', { name: partner.name })}` : ''}
             </AppText>
           </View>
           <View style={styles.timer}>
-            <Icon name="timer" size={14} color={palette.volt} />
-            <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{fmt(elapsed)}</AppText>
+            <Icon name="timer" size={14} color={palette.voltDeep} />
+            <AppText style={{ color: palette.inkText, fontSize: 13, fontWeight: '600', fontVariant: ['tabular-nums'] }}>{fmt(elapsed)}</AppText>
           </View>
         </View>
 
@@ -751,11 +748,11 @@ export default function Session() {
                   : undefined
               }
               style={styles.thumb}>
-              <Icon name={hasVideo ? 'play' : 'target'} size={22} color={hasDetail ? palette.volt : dark.textTertiary} />
+              <Icon name={hasVideo ? 'play' : 'target'} size={22} color={hasDetail ? palette.voltDeep : palette.caption} />
             </PressableScale>
             <View style={{ flex: 1 }}>
-              <AppText style={{ color: palette.white, fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>{t(current.ex.name)}</AppText>
-              <AppText style={{ color: dark.textSecondary, fontSize: 13.5, marginTop: 4 }}>
+              <AppText style={{ color: palette.inkText, fontSize: 20, fontWeight: '700', letterSpacing: -0.4 }}>{t(current.ex.name)}</AppText>
+              <AppText style={{ color: palette.textSecondary, fontSize: 13.5, marginTop: 4 }}>
                 {[t('{n} set', { n: current.sets.length, count: current.sets.length }), repsText(current.ex.reps, t), t(current.ex.muscle)].filter(Boolean).join(' · ')}
               </AppText>
             </View>
@@ -764,15 +761,15 @@ export default function Session() {
           {/* Progressive-overload hint */}
           <View style={styles.hint}>
             <View style={styles.hintRow}>
-              <Icon name={current.suggestion?.deload ? 'shield' : 'target'} size={13} color={palette.volt} />
-              <AppText style={{ color: dark.textSecondary, fontSize: 12.5, flex: 1 }}>
+              <Icon name={current.suggestion?.deload ? 'shield' : 'target'} size={15} color={palette.voltDeep} />
+              <AppText style={{ color: palette.textSecondary, fontSize: 12.5, flex: 1 }}>
                 {t('Keçən dəfə: {prev}. {hint}', { prev: current.prev, hint: current.hint })}
               </AppText>
             </View>
             {showAccept ? (
               <PressableScale activeScale={0.97} onPress={acceptSuggestion} style={styles.accept} hitSlop={{ top: 4, bottom: 4 }}>
-                <Icon name="check" size={14} color={palette.volt} />
-                <AppText style={{ color: palette.volt, fontSize: 12.5, fontWeight: '700' }}>
+                <Icon name="check" size={15} color={palette.ctaText} />
+                <AppText style={{ color: palette.ctaText, fontSize: 13, fontWeight: '600' }}>
                   {t('Təklifi qəbul et — {kg} kq', { kg: kgExact(current.suggestion!.weight) })}
                 </AppText>
               </PressableScale>
@@ -781,10 +778,10 @@ export default function Session() {
 
           {/* Column headers */}
           <View style={styles.cols}>
-            <AppText style={[styles.colH, { width: 34 }]}>{t('SET')}</AppText>
-            <AppText style={[styles.colH, { flex: 1 }]}>{t('ƏVVƏLKİ')}</AppText>
-            <AppText style={[styles.colH, { width: 64, textAlign: 'center' }]}>{t('KQ')}</AppText>
-            <AppText style={[styles.colH, { width: 64, textAlign: 'center' }]}>{current.timed ? t('SANİYƏ') : t('TƏKRAR')}</AppText>
+            <AppText style={[styles.colH, { width: 34 }]}>{t('Set')}</AppText>
+            <AppText style={[styles.colH, { flex: 1 }]}>{t('Əvvəlki')}</AppText>
+            <AppText style={[styles.colH, { width: 64, textAlign: 'center' }]}>{t('kq')}</AppText>
+            <AppText style={[styles.colH, { width: 64, textAlign: 'center' }]}>{current.timed ? t('Saniyə') : t('Təkrar')}</AppText>
             <View style={{ width: 40 }} />
           </View>
 
@@ -829,27 +826,27 @@ export default function Session() {
                     accessibilityElementsHidden
                     importantForAccessibility="no-hide-descendants"
                     style={styles.swipeDelete}>
-                    <AppText style={{ color: palette.white, fontSize: 15, fontWeight: '700' }}>{t('Sil')}</AppText>
+                    <AppText style={{ color: palette.onDark, fontSize: 15, fontWeight: '700' }}>{t('Sil')}</AppText>
                   </PressableScale>
                 )}>
                 <View style={[styles.setRow, s.done && styles.setRowDone]} onTouchStart={closeOpenRow}>
                   <AppText style={[styles.setIndex, { width: 34 }]}>{i + 1}</AppText>
-                  <AppText style={{ flex: 1, color: dark.textTertiary, fontSize: 13 }}>{current.prev}</AppText>
-                  <TextInput {...inputTintDark}
+                  <AppText style={{ flex: 1, color: palette.caption, fontSize: 13 }}>{current.prev}</AppText>
+                  <TextInput {...inputTint}
                     value={s.kg}
                     onChangeText={(v) => update(s.id, 'kg', v)}
                     keyboardType="numeric"
                     style={styles.input}
                     placeholder={current.bodyweight ? t('öz') : '—'}
-                    placeholderTextColor={dark.textTertiary}
+                    placeholderTextColor={palette.caption}
                   />
-                  <TextInput {...inputTintDark}
+                  <TextInput {...inputTint}
                     value={s.reps}
                     onChangeText={(v) => update(s.id, 'reps', v)}
                     keyboardType="numeric"
                     style={styles.input}
                     placeholder={String(baseRepOf(current.ex.reps))}
-                    placeholderTextColor={dark.textTertiary}
+                    placeholderTextColor={palette.caption}
                   />
                   {/* The box stays 40 so the set grid keeps its columns on a narrow phone;
                       hitSlop takes the touch area to 48 (the row is 52 tall).
@@ -866,8 +863,8 @@ export default function Session() {
                     onAccessibilityAction={(e) => {
                       if (e.nativeEvent.actionName === 'delete') requestRemove(s.id);
                     }}
-                    style={[styles.check, s.done && { backgroundColor: palette.volt, borderColor: palette.volt }]}>
-                    <Icon name="check" size={16} color={s.done ? palette.inkText : dark.textTertiary} />
+                    style={[styles.check, s.done && styles.checkDone]}>
+                    <Icon name="check" size={17} color={s.done ? palette.ctaText : palette.chevron} />
                   </PressableScale>
                 </View>
               </ReanimatedSwipeable>
@@ -891,7 +888,7 @@ export default function Session() {
                   accessibilityLabel={t('Son seti sil')}
                   accessibilityState={{ disabled: !canRemove }}
                   style={[styles.stepBtn, !canRemove && styles.stepBtnOff]}>
-                  <MinusGlyph size={iconSize.inCircle} color={palette.white} />
+                  <MinusGlyph size={iconSize.inCircle} color={palette.inkText} />
                 </PressableScale>
                 <AppText style={styles.stepCount} accessibilityLabel={t('{n} set', { n: setCount, count: setCount })}>
                   {String(setCount)}
@@ -904,7 +901,7 @@ export default function Session() {
                   accessibilityLabel={t('Set əlavə et')}
                   accessibilityState={{ disabled: !canAdd }}
                   style={[styles.stepBtn, !canAdd && styles.stepBtnOff]}>
-                  <Icon name="plus" size={iconSize.inCircle} color={palette.white} />
+                  <Icon name="plus" size={iconSize.inCircle} color={palette.inkText} />
                 </PressableScale>
               </View>
             </View>
@@ -913,8 +910,8 @@ export default function Session() {
                 for one more. Before this a workout could only ever contain what it
                 started with. */}
             <PressableScale activeScale={0.97} onPress={addExercise} style={styles.addExercise} accessibilityRole="button">
-              <Icon name="plus" size={16} color={dark.textSecondary} />
-              <AppText style={{ color: dark.textSecondary, fontSize: 13.5, fontWeight: '600' }}>{t('Hərəkət əlavə et')}</AppText>
+              <Icon name="plus" size={18} color={palette.textSecondary} />
+              <AppText style={{ color: palette.text3, fontSize: 14, fontWeight: '600' }}>{t('Hərəkət əlavə et')}</AppText>
             </PressableScale>
           </View>
         </ScrollView>
@@ -922,7 +919,7 @@ export default function Session() {
         {/* Rest bar */}
         {rest !== null ? (
           <View style={styles.restBar}>
-            <AppText style={{ color: palette.volt, fontSize: 14, fontWeight: '700' }}>{t('Fasilə {time}', { time: fmt(rest) })}</AppText>
+            <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{t('Fasilə {time}', { time: fmt(rest) })}</AppText>
             <View style={styles.restActions}>
               <PressableScale
                 activeScale={0.9}
@@ -941,7 +938,7 @@ export default function Session() {
                 <AppText style={styles.restBtnText}>+30</AppText>
               </PressableScale>
               <PressableScale activeScale={0.94} onPress={stopRest} accessibilityRole="button" style={styles.restSkip}>
-                <AppText style={{ color: dark.textSecondary, fontSize: 14, fontWeight: '600' }}>{t('Keç')}</AppText>
+                <AppText style={{ color: palette.ctaText, fontSize: 14, fontWeight: '600' }}>{t('Keç')}</AppText>
               </PressableScale>
             </View>
           </View>
@@ -957,19 +954,16 @@ export default function Session() {
             accessibilityLabel={t('Əvvəlki hərəkət')}
             accessibilityState={{ disabled: ci === 0 }}
             style={[styles.navBtn, ci === 0 && { opacity: 0.4 }]}>
-            <Icon name="chevL" size={iconSize.inCircle} color={palette.white} />
+            <Icon name="chevL" size={iconSize.inCircle} color={palette.inkText} />
           </PressableScale>
+          {/* «Növbəti hərəkət» is the secondary button, «Məşqi bitir» the volt CTA. */}
           {ci < logs.length - 1 ? (
-            <PressableScale onPress={() => setCi((c) => c + 1)} style={styles.nextBtn}>
-              <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '600' }}>{t('Növbəti hərəkət')}</AppText>
-            </PressableScale>
+            <Button title={t('Növbəti hərəkət')} variant="secondary" onPress={() => setCi((c) => c + 1)} style={styles.nextBtn} />
           ) : (
-            <PressableScale onPress={finish} style={[styles.nextBtn, { backgroundColor: palette.volt }]}>
-              <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '700' }}>{t('Məşqi bitir')}</AppText>
-            </PressableScale>
+            <Button title={t('Məşqi bitir')} onPress={finish} style={styles.nextBtn} />
           )}
           <PressableScale activeScale={0.94} onPress={finish} style={styles.navBtn} accessibilityRole="button" accessibilityLabel={t('Məşqi bitir')}>
-            <Icon name="check" size={iconSize.inCircle} color={palette.volt} />
+            <Icon name="check" size={iconSize.inCircle} color={palette.voltDeep} />
           </PressableScale>
         </View>
       </SafeAreaView>
@@ -977,49 +971,63 @@ export default function Session() {
   );
 }
 
+/* The design's active workout is LIGHT (it was an ink screen): #F7F7F7 ground,
+   #FEFEFE rows and bars, volt only for what is done or primary, rgba(26,26,26,…)
+   for the quiet lines. */
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: palette.inkText },
+  root: { flex: 1, backgroundColor: palette.grouped },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 48 },
   // 44×44 hit area; the glyph stays left-aligned with the content column below.
   iconBtn: { width: 44, height: 44, justifyContent: 'center' },
-  timer: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: dark.fill, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  timer: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: palette.white, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
   exercise: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingVertical: 16 },
-  thumb: { width: 56, height: 56, borderRadius: 14, backgroundColor: dark.surface, alignItems: 'center', justifyContent: 'center' },
-  hint: { gap: 10, marginHorizontal: 20, marginBottom: 14, backgroundColor: 'rgba(198,255,61,0.10)', borderRadius: 12, padding: 12 },
+  thumb: { width: 56, height: 56, borderRadius: 14, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  hint: { gap: 10, marginHorizontal: 20, marginBottom: 14, backgroundColor: palette.voltTint, borderRadius: 14, padding: 12 },
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  accept: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 38, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(198,255,61,0.45)' },
+  // Accepting the suggestion is a primary tap: the volt fill with ink text.
+  accept: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 38, borderRadius: 11, backgroundColor: palette.cta },
   cols: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingBottom: 10 },
-  colH: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.6, color: dark.textTertiary },
+  // Sentence case, no tracking — the design bans caps labels.
+  colH: { fontSize: 11.5, fontWeight: '500', color: palette.caption },
   /* The swipeable's outer box clips the red «Sil» to the row's rounded shape and
      carries the gap between rows (the row itself slides, so it cannot). */
-  swipeBox: { borderRadius: 12, marginBottom: spacing.sm },
+  swipeBox: { borderRadius: 14, marginBottom: spacing.sm },
   /* An opaque base under the row: a ticked row's volt tint is translucent, and
      while it slides the red action behind it would show through. Same colour as
      the screen, so at rest nothing changes. */
-  swipeFace: { backgroundColor: palette.inkText, borderRadius: 12 },
+  swipeFace: { backgroundColor: palette.grouped, borderRadius: 14 },
   swipeDelete: { width: 84, backgroundColor: palette.red, alignItems: 'center', justifyContent: 'center' },
-  setRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: dark.surface, borderRadius: 12, paddingHorizontal: 12, height: 52 },
-  setRowDone: { backgroundColor: 'rgba(198,255,61,0.14)' },
-  setIndex: { color: palette.white, fontSize: 15, fontWeight: '700' },
-  input: { width: 64, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)', color: palette.white, textAlign: 'center', fontSize: 15, fontWeight: '600' },
-  check: { width: 40, height: 40, borderRadius: 12, borderWidth: 1.5, borderColor: dark.hairline, alignItems: 'center', justifyContent: 'center' },
+  /* The 1 pt border is always there (transparent while open) so ticking a set
+     does not shift the row's content. */
+  setRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: palette.white, borderRadius: 14, borderWidth: 1, borderColor: 'transparent', paddingHorizontal: 12, height: 52 },
+  // The design's done set: the volt tint with a faint volt edge.
+  setRowDone: { backgroundColor: palette.voltTint, borderColor: 'rgba(197,254,1,0.3)' },
+  setIndex: { color: palette.inkText, fontSize: 15, fontWeight: '700' },
+  // A field inside a card is #F7F7F7.
+  input: { width: 64, height: 38, borderRadius: 10, backgroundColor: palette.grouped, color: palette.inkText, textAlign: 'center', fontSize: 15, fontWeight: '600' },
+  // The tick is a disc: an open ring, then volt with an ink check.
+  check: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(26,26,26,0.3)', alignItems: 'center', justifyContent: 'center' },
+  checkDone: { backgroundColor: palette.volt, borderColor: palette.volt },
   // The label lines up with the set numbers above (the rows' own 12 pt inset).
   setCount: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: spacing.md, marginTop: spacing.xs },
-  setCountLabel: { color: dark.textSecondary, fontSize: 13.5, fontWeight: '600' },
+  setCountLabel: { color: palette.textSecondary, fontSize: 13.5, fontWeight: '600' },
   // 52 tall in all — a set row's height; the buttons inside are 44 × 44 boxes.
-  stepper: { flexDirection: 'row', alignItems: 'center', backgroundColor: dark.surface, borderRadius: radius.field, padding: spacing.xs },
-  stepBtn: { width: 44, height: 44, borderRadius: radius.input, backgroundColor: dark.fill, alignItems: 'center', justifyContent: 'center' },
+  stepper: { flexDirection: 'row', alignItems: 'center', backgroundColor: palette.white, borderRadius: radius.field, padding: spacing.xs },
+  stepBtn: { width: 44, height: 44, borderRadius: radius.input, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
   stepBtnOff: { opacity: 0.35 },
-  stepCount: { minWidth: 40, textAlign: 'center', color: palette.white, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  restBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 20, marginBottom: 10, backgroundColor: dark.surface, borderRadius: 14, paddingLeft: 16, paddingRight: 4, paddingVertical: 4 },
+  stepCount: { minWidth: 40, textAlign: 'center', color: palette.inkText, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  // The design's rest card: near-white with a hairline edge, radius 20.
+  restBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 10, backgroundColor: 'rgba(252,252,252,0.96)', borderWidth: StyleSheet.hairlineWidth, borderColor: palette.separator, borderRadius: 20, paddingLeft: 18, paddingRight: 6, paddingVertical: 6 },
   restActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   // 44 pt boxes: the bar is one row of them, so its own height is the target.
-  restBtn: { minWidth: 52, height: 44, borderRadius: 11, backgroundColor: dark.fill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
-  restBtnText: { color: palette.white, fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  restSkip: { minWidth: 52, height: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
+  restBtn: { minWidth: 52, height: 44, borderRadius: 11, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
+  restBtnText: { color: palette.inkText, fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  // «Keç» is the bar's primary tap: volt with ink text, as in the design.
+  restSkip: { minWidth: 52, height: 44, borderRadius: 11, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
   addExercise: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, marginTop: spacing.sm },
   // paddingBottom is per platform — see `navBottom` in the component.
   navRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20 },
-  navBtn: { width: 52, height: 52, borderRadius: 15, backgroundColor: dark.surface, alignItems: 'center', justifyContent: 'center' },
-  nextBtn: { flex: 1, height: 52, borderRadius: 15, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  // The CTA's height and radius (50 / 16), on the #EDEDED secondary fill.
+  navBtn: { width: 50, height: 50, borderRadius: radius.button, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
+  nextBtn: { flex: 1 },
 });

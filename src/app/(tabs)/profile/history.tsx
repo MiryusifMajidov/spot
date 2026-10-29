@@ -154,7 +154,7 @@ export default function History() {
                   key={i}
                   style={[
                     styles.calCell,
-                    { backgroundColor: c.tone === 0 ? '#F0F0F3' : c.tone === 1 ? 'rgba(198,255,61,0.45)' : palette.volt },
+                    { backgroundColor: c.tone === 0 ? palette.grouped : c.tone === 1 ? 'rgba(197,254,1,0.45)' : palette.volt },
                     c.isToday && styles.calToday,
                   ]}
                 />
@@ -196,8 +196,8 @@ export default function History() {
                       accessibilityRole="button"
                       accessibilityState={{ expanded: isOpen }}
                     >
-                      <View style={[styles.sessionIcon, { backgroundColor: 'rgba(198,255,61,0.3)' }]}>
-                        <Icon name="dumbbell" size={22} color="#5B7F00" />
+                      <View style={[styles.sessionIcon, { backgroundColor: 'rgba(197,254,1,0.3)' }]}>
+                        <Icon name="dumbbell" size={22} color={palette.voltDeep} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{s.title}</AppText>
@@ -207,13 +207,13 @@ export default function History() {
                         </AppText>
                       </View>
                       <View style={isOpen ? styles.chevOpen : undefined}>
-                        <Icon name="chevD" size={18} color={palette.tertiary} />
+                        <Icon name="chevD" size={17} color={palette.chevron} />
                       </View>
                     </PressableScale>
                     {partner ? (
                       <View style={{ flexDirection: 'row', gap: 7, marginTop: 11 }}>
                         <View style={styles.tag}>
-                          <AppText style={{ fontSize: 11, fontWeight: '600', color: '#3A3A42' }}>{t('{name} ilə', { name: partner.name })}</AppText>
+                          <AppText style={{ fontSize: 11, fontWeight: '600', color: palette.text3 }}>{t('{name} ilə', { name: partner.name })}</AppText>
                         </View>
                       </View>
                     ) : null}
@@ -349,7 +349,7 @@ function SessionDetail({ workout }: { workout: Workout }) {
             <View style={styles.setRows}>
               {e.sets.map((x, j) => (
                 <View key={j} style={styles.setChip}>
-                  <AppText style={{ fontSize: 11.5, fontWeight: '600', color: '#3A3A42' }}>
+                  <AppText style={{ fontSize: 11.5, fontWeight: '600', color: palette.text3 }}>
                     {/* A zero here is not a measurement — it is an absence. The
                         session screen stores `parseDecimal(s.kg) ?? 0` for a set
                         ticked with an empty kq field, and the home session stores
@@ -399,11 +399,11 @@ const styles = StyleSheet.create({
   calGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   calCell: { width: '12.7%', aspectRatio: 1, borderRadius: 8 },
   calToday: { borderWidth: 2, borderColor: palette.ink },
-  calStats: { flexDirection: 'row', gap: 14, marginTop: 14, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(60,60,67,0.12)' },
-  vdiv: { width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(60,60,67,0.12)' },
+  calStats: { flexDirection: 'row', gap: 14, marginTop: 14, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.hairline },
+  vdiv: { width: StyleSheet.hairlineWidth, backgroundColor: palette.hairline },
   session: { backgroundColor: palette.white, borderRadius: 16, padding: 14 },
   chevOpen: { transform: [{ rotate: '180deg' }] },
-  detail: { marginTop: 12, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(60,60,67,0.12)' },
+  detail: { marginTop: 12, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.hairline },
   setRows: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 7 },
   setChip: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 7, backgroundColor: palette.grouped },
   /* «Məşqi sil» was a 29 pt tall strip (a 21 pt line + 4 pt padding). A 44 pt
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
      and the -7.5 reaches only into the session card's 14 pt padding. */
   deleteRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 44, marginTop: 6.5, marginBottom: -7.5 },
   sessionHead: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  sessionIcon: { width: 40, height: 40, borderRadius: 11, backgroundColor: '#F0F0F3', alignItems: 'center', justifyContent: 'center' },
+  sessionIcon: { width: 40, height: 40, borderRadius: 11, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
   tag: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7, backgroundColor: palette.grouped },
   empty: { alignItems: 'center', paddingVertical: 40 },
   more: { backgroundColor: palette.white, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },

@@ -15,7 +15,7 @@ import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
-import { dark, palette } from '@/theme';
+import { palette, radius } from '@/theme';
 
 /**
  * The first screen, and now the actual gate.
@@ -41,18 +41,20 @@ export default function Welcome() {
   const bootstrap = useAppStore((s) => s.bootstrap);
   const [busy, setBusy] = useState<null | 'google' | 'apple'>(null);
 
-  /* Light clock over this dark screen — only while it is the screen in front.
-     A mount-time <StatusBar style="light" /> sat here, and this screen stays
-     mounted under everything it pushes (the e-poçt sign-in and the two legal
-     pages), so its light entry stayed on top of React Native's status-bar stack
-     and the clock went white over those white screens. The entry is now pushed
-     on every focus and popped on blur. On iOS the native style is also set
-     directly, because the stack skips the native call whenever it believes the
-     bar already has that style — same approach as workout/exercise.tsx. */
+  /* Dark clock over this screen — only while it is the screen in front. It was
+     a light clock while this screen was dark; the final design draws every
+     onboarding screen light, so the clock follows. A mount-time
+     <StatusBar style="light" /> used to sit here, and this screen stays mounted
+     under everything it pushes (the e-poçt sign-in and the two legal pages), so
+     its entry stayed on top of React Native's status-bar stack and leaked onto
+     those screens. The entry is now pushed on every focus and popped on blur.
+     On iOS the native style is also set directly, because the stack skips the
+     native call whenever it believes the bar already has that style — same
+     approach as workout/exercise.tsx. */
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === 'ios') StatusBar.setBarStyle('light-content', true);
-      const entry = StatusBar.pushStackEntry({ barStyle: 'light-content', animated: true });
+      if (Platform.OS === 'ios') StatusBar.setBarStyle('dark-content', true);
+      const entry = StatusBar.pushStackEntry({ barStyle: 'dark-content', animated: true });
       return () => StatusBar.popStackEntry(entry);
     }, [])
   );
@@ -102,8 +104,11 @@ export default function Welcome() {
 
   return (
     <View style={styles.root}>
+      {/* The design's volt glow over the top of the light screen. It fades to
+          the same volt at zero alpha, not to 'transparent' — that is transparent
+          BLACK, and on a light background the blend turns muddy halfway down. */}
       <LinearGradient
-        colors={['rgba(198,255,61,0.18)', 'transparent']}
+        colors={['rgba(197,254,1,0.18)', 'rgba(197,254,1,0)']}
         style={styles.glow}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.6 }}
@@ -114,7 +119,7 @@ export default function Welcome() {
             language this person may not read — so putting the only switch there
             locks out exactly the people it exists for. */}
         <View style={styles.langRow}>
-          <LanguagePicker compact tone="dark" />
+          <LanguagePicker compact tone="light" />
         </View>
         <View style={styles.center}>
           <View style={styles.logoBox}>
@@ -132,18 +137,24 @@ export default function Welcome() {
         </View>
 
         <View style={styles.actions}>
+          {/* Apple stays black, with its logo — Apple's sign-in rules, and the one
+              exception the design makes to the volt CTA. Google is the white
+              surface button. */}
           {providers.map((prov) => (
             <PressableScale
               key={prov}
               disabled={!!busy}
               onPress={() => void social(prov)}
-              style={[styles.btn, { backgroundColor: palette.white }]}>
+              style={[styles.btn, prov === 'apple' ? styles.btnApple : styles.btnGoogle]}>
               {busy === prov ? (
-                <ActivityIndicator color={palette.inkText} />
+                <ActivityIndicator color={prov === 'apple' ? palette.onDark : palette.inkText} />
               ) : (
-                <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
-                  {t('{provider} ilə davam et', { provider: prov === 'apple' ? 'Apple' : 'Google' })}
-                </AppText>
+                <>
+                  {prov === 'apple' ? <Icon name="apple" size={19} color={palette.onDark} /> : null}
+                  <AppText style={{ fontSize: 16, fontWeight: '600', color: prov === 'apple' ? palette.onDark : palette.inkText }}>
+                    {t('{provider} ilə davam et', { provider: prov === 'apple' ? 'Apple' : 'Google' })}
+                  </AppText>
+                </>
               )}
             </PressableScale>
           ))}
@@ -154,17 +165,17 @@ export default function Welcome() {
           <PressableScale
             disabled={!!busy}
             onPress={() => router.push({ pathname: '/auth/sign-in', params: { mode: 'login' } })}
-            style={[styles.btn, styles.btnGhost]}>
-            <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.white }}>{t('E-poçt ilə davam et')}</AppText>
+            style={[styles.btn, styles.btnSecondary]}>
+            <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>{t('E-poçt ilə davam et')}</AppText>
           </PressableScale>
 
           <PressableScale haptic={false} onPress={browseAsGuest} disabled={!!busy} style={styles.guestBtn}>
-            <AppText style={{ fontSize: 15, fontWeight: '600', color: palette.volt }}>{t('Qonaq kimi bax')}</AppText>
+            <AppText style={{ fontSize: 15, fontWeight: '600', color: palette.inkText }}>{t('Qonaq kimi bax')}</AppText>
             {/* 18, not 16: the chevron's path fills only 14 of the icon's 24
                 units, so at 16 it drew ~9 pt tall with a hairline stroke, shorter
                 and lighter than the 15 pt semibold capitals beside it. At 18 it
                 matches their cap height and weight, like the app's row chevrons. */}
-            <Icon name="chevR" size={18} color={palette.volt} />
+            <Icon name="chevR" size={18} color={palette.inkText} />
           </PressableScale>
           {/* Both were plain words over documents that did not exist, so the
               consent was consent to nothing — and both app stores require a
@@ -199,22 +210,25 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: palette.inkText },
+  root: { flex: 1, backgroundColor: palette.grouped },
   glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 400 },
   safe: { flex: 1, paddingHorizontal: 24 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  logoBox: { width: 86, height: 86, borderRadius: 24, backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.hairline, alignItems: 'center', justifyContent: 'center' },
+  logoBox: { width: 86, height: 86, borderRadius: 24, backgroundColor: palette.element, borderWidth: 1, borderColor: palette.cardBorder, alignItems: 'center', justifyContent: 'center' },
   ring: { width: 38, height: 38, borderRadius: 19, borderWidth: 6, borderColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
   ringDot: { position: 'absolute', top: 9, left: 9, right: 9, bottom: 9, borderRadius: 10, backgroundColor: palette.volt },
   // Centred explicitly: short in Azerbaijani, the Russian title wraps to two
   // lines, and a wrapped line fills the width and falls back to left-aligned.
-  title: { fontSize: 34, fontWeight: '700', color: palette.white, letterSpacing: -1, textAlign: 'center' },
+  title: { fontSize: 34, fontWeight: '700', color: palette.inkText, letterSpacing: -1, textAlign: 'center' },
   langRow: { flexDirection: 'row', justifyContent: 'center', paddingTop: 6 },
-  subtitle: { fontSize: 16, lineHeight: 24, color: dark.textSecondary, textAlign: 'center', maxWidth: 290, marginTop: 12 },
+  subtitle: { fontSize: 16, lineHeight: 24, color: palette.textSecondary, textAlign: 'center', maxWidth: 290, marginTop: 12 },
   actions: { gap: 10, paddingBottom: 8 },
-  btn: { height: 52, borderRadius: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  btnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: dark.hairline },
+  btn: { height: 52, borderRadius: radius.button, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  btnApple: { backgroundColor: palette.ink },
+  btnGoogle: { backgroundColor: palette.white },
+  // The design's secondary button: #EDEDED, no border.
+  btnSecondary: { backgroundColor: palette.element },
   guestBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, height: 44 },
-  termsLink: { textDecorationLine: 'underline' as const, color: palette.volt },
-  terms: { fontSize: 11.5, lineHeight: 17, color: dark.textTertiary, textAlign: 'center', marginTop: 4, paddingHorizontal: 20 },
+  termsLink: { textDecorationLine: 'underline' as const, color: palette.textSecondary },
+  terms: { fontSize: 11.5, lineHeight: 17, color: palette.caption, textAlign: 'center', marginTop: 4, paddingHorizontal: 20 },
 });

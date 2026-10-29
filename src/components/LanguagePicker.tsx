@@ -42,7 +42,7 @@ export function LanguagePicker({ compact, tone = 'light' }: { compact?: boolean;
             <View style={compact ? [styles.item, styles.itemCompact, tone === 'dark' ? styles.itemDark : null, on ? styles.itemOn : null] : styles.fill}>
             <AppText
               variant={compact ? 'footnote' : 'subhead'}
-              color={on ? palette.ink : tone === 'dark' ? 'rgba(255,255,255,0.72)' : palette.textSecondary}
+              color={on ? (tone === 'dark' ? palette.onDark : palette.inkText) : tone === 'dark' ? 'rgba(250,250,250,0.72)' : palette.textSecondary}
               numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={0.8}>
@@ -50,7 +50,7 @@ export function LanguagePicker({ compact, tone = 'light' }: { compact?: boolean;
             </AppText>
             </View>
             {/* No check mark: on a third of a phone's width it cut the chosen
-                language's own name to «Azərbayca…». The volt fill marks the
+                language's own name to «Azərbayca…». The volt outline marks the
                 choice; accessibilityState says it to a screen reader. */}
           </PressableScale>
         );
@@ -73,14 +73,19 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 44,
     borderRadius: radius.field,
-    borderWidth: 1,
-    borderColor: palette.separator,
-    backgroundColor: palette.white,
+    /* The design's fields: #F7F7F7 inside the card (Settings draws this in a
+       list group), no border. The 1.5 pt border is always there, transparent at
+       rest, so selecting does not shift the label. */
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    backgroundColor: palette.grouped,
     paddingHorizontal: 8,
   },
   itemCompact: { height: 32, borderRadius: 16, paddingHorizontal: 12, flex: 0 },
   // The gate screen is dark, and a white chip row on it reads as a form the
   // person has to fill in before they can get past it.
-  itemDark: { backgroundColor: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.18)' },
-  itemOn: { backgroundColor: palette.volt, borderColor: palette.volt },
+  itemDark: { backgroundColor: 'rgba(250,250,250,0.10)', borderColor: 'rgba(250,250,250,0.18)' },
+  /* Selected = the design's selected outlined card: a volt border on the volt
+     tint — never a volt or ink fill. */
+  itemOn: { backgroundColor: palette.voltTint, borderColor: palette.volt },
 });

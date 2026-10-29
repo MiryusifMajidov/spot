@@ -1,56 +1,66 @@
 /**
  * SPOT design system — single source of truth for colors, typography, spacing.
- * Derived from the design handoff (SPOT iOS App). Light mode is primary;
- * a few screens (welcome, active workout, video feed) are dark and use `dark` tokens.
+ * Source: the designer's final handoff (Oct 2026, `SPOT iOS App.dc.html` +
+ * README §8.1.1 «Rəng qaydaları», «Tab bar (yekun)», «Kölgə qaydası»).
  *
- * Principle: "simplicity in structure, magnificence in motion."
- *
- * COLOUR — one primary, one accent, and colour only where it means something.
- *   · Ink is the primary: buttons, active states, EVERY navigation glyph and every
- *     text action («Bağla», «Paylaş», «Hamısı»). A text action is told apart from
- *     text by weight (500/600), not by a link colour.
- *   · Volt is the accent — energy, success, live, verified. It is 1.2:1 on white,
- *     so on light surfaces it is a FILL only (with ink on it); a green glyph on a
- *     light surface is `voltDeep` (4.7:1), green text is `voltText` (8.4:1). On dark
- *     surfaces volt itself is the glyph and the text (16.6:1).
- *   · Streak orange is seriya AND warning — one orange family: `streak` for glyphs
- *     and fills (2.8:1 — never small text), `streakText` for words (5.4:1).
- *   · Red is danger only: delete, errors, unread badges.
- *   · There is no blue. It was iOS's system tint, it came in through links, the
- *     back chevron, the verified seal and the settings tiles, and it made SPOT read
- *     as two apps — «some icons blue, some green». Removed from the palette so it
- *     cannot creep back.
+ * COLOUR RULES (the designer's, mandatory):
+ *   · No pure white or black anywhere: «black» is #1A1A1A, white text #FAFAFA, a
+ *     white surface #FEFEFE. Screens sit on #F7F7F7, cards on #FEFEFE.
+ *   · Every primary action (CTA) is volt #C5FE01 with #1A1A1A text — the one
+ *     exception is «Apple ilə davam et», black per Apple's guidelines. A disabled
+ *     CTA is #FEFEFE with #888888 text. Secondary buttons: #EDEDED, no border.
+ *   · A selected chip / day / filled card is #EDEDED with #1A1A1A text — no black
+ *     fills for selection in light mode. A selected outlined card or a check/radio:
+ *     volt border on rgba(197,254,1,.14), the check disc volt with an ink glyph.
+ *   · Green text and active glyphs are #527A01 (accentText); toggles are #34C759.
+ *   · Blue only where the design keeps it: the verified badge and «Ləğv et».
+ *   · No ALL-CAPS text: headings and labels are sentence case (QR, SPOT, PR stay).
+ *   · No drop shadows on anything — depth is #F7F7F7 screen vs #FEFEFE card.
+ *   · Light is the default for every screen; dark only follows the OS setting.
  */
 import { Platform, TextStyle } from 'react-native';
 
 export const palette = {
-  ink: '#101014', // primary buttons, active states
-  inkText: '#0B0B0E', // near-black text
-  ink17: '#17171C', // elevated dark surface
-  volt: '#C6FF3D', // accent — fills; glyphs/text only on dark surfaces
-  voltText: '#3F5500', // green TEXT on light surfaces and volt tints (8.4:1 on white)
-  voltDeep: '#5B7F00', // green GLYPHS on light surfaces (4.7:1 on white)
-  voltTint: 'rgba(198,255,61,0.24)', // success / verified chip background
-  white: '#FFFFFF',
-  canvas: '#E9E9EC', // app canvas behind cards
-  grouped: '#F4F4F6', // grouped list background / tag fill
-  element: '#F0F0F3', // segmented control / chip resting
-  element2: '#EFEFF2',
-  fill: 'rgba(118,118,128,0.12)', // iOS system fill (search fields)
-  textSecondary: '#6E6E76',
-  caption: '#8A8A93',
-  tertiary: '#A0A0A8', // inactive tab / muted
+  ink: '#1A1A1A', // «black»: emphasis fills, Apple button, ink text
+  inkText: '#1A1A1A', // text
+  ink17: '#17171C', // dark surface (dark screens until the dark-mode pass)
+  volt: '#C5FE01', // the accent — CTA fill, live/success dots, selection borders
+  voltText: '#527A01', // green TEXT on light surfaces (accent text)
+  voltDeep: '#527A01', // green GLYPHS on light surfaces (active tab, checks, stars)
+  voltTint: 'rgba(197,254,1,0.14)', // selected outlined card / success chip background
+  white: '#FEFEFE', // surface (cards, sheets, circles) — never pure #FFFFFF
+  onDark: '#FAFAFA', // text and glyphs on an ink / dark background
+  canvas: '#F7F7F7', // screen background
+  grouped: '#F7F7F7', // screen background / field inside a card
+  element: '#EDEDED', // secondary button, selected chip, inner fill
+  element2: '#EDEDED',
+  fill: 'rgba(118,118,128,0.12)', // search field
+  textSecondary: '#6B6B6B',
+  caption: '#888888',
+  tertiary: '#888888', // muted glyphs and text, disabled CTA text
   text3: '#3A3A42',
   text4: '#4A4A52',
-  separator: 'rgba(60,60,67,0.18)',
+  separator: 'rgba(60,60,67,0.14)',
   hairline: 'rgba(60,60,67,0.12)',
   cardBorder: 'rgba(60,60,67,0.10)',
   streak: '#FF6B35', // seriya + warning — glyphs and fills
   streakText: '#B8441A', // orange TEXT on light surfaces (5.4:1 on white)
   streakTint: 'rgba(255,107,53,0.12)', // warning / seriya chip background
   red: '#FF3B30', // destructive / unread
-  inkTint: 'rgba(16,16,20,0.06)', // neutral chip / quote background
-  overlay: 'rgba(11,11,14,0.55)',
+  inkTint: 'rgba(26,26,26,0.06)', // neutral chip / quote background
+  overlay: 'rgba(26,26,26,0.55)',
+  // ---- roles the design names ----
+  cta: '#C5FE01', // primary action fill
+  ctaText: '#1A1A1A', // text/glyph on the CTA
+  ctaDisabled: '#FEFEFE', // disabled CTA fill (text: tertiary)
+  selected: '#EDEDED', // selected chip / day / filled card
+  chevron: '#C0C0C6', // disclosure chevrons in rows
+  rowIcon: '#6B6B6B', // outline glyph at the start of a settings row
+  toggleOn: '#34C759', // Switch track when on
+  tabActive: '#527A01', // active tab glyph
+  tabPill: '#F2F2F2', // pill behind the active tab
+  verified: '#0A84FF', // the verified badge — one of two places blue is kept
+  cancel: '#0A84FF', // «Ləğv et» in sheets and headers — the other
 } as const;
 
 /**
@@ -62,18 +72,18 @@ export const palette = {
  * caret comes from `cursorColor`.
  */
 export const inputTint = Platform.select({
-  ios: { selectionColor: '#5B7F00' },
-  default: { selectionColor: 'rgba(198,255,61,0.55)', cursorColor: '#5B7F00' },
+  ios: { selectionColor: '#527A01' },
+  default: { selectionColor: 'rgba(197,254,1,0.55)', cursorColor: '#527A01' },
 });
 /** The same on a dark surface (the active workout): volt is the caret there. */
 export const inputTintDark = Platform.select({
-  ios: { selectionColor: '#C6FF3D' },
-  default: { selectionColor: 'rgba(198,255,61,0.4)', cursorColor: '#C6FF3D' },
+  ios: { selectionColor: '#C5FE01' },
+  default: { selectionColor: 'rgba(197,254,1,0.4)', cursorColor: '#C5FE01' },
 });
 
 /** Semantic tokens for the default (light) surface. */
 export const colors = {
-  bg: palette.grouped, // light screens sit on #F4F4F6; cards are white
+  bg: palette.grouped, // screens sit on #F7F7F7; cards are #FEFEFE
   bgGrouped: palette.grouped,
   card: palette.white,
   cardBorder: palette.cardBorder,
@@ -117,7 +127,7 @@ export const radius = {
   tag: 8,
   input: 11,
   field: 14,
-  button: 15,
+  button: 16, // the design's CTA radius
   card: 16,
   cardLg: 18,
   sheet: 20,
@@ -129,7 +139,7 @@ export const radius = {
  * San Francisco and Android its system face. Weights map to SF Pro weights.
  */
 export const type = {
-  largeTitle: { fontSize: 32, lineHeight: 34, fontWeight: '700', letterSpacing: -1 },
+  largeTitle: { fontSize: 30, lineHeight: 34, fontWeight: '700', letterSpacing: -0.9 }, // design: 30/700, -0.9
   title: { fontSize: 27, lineHeight: 31, fontWeight: '700', letterSpacing: -0.7 },
   title2: { fontSize: 20, lineHeight: 24, fontWeight: '700', letterSpacing: -0.4 },
   title3: { fontSize: 18, lineHeight: 22, fontWeight: '700', letterSpacing: -0.3 },
@@ -139,59 +149,43 @@ export const type = {
   subhead: { fontSize: 13, lineHeight: 18, fontWeight: '500' },
   footnote: { fontSize: 13, lineHeight: 18, fontWeight: '400' },
   caption: { fontSize: 12, lineHeight: 15, fontWeight: '500' },
+  /* The section label. It used to be 11 pt CAPS with tracking; the design bans
+     all-caps text, and its section labels are 13 pt / 600, sentence case, grey
+     (#888888) — or accent green where the label belongs to a highlighted card. */
   overline: {
-    fontSize: 11,
-    lineHeight: 12,
+    fontSize: 13,
+    lineHeight: 17,
     fontWeight: '600',
-    letterSpacing: 0.8,
-    /* No `textTransform: 'uppercase'`. React Native does that transform in
-       native code with no locale, so «i» became «I» instead of «İ» and roughly
-       thirty section labels across the app were misspelled in Azerbaijani —
-       İSTİFADƏÇİ ADI, CİNS, SƏVİYYƏ, HƏFTƏNİN GÜNLƏRİ, BİO. AppText uppercases
-       this variant in JS with `azUpper` instead. */
+    letterSpacing: 0,
+    /* Shown exactly as written. Never add `textTransform: 'uppercase'` back:
+       React Native does that transform in native code with no locale, so «i»
+       came out as «I» instead of «İ» (İSTİFADƏÇİ ADI, CİNS, BİO were misspelled). */
   },
 } satisfies Record<string, TextStyle>;
 
 export type TypeVariant = keyof typeof type;
 
-/** iOS-style soft card shadow. */
+/** No shadows. The design's rule («Kölgə qaydası»): no card, button, sheet or bar
+ *  casts a drop shadow — depth is the #F7F7F7 screen against the #FEFEFE card.
+ *  Kept as empty styles so existing spreads (`shadow.card`) compile and draw nothing. */
 export const shadow = {
-  card: Platform.select({
-    ios: {
-      shadowColor: '#101014',
-      shadowOpacity: 0.06,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 6 },
-    },
-    android: { elevation: 2 },
-    default: {},
-  }),
-  floating: Platform.select({
-    ios: {
-      shadowColor: '#101014',
-      shadowOpacity: 0.16,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 12 },
-    },
-    android: { elevation: 8 },
-    default: {},
-  }),
+  card: {},
+  floating: {},
 } as const;
 
 export const hitSlop = { top: 8, bottom: 8, left: 8, right: 8 };
 
-/** The two sizes of an icon-only button, always inside a 44 pt box.
+/** Icon-only button sizes, always inside a 44 pt box — the design's numbers
+ *  (Oct 2026 handoff), drawn with Tabler's 1-unit stroke.
  *
- *  `inCircle` (24): the glyph sits in a filled shape — the gym page's four hero
- *  buttons, which the owner held up as the standard, a volt «+», the send button, the
- *  map's «where am I». The disc carries the button's size, so the glyph can be modest.
- *  `action` (31): a bare glyph on the screen's own background — header icons, back,
- *  ⋯, bookmark, chat, close. With no disc around it the glyph IS the button: at 24 it
- *  read as small next to the gym page's 44 pt discs, 34 read as too big on the phone;
- *  31 is the owner's standard. The paths fill ~70% of their box, so 31 draws a ~22 pt
- *  mark.
- *  Before this one kind of button was drawn at 20, 22, 24, 25, 26 and 27 across
- *  screens. Not for: icons inside a text row or a chip, a field's clear «x», badges
- *  on an avatar, tab bars (`tab`, which has a label under it), or the full-screen
- *  video's action rail, which stays larger on purpose. */
-export const iconSize = { action: 31, inCircle: 24, tab: 28 } as const;
+ *  `inCircle` (20): the glyph in a 40 pt #FEFEFE disc — the back button, the gym
+ *  page's hero buttons, a «+», send, «where am I».
+ *  `action` (25): a bare glyph on the screen's background — header icons (chat,
+ *  bell, map), ⋯, bookmark, close.
+ *  `tab` (26): the tab bar, icon only.
+ *  The owner had settled on 31 for bare glyphs with the old, heavier icon set; the
+ *  designer's thin Tabler set is drawn at 25 and the owner asked for the design's
+ *  look — if they read small on the phone, this is the one number to change.
+ *  Not for: icons inside a text row (20) or a chip, a field's clear «x», badges on
+ *  an avatar, or the full-screen video's action rail, which stays larger. */
+export const iconSize = { action: 25, inCircle: 20, tab: 26 } as const;

@@ -1,7 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -50,8 +49,7 @@ export default function TrainerDetail() {
      Liquid Glass bar FLOATS over the content — the two buttons sat behind the glass.
      Inside a tab screen UIKit's safe area already includes that bar, so the row pads
      by the inset instead of guessing the bar's height. */
-  const insets = useSafeAreaInsets();
-  const footerBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + spacing.sm;
+  const footerBottom = spacing.sm;
   const [request, setRequest] = useState<TrainerRequestRow | null>(null);
   /* A null `request` used to mean two things: «you have never written to this
      coach» and «we could not find out». Only the first is a fact about the
@@ -97,7 +95,7 @@ export default function TrainerDetail() {
                 : t('Müəllim tapılmadı.')}
           </AppText>
           {!loading ? (
-            <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, height: 44, paddingHorizontal: 24 }} />
+            <Button title={t('Geri')} variant="secondary" onPress={() => router.back()} style={{ marginTop: 16, paddingHorizontal: 24 }} />
           ) : null}
         </View>
       </Screen>
@@ -134,7 +132,7 @@ export default function TrainerDetail() {
           <View style={styles.nameRow}>
             <AppText variant="title">{trainer.name}</AppText>
             {trainer.verified ? (
-              <Icon name="verified" size={20} color={palette.voltDeep} />
+              <Icon name="verified" size={20} color={palette.verified} />
             ) : (
               <View style={styles.unverified}>
                 <AppText style={styles.unverifiedText}>{t('Doğrulanmayıb')}</AppText>
@@ -245,11 +243,11 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.screen, paddingBottom: 24 },
   head: { alignItems: 'center', gap: 10, paddingVertical: 12 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  unverified: { backgroundColor: palette.grouped, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  unverified: { backgroundColor: palette.element, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   unverifiedText: { fontSize: 11, fontWeight: '600', color: palette.textSecondary },
-  stats: { flexDirection: 'row', alignItems: 'center', backgroundColor: palette.grouped, borderRadius: 16, paddingVertical: 16, marginTop: 8 },
-  newCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(198,255,61,0.20)', borderRadius: 14, padding: 14, marginTop: 8 },
-  stateCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.grouped, borderRadius: 14, padding: 14, marginTop: 12 },
+  stats: { flexDirection: 'row', alignItems: 'center', backgroundColor: palette.white, borderRadius: 16, paddingVertical: 16, marginTop: 8 },
+  newCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.voltTint, borderRadius: 16, padding: 14, marginTop: 8 },
+  stateCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginTop: 12 },
   stat: { flex: 1, alignItems: 'center' },
   divider: { width: 1, height: 28, backgroundColor: palette.separator },
   sectionLabel: { marginTop: 24, marginBottom: 10 },

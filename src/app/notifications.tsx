@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Icon, type IconName } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
 import { NavBar } from '@/components/ui/NavBar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
@@ -101,6 +102,7 @@ export default function Notifications() {
                 void markRead().catch(() => {});
                 setRows((rs) => rs.map((r) => ({ ...r, read: true })));
               }}
+              style={styles.markAll}
             >
               <AppText variant="footnote" color={palette.inkText} style={{ fontWeight: '600' }}>{t('Hamısını oxu')}</AppText>
             </PressableScale>
@@ -121,9 +123,7 @@ export default function Notifications() {
             <AppText variant="body" color={palette.textSecondary} center style={styles.emptySub}>
               {t('Bildirişləri gətirmək alınmadı — neçəsi olduğunu bilmirik.')}
             </AppText>
-            <PressableScale onPress={load} style={styles.retry}>
-              <AppText variant="callout" color={palette.white}>{t('Yenidən cəhd et')}</AppText>
-            </PressableScale>
+            <Button title={t('Yenidən cəhd et')} onPress={load} style={styles.retry} />
           </View>
         ) : rows.length === 0 ? (
           <View style={styles.empty}>
@@ -163,11 +163,15 @@ const styles = StyleSheet.create({
   note: { textAlign: 'center', marginTop: 40 },
   empty: { alignItems: 'center', marginTop: 70, paddingHorizontal: 20 },
   emptySub: { marginTop: 6, lineHeight: 21, maxWidth: 300 },
-  retry: { marginTop: 16, backgroundColor: palette.inkText, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 11 },
+  // The shared volt CTA (<Button>), sized to its words.
+  retry: { marginTop: 16, paddingHorizontal: 20 },
+  // «Hamısını oxu» was only as tall as its 18 pt line; 44 pt is the minimum target.
+  markAll: { minHeight: 44, justifyContent: 'center' },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: palette.white, borderRadius: 16, padding: 13, marginTop: 10,
   },
-  rowUnread: { backgroundColor: 'rgba(198,255,61,0.14)' },
+  // Unread rows sit on the volt tint, as the design draws them.
+  rowUnread: { backgroundColor: palette.voltTint },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: palette.voltDeep },
 });

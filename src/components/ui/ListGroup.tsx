@@ -70,13 +70,17 @@ export function ListRow({
 }) {
   const body = (
     <View style={styles.row}>
+      {/* The design's row: a bare 20 pt outline glyph in #6B6B6B, no tile. A row
+          that states something (danger, a failure, «protected») keeps its colour on
+          the glyph itself — `iconBg` names that colour; volt, unreadable as a line
+          on white, becomes the accent green. */}
       {icon ? (
-        <View style={[styles.iconBox, { backgroundColor: iconBg ?? palette.element }]}>
-          {/* 20, not 16: the glyphs fill only the middle ~70% of their 24-unit box,
-              so 16 drew a ~10 pt mark in the 30 pt tile — the Settings and Privacy
-              icons owners called «too small». 20 is about half the tile, the
-              proportion of iOS Settings. */}
-          <Icon name={icon} size={20} color={iconColor ?? (iconBg ? palette.white : palette.inkText)} />
+        <View style={styles.iconBox}>
+          <Icon
+            name={icon}
+            size={20}
+            color={iconBg ? (iconBg === palette.volt ? palette.voltDeep : iconBg) : (iconColor ?? palette.rowIcon)}
+          />
         </View>
       ) : null}
       <View style={{ flex: 1 }}>
@@ -95,7 +99,7 @@ export function ListRow({
         </AppText>
       ) : null}
       {right}
-      {onPress && chevron && !right ? <Icon name="chevR" size={17} color={palette.tertiary} /> : null}
+      {onPress && chevron && !right ? <Icon name="chevR" size={17} color={palette.chevron} /> : null}
     </View>
   );
 
@@ -113,7 +117,7 @@ const styles = StyleSheet.create({
   header: { marginLeft: 4, marginBottom: 8 },
   footer: { marginLeft: 4, marginTop: 8, lineHeight: 18 },
   group: { backgroundColor: palette.white, borderRadius: radius.card, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, minHeight: 52, paddingVertical: 10 },
-  iconBox: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  sep: { height: StyleSheet.hairlineWidth, backgroundColor: palette.separator, marginLeft: 14 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 15, minHeight: 48, paddingVertical: 12 },
+  iconBox: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
+  sep: { height: StyleSheet.hairlineWidth, backgroundColor: palette.separator, marginLeft: 15 },
 });

@@ -73,7 +73,7 @@ export function Shell({
         <div className="side-logo">
           <div className="side-mark"><i /></div>
           <div>
-            <div style={{ font: '700 15px/1 var(--font)', color: '#fff', letterSpacing: '-.3px' }}>SPOT</div>
+            <div style={{ font: '700 15px/1 var(--font)', color: 'var(--on-ink)', letterSpacing: '-.3px' }}>SPOT</div>
             <div style={{ font: '500 10px/1 var(--font)', color: 'rgba(255,255,255,.4)', marginTop: 4 }}>Admin · Bakı</div>
           </div>
         </div>
@@ -97,7 +97,7 @@ export function Shell({
           <div className="side-me" title="Çıxış" onClick={() => { if (confirm('Çıxış edilsin?')) signOut(); }} style={{ cursor: 'pointer' }}>
             <div className="av" style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg,#4A4A55,#6A6A78)' }} />
             <div style={{ flex: 1 }}>
-              <div style={{ font: '600 12.5px/1 var(--font)', color: '#fff' }}>{admin?.name || admin?.email || 'Admin'}</div>
+              <div style={{ font: '600 12.5px/1 var(--font)', color: 'var(--on-ink)' }}>{admin?.name || admin?.email || 'Admin'}</div>
               <div style={{ font: '500 10.5px/1 var(--font)', color: 'var(--volt)', marginTop: 4, textTransform: 'capitalize' }}>{admin?.role}</div>
             </div>
             <Icon name="chev-d" size={15} color="rgba(255,255,255,.4)" />

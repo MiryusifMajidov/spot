@@ -1,8 +1,7 @@
 import * as Location from 'expo-location';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { GymCard } from '@/components/GymCard';
 import { Icon } from '@/components/Icon';
@@ -21,7 +20,7 @@ import { hasSupabaseConfig } from '@/lib/supabase';
 import { useFormat, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { applyGymFilter, useDiscoverPrefs } from '@/store/discoverPrefs';
-import { palette, radius, shadow, spacing } from '@/theme';
+import { palette, radius, spacing } from '@/theme';
 
 type Status = 'asking' | 'loading' | 'ok' | 'denied' | 'error';
 
@@ -64,8 +63,7 @@ export default function GymMap() {
      Inside a tab screen UIKit's safe area already includes that bar, so the map
      area stops at it and the list pads by it — by the inset, not a guessed bar
      height. */
-  const insets = useSafeAreaInsets();
-  const iosBottom = Platform.OS === 'ios' ? insets.bottom : 0;
+  const iosBottom = 0;
   /* The marker list is memoized, and its text is translated: without the active
      language in the deps the pins would keep the language they were built in. */
   const gymFilter = useDiscoverPrefs((s) => s.gymFilter);
@@ -236,7 +234,7 @@ export default function GymMap() {
           />
 
           {notice ? (
-            <View style={[styles.pill, styles.pillTop, shadow.card as object]}>
+            <View style={[styles.pill, styles.pillTop]}>
               <Icon name="pin" size={15} color={palette.textSecondary} />
               <AppText variant="footnote" color={palette.textSecondary} style={styles.pillText}>
                 {notice}
@@ -252,7 +250,7 @@ export default function GymMap() {
 
           {selected ? (
             <View
-              style={[styles.card, shadow.floating as object]}
+              style={styles.card}
               onLayout={(e) => setCardH(Math.round(e.nativeEvent.layout.height))}>
               <View style={styles.cardHead}>
                 <View style={{ flex: 1 }}>
@@ -261,7 +259,7 @@ export default function GymMap() {
                     <AppText variant="title3" numberOfLines={1} style={{ flexShrink: 1 }}>
                       {selected.name}
                     </AppText>
-                    {selected.verified ? <Icon name="verified" size={15} color={palette.voltDeep} /> : null}
+                    {selected.verified ? <Icon name="verified" size={15} color={palette.verified} /> : null}
                   </View>
                   <AppText variant="footnote" color={palette.caption} style={{ marginTop: 4 }}>
                     {[
@@ -312,7 +310,7 @@ export default function GymMap() {
             </View>
           ) : footer ? (
             <View
-              style={[styles.pill, styles.pillBottom, shadow.card as object]}
+              style={[styles.pill, styles.pillBottom]}
               onLayout={(e) => setPillH(Math.round(e.nativeEvent.layout.height))}>
               <Icon name="pin" size={15} color={palette.tertiary} />
               <AppText variant="footnote" color={palette.textSecondary} style={styles.pillText}>
@@ -390,7 +388,7 @@ const styles = StyleSheet.create({
   cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   price: { fontSize: 17, fontWeight: '700', color: palette.inkText },
-  live: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(198,255,61,0.22)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, marginTop: 11, alignSelf: 'flex-start' },
+  live: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: palette.voltTint, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, marginTop: 11, alignSelf: 'flex-start' },
   liveText: { fontSize: 12.5, fontWeight: '600', color: palette.voltText },
   // paddingBottom is set inline: 40 plus the floating tab bar on iOS.
   content: { paddingHorizontal: spacing.screen, paddingTop: 4 },

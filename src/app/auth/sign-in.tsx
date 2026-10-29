@@ -290,7 +290,7 @@ export default function SignIn() {
               />
             </View>
             <AppText variant="overline" color={palette.caption} style={styles.label}>
-              {t('VƏ YA MƏKTUBDAKI KODU YAZ')}
+              {t('Və ya məktubdakı kodu yaz')}
             </AppText>
             <TextInput {...inputTint}
               value={code}
@@ -324,19 +324,24 @@ export default function SignIn() {
                 an Android phone has to be openable from an iPhone, and the old
                 one-button-per-platform layout is precisely what made that
                 impossible. E-poçt sits under the divider as the third way. */}
+            {/* Apple is black with its logo (Apple's sign-in rules — the design's
+                one exception to the volt CTA); Google is the white surface button. */}
             {providers.map((prov) => (
               <PressableScale
                 key={prov}
                 activeScale={0.98}
                 onPress={() => void social(prov)}
                 disabled={!!busy}
-                style={styles.googleBtn}>
+                style={[styles.socialBtn, prov === 'apple' ? styles.appleBtn : styles.googleBtn]}>
                 {busy === prov ? (
-                  <ActivityIndicator color={palette.inkText} />
+                  <ActivityIndicator color={prov === 'apple' ? palette.onDark : palette.inkText} />
                 ) : (
-                  <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
-                    {t('{provider} ilə davam et', { provider: prov === 'apple' ? 'Apple' : 'Google' })}
-                  </AppText>
+                  <>
+                    {prov === 'apple' ? <Icon name="apple" size={19} color={palette.onDark} /> : null}
+                    <AppText style={{ fontSize: 16, fontWeight: '600', color: prov === 'apple' ? palette.onDark : palette.inkText }}>
+                      {t('{provider} ilə davam et', { provider: prov === 'apple' ? 'Apple' : 'Google' })}
+                    </AppText>
+                  </>
                 )}
               </PressableScale>
             ))}
@@ -350,7 +355,7 @@ export default function SignIn() {
             </View>
 
             <AppText variant="overline" color={palette.caption} style={styles.label}>
-              {t('E-POÇT İLƏ')}
+              {t('E-poçt ilə')}
             </AppText>
             <TextInput {...inputTint}
               value={email}
@@ -424,25 +429,27 @@ const styles = StyleSheet.create({
   orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 22 },
   switchRow: { alignItems: 'center', paddingVertical: 14 },
   orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: palette.separator },
+  // A #FEFEFE card on the #F7F7F7 screen, no outline — the design's card.
   hero: {
     flexDirection: 'row',
     gap: 12,
     backgroundColor: palette.white,
     borderRadius: radius.card,
     padding: 16,
-    borderWidth: 1,
-    borderColor: palette.separator,
   },
   label: { marginTop: 24, marginBottom: 10 },
-  googleBtn: {
+  socialBtn: {
     height: 52,
-    borderRadius: radius.field,
-    backgroundColor: palette.white,
-    borderWidth: 1,
-    borderColor: palette.separator,
+    borderRadius: radius.button,
+    flexDirection: 'row',
+    gap: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  appleBtn: { backgroundColor: palette.ink },
+  googleBtn: { backgroundColor: palette.white },
+  /* A #FEFEFE field with no visible outline, like the design's fields. The
+     1 pt border is kept, transparent, so the field is exactly as tall as before. */
   input: {
     backgroundColor: palette.white,
     borderRadius: radius.field,
@@ -451,7 +458,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: palette.inkText,
     borderWidth: 1,
-    borderColor: palette.separator,
+    borderColor: 'transparent',
   },
   codeInput: { textAlign: 'center', letterSpacing: 6, fontSize: 22, fontWeight: '700' },
   /* A 44 pt tap row around a one-line link: the subhead line alone is 18 pt

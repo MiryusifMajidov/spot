@@ -297,7 +297,7 @@ export default function GymReviews() {
 const styles = StyleSheet.create({
   summary: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 18 },
   failCard: { backgroundColor: palette.white, borderRadius: 16, padding: 16, marginTop: 10, marginBottom: 14 },
-  card: { backgroundColor: palette.white, borderRadius: 18, padding: 16 },
+  card: { backgroundColor: palette.white, borderRadius: 16, padding: 16 },
   reply: { backgroundColor: palette.inkTint, borderRadius: 12, padding: 12, marginTop: 12 },
   /* The pill was the whole press area (~35 pt) and «Şikayət et» only its own
      12.5 pt line of text (~17 pt). Each now sits in a 44 pt-tall box; the pill
@@ -313,9 +313,11 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6, marginTop: 8, marginBottom: -4 },
   actionHit: { minHeight: 44, justifyContent: 'center' },
   reportHit: { paddingHorizontal: 8 },
-  replyBtn: { backgroundColor: palette.grouped, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 },
+  // A secondary action: #EDEDED, no border, ink text.
+  replyBtn: { backgroundColor: palette.element, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 },
   rule: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', marginTop: 16, paddingHorizontal: 4 },
   modalBg: { flex: 1, backgroundColor: palette.overlay, justifyContent: 'flex-end' },
   sheet: { backgroundColor: palette.grouped, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20 },
-  input: { backgroundColor: palette.white, borderRadius: 14, padding: 14, fontSize: 15, color: palette.inkText, minHeight: 110, textAlignVertical: 'top', marginTop: 14, borderWidth: 1, borderColor: palette.separator },
+  // A #FEFEFE field on the #F7F7F7 sheet — no outline, as the design draws fields.
+  input: { backgroundColor: palette.white, borderRadius: 14, padding: 14, fontSize: 15, color: palette.inkText, minHeight: 110, textAlignVertical: 'top', marginTop: 14 },
 });

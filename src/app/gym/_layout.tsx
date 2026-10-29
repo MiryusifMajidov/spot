@@ -34,12 +34,15 @@ export default function GymLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: palette.inkText,
-        /* textSecondary, not #A0A0A8: that grey was ~2.6:1 on white, so the tabs you
-           were not on could hardly be read — the same fix the main tab bar got. And
-           11 pt labels, not 10. */
-        tabBarInactiveTintColor: palette.textSecondary,
-        tabBarStyle: { backgroundColor: palette.white, borderTopColor: palette.separator },
+        /* The app's tab colours (README «Tab bar (yekun)»): the active tab is accent
+           green, the others #888888 — the design's caption grey, not the old #A0A0A8,
+           which was ~2.6:1 on white and could hardly be read. 11 pt labels, not 10.
+           This is a JS <Tabs> navigator, not the main capsule bar, so it keeps its
+           labels; it only borrows the look: a #FEFEFE bar with no top hairline and
+           no shadow (Android draws an elevation-8 shadow by default). */
+        tabBarActiveTintColor: palette.tabActive,
+        tabBarInactiveTintColor: palette.tertiary,
+        tabBarStyle: { backgroundColor: palette.white, borderTopWidth: 0, elevation: 0, shadowOpacity: 0 },
         tabBarLabelStyle: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
       }}>
       <Tabs.Screen name="index" options={{ title: t('Panel'), tabBarIcon: tab('grid') }} />

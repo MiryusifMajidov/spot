@@ -17,7 +17,7 @@ import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { gymById } from '@/store/db';
 import { toast } from '@/store/ui';
-import { palette, spacing } from '@/theme';
+import { palette, radius, spacing } from '@/theme';
 import { useMyStudents } from './students';
 
 type Listing = { listed: boolean; name: string };
@@ -155,24 +155,24 @@ export default function TrainerPanel() {
             hitSlop={{ top: 4, bottom: 4 }}
             accessibilityRole="button"
             style={styles.modePill}>
-            <Icon name="user" size={16} color={palette.volt} />
-            <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Hesabı dəyiş')}</AppText>
+            <Icon name="user" size={16} color={palette.inkText} />
+            <AppText style={{ color: palette.inkText, fontSize: 13, fontWeight: '600' }}>{t('Hesabı dəyiş')}</AppText>
           </PressableScale>
         </View>
 
         {/* Real counters — no invented money, no invented students. A number is
             printed only when the server actually answered. */}
         <View style={styles.statRow}>
-          <PressableScale activeScale={0.98} onPress={() => router.push('/trainer/students')} style={[styles.statCard, { backgroundColor: palette.ink }]}>
-            <AppText style={styles.statCapVolt}>{t('ŞAGİRD')}</AppText>
-            <AppText style={{ color: palette.white, fontSize: 24, fontWeight: '700', marginTop: 9, letterSpacing: -0.5 }}>{counted ? active.length : '—'}</AppText>
-            <AppText style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 6 }}>
+          <PressableScale activeScale={0.98} onPress={() => router.push('/trainer/students')} style={[styles.statCard, { backgroundColor: palette.element }]}>
+            <AppText style={styles.statCapAccent}>{t('Şagird')}</AppText>
+            <AppText style={{ color: palette.inkText, fontSize: 24, fontWeight: '700', marginTop: 9, letterSpacing: -0.5 }}>{counted ? active.length : '—'}</AppText>
+            <AppText style={{ color: palette.textSecondary, fontSize: 11, marginTop: 6 }}>
               {loading && !everLoaded ? t('yüklənir…') : !counted ? t('məlum deyil') : active.length === 0 ? t('hələ yoxdur') : t('aktiv')}
             </AppText>
           </PressableScale>
           <PressableScale activeScale={0.98} onPress={() => router.push('/trainer/students')} style={[styles.statCard, { backgroundColor: palette.white }]}>
-            <AppText style={styles.statCap}>{t('YENİ SORĞU')}</AppText>
-            <AppText style={{ fontSize: 24, fontWeight: '700', marginTop: 9, letterSpacing: -0.5, color: counted && pending.length ? palette.streak : palette.inkText }}>
+            <AppText style={styles.statCap}>{t('Yeni sorğu')}</AppText>
+            <AppText style={{ fontSize: 24, fontWeight: '700', marginTop: 9, letterSpacing: -0.5, color: counted && pending.length ? palette.streakText : palette.inkText }}>
               {counted ? pending.length : '—'}
             </AppText>
             <AppText style={{ color: palette.tertiary, fontSize: 11, marginTop: 6 }}>
@@ -206,7 +206,7 @@ export default function TrainerPanel() {
         {pending.length > 0 ? (
           <View style={styles.card}>
             <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 13 }}>
-              {t('SƏNİNLƏ MƏŞQ ETMƏK İSTƏYİRLƏR')}
+              {t('Səninlə məşq etmək istəyirlər')}
             </AppText>
             <View style={{ gap: 14 }}>
               {pending.map((r) => (
@@ -225,10 +225,10 @@ export default function TrainerPanel() {
                   ) : null}
                   <View style={{ flexDirection: 'row', gap: 9, marginTop: 12 }}>
                     <PressableScale activeScale={0.97} onPress={() => decide(r, false)} style={styles.declineBtn}>
-                      <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.textSecondary }}>{t('Rədd et')}</AppText>
+                      <AppText variant="headline" color={palette.inkText}>{t('Rədd et')}</AppText>
                     </PressableScale>
                     <PressableScale activeScale={0.97} onPress={() => decide(r, true)} style={styles.acceptBtn}>
-                      <AppText style={{ fontSize: 13.5, fontWeight: '700', color: palette.inkText }}>
+                      <AppText variant="headline" color={palette.ctaText}>
                         {busy === r.requestId ? '…' : t('Qəbul et')}
                       </AppText>
                     </PressableScale>
@@ -268,7 +268,7 @@ export default function TrainerPanel() {
                       {s.programTitle ? s.programTitle : t('Proqram təyin edilməyib')}
                     </AppText>
                   </View>
-                  <Icon name="chevR" size={18} color={palette.tertiary} />
+                  <Icon name="chevR" size={17} color={palette.chevron} />
                 </PressableScale>
               ))}
             </View>
@@ -293,8 +293,8 @@ export default function TrainerPanel() {
               activeScale={0.97}
               onPress={() => router.push({ pathname: '/(tabs)/profile/become-trainer', params: { from: 'trainer' } })}
               style={styles.emptyBtn}>
-              <Icon name="edit" size={15} color={palette.inkText} />
-              <AppText style={{ fontSize: 14, fontWeight: '600' }}>{t('Profilini gücləndir')}</AppText>
+              <Icon name="edit" size={20} color={palette.inkText} />
+              <AppText variant="headline" color={palette.inkText}>{t('Profilini gücləndir')}</AppText>
             </PressableScale>
           </View>
         ) : null}
@@ -338,7 +338,7 @@ export default function TrainerPanel() {
                   .catch(() => toast(t('Dəyişiklik saxlanılmadı — yenidən cəhd et'), 'error'))
                   .finally(() => setListedBusy(false));
               }}
-              trackColor={{ true: palette.voltDeep, false: palette.separator }}
+              trackColor={{ true: palette.toggleOn, false: palette.separator }}
             />
           </View>
           {/* Each of these has its fix on another screen — lead there. */}
@@ -349,7 +349,7 @@ export default function TrainerPanel() {
               accessibilityLabel={t('Müəllim profili')}
               onPress={() => router.push({ pathname: '/(tabs)/profile/become-trainer', params: { from: 'trainer' } })}
               style={styles.noticeBtn}>
-              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Müəllim profili')}</AppText>
+              <AppText variant="headline" color={palette.ctaText}>{t('Müəllim profili')}</AppText>
             </PressableScale>
           ) : nameless ? (
             <PressableScale
@@ -358,7 +358,7 @@ export default function TrainerPanel() {
               accessibilityLabel={t('Adını yaz')}
               onPress={() => router.push({ pathname: '/(tabs)/profile/edit', params: { from: 'trainer' } })}
               style={styles.noticeBtn}>
-              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Adını yaz')}</AppText>
+              <AppText variant="headline" color={palette.ctaText}>{t('Adını yaz')}</AppText>
             </PressableScale>
           ) : null}
         </View>
@@ -370,10 +370,10 @@ export default function TrainerPanel() {
             (it is `href: null` in the layout), so this is the only way to it. */}
         <View style={styles.card}>
           <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 13 }}>
-            {t('ALƏTLƏRİN')}
+            {t('Alətlərin')}
           </AppText>
           <View style={{ gap: 13 }}>
-            <ToolRow icon="verified" title={t('Doğrulanma')} sub={t('Yaşıl nişan üçün sənədlər')} onPress={() => router.push('/trainer/verify')} />
+            <ToolRow icon="verified" title={t('Doğrulanma')} sub={t('Mavi nişan üçün sənədlər')} onPress={() => router.push('/trainer/verify')} />
           </View>
         </View>
 
@@ -404,7 +404,7 @@ function PanelNotice({ title, body, action }: { title: string; body: string; act
           accessibilityLabel={action.label}
           onPress={action.onPress}
           style={styles.noticeBtn}>
-          <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{action.label}</AppText>
+          <AppText variant="headline" color={palette.ctaText}>{action.label}</AppText>
         </PressableScale>
       ) : null}
     </View>
@@ -414,33 +414,37 @@ function PanelNotice({ title, body, action }: { title: string; body: string; act
 function ToolRow({ icon, title, sub, onPress }: { icon: 'dumbbell' | 'msg' | 'verified'; title: string; sub: string; onPress: () => void }) {
   return (
     <PressableScale activeScale={0.98} onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-      <View style={styles.toolIcon}>
-        <Icon name={icon} size={19} color={palette.inkText} />
-      </View>
+      {/* A plain outline glyph, no tile — the app's list-row icon (ListRow). */}
+      <Icon name={icon} size={20} color={palette.rowIcon} />
       <View style={{ flex: 1 }}>
         <AppText style={{ fontSize: 14, fontWeight: '600' }}>{title}</AppText>
         <AppText style={{ fontSize: 11.5, color: palette.tertiary, marginTop: 3 }}>{sub}</AppText>
       </View>
-      <Icon name="chevR" size={18} color={palette.tertiary} />
+      <Icon name="chevR" size={17} color={palette.chevron} />
     </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 },
-  modePill: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, backgroundColor: palette.ink, borderRadius: 999, paddingHorizontal: 12, marginTop: 6 },
+  /* The design's mode pill: #EDEDED with ink text and an ink glyph (it was an ink
+     pill with a volt glyph). */
+  modePill: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, backgroundColor: palette.element, borderRadius: radius.pill, paddingHorizontal: 12, marginTop: 6 },
   statRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  statCard: { flex: 1, borderRadius: 18, padding: 15 },
-  statCap: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.6, color: palette.tertiary },
-  statCapVolt: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.6, color: palette.volt },
-  card: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 14 },
+  /* Light tiles, as the design draws them: the first #EDEDED with an accent-green
+     label, the second the white card. Labels are sentence case, 13/600, untracked. */
+  statCard: { flex: 1, borderRadius: radius.card, padding: 15 },
+  statCap: { fontSize: 13, fontWeight: '600', color: palette.tertiary },
+  statCapAccent: { fontSize: 13, fontWeight: '600', color: palette.voltText },
+  card: { backgroundColor: palette.white, borderRadius: radius.card, padding: 16, marginBottom: 14 },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 },
   reqRow: { backgroundColor: palette.grouped, borderRadius: 14, padding: 13 },
-  acceptBtn: { flex: 1, height: 44, borderRadius: 12, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
-  declineBtn: { flex: 1, height: 44, borderRadius: 12, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
-  emptyIcon: { width: 58, height: 58, borderRadius: 18, backgroundColor: 'rgba(198,255,61,0.28)', alignItems: 'center', justifyContent: 'center' },
-  emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 18, height: 44, paddingHorizontal: 18, borderRadius: 13, backgroundColor: palette.grouped },
-  noticeBtn: { height: 44, borderRadius: 12, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center', marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 },
-  toolIcon: { width: 36, height: 36, borderRadius: 11, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
+  // The volt CTA and the #EDEDED secondary beside it (README «Düymə qaydaları»).
+  acceptBtn: { flex: 1, height: 50, borderRadius: radius.button, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center' },
+  declineBtn: { flex: 1, height: 50, borderRadius: radius.button, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
+  emptyIcon: { width: 58, height: 58, borderRadius: 18, backgroundColor: palette.voltTint, alignItems: 'center', justifyContent: 'center' },
+  emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 18, height: 50, paddingHorizontal: 18, borderRadius: radius.button, backgroundColor: palette.element },
+  // An in-card CTA spans the card, as the design draws them.
+  noticeBtn: { height: 50, borderRadius: radius.button, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center', marginTop: 14, alignSelf: 'stretch', paddingHorizontal: 18 },
   note: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', paddingHorizontal: 4, marginTop: 2 },
 });

@@ -16,7 +16,7 @@ import { t } from '@/lib/i18n';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
 import { useDb } from '@/store/db';
-import { palette, spacing, inputTint } from '@/theme';
+import { palette, radius, spacing, inputTint } from '@/theme';
 
 /**
  * Check-in — scan the QR at the reception desk.
@@ -94,7 +94,7 @@ export default function CheckIn() {
      and the measured overlap lifts the footer instead. The row's own vertical
      padding is the air above the keys on both. */
   const insets = useSafeAreaInsets();
-  const bottomClearance = Platform.OS === 'ios' ? insets.bottom : 0;
+  const bottomClearance = 0;
   const keyboardOffset = insets.top - bottomClearance;
   const measuredLift = useKeyboardLift();
   const lift = Platform.OS === 'android' ? measuredLift : 0;
@@ -174,7 +174,7 @@ export default function CheckIn() {
         </View>
       ) : (
         <PressableScale haptic={false} onPress={() => setTyping(true)} accessibilityRole="button" style={styles.noQr}>
-          <AppText variant="subhead" color={palette.inkText} style={{ fontWeight: '600' }}>
+          <AppText variant="callout" color={palette.inkText}>
             {t('QR oxunmur? Kodu əl ilə yaz')}
           </AppText>
         </PressableScale>
@@ -298,7 +298,7 @@ export default function CheckIn() {
       />
       <View style={styles.frame} pointerEvents="none" />
       <View style={styles.hint} pointerEvents="none">
-        <AppText variant="body" center style={{ color: palette.white, lineHeight: 21 }}>
+        <AppText variant="body" center style={{ color: palette.onDark, lineHeight: 21 }}>
           {phase.k === 'sending' ? t('Yoxlanılır…') : t('Resepsiyadakı QR kodu çərçivəyə tut')}
         </AppText>
       </View>
@@ -309,29 +309,42 @@ export default function CheckIn() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
-  cameraWrap: { flex: 1, margin: spacing.screen, borderRadius: 20, overflow: 'hidden', backgroundColor: palette.ink },
+  /* The viewfinder is media: it stays #1A1A1A behind the live camera, as the
+     design draws it, with the volt frame and light text on top. */
+  cameraWrap: { flex: 1, margin: spacing.screen, borderRadius: radius.sheet, overflow: 'hidden', backgroundColor: palette.ink },
   frame: {
     position: 'absolute',
     left: '15%',
     right: '15%',
     top: '28%',
     aspectRatio: 1,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: palette.volt,
-    borderRadius: 18,
+    borderRadius: 28,
   },
   hint: { position: 'absolute', left: 24, right: 24, bottom: 28 },
-  noQr: { alignSelf: 'center', paddingVertical: 14 },
+  /* The design's secondary button (#EDEDED, no border) — the same link, a full
+     50 pt target. */
+  noQr: {
+    height: 50,
+    borderRadius: radius.button,
+    backgroundColor: palette.element,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: spacing.screen,
+    marginTop: 4,
+    marginBottom: 12,
+    paddingHorizontal: 16,
+  },
   manual: { flexDirection: 'row', gap: 10, alignItems: 'center', paddingHorizontal: spacing.screen, paddingVertical: 12 },
-  /* White with a hairline, like every other field in the app: `grouped` is this
-     screen's own background (colors.bg), so the field used to be invisible. */
+  /* #FEFEFE on the #F7F7F7 screen, no border (the design's fields have none):
+     `grouped` is this screen's own background (colors.bg), so a grouped field
+     would be invisible. */
   manualInput: {
     flex: 1,
-    height: 48,
-    borderRadius: 12,
+    height: 50,
+    borderRadius: radius.field,
     backgroundColor: palette.white,
-    borderWidth: 1,
-    borderColor: palette.separator,
     paddingHorizontal: 14,
     fontSize: 17,
     letterSpacing: 2,

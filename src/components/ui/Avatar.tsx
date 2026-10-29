@@ -27,7 +27,7 @@ export function Avatar({ name, size = 44, uri }: { name: string; size?: number; 
         <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={160} />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.center]}>
-          <AppText style={{ color: palette.white, fontWeight: '700', fontSize: size * 0.36 }}>{initials}</AppText>
+          <AppText style={{ color: palette.onDark, fontWeight: '700', fontSize: size * 0.36 }}>{initials}</AppText>
         </View>
       )}
     </View>

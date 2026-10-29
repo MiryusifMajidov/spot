@@ -27,7 +27,7 @@ function Toggle({ value, onValueChange, label }: { value: boolean; onValueChange
       value={value}
       onValueChange={onValueChange}
       accessibilityLabel={label}
-      trackColor={{ true: palette.voltDeep, false: palette.separator }}
+      trackColor={{ true: palette.toggleOn, false: palette.separator }}
     />
   );
 }
@@ -140,7 +140,7 @@ export default function PrivacyDetails() {
   const wipeDeviceOnly = () =>
     confirm(
       t('Bu cihazdakı nüsxəni sil'),
-      t('Məşq, check-in, saxlanılanlar və filtrlər bu telefondan silinir. Hesabın SİLİNMİR — serverdəki profilin, videoların və şərhlərin yerində qalır və tətbiqi yenidən açanda geri gəlir. Hesabı həmişəlik silmək üçün aşağıdakı «Hesabı tamamilə sil» düyməsindən istifadə et.'),
+      t('Məşq, check-in, saxlanılanlar və filtrlər bu telefondan silinir. Hesabın silinmir — serverdəki profilin, videoların və şərhlərin yerində qalır və tətbiqi yenidən açanda geri gəlir. Hesabı həmişəlik silmək üçün aşağıdakı «Hesabı tamamilə sil» düyməsindən istifadə et.'),
       [
         { label: t('Ləğv et'), style: 'cancel' },
         {

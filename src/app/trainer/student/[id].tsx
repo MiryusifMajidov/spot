@@ -13,7 +13,7 @@ import { useKeyboardOverlap } from '@/lib/useKeyboardOverlap';
 import { useFormat, useT } from '@/lib/useT';
 import { useDb } from '@/store/db';
 import { confirm, toast } from '@/store/ui';
-import { iconSize, palette, spacing, inputTint } from '@/theme';
+import { iconSize, palette, radius, spacing, inputTint } from '@/theme';
 import { studentDateLine, useMyStudents } from '../students';
 
 /**
@@ -204,9 +204,8 @@ function StudentDetailBody() {
               // The label promises the list; router.back() here lands on the
               // Panel (first tab), so go to the list by name.
               onPress={() => router.navigate('/trainer/students')}
-              hitSlop={PRIMARY_SLOP}
-              style={[styles.primaryBtn, { marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 }]}>
-              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Şagirdlərə qayıt')}</AppText>
+              style={[styles.primaryBtn, { marginTop: 14 }]}>
+              <AppText variant="headline" color={palette.ctaText}>{t('Şagirdlərə qayıt')}</AppText>
             </PressableScale>
           </View>
         </View>
@@ -262,7 +261,7 @@ function StudentDetailBody() {
           {student.note ? (
             <View style={styles.quote}>
               <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 6 }}>
-                {t('SORĞUSUNDA YAZDIĞI')}
+                {t('Sorğusunda yazdığı')}
               </AppText>
               <AppText style={{ fontSize: 13.5, lineHeight: 19, color: palette.text3 }}>«{student.note}»</AppText>
             </View>
@@ -286,7 +285,7 @@ function StudentDetailBody() {
 
         {/* --- what the trainer actually controls --- */}
         <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 10, marginTop: 4 }}>
-          {t('TƏYİN EDİLMİŞ PROQRAM')}
+          {t('Təyin edilmiş proqram')}
         </AppText>
 
         {student.programTitle ? (
@@ -308,7 +307,7 @@ function StudentDetailBody() {
         )}
 
         <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 10 }}>
-          {t('PROQRAMLARIN')}
+          {t('Proqramların')}
         </AppText>
 
         {myPrograms.length === 0 ? (
@@ -321,9 +320,8 @@ function StudentDetailBody() {
               accessibilityRole="button"
               accessibilityLabel={t('Proqram yarat')}
               onPress={() => router.push('/(tabs)/workout/create')}
-              hitSlop={PRIMARY_SLOP}
-              style={[styles.primaryBtn, { marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 }]}>
-              <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{t('Proqram yarat')}</AppText>
+              style={[styles.primaryBtn, { marginTop: 14 }]}>
+              <AppText variant="headline" color={palette.ctaText}>{t('Proqram yarat')}</AppText>
             </PressableScale>
           </View>
         ) : (
@@ -338,9 +336,9 @@ function StudentDetailBody() {
                   accessibilityState={{ selected: on }}
                   accessibilityLabel={t('{title} proqramını seç', { title: p.title })}
                   onPress={() => setSelectedId(p.id)}
-                  style={[styles.pickRow, on && { borderColor: palette.ink }]}>
-                  <View style={[styles.radio, on && { borderColor: palette.ink, backgroundColor: palette.ink }]}>
-                    {on ? <Icon name="check" size={12} color={palette.white} /> : null}
+                  style={[styles.pickRow, on && styles.pickRowOn]}>
+                  <View style={[styles.radio, on && styles.radioOn]}>
+                    {on ? <Icon name="check" size={12} color={palette.ctaText} /> : null}
                   </View>
                   <View style={{ flex: 1 }}>
                     <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{p.title}</AppText>
@@ -355,7 +353,7 @@ function StudentDetailBody() {
         )}
 
         <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 10 }}>
-          {t('QEYD · ŞAGİRD BUNU OXUYUR')}
+          {t('Qeyd · şagird bunu oxuyur')}
         </AppText>
         <TextInput {...inputTint}
           value={noteValue}
@@ -372,8 +370,8 @@ function StudentDetailBody() {
           accessibilityRole="button"
           accessibilityLabel={t('Proqramı şagirdə təyin et')}
           onPress={save}
-          style={[styles.saveBtn, (!title || saving || ending) && { opacity: 0.4 }]}>
-          <AppText style={{ color: palette.inkText, fontSize: 15, fontWeight: '600' }}>
+          style={[styles.saveBtn, (!title || saving || ending) && styles.saveBtnOff]}>
+          <AppText variant="headline" color={!title || saving || ending ? palette.tertiary : palette.ctaText}>
             {saving ? t('Yadda saxlanılır…') : t('Proqramı təyin et')}
           </AppText>
         </PressableScale>
@@ -389,8 +387,8 @@ function StudentDetailBody() {
           accessibilityLabel={t('{name} ilə söhbəti aç', { name })}
           onPress={() => router.push({ pathname: '/chat/[id]', params: { id: student.profileId } })}
           style={styles.chatBtn}>
-          <Icon name="msg" size={15} color={palette.inkText} />
-          <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.inkText }}>{t('Söhbəti aç')}</AppText>
+          <Icon name="msg" size={20} color={palette.inkText} />
+          <AppText variant="headline" color={palette.inkText}>{t('Söhbəti aç')}</AppText>
         </PressableScale>
         <PressableScale
           activeScale={0.97}
@@ -399,17 +397,12 @@ function StudentDetailBody() {
           accessibilityLabel={t('Şagirdlikdən çıxar')}
           onPress={end}
           style={[styles.endBtn, (ending || saving) && { opacity: 0.5 }]}>
-          <AppText style={{ fontSize: 13.5, fontWeight: '600', color: palette.red }}>{t('Şagirdlikdən çıxar')}</AppText>
+          <AppText variant="headline" color={palette.red}>{t('Şagirdlikdən çıxar')}</AppText>
         </PressableScale>
       </ScrollView>
     </Screen>
   );
 }
-
-/* styles.primaryBtn is 38 pt tall, like the buttons on the Şagirdlər list; the
-   slop makes the target 44 without changing how it looks. Both buttons sit in a
-   16 pt padded card, so on Android the slop stays inside the parent. */
-const PRIMARY_SLOP = { top: 3, bottom: 3 };
 
 const styles = StyleSheet.create({
   /* The chat glyph was 21 px with hitSlop 8 — a 37 pt target, and on Android a
@@ -418,16 +411,25 @@ const styles = StyleSheet.create({
      glyph, so the glyph stays on the bar's gutter. Same box as the partner /
      trainer / chat pages. */
   navBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -11 },
-  card: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 12 },
+  card: { backgroundColor: palette.white, borderRadius: radius.card, padding: 16, marginBottom: 12 },
   tag: { backgroundColor: palette.grouped, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   quote: { backgroundColor: palette.grouped, borderRadius: 12, padding: 12, marginTop: 13 },
   timeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 12, backgroundColor: palette.grouped, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   privacy: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: palette.element, borderRadius: 14, padding: 13, marginBottom: 16 },
+  /* The design's selection rule for an outlined card and its radio: a 1.5 pt volt
+     border on the volt tint, the check disc volt with an ink glyph — no ink fill. */
   pickRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 14, padding: 13, borderWidth: 1.5, borderColor: 'transparent' },
+  pickRowOn: { borderColor: palette.volt, backgroundColor: palette.voltTint },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
-  input: { backgroundColor: palette.white, borderRadius: 14, padding: 14, fontSize: 15, minHeight: 96, textAlignVertical: 'top', color: palette.inkText, borderWidth: 1, borderColor: palette.separator },
-  primaryBtn: { height: 38, borderRadius: 11, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
-  chatBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 13, backgroundColor: palette.element, marginTop: 12 },
-  endBtn: { height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
-  saveBtn: { height: 50, borderRadius: 14, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center', marginTop: 16 },
+  radioOn: { borderColor: palette.volt, backgroundColor: palette.volt },
+  // A white field on the #F7F7F7 screen, borderless like the design's cards.
+  input: { backgroundColor: palette.white, borderRadius: radius.card, padding: 14, fontSize: 15, minHeight: 96, textAlignVertical: 'top', color: palette.inkText },
+  // The volt CTA, spanning the card as the design draws an in-card CTA.
+  primaryBtn: { height: 50, borderRadius: radius.button, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
+  // The secondary button: #EDEDED, no border.
+  chatBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: radius.button, backgroundColor: palette.element, marginTop: 12 },
+  endBtn: { height: 50, borderRadius: radius.button, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  // A disabled CTA turns #FEFEFE with grey text instead of fading.
+  saveBtn: { height: 50, borderRadius: radius.button, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center', marginTop: 16 },
+  saveBtnOff: { backgroundColor: palette.ctaDisabled },
 });

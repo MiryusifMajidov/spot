@@ -95,7 +95,7 @@ async function removeStoredVideo(url: string | null | undefined): Promise<FileOu
   }
 }
 
-const creatorLabel = (t: string | null) => (t === 'trainer' ? 'MÜƏLLİM' : 'İSTİFADƏÇİ');
+const creatorLabel = (t: string | null) => (t === 'trainer' ? 'Müəllim' : 'İstifadəçi');
 
 export function Content({ search, refreshCounts }: ScreenProps) {
   const { admin } = useAuth();
@@ -264,7 +264,8 @@ export function Content({ search, refreshCounts }: ScreenProps) {
     <>
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-        <div style={{ display: 'flex', gap: 2, background: 'var(--fill)', borderRadius: 9, padding: 2 }}>
+        {/* #EDEDED track: on the #F7F7F7 page a #F7F7F7 track would vanish. */}
+        <div style={{ display: 'flex', gap: 2, background: 'var(--fill2)', borderRadius: 9, padding: 2 }}>
           <Seg active={tab === 'programs'} onClick={() => setTab('programs')}>Proqramlar {programs.length ? programs.length : ''}</Seg>
           <Seg active={tab === 'feed'} onClick={() => setTab('feed')}>Feed {videos.length + posts.length ? videos.length + posts.length : ''}</Seg>
         </div>
@@ -349,12 +350,12 @@ export function Content({ search, refreshCounts }: ScreenProps) {
             </div>
           </div>
 
-          <div style={{ background: 'var(--ink)', borderRadius: 14, padding: 18, color: '#fff' }}>
+          <div style={{ background: 'var(--ink)', borderRadius: 14, padding: 18, color: 'var(--on-ink)' }}>
             <div style={{ font: '600 14px/1 var(--font)', marginBottom: 13 }}>Məzmun qaydaları · rədd şablonları</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               {TEMPLATES.map((t) => (
                 <div key={t.n} style={{ font: '400 12.5px/1.5 var(--font)', color: 'rgba(255,255,255,.65)' }}>
-                  <b style={{ color: '#fff' }}>{t.n}</b> {t.text}
+                  <b style={{ color: 'var(--on-ink)' }}>{t.n}</b> {t.text}
                 </div>
               ))}
             </div>
@@ -425,10 +426,9 @@ function Seg({ active, onClick, children }: { active: boolean; onClick: () => vo
       onClick={onClick}
       style={{
         padding: '7px 14px', borderRadius: 7, border: 'none',
-        background: active ? '#fff' : 'transparent',
-        boxShadow: active ? '0 1px 2px rgba(0,0,0,.08)' : 'none',
+        background: active ? 'var(--card)' : 'transparent',
         font: `${active ? 600 : 500} 12.5px/1 var(--font)`,
-        color: active ? 'var(--ink2)' : 'var(--muted2)',
+        color: active ? 'var(--ink)' : 'var(--muted2)',
       }}
     >
       {children}
@@ -456,9 +456,9 @@ function ProgramCard({ p, stale, canModerate, onRemove }: { p: Program; stale: b
               <span className="badge grey">{creatorLabel(p.creator_type)}</span>
             )}
             {paid ? (
-              <span className="badge" style={{ background: 'var(--ink)', color: 'var(--volt)' }}>{p.price} ₼</span>
+              <span className="badge" style={{ background: 'var(--fill2)', color: 'var(--ink)' }}>{p.price} ₼</span>
             ) : (
-              <span className="badge green">PULSUZ</span>
+              <span className="badge green">Pulsuz</span>
             )}
           </div>
           <div style={{ font: '400 12.5px/1.3 var(--font)', color: 'var(--muted)', marginTop: 6 }}>{meta}</div>
@@ -486,7 +486,7 @@ function ProgramCard({ p, stale, canModerate, onRemove }: { p: Program; stale: b
 function StaleFlag() {
   return (
     <span className="badge red" title="Əvvəllər «silindi» kimi qeyd olunub, amma məzmun hələ də canlıdır">
-      SİLİNMƏYİB — TƏKRAR CƏHD ET
+      Silinməyib — təkrar cəhd et
     </span>
   );
 }
@@ -502,9 +502,9 @@ function FeedCard({ item, canModerate, onRemove }: { item: FeedItem; canModerate
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <div style={{ font: '600 14px/1.2 var(--font)' }}>{item.author}</div>
             {isVideo && item.verified ? <Icon name="verified" size={13} color="var(--blue)" /> : null}
-            {isVideo && item.is_trainer ? <span className="badge blue">MÜƏLLİM</span> : null}
-            {item.kind === 'post' ? <span className="badge grey">POST</span> : <span className="badge grey">VİDEO</span>}
-            {noVideo ? <span className="badge orange">VİDEOSUZ</span> : null}
+            {isVideo && item.is_trainer ? <span className="badge blue">Müəllim</span> : null}
+            {item.kind === 'post' ? <span className="badge grey">Post</span> : <span className="badge grey">Video</span>}
+            {noVideo ? <span className="badge orange">Videosuz</span> : null}
             {item.stale ? <StaleFlag /> : null}
             {item.kind === 'post' && item.gym ? <span style={{ font: '400 11.5px/1 var(--font)', color: 'var(--muted)' }}>· {item.gym}</span> : null}
           </div>

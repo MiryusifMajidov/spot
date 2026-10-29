@@ -10,14 +10,19 @@ type Props = {
   selected?: boolean;
   onPress?: () => void;
   icon?: IconName;
-  /** resting background: 'element' (grey) or 'card' (white) */
+  /** Where the chip sits. Default: on the #F7F7F7 screen, so it rests #FEFEFE.
+   *  'card': inside a #FEFEFE card, so it rests #F7F7F7. (Before the October 2026
+   *  design 'card' meant a WHITE chip — a chip on the screen that still passes it
+   *  now draws #F7F7F7 on #F7F7F7 and disappears.) */
   tone?: 'element' | 'card';
   style?: ViewStyle;
 };
 
 export function Chip({ label, selected, onPress, icon, tone = 'element', style }: Props) {
-  const bg = selected ? palette.ink : tone === 'card' ? palette.white : palette.element;
-  const fg = selected ? palette.white : palette.text3;
+  /* Design: a resting chip is #FEFEFE on the #F7F7F7 screen (#F7F7F7 inside a
+     #FEFEFE card), a selected one #EDEDED — never the black fill it used to be. */
+  const bg = selected ? palette.selected : tone === 'card' ? palette.grouped : palette.white;
+  const fg = palette.inkText;
   return (
     /* The pill is ~32 pt tall, as filter chips are on both platforms; the 6 pt
        vertical slop makes the target 44. Where the parent is a real native view as

@@ -10,22 +10,22 @@ import type { ScreenProps } from '../App';
 
 // ── role presentation ───────────────────────────────────────────────────────
 const ROLE_META: Record<AdminRole, { label: string; bg: string; color: string }> = {
-  owner: { label: 'OWNER', bg: '#101014', color: '#C6FF3D' },
-  moderator: { label: 'MODERATOR', bg: 'rgba(255,59,48,.12)', color: '#C42B22' },
-  ops: { label: 'OPS', bg: 'rgba(10,132,255,.12)', color: '#0A84FF' },
-  support: { label: 'SUPPORT', bg: '#F0F0F3', color: '#6E6E76' },
+  owner: { label: 'Owner', bg: '#EDEDED', color: '#1A1A1A' },
+  moderator: { label: 'Moderator', bg: 'rgba(255,59,48,.12)', color: '#C42B22' },
+  ops: { label: 'Ops', bg: 'rgba(10,132,255,.12)', color: '#0A84FF' },
+  support: { label: 'Support', bg: '#F7F7F7', color: '#6B6B6B' },
 };
 const ROLE_ORDER: AdminRole[] = ['support', 'moderator', 'ops', 'owner'];
 
 // ── audit action → badge ─────────────────────────────────────────────────────
 function actionMeta(action: string): { label: string; bg: string; color: string } {
   const a = action.toLowerCase();
-  const green = { bg: 'rgba(198,255,61,.28)', color: '#3F5500' };
+  const green = { bg: 'rgba(197,254,1,.28)', color: '#3F5500' };
   const red = { bg: 'rgba(255,59,48,.12)', color: '#C42B22' };
   const orange = { bg: 'rgba(255,149,0,.16)', color: '#8A5A00' };
   const blue = { bg: 'rgba(10,132,255,.12)', color: '#0A84FF' };
-  const grey = { bg: '#F0F0F3', color: '#6E6E76' };
-  const ink = { bg: '#101014', color: '#C6FF3D' };
+  const grey = { bg: '#F7F7F7', color: '#6B6B6B' };
+  const ink = { bg: '#EDEDED', color: '#1A1A1A' };
   const map: Record<string, { label: string; bg: string; color: string }> = {
     admin_role_change: { label: 'Rol dəyişdirildi', ...ink },
     admin_note: { label: 'Qeyd əlavə edildi', ...grey },
@@ -350,7 +350,7 @@ export function AdminAudit({ search }: ScreenProps) {
                               same name, same 2FA badge, same role dropdown. An
                               access review could not tell them apart, so a genuinely
                               active admin could be left unrevoked. */}
-                          {off ? <span className="badge red" style={{ fontSize: 9 }}>DEAKTİV</span> : null}
+                          {off ? <span className="badge red" style={{ fontSize: 9 }}>Deaktiv</span> : null}
                           {m.two_factor ? (
                             <span className="badge green" style={{ fontSize: 9 }}>2FA</span>
                           ) : (
@@ -383,7 +383,7 @@ export function AdminAudit({ search }: ScreenProps) {
                               borderRadius: 8,
                               padding: '5px 8px',
                               font: '600 11px/1 var(--font)',
-                              background: '#fff',
+                              background: 'var(--card)',
                               color: 'var(--ink2)',
                             }}
                           >
@@ -434,9 +434,7 @@ export function AdminAudit({ search }: ScreenProps) {
                 <div
                   style={{
                     flex: 1,
-                    font: '600 10.5px/1 var(--font)',
-                    letterSpacing: '.06em',
-                    textTransform: 'uppercase',
+                    font: '600 13px/1.25 var(--font)',
                     color: 'var(--muted)',
                   }}
                 >
@@ -467,7 +465,7 @@ export function AdminAudit({ search }: ScreenProps) {
                   {row.cells.map((ok, i) => (
                     <div key={i} style={{ width: 46, textAlign: 'center' }}>
                       {ok ? (
-                        <Icon name="check" size={14} color="#5B7F00" />
+                        <Icon name="check" size={14} color="var(--green)" />
                       ) : (
                         <Icon name="x" size={13} color="#C0C0C6" />
                       )}

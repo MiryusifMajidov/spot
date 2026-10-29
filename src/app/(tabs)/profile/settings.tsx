@@ -385,7 +385,7 @@ function FeedbackSwitch({ label, value, onChange }: { label: string; value: bool
       value={value}
       onValueChange={onChange}
       accessibilityLabel={label}
-      trackColor={{ true: palette.voltDeep, false: palette.separator }}
+      trackColor={{ true: palette.toggleOn, false: palette.separator }}
     />
   );
 }

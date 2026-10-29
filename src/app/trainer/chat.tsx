@@ -11,7 +11,7 @@ import { getMyThreads, type ThreadSummary } from '@/lib/chat';
 import { timeAgo } from '@/lib/format';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { useT } from '@/lib/useT';
-import { palette, spacing } from '@/theme';
+import { palette, radius, spacing } from '@/theme';
 import { useMyStudents } from './students';
 
 /** Reads the clock here, exactly where the old `timeAgoAz` read it. */
@@ -123,7 +123,7 @@ export default function TrainerChat() {
                     </AppText>
                     {r.unread > 0 ? (
                       <View style={styles.unread}>
-                        <AppText style={{ fontSize: 11, fontWeight: '700', color: palette.inkText }}>{r.unread}</AppText>
+                        <AppText style={{ fontSize: 11, fontWeight: '700', color: palette.onDark }}>{r.unread}</AppText>
                       </View>
                     ) : null}
                     {r.at ? (
@@ -166,7 +166,7 @@ function Notice({ title, body, action }: { title: string; body: string; action?:
           accessibilityLabel={action.label}
           onPress={action.onPress}
           style={styles.actionBtn}>
-          <AppText style={{ color: palette.white, fontSize: 13, fontWeight: '600' }}>{action.label}</AppText>
+          <AppText variant="headline" color={palette.ctaText}>{action.label}</AppText>
         </PressableScale>
       ) : null}
     </View>
@@ -174,17 +174,20 @@ function Notice({ title, body, action }: { title: string; body: string; action?:
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: radius.card, padding: 12 },
+  /* The design's unread count: red with #FAFAFA digits (theme: red = unread). Volt
+     is kept for CTAs and live/success, not for a counter. */
   unread: {
     minWidth: 20,
     height: 20,
     borderRadius: 10,
     paddingHorizontal: 6,
-    backgroundColor: palette.volt,
+    backgroundColor: palette.red,
     alignItems: 'center',
     justifyContent: 'center',
   },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  notice: { backgroundColor: palette.white, borderRadius: 16, padding: 16 },
-  actionBtn: { height: 44, borderRadius: 12, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center', marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 18 },
+  notice: { backgroundColor: palette.white, borderRadius: radius.card, padding: 16 },
+  // The volt CTA, spanning the card as the design draws an in-card CTA.
+  actionBtn: { height: 50, borderRadius: radius.button, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center', marginTop: 14, alignSelf: 'stretch', paddingHorizontal: 18 },
 });

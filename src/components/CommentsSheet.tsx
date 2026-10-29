@@ -496,7 +496,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
               <AppText variant="headline">
                 {showList ? t('Şərhlər · {n}', { n: rows.length, count: rows.length }) : t('Şərhlər')}
               </AppText>
-              <PressableScale haptic={false} activeScale={0.9} onPress={onClose}>
+              <PressableScale haptic={false} activeScale={0.9} onPress={onClose} hitSlop={10}>
                 <Icon name="x" size={iconSize.action} color={palette.inkText} />
               </PressableScale>
             </View>
@@ -654,7 +654,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
                     {sending ? (
                       <ActivityIndicator size="small" color={palette.tertiary} />
                     ) : (
-                      <Icon name="arrowU" size={iconSize.inCircle} color={canSend ? palette.inkText : palette.tertiary} />
+                      <Icon name="arrowU" size={iconSize.inCircle} color={canSend ? palette.ctaText : palette.tertiary} />
                     )}
                   </PressableScale>
                 </View>
@@ -713,7 +713,7 @@ function CommentItem({
           ) : null}
           {mine ? (
             <View style={styles.mineTag}>
-              <AppText style={{ fontSize: 9.5, fontWeight: '700', color: palette.voltDeep }}>{t('SƏN')}</AppText>
+              <AppText style={{ fontSize: 10, fontWeight: '600', color: palette.voltText }}>{t('Sən')}</AppText>
             </View>
           ) : null}
           <AppText variant="caption" color={palette.tertiary}>
@@ -751,7 +751,7 @@ function CommentItem({
   );
 }
 
-/** Comment text with every `@handle` picked out in blue and made tappable. */
+/** Comment text with every `@handle` picked out in ink semibold and made tappable. */
 function Body({ body, onMention }: { body: string; onMention: (handle: string) => void }) {
   const parts = useMemo(() => splitMentions(body), [body]);
   return (
@@ -811,7 +811,7 @@ function mentionToken(value: string, caret: number): { start: number; end: numbe
 }
 
 const styles = StyleSheet.create({
-  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
+  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(26,26,26,0.4)' },
   panel: {
     // Anchored to the bottom of the WINDOW, lifted by the keyboard overlap.
     position: 'absolute', left: 0, right: 0,
@@ -825,7 +825,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   rowReply: { marginLeft: 34, gap: 10 }, // one level of nesting, never deeper
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  mineTag: { backgroundColor: 'rgba(198,255,61,0.30)', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
+  mineTag: { backgroundColor: 'rgba(197,254,1,0.30)', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 6 },
   moreReplies: { flexDirection: 'row', alignItems: 'center', gap: 10, marginLeft: 34, marginBottom: 16, marginTop: -4 },
   threadLine: { width: 22, height: StyleSheet.hairlineWidth, backgroundColor: palette.separator },
@@ -836,19 +836,19 @@ const styles = StyleSheet.create({
   suggStrip: { paddingHorizontal: spacing.screen, gap: 8, paddingBottom: 8 },
   sugg: {
     flexDirection: 'row', alignItems: 'center', gap: 7,
-    backgroundColor: palette.element, borderRadius: 999, paddingLeft: 5, paddingRight: 11, paddingVertical: 4,
+    backgroundColor: palette.grouped, borderRadius: 999, paddingLeft: 5, paddingRight: 11, paddingVertical: 4,
   },
   replyChip: {
     flexDirection: 'row', alignItems: 'center', gap: 7,
     marginHorizontal: spacing.screen, marginBottom: 8,
-    backgroundColor: palette.element, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7,
+    backgroundColor: palette.grouped, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7,
   },
   composer: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: spacing.screen },
   field: {
     flex: 1, flexDirection: 'row', alignItems: 'center',
-    backgroundColor: palette.element, borderRadius: 999, height: 42, paddingLeft: 15, paddingRight: 5,
+    backgroundColor: palette.grouped, borderRadius: 999, height: 42, paddingLeft: 15, paddingRight: 5,
   },
   input: { flex: 1, fontSize: 15, color: palette.inkText, paddingVertical: 0, marginRight: 6 },
-  send: { width: 36, height: 36, borderRadius: 18, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
+  send: { width: 36, height: 36, borderRadius: 18, backgroundColor: palette.cta, alignItems: 'center', justifyContent: 'center' },
   sendOff: { backgroundColor: 'transparent' },
 });

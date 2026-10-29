@@ -91,8 +91,8 @@ export default function Analytics() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: 40 }}>
         <View style={styles.card}>
-          <AppText variant="overline" color={palette.tertiary} style={{ marginBottom: 14 }}>
-            {t('ƏZƏLƏ QRUPU ÜZRƏ HƏCM · 4 HƏFTƏ')}
+          <AppText variant="overline" color={palette.caption} style={{ marginBottom: 14 }}>
+            {t('Əzələ qrupu üzrə həcm · 4 həftə')}
           </AppText>
           {!hasData ? (
             <AppText variant="body" color={palette.textSecondary} style={{ lineHeight: 21 }}>
@@ -108,7 +108,8 @@ export default function Analytics() {
                   <AppText style={{ fontSize: 12.5, fontWeight: '600', color: palette.tertiary }}>{m.vol}</AppText>
                 </View>
                 <View style={styles.barTrack}>
-                  <View style={[styles.barFill, { width: `${m.pct}%`, backgroundColor: m.warn ? palette.streak : palette.ink }]} />
+                  {/* The design's bars: #EDEDED on a #F7F7F7 track, the low group in streak orange. */}
+                  <View style={[styles.barFill, { width: `${m.pct}%`, backgroundColor: m.warn ? palette.streak : palette.element }]} />
                 </View>
               </View>
             ))}
@@ -123,7 +124,7 @@ export default function Analytics() {
               </AppText>
             </View>
           ) : nonZero.length >= 3 ? (
-            <View style={[styles.warn, { backgroundColor: 'rgba(198,255,61,0.16)' }]}>
+            <View style={[styles.warn, { backgroundColor: palette.voltTint }]}>
               <AppText style={{ fontSize: 12.5, lineHeight: 18, color: palette.voltText }}>
                 {t('Əzələ qrupları balanslıdır. Belə davam et.')}
               </AppText>
@@ -176,14 +177,14 @@ export default function Analytics() {
 
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
           <MetricCard
-            title={t('ARDICILLIQ')}
+            title={t('Ardıcıllıq')}
             value={consistency == null ? '—' : `${consistency}%`}
             sub={target > 0 ? t('həftədə {n} gün plan', { n: target, count: target }) : t('plan seçilməyib')}
             subColor={consistency != null && consistency >= 75 ? palette.voltDeep : palette.tertiary}
           />
-          <MetricCard title={t('SERİYA')} value={`${stats.streakDays}`} sub={t('gün', { count: stats.streakDays })} subColor={palette.tertiary} />
+          <MetricCard title={t('Seriya')} value={`${stats.streakDays}`} sub={t('gün', { count: stats.streakDays })} subColor={palette.tertiary} />
           <MetricCard
-            title={t('ÜMUMİ HƏCM')}
+            title={t('Ümumi həcm')}
             value={t('{n}t', { n: fmt.decimal(stats.volumeKg / 1000) })}
             sub={t('{n} məşq', { n: stats.count, count: stats.count })}
             subColor={palette.tertiary}
@@ -196,8 +197,8 @@ export default function Analytics() {
               <Icon name="share" size={20} color={palette.voltDeep} />
             </View>
             <View style={{ flex: 1 }}>
-              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.white }}>{t('Hesabatı paylaş')}</AppText>
-              <AppText style={{ fontSize: 12, lineHeight: 17, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>
+              <AppText style={{ fontSize: 14, fontWeight: '600', color: palette.inkText }}>{t('Hesabatı paylaş')}</AppText>
+              <AppText style={{ fontSize: 12, lineHeight: 17, color: palette.textSecondary, marginTop: 4 }}>
                 {t('Rəqəmlərini mətn kimi kopyala və müəlliminə göndər')}
               </AppText>
             </View>
@@ -211,7 +212,8 @@ export default function Analytics() {
 function MetricCard({ title, value, sub, subColor }: { title: string; value: string; sub: string; subColor: string }) {
   return (
     <View style={styles.metric}>
-      <AppText style={{ fontSize: 10, fontWeight: '600', letterSpacing: 0.5, color: palette.tertiary }}>{title}</AppText>
+      {/* Sentence case, 13 / 600 grey — the design's label, no tracked caps. */}
+      <AppText style={{ fontSize: 13, lineHeight: 16, fontWeight: '600', color: palette.caption }}>{title}</AppText>
       <AppText style={{ fontSize: 18, fontWeight: '700', marginTop: 8 }}>{value}</AppText>
       <AppText style={{ fontSize: 10.5, lineHeight: 13, color: subColor, marginTop: 6 }}>{sub}</AppText>
     </View>
@@ -221,13 +223,14 @@ function MetricCard({ title, value, sub, subColor }: { title: string; value: str
 const styles = StyleSheet.create({
   card: { backgroundColor: palette.white, borderRadius: 18, padding: 16, marginBottom: 12 },
   muscleHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  barTrack: { height: 8, borderRadius: 4, backgroundColor: palette.element2, overflow: 'hidden' },
+  barTrack: { height: 8, borderRadius: 4, backgroundColor: palette.grouped, overflow: 'hidden' },
   barFill: { height: '100%' },
-  warn: { backgroundColor: 'rgba(255,107,53,0.12)', borderRadius: 12, padding: 12, marginTop: 14 },
-  trendChart: { height: 82, position: 'relative', marginTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(60,60,67,0.1)' },
+  warn: { backgroundColor: palette.streakTint, borderRadius: 12, padding: 12, marginTop: 14 },
+  trendChart: { height: 82, position: 'relative', marginTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: palette.hairline },
   dot: { position: 'absolute', borderRadius: 6 },
   trendLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
   metric: { flex: 1, backgroundColor: palette.white, borderRadius: 16, padding: 14 },
-  sendCard: { backgroundColor: palette.ink, borderRadius: 16, padding: 15, flexDirection: 'row', gap: 12, alignItems: 'center' },
-  sendIcon: { width: 40, height: 40, borderRadius: 11, backgroundColor: 'rgba(198,255,61,0.2)', alignItems: 'center', justifyContent: 'center' },
+  // Was an ink card; the design draws it #EDEDED with ink text.
+  sendCard: { backgroundColor: palette.element, borderRadius: 16, padding: 15, flexDirection: 'row', gap: 12, alignItems: 'center' },
+  sendIcon: { width: 40, height: 40, borderRadius: 11, backgroundColor: 'rgba(197,254,1,0.2)', alignItems: 'center', justifyContent: 'center' },
 });

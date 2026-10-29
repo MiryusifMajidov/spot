@@ -1,9 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { tapFeedback } from '@/lib/feedback';
 import { useState } from 'react';
-import { Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { ScrollView, Share, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { AppText } from '@/components/ui/AppText';
@@ -34,8 +33,7 @@ export default function Summary() {
      by the inset rather than a guessed height. On Android the Material bar reserves
      its own space and the inset here is the navigation bar it already covers —
      adding it would lift the button twice. */
-  const insets = useSafeAreaInsets();
-  const footerBottom = (Platform.OS === 'ios' ? insets.bottom : 0) + spacing.sm;
+  const footerBottom = spacing.sm;
   const params = useLocalSearchParams<{ title?: string; durationSec?: string; volumeKg?: string; setsDone?: string; maxKg?: string }>();
   const title = params.title || 'Məşq';
   const durationSec = Number(params.durationSec) || 0;
@@ -150,7 +148,7 @@ export default function Summary() {
         {maxKg > 0 ? (
           <View style={styles.prCard}>
             <View style={styles.prIcon}>
-              <Icon name="trophy" size={18} color={palette.voltDeep} />
+              <Icon name="trophy" size={22} color={palette.voltDeep} />
             </View>
             <View style={{ flex: 1 }}>
               <AppText variant="callout">{t('Bu məşqin ən ağır seti')}</AppText>
@@ -167,7 +165,7 @@ export default function Summary() {
         <View style={styles.rpeRow}>
           {RPE.map((r, i) => (
             <PressableScale key={r} activeScale={0.96} haptic={false} onPress={() => rate(i)} style={[styles.rpe, rpe === i && styles.rpeOn]}>
-              <AppText variant="headline" color={rpe === i ? palette.white : palette.inkText}>
+              <AppText variant="headline" color={rpe === i ? palette.inkText : palette.textSecondary}>
                 {t(r)}
               </AppText>
             </PressableScale>
@@ -176,7 +174,7 @@ export default function Summary() {
         {rpe !== null ? (
           <AppText
             variant="footnote"
-            color={stored ? palette.voltDeep : palette.streak}
+            color={stored ? palette.voltText : palette.streakText}
             style={{ marginTop: 10, paddingHorizontal: 4, lineHeight: 18 }}>
             {!stored
               ? t('Qiymətləndirmə yazılmadı — bu məşq artıq bağlanıb, ona görə növbəti çəki təklifinə təsir etməyəcək.')
@@ -196,7 +194,7 @@ export default function Summary() {
               {t('Yalnız sən seçdiyin yerə göndərilir')}
             </AppText>
           </View>
-          <Icon name="chevR" size={18} color={palette.tertiary} />
+          <Icon name="chevR" size={17} color={palette.chevron} />
         </PressableScale>
       </ScrollView>
 
@@ -222,16 +220,19 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 const styles = StyleSheet.create({
   hero: { alignItems: 'center', paddingTop: 20 },
-  disc: { width: 88, height: 88, borderRadius: 44, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
+  // The design's success mark: a 76 pt volt square, radius 22, with an ink check.
+  disc: { width: 76, height: 76, borderRadius: 22, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
   stats: { flexDirection: 'row', gap: 10, marginTop: 28 },
   stat: { flex: 1, backgroundColor: palette.white, borderRadius: 16, paddingVertical: 18, alignItems: 'center' },
   streakCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginTop: 12 },
-  streakIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,107,53,0.14)', alignItems: 'center', justifyContent: 'center' },
-  prCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 14, marginTop: 12 },
-  prIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(198,255,61,0.22)', alignItems: 'center', justifyContent: 'center' },
+  streakIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: palette.streakTint, alignItems: 'center', justifyContent: 'center' },
+  // The highlighted card (the design's «Yeni rekord!»): #EDEDED, radius 18.
+  prCard: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: palette.element, borderRadius: 18, padding: 16, marginTop: 12 },
+  prIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(197,254,1,0.2)', alignItems: 'center', justifyContent: 'center' },
   rpeRow: { flexDirection: 'row', gap: 10 },
-  rpe: { flex: 1, height: 52, borderRadius: 14, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.separator, alignItems: 'center', justifyContent: 'center' },
-  rpeOn: { backgroundColor: palette.ink, borderColor: palette.ink },
+  // Resting #FEFEFE, chosen #EDEDED with ink text — no outline, no ink fill.
+  rpe: { flex: 1, height: 52, borderRadius: 14, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  rpeOn: { backgroundColor: palette.selected },
   shareRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white, borderRadius: 16, padding: 16, marginTop: 24 },
   footer: { paddingTop: spacing.sm },
 });

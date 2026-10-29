@@ -118,13 +118,13 @@ export function Analytics(_props: ScreenProps) {
       label: 'Qeydiyyat tamamlandı',
       text: total != null ? `${nf(total)} · ${total > 0 ? 100 : 0}%` : '—',
       share: (total ?? 0) > 0 ? 100 : 0,
-      color: 'var(--ink)',
+      color: 'var(--fill2)',
     },
     {
       label: 'Zal seçildi',
       text: funnelKnown ? `${nf(m.withGym!)} · ${gymPct}%` : m.withGym != null ? nf(m.withGym) : '—',
       share: gymPct,
-      color: 'var(--ink)',
+      color: 'var(--fill2)',
     },
     {
       label: 'Hədəf təyin edildi',
@@ -169,9 +169,9 @@ export function Analytics(_props: ScreenProps) {
   return (
     <>
       {/* Core hypothesis — dark card */}
-      <div style={{ background: 'var(--ink)', borderRadius: 14, padding: '22px 24px', color: '#fff', marginBottom: 18 }}>
+      <div style={{ background: 'var(--ink)', borderRadius: 14, padding: '22px 24px', color: 'var(--on-ink)', marginBottom: 18 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-          <div style={{ font: '600 10.5px/1 var(--font)', letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--volt)' }}>Əsas hipotez</div>
+          <div style={{ font: '600 13px/1.25 var(--font)', color: 'var(--volt)' }}>Əsas hipotez</div>
           <div style={{ font: '600 15px/1 var(--font)' }}>Məşq yoldaşı olan istifadəçi daha uzun qalır</div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
@@ -180,7 +180,7 @@ export function Analytics(_props: ScreenProps) {
           <HypoStat label="Tək" value={alone != null ? nf(alone) : '—'} />
           <HypoStat label="Yoldaşı olan %" value={partnerShare != null ? `${partnerShare}%` : '—'} volt />
         </div>
-        <div style={{ background: 'rgba(198,255,61,.14)', borderRadius: 11, padding: '12px 14px', marginTop: 18 }}>
+        <div style={{ background: 'rgba(197,254,1,.14)', borderRadius: 11, padding: '12px 14px', marginTop: 18 }}>
           <div style={{ font: '500 12.5px/1.5 var(--font)', color: '#DDEEB8' }}>{hypoConclusion}</div>
         </div>
       </div>
@@ -246,7 +246,7 @@ function HypoStat({ label, value, volt }: { label: string; value: string; volt?:
   return (
     <div>
       <div style={{ font: '400 11.5px/1.3 var(--font)', color: 'rgba(255,255,255,.5)', marginBottom: 10 }}>{label}</div>
-      <div style={{ font: '700 26px/1 var(--font)', letterSpacing: '-.8px', color: volt ? 'var(--volt)' : '#fff' }}>{value}</div>
+      <div style={{ font: '700 26px/1 var(--font)', letterSpacing: '-.8px', color: volt ? 'var(--volt)' : 'var(--on-ink)' }}>{value}</div>
     </div>
   );
 }

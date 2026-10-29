@@ -19,7 +19,7 @@ import { useFormat, useT } from '@/lib/useT';
 import { useDb, useStats } from '@/store/db';
 import { useAppStore } from '@/store/appStore';
 import { iconSize, palette, spacing } from '@/theme';
-import { azLower, azUpper } from '@/lib/az';
+import { azLower } from '@/lib/az';
 
 /** `avatar_url` lives on the profiles row (added by schema8) — read it defensively. */
 function avatarOf(row: unknown): string | null {
@@ -103,7 +103,7 @@ export default function Profile() {
             ].map((p) => (
               <View key={p.t} style={styles.perkRow}>
                 <View style={styles.perkIcon}>
-                  <Icon name={p.icon} size={19} color={palette.inkText} />
+                  <Icon name={p.icon} size={20} color={palette.inkText} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <AppText variant="headline">{p.t}</AppText>
@@ -179,7 +179,7 @@ export default function Profile() {
                 <AppText style={{ fontSize: 11.5, fontWeight: '700', color: palette.streakText }}>{streakText}</AppText>
               </PressableScale>
               {partners > 0 ? (
-                <View style={[styles.badge, { backgroundColor: 'rgba(198,255,61,0.30)' }]}>
+                <View style={[styles.badge, { backgroundColor: 'rgba(197,254,1,0.3)' }]}>
                   <Icon name="users" size={12} color={palette.voltDeep} />
                   <AppText style={{ fontSize: 11.5, fontWeight: '700', color: palette.voltText }}>{t('{n} yoldaş', { n: partners, count: partners })}</AppText>
                 </View>
@@ -195,7 +195,8 @@ export default function Profile() {
         ) : null}
 
         <View style={styles.actions}>
-          <Button title={t('Profili redaktə et')} onPress={() => router.push('/(tabs)/profile/edit')} style={{ flex: 1, height: 44 }} />
+          {/* The design's 44 pt volt CTA, squared off to r12 like the bookmark box beside it. */}
+          <Button title={t('Profili redaktə et')} onPress={() => router.push('/(tabs)/profile/edit')} style={{ flex: 1, height: 44, borderRadius: 12 }} />
           <PressableScale
             activeScale={0.94}
             accessibilityRole="button"
@@ -228,7 +229,7 @@ export default function Profile() {
             <View style={{ flexDirection: 'row', gap: 10 }}>
               {prs.slice(0, 3).map((pr) => (
                 <View key={pr.lift} style={styles.pr}>
-                  <AppText style={styles.prLabel}>{azUpper(t(pr.lift))}</AppText>
+                  <AppText style={styles.prLabel}>{t(pr.lift)}</AppText>
                   <AppText style={{ fontSize: 17, fontWeight: '700', marginTop: 8 }}>{t('{n} kq', { n: fmt.weight(pr.value) })}</AppText>
                   {pr.delta ? <AppText style={{ fontSize: 10.5, fontWeight: '500', color: palette.voltDeep, marginTop: 6 }}>{pr.delta}</AppText> : null}
                 </View>
@@ -274,7 +275,7 @@ export default function Profile() {
                       style={styles.gridItem}>
                       <VideoPoster id={v.id} videoUrl={v.videoUrl} gradient={v.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
                       <View style={styles.playBadge}>
-                        <Icon name="play" size={12} color="rgba(255,255,255,0.95)" />
+                        <Icon name="play" size={13} color={palette.onDark} />
                       </View>
                       <AppText numberOfLines={2} style={styles.tileCaption}>
                         {v.caption}
@@ -337,15 +338,16 @@ const styles = StyleSheet.create({
   prHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44, marginBottom: 2 },
   prLink: { height: 44, justifyContent: 'center', paddingLeft: 16, paddingRight: 8, marginRight: -8 },
   pr: { flex: 1, backgroundColor: palette.grouped, borderRadius: 13, padding: 12 },
-  prLabel: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.6, color: palette.caption },
+  // Sentence case, as the design writes it («Skvat», not «SKVAT»): 13 / 600 grey.
+  prLabel: { fontSize: 13, lineHeight: 16, fontWeight: '600', color: palette.caption },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
   gridItem: { width: '32%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: palette.element, justifyContent: 'flex-end', padding: 7 },
   playBadge: { position: 'absolute', top: 6, right: 6 },
-  tileCaption: { color: palette.white, fontSize: 10.5, fontWeight: '600', lineHeight: 13 },
+  tileCaption: { color: palette.onDark, fontSize: 10.5, fontWeight: '600', lineHeight: 13 },
   postCard: { backgroundColor: palette.white, borderRadius: 16, padding: 14, marginTop: 10 },
   placeholderBox: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 30, marginTop: 12, backgroundColor: palette.white, borderRadius: 16 },
   guestCard: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 20, padding: 24, marginTop: 8 },
-  guestIcon: { width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(198,255,61,0.3)', alignItems: 'center', justifyContent: 'center' },
+  guestIcon: { width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(197,254,1,0.3)', alignItems: 'center', justifyContent: 'center' },
   guestPerks: { backgroundColor: palette.white, borderRadius: 16, padding: 8, marginTop: 14 },
   perkRow: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 12 },
   perkIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },

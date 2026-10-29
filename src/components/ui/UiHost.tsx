@@ -14,16 +14,17 @@ import { UiAction, useUi } from '@/store/ui';
 import { palette } from '@/theme';
 import { CommentsSheet } from '@/components/CommentsSheet';
 
+/* The design's buttons: the action is the volt CTA with ink text, everything else
+   is the #EDEDED secondary with no border — red text for a destructive one, and
+   «Ləğv et» in the system blue the design keeps for cancel. */
 function actionColors(style: UiAction['style']) {
   switch (style) {
     case 'destructive':
-      return { bg: palette.white, border: palette.separator, text: palette.red };
+      return { bg: palette.element, border: 'transparent', text: palette.red };
     case 'cancel':
-      return { bg: palette.grouped, border: 'transparent', text: palette.textSecondary };
-    case 'primary':
-      return { bg: palette.volt, border: 'transparent', text: palette.inkText };
+      return { bg: palette.element, border: 'transparent', text: palette.cancel };
     default:
-      return { bg: palette.ink, border: 'transparent', text: palette.white };
+      return { bg: palette.cta, border: 'transparent', text: palette.ctaText };
   }
 }
 
@@ -202,7 +203,7 @@ export function UiHost() {
                   ))}
               </View>
               <PressableScale activeScale={0.98} onPress={dismiss} style={styles.sheetCancel}>
-                <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.inkText }}>
+                <AppText style={{ fontSize: 16, fontWeight: '600', color: palette.cancel }}>
                   {sheet.actions.find((a) => a.style === 'cancel')?.label ?? t('Ləğv et')}
                 </AppText>
               </PressableScale>
@@ -302,6 +303,6 @@ const styles = StyleSheet.create({
   },
   sanctionText: { flex: 1, color: palette.white, fontSize: 12.5, fontWeight: '600', lineHeight: 17 },
   toastWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 1001 },
-  toast: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.ink, borderRadius: 14, paddingHorizontal: 15, paddingVertical: 12, maxWidth: '88%', ...(({ shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 10 }) as object) },
+  toast: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.ink, borderRadius: 14, paddingHorizontal: 15, paddingVertical: 12, maxWidth: '88%' }, // no shadow — the design's rule
   toastDot: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
 });

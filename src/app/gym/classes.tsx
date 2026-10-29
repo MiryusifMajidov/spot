@@ -99,6 +99,7 @@ export default function GymClasses() {
           <PressableScale
             activeScale={0.9}
             onPress={() => setEditing({ index: null, time: '', name: '', trainer: '' })}
+            hitSlop={2}
             style={styles.fab}
             accessibilityRole="button"
             accessibilityLabel={t('Cədvələ əlavə et')}>
@@ -149,7 +150,7 @@ export default function GymClasses() {
                   accessibilityRole="button"
                   accessibilityLabel={t('Sətri sil')}>
                   <View style={styles.delDot}>
-                    <Icon name="x" size={18} color={palette.textSecondary} />
+                    <Icon name="x" size={16} color={palette.rowIcon} />
                   </View>
                 </PressableScale>
               </PressableScale>
@@ -239,9 +240,11 @@ function Field({
 
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  fab: { width: 44, height: 44, borderRadius: 22, backgroundColor: palette.volt, alignItems: 'center', justifyContent: 'center' },
+  /* The design's «+»: a 40 pt #FEFEFE disc with a 20 pt ink glyph (like the back
+     button), not a volt dot; the 2 pt slop keeps the target at 44. */
+  fab: { width: 40, height: 40, borderRadius: 20, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
   card: { backgroundColor: palette.white, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  vdiv: { width: StyleSheet.hairlineWidth, height: 32, backgroundColor: 'rgba(60,60,67,0.14)' },
+  vdiv: { width: StyleSheet.hairlineWidth, height: 32, backgroundColor: palette.separator },
   /* The «×» used to be its own 28 pt circle — the whole press area, and the one
      control on the row that deletes. Now a 44 pt box around a 30 pt dot (the same
      remove control as workout/create.tsx). The negative margins give the extra
@@ -251,8 +254,10 @@ const styles = StyleSheet.create({
      overflow lands in the card's own 14 pt padding — inside the parent, so
      Android delivers the touch. */
   del: { width: 44, height: 44, marginHorizontal: -7, marginVertical: -6, alignItems: 'center', justifyContent: 'center' },
-  delDot: { width: 30, height: 30, borderRadius: 15, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
+  // The in-card fill (#F7F7F7) with a grey glyph — the design's small row disc.
+  delDot: { width: 30, height: 30, borderRadius: 15, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
   modalBg: { flex: 1, backgroundColor: palette.overlay, justifyContent: 'flex-end' },
   sheet: { backgroundColor: palette.grouped, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20 },
-  input: { backgroundColor: palette.white, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: palette.inkText, borderWidth: 1, borderColor: palette.separator },
+  // A #FEFEFE field on the #F7F7F7 sheet — no outline, as the design draws fields.
+  input: { backgroundColor: palette.white, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: palette.inkText },
 });

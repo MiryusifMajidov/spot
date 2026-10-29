@@ -96,7 +96,7 @@ export function HoursField({
         <Switch
           value={always}
           onValueChange={(v) => onChange({ always: v, open, close })}
-          trackColor={{ true: palette.voltDeep, false: palette.separator }}
+          trackColor={{ true: palette.toggleOn, false: palette.separator }}
         />
       </View>
 

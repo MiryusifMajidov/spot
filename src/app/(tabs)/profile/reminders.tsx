@@ -114,7 +114,7 @@ export default function Reminders() {
               value={on}
               accessibilityLabel={t('Məşq xatırlatması')}
               onValueChange={(v) => void apply({ ...reminder, on: v })}
-              trackColor={{ false: palette.separator, true: palette.voltDeep }}
+              trackColor={{ false: palette.separator, true: palette.toggleOn }}
             />
           </View>
         </View>
@@ -217,16 +217,18 @@ const styles = StyleSheet.create({
   days: { flexDirection: 'row', gap: 6 },
   // Seven equal buttons across the width; 44 pt tall so each is a real target.
   day: { flex: 1, height: 44, borderRadius: 12, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
-  dayOn: { backgroundColor: palette.ink },
+  // Selected = #EDEDED with ink text (the design's filled selection) — never a black fill.
+  dayOn: { backgroundColor: palette.selected },
   dayText: { fontSize: 13, fontWeight: '600', color: palette.textSecondary },
-  dayTextOn: { color: palette.white },
+  dayTextOn: { color: palette.inkText },
   timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  stepBtn: { width: 52, height: 44, borderRadius: 12, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
+  // Secondary buttons: #EDEDED, no border.
+  stepBtn: { width: 52, height: 44, borderRadius: 12, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
   stepText: { fontSize: 22, fontWeight: '600', color: palette.inkText, lineHeight: 26 },
   time: { fontSize: 34, fontWeight: '700', color: palette.inkText, fontVariant: ['tabular-nums'], letterSpacing: -0.5 },
   quick: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
   quickChip: { paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: palette.grouped, alignItems: 'center', justifyContent: 'center' },
-  quickChipOn: { backgroundColor: palette.ink },
+  quickChipOn: { backgroundColor: palette.selected },
   quickText: { fontSize: 14, fontWeight: '600', color: palette.textSecondary, fontVariant: ['tabular-nums'] },
   footer: { marginTop: 18, marginHorizontal: 4, lineHeight: 18 },
 });

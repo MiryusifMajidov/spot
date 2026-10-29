@@ -34,7 +34,7 @@ export function TrainerRow({ trainer, onPress }: { trainer: Trainer; onPress?: (
         <View style={styles.nameRow}>
           <AppText variant="headline">{trainer.name}</AppText>
           {trainer.verified ? (
-            <Icon name="verified" size={15} color={palette.voltDeep} />
+            <Icon name="verified" size={15} color={palette.verified} />
           ) : (
             <View style={styles.unverified}>
               <AppText style={styles.unverifiedText}>{t('Doğrulanmayıb')}</AppText>
@@ -47,16 +47,16 @@ export function TrainerRow({ trainer, onPress }: { trainer: Trainer; onPress?: (
         <View style={styles.metaRow}>
           {rating > 0 ? (
             <>
-              {/* voltDeep, as on the trainer page: this row sits on a light screen, where a
-                  volt star is almost invisible (about 1.2:1 against white). */}
-              <Icon name="star" size={12} color={palette.voltDeep} />
+              {/* The design's rating star is orange (palette.streak), as on the program
+                  cards — never volt, which is almost invisible on white (about 1.2:1). */}
+              <Icon name="star" size={12} color={palette.streak} />
               <AppText style={styles.meta}>{fmt.decimal(rating, 1)}</AppText>
             </>
           ) : null}
           {meta ? <AppText style={styles.metaDim}>{rating > 0 ? `· ${meta}` : meta}</AppText> : null}
         </View>
       </View>
-      <Icon name="chevR" size={18} color={palette.tertiary} />
+      <Icon name="chevR" size={17} color={palette.chevron} />
     </PressableScale>
   );
 }

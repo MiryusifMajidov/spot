@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { ProgramCard } from '@/components/ProgramCard';
@@ -12,7 +11,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Program } from '@/data/types';
 import { usePrograms } from '@/lib/hooks';
 import { useDb } from '@/store/db';
-import { iconSize, palette, shadow, spacing, inputTint } from '@/theme';
+import { iconSize, palette, spacing, inputTint } from '@/theme';
 import { searchKey } from '@/lib/az';
 import { useT } from '@/lib/useT';
 
@@ -47,8 +46,7 @@ export default function Library() {
      area includes that bar, so `insets.bottom` on iOS is the bar's footprint plus the
      home indicator. The list pads by the same amount so its last card can still be
      scrolled clear of both the bar and the FAB. */
-  const insets = useSafeAreaInsets();
-  const bottomClearance = Platform.OS === 'ios' ? insets.bottom : 0;
+  const bottomClearance = 0;
 
   // The user's own programs always come first and are never hidden by a fetch.
   const all = useMemo(() => {
@@ -98,7 +96,9 @@ export default function Library() {
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={{ marginTop: 12, marginHorizontal: -spacing.screen }}>
           {FILTERS.map((f) => (
-            <Chip key={f} label={t(f)} tone="card" selected={filter === f} onPress={() => setFilter(f)} icon={f === 'Müəllimlər' ? 'verified' : undefined} />
+            /* Default tone: on the #F7F7F7 screen a resting chip is #FEFEFE («card»
+               tone is #F7F7F7, for chips inside a white card, and vanished here). */
+            <Chip key={f} label={t(f)} selected={filter === f} onPress={() => setFilter(f)} icon={f === 'Müəllimlər' ? 'verified' : undefined} />
           ))}
         </ScrollView>
       </View>
@@ -135,10 +135,10 @@ export default function Library() {
 
       <PressableScale
         onPress={() => router.push('/(tabs)/workout/create')}
-        style={[styles.fab, { bottom: 28 + bottomClearance }, shadow.floating as object]}
+        style={[styles.fab, { bottom: 28 + bottomClearance }]}
         accessibilityRole="button"
         accessibilityLabel={t('Yeni proqram yarat')}>
-        <Icon name="plus" size={iconSize.inCircle} color={palette.volt} />
+        <Icon name="plus" size={iconSize.tab} color={palette.voltDeep} />
       </PressableScale>
     </Screen>
   );
@@ -162,5 +162,7 @@ const styles = StyleSheet.create({
      the left) — only the touch area grew, reaching into the input side. */
   clearBtn: { width: 44, height: 44, marginRight: -10, paddingRight: 10, alignItems: 'flex-end', justifyContent: 'center' },
   // `bottom` is set inline: 28 above the tab bar, plus `bottomClearance` on iOS.
-  fab: { position: 'absolute', right: spacing.screen, width: 54, height: 54, borderRadius: 27, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center' },
+  /* The design's «+»: a 54 pt #EDEDED disc with a 26 pt green glyph — no ink fill,
+     no shadow. */
+  fab: { position: 'absolute', right: spacing.screen, width: 54, height: 54, borderRadius: 27, backgroundColor: palette.element, alignItems: 'center', justifyContent: 'center' },
 });

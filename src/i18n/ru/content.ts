@@ -10,7 +10,6 @@ export const content: Dict = {
   'Addımlı çöküş (lunge)': 'Выпады',
   'Addımlı çöküş': 'Выпады',
   'Ardıcıl məşqçi': 'Тренируется регулярно',
-  'Ardıcıllıq': 'Регулярность',
   'Arxa ayaqla itələmək.': 'Толчок задней ногой.',
   'Arxaya çox əyilmək. Gövdə demək olar sabit.': 'Сильный отклон назад. Корпус почти неподвижен.',
   'Arıqlama': 'Похудение',
