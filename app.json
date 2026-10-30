@@ -14,12 +14,13 @@
       "buildNumber": "1",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Xəritədə harada olduğunu göstərmək və yaxınlıqdakı zalları məsafəyə görə sıralamaq üçün yerini soruşuruq. Koordinatın heç bir cədvələ yazılmır.",
-        "NSPhotoLibraryUsageDescription": "Profil şəkli, zal fotosu və texnika videosu seçmək üçün qalereyaya baxırıq.",
+        "NSLocationWhenInUseUsageDescription": "SPOT uses your location to show where you are on the map and to sort nearby gyms by distance. Your coordinates are not stored.",
+        "NSPhotoLibraryUsageDescription": "SPOT opens your photo library so you can choose a profile photo, a gym photo or a technique video.",
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false
-        }
+        },
+        "CFBundleAllowMixedLocalizations": true
       }
     },
     "android": {
@@ -53,7 +54,7 @@
         {
           "locationAlwaysAndWhenInUsePermission": false,
           "locationAlwaysPermission": false,
-          "motionUsagePermission": "Məkan xidməti ilə birlikdə hərəkət sensoru da linklənir. Tətbiq hərəkət məlumatını nə toplayır, nə də saxlayır."
+          "motionUsagePermission": "The motion sensor is linked together with location services. SPOT does not collect or store motion data."
         }
       ],
       [
@@ -73,7 +74,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Texnika videosu səsi ilə çəkildikdə mikrofon işlədilir.",
+          "microphonePermission": "SPOT uses the microphone only when you record a technique video with sound.",
           "enableBackgroundPlayback": false,
           "enableBackgroundRecording": false
         }
@@ -88,8 +89,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Kamera üç yerdə işlənir: zalın resepsiyasındakı QR kodu oxumaq, texnika videosu çəkmək və profil şəkli əlavə etmək.",
-          "microphonePermission": "Texnika videosu səsi ilə çəkildikdə mikrofon işlədilir.",
+          "cameraPermission": "SPOT uses the camera to scan the check-in QR code at your gym's reception, to record technique videos and to take a profile photo.",
+          "microphonePermission": "SPOT uses the microphone only when you record a technique video with sound.",
           "recordAudioAndroid": false
         }
       ],
@@ -105,6 +106,11 @@
         "projectId": "96a9be54-6fe0-4ae4-953e-02da5aa42ae1"
       }
     },
-    "owner": "miri2005s-team"
+    "owner": "miri2005s-team",
+    "locales": {
+      "en": "./locales/en.json",
+      "az": "./locales/az.json",
+      "ru": "./locales/ru.json"
+    }
   }
 }

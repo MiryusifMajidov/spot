@@ -1,0 +1,9 @@
+{
+  "ios": {
+    "NSLocationWhenInUseUsageDescription": "Xəritədə harada olduğunu göstərmək və yaxınlıqdakı zalları məsafəyə görə sıralamaq üçün yerini soruşuruq. Koordinatın heç bir cədvələ yazılmır.",
+    "NSPhotoLibraryUsageDescription": "Profil şəkli, zal fotosu və texnika videosu seçmək üçün qalereyaya baxırıq.",
+    "NSCameraUsageDescription": "Kamera üç yerdə işlənir: zalın resepsiyasındakı QR kodu oxumaq, texnika videosu çəkmək və profil şəkli əlavə etmək.",
+    "NSMicrophoneUsageDescription": "Texnika videosu səsi ilə çəkildikdə mikrofon işlədilir.",
+    "NSMotionUsageDescription": "Məkan xidməti ilə birlikdə hərəkət sensoru da linklənir. Tətbiq hərəkət məlumatını nə toplayır, nə də saxlayır."
+  }
+}
