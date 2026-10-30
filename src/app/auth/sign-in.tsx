@@ -1,5 +1,5 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -26,6 +26,7 @@ import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { palette, radius, spacing, inputTint } from '@/theme';
+import { enterApp } from '@/lib/nav';
 
 /**
  * Sign in — in two moods, because two different people arrive here.
@@ -68,6 +69,19 @@ export default function SignIn() {
   const profileName = useAppStore((s) => s.profile.name);
   const bootstrap = useAppStore((s) => s.bootstrap);
 
+  /* The gate's sign-in is for people who are not signed in. Opened while the
+     person already is (a stale stack, a link), it goes straight to their app.
+     Read on focus only: a sign-in completing on this screen routes itself.
+     Not in the «protect your account» mode from Settings — that one links an
+     e-mail to an account that is already in use. */
+  useFocusEffect(
+    useCallback(() => {
+      if (!login) return;
+      const s = useAppStore.getState();
+      if (s.hydrated && s.onboarded && !s.guest) enterApp();
+    }, [login])
+  );
+
   const [busy, setBusy] = useState<null | 'google' | 'apple' | 'email' | 'password'>(null);
   const [sent, setSent] = useState<{ to: string; linking: boolean } | null>(null);
   const [email, setEmail] = useState('');
@@ -101,7 +115,8 @@ export default function SignIn() {
   const done = () => {
     if (!login) return router.back();
     const { onboarded, profile } = useAppStore.getState();
-    router.replace(onboarded && profile.name.trim() ? '/(tabs)/discover' : '/onboarding/profile');
+    if (onboarded && profile.name.trim()) enterApp();
+    else router.replace('/onboarding/profile');
   };
 
   const setupMessage = (e: unknown): string | null => {

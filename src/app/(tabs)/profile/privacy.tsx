@@ -14,6 +14,7 @@ import { useDb } from '@/store/db';
 import { emptyGymFilter, emptyPartnerFilter, useDiscoverPrefs } from '@/store/discoverPrefs';
 import { confirm, toast } from '@/store/ui';
 import { palette, spacing } from '@/theme';
+import { exitToWelcome } from '@/lib/nav';
 
 /** Ad-hoc AsyncStorage keys written outside the zustand stores. Kept here so the
  *  wipe below really empties everything this app stores on the device. */
@@ -154,7 +155,7 @@ export default function PrivacyDetails() {
                 : t('Nüsxə silindi, amma serverə qoşula bilmədik — internetə qoşulub tətbiqi yenidən aç'),
               sessionReady ? 'info' : 'error'
             );
-            router.replace('/onboarding/welcome');
+            exitToWelcome();
           },
         },
       ]

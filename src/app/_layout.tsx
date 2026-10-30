@@ -8,7 +8,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { reloadAppAsync } from 'expo';
 import * as Notifications from 'expo-notifications';
-import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useNavigationContainerRef } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
@@ -29,6 +29,7 @@ import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { wipeDeviceData } from '@/lib/wipe';
 import { isDark, palette, scheme } from '@/theme';
+import { bindRootNavigation, exitToWelcome } from '@/lib/nav';
 
 /* At module scope, not in an effect: the dictionaries must be in place before
    the first render, or a Russian speaker sees a frame of Azerbaijani on every
@@ -57,6 +58,8 @@ const navTheme = {
 
 export default function RootLayout() {
   const t = useT();
+  const navRef = useNavigationContainerRef();
+  useEffect(() => bindRootNavigation(navRef), [navRef]);
   const bootstrap = useAppStore((s) => s.bootstrap);
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -108,7 +111,7 @@ export default function RootLayout() {
     const stop = installSessionGuard(async () => {
       await wipeDeviceData();
       try {
-        router.replace('/onboarding/welcome');
+        exitToWelcome();
       } catch {
         /* Not mounted yet (cold start): the index gate sends a wiped phone there. */
       }

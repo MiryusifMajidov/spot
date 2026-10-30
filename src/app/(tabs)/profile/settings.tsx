@@ -19,6 +19,7 @@ import { releaseSounds, successFeedback, tapFeedback } from '@/lib/feedback';
 import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { palette, spacing } from '@/theme';
+import { exitToWelcome } from '@/lib/nav';
 
 /* The version the build was made with (app.json → embedded manifest). The row
    used to print a hard-coded «v1.0» while the store build was 1.4.x, so the one
@@ -120,7 +121,7 @@ export default function Settings() {
               .then(() => signOut())
               .then(() => {
                 toast(t('Hesabdan çıxdın — bu telefondakı məlumatlar silindi'));
-                router.replace('/onboarding/welcome');
+                exitToWelcome();
               })
               .catch(() => toast(t('Çıxmaq alınmadı — yenidən cəhd et'), 'error'));
           },

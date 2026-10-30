@@ -3,15 +3,11 @@ import type { useRouter } from 'expo-router';
 import { t } from '@/lib/i18n';
 import { useAppStore } from '@/store/appStore';
 import { useUi } from '@/store/ui';
+import { enterApp } from '@/lib/nav';
 
 type Router = ReturnType<typeof useRouter>;
 
 type Mode = 'user' | 'trainer' | 'gym_admin';
-const ROUTES: Record<Mode, string> = {
-  user: '/(tabs)/discover',
-  trainer: '/trainer',
-  gym_admin: '/gym',
-};
 
 /**
  * Instagram-style account switcher. The one person can hold a personal account
@@ -33,7 +29,9 @@ export function showAccountSwitcher(router: Router) {
         label: activeMode === a.mode ? `${a.label} ✓` : a.label,
         onPress: () => {
           setMode(a.mode);
-          (router.replace as (r: string) => void)(ROUTES[a.mode]);
+          // A reset, not a replace: nothing of the account left behind stays
+          // reachable with «back» (see lib/nav.ts).
+          enterApp(a.mode);
         },
       })),
       { label: t('Bağla'), style: 'cancel' as const },

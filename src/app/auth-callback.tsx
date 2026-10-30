@@ -12,6 +12,7 @@ import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { palette } from '@/theme';
+import { enterApp } from '@/lib/nav';
 
 /**
  * Where the sign-in e-mail's link lands — `spot://auth-callback`.
@@ -67,7 +68,7 @@ export default function AuthCallback() {
       const { onboarded, profile } = useAppStore.getState();
       if (onboarded && (profile.username ?? '').trim()) {
         toast(t('Daxil oldun'));
-        router.replace('/(tabs)/discover');
+        enterApp();
       } else {
         // A brand-new account: the same one-screen registration Google and
         // Apple lead to. Skipping it is how an e-mail sign-up used to land in

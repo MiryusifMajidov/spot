@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -16,6 +15,7 @@ import { useFormat, useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { palette, radius, spacing } from '@/theme';
+import { enterApp } from '@/lib/nav';
 
 /**
  * The last step of registration: who is already here.
@@ -46,7 +46,6 @@ type State = { k: 'loading' } | { k: 'ready'; rows: SuggestedTrainer[] };
 
 export default function SuggestTrainers() {
   const t = useT();
-  const router = useRouter();
   const [state, setState] = useState<State>({ k: 'loading' });
   const [picked, setPicked] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
@@ -59,8 +58,8 @@ export default function SuggestTrainers() {
   const leave = useCallback(() => {
     if (left.current) return;
     left.current = true;
-    router.replace('/(tabs)/discover');
-  }, [router]);
+    enterApp('user');
+  }, []);
 
   useEffect(() => {
     if (!hasSupabaseConfig) {

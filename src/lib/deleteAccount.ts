@@ -6,6 +6,7 @@ import { unregisterPush } from '@/lib/push';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { wipeDeviceData } from '@/lib/wipe';
 import { confirm, toast } from '@/store/ui';
+import { exitToWelcome } from '@/lib/nav';
 
 /**
  * Really delete the account — the store requirement, and the thing the old
@@ -60,7 +61,7 @@ export function confirmDeleteAccount(router: ReturnType<typeof useRouter>): void
                      wipeDeviceData() touches no session. */
                   await wipeDeviceData();
                   toast(t('Hesabın silindi'));
-                  router.replace('/onboarding/welcome');
+                  exitToWelcome();
                 },
               },
             ]

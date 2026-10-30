@@ -16,6 +16,7 @@ import { useT } from '@/lib/useT';
 import { useAppStore } from '@/store/appStore';
 import { toast } from '@/store/ui';
 import { palette, radius, screenBarStyle } from '@/theme';
+import { enterApp } from '@/lib/nav';
 
 /**
  * The first screen, and now the actual gate.
@@ -41,6 +42,19 @@ export default function Welcome() {
   const bootstrap = useAppStore((s) => s.bootstrap);
   const [busy, setBusy] = useState<null | 'google' | 'apple'>(null);
 
+  /* A signed-in person never stays here. This screen used to remain at the
+     bottom of the stack after an e-mail sign-in, and the account switcher or
+     Android's back button could bring it to the front. Every exit now resets the
+     stack (lib/nav.ts); this catches any path still leading here. Read on focus
+     only — not on store changes — so a sign-in finishing ON this screen routes
+     itself (to the registration step when the account is new). */
+  useFocusEffect(
+    useCallback(() => {
+      const s = useAppStore.getState();
+      if (s.hydrated && s.onboarded && !s.guest) enterApp();
+    }, [])
+  );
+
   /* Dark clock over this screen — only while it is the screen in front. It was
      a light clock while this screen was dark; the final design draws every
      onboarding screen light, so the clock follows. A mount-time
@@ -61,7 +75,7 @@ export default function Welcome() {
 
   const browseAsGuest = () => {
     enterGuest();
-    router.replace('/(tabs)/discover');
+    enterApp('user');
   };
 
   /* Apple on iOS, Google on Android (SOCIAL_PROVIDERS), minus whatever the
@@ -84,7 +98,7 @@ export default function Welcome() {
       const { onboarded, profile } = useAppStore.getState();
       if (onboarded && profile.name.trim()) {
         toast(t('{provider} ilə daxil oldun', { provider: label }));
-        router.replace('/(tabs)/discover');
+        enterApp();
       } else {
         router.replace('/onboarding/profile');
       }

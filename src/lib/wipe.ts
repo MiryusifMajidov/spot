@@ -25,7 +25,12 @@ import { useDb } from '@/store/db';
  */
 export async function wipeDeviceData(): Promise<void> {
   useDb.setState(INITIAL_DB, true);
-  useAppStore.setState(INITIAL_APP, true);
+  /* `hydrated` stays true. INITIAL_APP was captured before the first rehydration,
+     so it said «not loaded yet» — and nothing loads the store a second time in the
+     same session. The gym and trainer panels and the gate wait on `hydrated`, so
+     after signing out and back in without restarting, those panels drew nothing.
+     The cleared storage and this reset state ARE the loaded state now. */
+  useAppStore.setState({ ...INITIAL_APP, hydrated: true }, true);
   invalidateFocusCache();
   clearLists();
   // The OS keeps scheduled reminders after the stores are cleared; the next
