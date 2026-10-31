@@ -776,7 +776,7 @@ export default function GymDetail() {
                   <View style={styles.avatars}>
                     {visibleHere.slice(0, 3).map((p, i) => (
                       <View key={p.id} style={{ marginLeft: i === 0 ? 0 : -10 }}>
-                        <Avatar name={p.name} size={28} />
+                        <Avatar name={p.name} size={28} profileId={p.id} />
                       </View>
                     ))}
                     {/* Counts the faces we may actually show, not the raw headcount —

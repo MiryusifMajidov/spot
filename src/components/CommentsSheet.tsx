@@ -115,6 +115,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
   const [suggestions, setSuggestions] = useState<Handle[]>([]);
 
   const myName = useAppStore((s) => s.profile.name);
+  const myProfileId = useAppStore((s) => s.profileId);
   const gate = useAuthGate();
 
   // Gesture bookkeeping (UI thread): where the list is scrolled, how tall the drag
@@ -628,7 +629,7 @@ export function CommentsSheet({ visible, onClose, targetKey }: { visible: boolea
               ) : null}
 
               <View style={styles.composer}>
-                <Avatar name={myName || 'Sən'} size={32} />
+                <Avatar name={myName || 'Sən'} size={32} profileId={myProfileId} />
                 <View style={styles.field}>
                   <TextInput {...inputTint}
                     ref={inputRef}

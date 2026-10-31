@@ -115,7 +115,7 @@ export default function TrainerChat() {
                 accessibilityLabel={t('{name} ilə söhbət', { name: r.name })}
                 onPress={() => router.push({ pathname: '/chat/[id]', params: { id: r.id } })}
                 style={styles.row}>
-                <Avatar name={r.name} size={52} />
+                <Avatar name={r.name} size={52} profileId={r.id} />
                 <View style={{ flex: 1 }}>
                   <View style={styles.rowTop}>
                     <AppText variant="headline" numberOfLines={1} style={{ flex: 1 }}>

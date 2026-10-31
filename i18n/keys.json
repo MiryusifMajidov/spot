@@ -14352,6 +14352,15 @@
   "placeholders": []
  },
  {
+  "key": "Böyütmək üçün basıb saxla",
+  "counted": false,
+  "files": [
+   "src/components/ui/Avatar.tsx"
+  ],
+  "kind": "ui",
+  "placeholders": []
+ },
+ {
   "key": "Hesabın bağlanıb — yeni paylaşım, şərh və mesaj göndərə bilmirsən.",
   "counted": false,
   "files": [

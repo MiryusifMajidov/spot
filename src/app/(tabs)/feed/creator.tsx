@@ -123,7 +123,7 @@ export default function Creator() {
         ListHeaderComponent={
           <View>
             <View style={styles.header}>
-              <Avatar name={shown} size={84} />
+              <Avatar name={shown} size={84} profileId={params.authorId} peek />
               <View style={styles.nameRow}>
                 <AppText variant="title2">{shown}</AppText>
                 {params.verified === '1' ? <Icon name="verified" size={18} color={palette.verified} /> : null}

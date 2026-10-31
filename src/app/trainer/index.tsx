@@ -261,7 +261,7 @@ export default function TrainerPanel() {
                   activeScale={0.98}
                   onPress={() => router.push({ pathname: '/trainer/student/[id]', params: { id: s.profileId, name: s.name } })}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
-                  <Avatar name={s.name} size={38} />
+                  <Avatar name={s.name} size={38} profileId={s.profileId} />
                   <View style={{ flex: 1 }}>
                     <AppText style={{ fontSize: 14.5, fontWeight: '600' }}>{s.name}</AppText>
                     <AppText style={{ fontSize: 12, color: palette.tertiary, marginTop: 3 }}>

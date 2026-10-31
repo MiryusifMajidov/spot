@@ -313,21 +313,33 @@ export default function Conversation() {
         {/* Input */}
         <View style={[styles.inputArea, composerLift > 0 ? { paddingBottom: composerLift } : null]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quick}>
+            {/* A quick reply FILLS the field; it is not sent on touch. Sent on
+                touch, a brushed chip went out at once — and until the other
+                side answers a thread allows one message, so a stray «Salam»
+                used up the only one the person had. */}
             {QUICK.map((q) => (
-              <PressableScale key={q} activeScale={0.95} onPress={() => send(t(q))} style={styles.quickChip}>
+              <PressableScale
+                key={q}
+                activeScale={0.95}
+                onPress={() => setText((cur) => (cur.trim() ? `${cur.trimEnd()} ${t(q)}` : t(q)))}
+                style={styles.quickChip}>
                 <AppText style={{ fontSize: 13, fontWeight: '600', color: palette.inkText }}>{t(q)}</AppText>
               </PressableScale>
             ))}
           </ScrollView>
           <View style={styles.inputRow}>
+            {/* Multi-line, growing to about five lines: a single-line field ran a
+                longer message off to the side, out of sight, and had no way to
+                start a new line. Enter makes a new line; the button sends. */}
             <TextInput {...inputTint}
               value={text}
               onChangeText={setText}
               placeholder={t('Mesaj yaz…')}
               placeholderTextColor={palette.caption}
               style={styles.input}
-              onSubmitEditing={() => send(text)}
-              returnKeyType="send"
+              multiline
+              maxLength={2000}
+              textAlignVertical="center"
             />
             <PressableScale
               activeScale={0.9}
@@ -365,7 +377,7 @@ const styles = StyleSheet.create({
   inputArea: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.separator, paddingTop: 8 },
   quick: { paddingHorizontal: spacing.screen, gap: 7, paddingBottom: 8 },
   quickChip: { backgroundColor: palette.white, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: palette.separator },
-  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: spacing.screen, paddingBottom: 4 },
-  input: { flex: 1, backgroundColor: palette.white, borderRadius: 999, paddingHorizontal: 16, height: 44, fontSize: 15, color: palette.inkText, borderWidth: 1, borderColor: palette.separator },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 9, paddingHorizontal: spacing.screen, paddingBottom: 4 },
+  input: { flex: 1, backgroundColor: palette.white, borderRadius: 22, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, minHeight: 44, maxHeight: 128, fontSize: 15, lineHeight: 20, color: palette.inkText, borderWidth: 1, borderColor: palette.separator },
   sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

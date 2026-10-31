@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react';
-import { BackHandler, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { BackHandler, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FullWindowOverlay } from 'react-native-screens';
@@ -13,6 +13,8 @@ import { useAppStore } from '@/store/appStore';
 import { UiAction, useUi } from '@/store/ui';
 import { palette } from '@/theme';
 import { CommentsSheet } from '@/components/CommentsSheet';
+import { Image } from 'expo-image';
+import { useAvatarPeek } from '@/lib/avatars';
 
 /* The design's buttons: the action is the volt CTA with ink text, everything else
    is the #EDEDED secondary with no border — red text for a destructive one, and
@@ -90,6 +92,8 @@ export function UiHost() {
   const dismiss = useUi((s) => s.dismiss);
   const hideToast = useUi((s) => s.hideToast);
   const seq = useUi((s) => s.seq);
+  const peek = useAvatarPeek();
+  const { width: winW } = useWindowDimensions();
   // The banner used to sit at `insets.top + 6`, directly over every screen's
   // title — «Kəşf» was invisible for as long as the sanction lasted. It now sits
   // above the tab bar, where it is still on every screen and still unmissable,
@@ -130,6 +134,22 @@ export function UiHost() {
 
   return (
     <>
+      {/* The held avatar (Avatar `peek`): a large photo over a dimmed screen for
+          as long as the finger stays down. pointerEvents none on purpose — the
+          touch must stay with the avatar underneath, so lifting the finger is
+          what puts the photo away. */}
+      <OverlayLayer active={!!peek} layerKey={-1}>
+        {peek ? (
+          <Animated.View entering={FadeIn.duration(120)} exiting={FadeOut.duration(100)} style={styles.peekScrim} pointerEvents="none">
+            <Image
+              source={{ uri: peek.uri }}
+              style={{ width: Math.min(winW * 0.78, 340), height: Math.min(winW * 0.78, 340), borderRadius: 999 }}
+              contentFit="cover"
+            />
+            <AppText style={styles.peekName}>{peek.name}</AppText>
+          </Animated.View>
+        ) : null}
+      </OverlayLayer>
       <OverlayLayer active={!!(dialog || sheet || toast)} layerKey={seq}>
         {/* ---- Centered dialog ---- */}
         {dialog ? (
@@ -302,6 +322,8 @@ const styles = StyleSheet.create({
     backgroundColor: palette.red, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, maxWidth: '100%',
   },
   sanctionText: { flex: 1, color: palette.onDark, fontSize: 12.5, fontWeight: '600', lineHeight: 17 },
+  peekScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1100, backgroundColor: 'rgba(11,11,14,0.72)', alignItems: 'center', justifyContent: 'center', gap: 18 },
+  peekName: { color: palette.onDark, fontSize: 17, fontWeight: '600' },
   toastWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 1001 },
   toast: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.ink, borderRadius: 14, paddingHorizontal: 15, paddingVertical: 12, maxWidth: '88%' }, // no shadow — the design's rule
   toastDot: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

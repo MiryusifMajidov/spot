@@ -118,7 +118,7 @@ function Weekly() {
             {/* Top pick — the design's highlighted #EDEDED card (it was an ink card) */}
             <View style={styles.topCard}>
               <View style={styles.topHead}>
-                <Avatar name={top.name} size={54} />
+                <Avatar name={top.name} size={54} profileId={top.id} />
                 <View style={{ flex: 1 }}>
                   <AppText variant="title3" color={palette.inkText}>
                     {nameWithAge(top.name, top.age)}
@@ -173,7 +173,7 @@ function Weekly() {
               const r = splitReasons(p);
               return (
               <View key={p.id} style={styles.row}>
-                <Avatar name={p.name} size={48} />
+                <Avatar name={p.name} size={48} profileId={p.id} />
                 <View style={{ flex: 1 }}>
                   <AppText variant="headline">
                     {nameWithAge(p.name, p.age)}

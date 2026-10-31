@@ -220,7 +220,7 @@ export default function Students() {
                       accessibilityLabel={t('{name} şagird kartını aç', { name: s.name })}
                       onPress={() => openStudent(s)}
                       style={styles.head}>
-                      <Avatar name={s.name} size={48} />
+                      <Avatar name={s.name} size={48} profileId={s.profileId} />
                       <View style={{ flex: 1 }}>
                         <AppText style={{ fontSize: 15, fontWeight: '600' }}>
                           {s.name}
@@ -274,7 +274,7 @@ export default function Students() {
               {pending.map((s) => (
                 <View key={s.requestId} style={styles.card}>
                   <View style={styles.head}>
-                    <Avatar name={s.name} size={48} />
+                    <Avatar name={s.name} size={48} profileId={s.profileId} />
                     <View style={{ flex: 1 }}>
                       <AppText style={{ fontSize: 15, fontWeight: '600' }}>
                         {s.name}

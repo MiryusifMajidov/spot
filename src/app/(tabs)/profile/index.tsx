@@ -139,7 +139,7 @@ export default function Profile() {
         </View>
 
         <View style={styles.headRow}>
-          <Avatar name={name} size={78} uri={avatar} />
+          <Avatar name={name} size={78} uri={avatar} peek />
           <View style={{ flex: 1 }}>
             <AppText variant="title2">{name}</AppText>
             {/* Only a handle the profile really has — nothing is invented here. */}

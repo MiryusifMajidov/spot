@@ -236,7 +236,7 @@ function StudentDetailBody() {
         {/* --- who they are (their own public profile, nothing more) --- */}
         <View style={styles.card}>
           <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-            <Avatar name={name} size={52} />
+            <Avatar name={name} size={52} profileId={id} peek />
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 16, fontWeight: '600' }}>
                 {name}

@@ -237,7 +237,7 @@ function Match() {
       <NavBar title={t('Məşq təklif et')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.head}>
-          <Avatar name={partner.name} size={72} />
+          <Avatar name={partner.name} size={72} profileId={partner.id} peek />
           <View style={{ flex: 1 }}>
             <AppText variant="title3">
               {nameWithAge(partner.name, partner.age)}

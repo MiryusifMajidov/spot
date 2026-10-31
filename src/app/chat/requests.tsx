@@ -343,7 +343,7 @@ export default function Requests() {
   const renderIncoming = (m: Incoming) => (
     <View key={m.id} style={styles.card}>
       <View style={styles.head}>
-        <Avatar name={m.name ?? '?'} size={44} />
+        <Avatar name={m.name ?? '?'} size={44} profileId={m.fromProfile} />
         <View style={{ flex: 1 }}>
           <AppText variant="headline">{m.name ?? t('Adı göstərilmir')}</AppText>
           <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>
@@ -466,7 +466,7 @@ export default function Requests() {
               return (
                 <View key={m.partnerId} style={styles.card}>
                   <View style={styles.head}>
-                    <Avatar name={name} size={44} />
+                    <Avatar name={name} size={44} profileId={m.partnerId} />
                     <View style={{ flex: 1 }}>
                       <AppText variant="headline">{name}</AppText>
                       <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>

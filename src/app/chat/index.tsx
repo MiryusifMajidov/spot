@@ -227,7 +227,7 @@ function ChatRow({ chat, onPress }: { chat: Row; onPress: () => void }) {
   const t = useT();
   return (
     <PressableScale activeScale={0.99} haptic={false} onPress={onPress} style={styles.row}>
-      <Avatar name={chat.name} size={52} />
+      <Avatar name={chat.name} size={52} profileId={chat.kind === 'partner' ? chat.id : null} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.rowTop}>
           <AppText variant="headline" numberOfLines={1} style={{ flexShrink: 1 }}>

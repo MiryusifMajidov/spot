@@ -63,6 +63,7 @@ export const system: Dict = {
   'Bu, «şərh yoxdur» demək deyil — sorğu alınmadı. Bağlantını yoxla və yenidən cəhd et.': 'This doesn\'t mean "no comments" — the request failed. Check your connection and try again.',
   'Bugünkü məşqin hazırdır — SPOT-u aç və başla.': 'Today\'s workout is ready — open SPOT and start.',
   'Burada yazdıqların Kəşfdəki müəllim profilində görünür. Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir.': 'What you write here shows on your trainer profile in Discover. The price is for information only — SPOT takes no payments.',
+  'Böyütmək üçün basıb saxla': 'Press and hold to enlarge',
   'Bəyənilmədi — yenidən cəhd et': 'Couldn\'t like — try again',
   'Bəyənmə geri götürülmədi — yenidən cəhd et': 'Couldn\'t remove the like — try again',
   'C.': 'Fri',

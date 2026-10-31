@@ -84,7 +84,7 @@ export function PartnerRow({ partner, onPress }: { partner: Partner; onPress?: (
 
   return (
     <PressableScale onPress={onPress} activeScale={0.98} style={styles.row}>
-      <Avatar name={partner.name} size={54} />
+      <Avatar name={partner.name} size={54} profileId={partner.id} />
       <View style={styles.mid}>
         <View style={styles.nameRow}>
           <AppText variant="headline">

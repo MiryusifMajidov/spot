@@ -127,7 +127,7 @@ export default function TrainerDetail() {
             {/* The photo the list row already shows. This page drew the initial
                 only, so a trainer who uploaded a picture — told it would appear on
                 their profile — saw it everywhere except on the profile. */}
-            <Avatar name={trainer.name} size={84} uri={trainer.photoUrl} />
+            <Avatar name={trainer.name} size={84} uri={trainer.photoUrl} peek />
           </View>
           <View style={styles.nameRow}>
             <AppText variant="title">{trainer.name}</AppText>

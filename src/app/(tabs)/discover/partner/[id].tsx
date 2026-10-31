@@ -142,7 +142,7 @@ function PartnerDetail() {
       />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.head}>
-          <Avatar name={p.name} size={92} />
+          <Avatar name={p.name} size={92} profileId={p.id} peek />
           <View style={{ flex: 1 }}>
             <View style={styles.nameRow}>
               <AppText variant="title">

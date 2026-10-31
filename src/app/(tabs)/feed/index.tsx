@@ -696,7 +696,7 @@ function VideoPage({ v, height, topInset, bottomInset, active, muted, onToggleMu
         <View style={{ flex: 1 }}>
           <View style={styles.authorRow}>
             <PressableScale activeScale={0.94} onPress={openCreator} style={styles.authorTap}>
-              <Avatar name={displayAuthor(v.author)} size={36} />
+              <Avatar name={displayAuthor(v.author)} size={36} profileId={v.authorId} />
               <View>
                 <View style={styles.authorNameRow}>
                   <AppText style={{ color: palette.onDark, fontSize: 15, fontWeight: '600' }}>{displayAuthor(v.author)}</AppText>
@@ -1057,7 +1057,7 @@ function PostCard({ post, commentCount, onOpenComments, onHide }: { post: Commun
   return (
     <View style={styles.post}>
       <View style={styles.postHead}>
-        <Avatar name={displayAuthor(post.author)} size={42} />
+        <Avatar name={displayAuthor(post.author)} size={42} profileId={post.authorId} />
         <View style={{ flex: 1 }}>
           <AppText variant="headline">{displayAuthor(post.author)}</AppText>
           <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>

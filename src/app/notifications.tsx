@@ -139,7 +139,7 @@ export default function Notifications() {
             return (
               <PressableScale key={n.id} activeScale={0.98} onPress={() => open(n)}>
                 <View style={[styles.row, !n.read && styles.rowUnread]}>
-                  <Avatar name={n.actorName ?? '?'} size={40} />
+                  <Avatar name={n.actorName ?? '?'} size={40} profileId={n.actorId} />
                   <View style={{ flex: 1 }}>
                     <AppText variant="callout" style={{ lineHeight: 20 }}>{notifText(n)}</AppText>
                     <AppText variant="caption" color={palette.caption} style={{ marginTop: 2 }}>
