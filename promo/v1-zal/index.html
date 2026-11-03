@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<title>SPOT — Zal və müəllim axtarışı</title>
+<link rel="stylesheet" href="../lib/kit.css">
+<style>
+  /* scene-specific bits */
+  .pin { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 17px; background: var(--ink); border: 2px solid #FEFEFE; display: flex; align-items: center; justify-content: center; }
+  .pin.sel { background: var(--volt); }
+  .pricepin { position: absolute; transform: translate(-50%, -100%); margin-top: -22px; background: #FEFEFE; border-radius: 8px; padding: 3px 7px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .me { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 8px; background: var(--voltText); border: 3px solid #FEFEFE; }
+  .mepulse { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 8px; background: rgba(82, 122, 1, 0.25); }
+  .mapcard { position: absolute; left: 12px; right: 12px; bottom: 12px; background: var(--white); border-radius: 18px; padding: 15px; }
+  .close30 { width: 30px; height: 30px; border-radius: 15px; background: var(--canvas); display: flex; align-items: center; justify-content: center; }
+  .circ { width: 40px; height: 40px; border-radius: 20px; background: var(--white); display: flex; align-items: center; justify-content: center; }
+  .info { flex: 1; background: var(--white); border-radius: 16px; padding: 13px; }
+  .photo { width: 148px; height: 106px; border-radius: 14px; overflow: hidden; position: relative; flex: none; }
+  .review { background: var(--white); border-radius: 16px; padding: 15px; margin-bottom: 10px; }
+  .reply { background: rgba(26, 26, 26, 0.06); border-radius: 12px; padding: 12px; margin-top: 12px; }
+  .stars { display: flex; gap: 2px; }
+  .trow { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+  .day { width: 62px; height: 70px; border-radius: 14px; background: var(--white); display: flex; flex-direction: column; align-items: center; justify-content: center; flex: none; }
+  .day.on { background: var(--element); }
+  .slot { width: 22%; height: 46px; border-radius: 13px; background: var(--white); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; }
+  .slot.on { background: var(--element); }
+  .footer { position: absolute; left: 0; right: 0; bottom: 102px; padding: 12px 20px 12px; border-top: 0.5px solid var(--sep); background: var(--canvas); }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- volt swoosh behind the phone -->
+  <svg class="swoosh" viewBox="0 0 1080 1920" width="1080" height="1920">
+    <path id="sw1" d="M -120 1500 C 180 1320, 360 1700, 640 1480 S 1060 1100, 1240 1260" fill="none" stroke="#C5FE01" stroke-width="150" stroke-linecap="round"/>
+  </svg>
+
+  <!-- copy blocks -->
+  <div class="copy" id="cA" style="visibility:hidden">
+    <div class="label"><span class="dot"></span>Zallar</div>
+    <div class="h1">Bütün zallar<br>bir yerdə</div>
+    <div class="sub">Qiymət, iş saatı və məsafə — bir baxışda</div>
+  </div>
+  <div class="copy" id="cB" style="visibility:hidden">
+    <div class="label"><span class="dot"></span>Xəritə</div>
+    <div class="h1">Yaxınındakı<br>zalları gör</div>
+    <div class="sub">Ən yaxın zal hansıdır, indi neçə nəfər var</div>
+  </div>
+  <div class="copy" id="cC" style="visibility:hidden">
+    <div class="label"><span class="dot"></span>Zal səhifəsi</div>
+    <div class="h1">Zalın real<br>vəziyyəti</div>
+    <div class="sub">Saatlar, imkanlar, şəkillər və real üzv rəyləri</div>
+  </div>
+  <div class="copy" id="cD" style="visibility:hidden">
+    <div class="label"><span class="dot"></span>Müəllimlər</div>
+    <div class="h1">Doğrulanmış<br>müəllim tap</div>
+    <div class="sub">İxtisas, reytinq, sertifikat və qiymət — əvvəlcədən</div>
+  </div>
+  <div class="copy" id="cE" style="visibility:hidden">
+    <div class="label"><span class="dot"></span>Sorğu</div>
+    <div class="h1">Bir toxunuşla<br>sorğu göndər</div>
+    <div class="sub">Günü və saatı seç — qalanını müəllimlə danış</div>
+  </div>
+
+  <!-- callouts -->
+  <div class="callout" id="k1" style="left:560px; top:1120px; opacity:0">
+    <div class="cic"><i data-i="check" data-s="38" data-c="#1A1A1A" data-w="1.8"></i></div>
+    <div><b>Qiymət açıq yazılıb</b><small>DM-də soruşmağa ehtiyac yoxdur</small></div>
+  </div>
+  <div class="callout" id="k2" style="left:40px; top:1060px; opacity:0">
+    <div class="cic soft"><span class="livedot" style="width:22px;height:22px;border-radius:11px;box-shadow:0 0 0 7px rgba(197,254,1,.35)"></span></div>
+    <div><b>İndi zalda 12 nəfər</b><small>Zal boşdur, yoxsa sıx — əvvəlcədən bil</small></div>
+  </div>
+  <div class="callout" id="k3" style="left:452px; top:1135px; opacity:0">
+    <div class="cic"><i data-i="qr" data-s="38" data-c="#1A1A1A" data-w="1.6"></i></div>
+    <div><b>1 günlük · 8 ₼</b><small>Day-pass al, pulu zalda ödə</small></div>
+  </div>
+  <div class="callout" id="k4" style="left:60px; top:1180px; opacity:0">
+    <div class="cic orange"><i data-i="star" data-s="38" data-c="#FF6B35" data-w="1.7"></i></div>
+    <div><b>4,8 · 126 rəy</b><small>Rəyi yalnız 3 dəfə check-in edən yazır</small></div>
+  </div>
+  <div class="callout" id="k5" style="left:520px; top:1010px; opacity:0">
+    <div class="cic blue"><i data-i="verified" data-s="40" data-c="#0A84FF" data-w="1.7"></i></div>
+    <div><b>Doğrulanmış</b><small>Sənədləri SPOT yoxlayıb</small></div>
+  </div>
+  <div class="callout" id="k6" style="left:60px; top:1260px; opacity:0">
+    <div class="cic ink"><i data-i="msg" data-s="38" data-c="#C5FE01" data-w="1.6"></i></div>
+    <div><b>Razılaşma birbaşa müəllimlə</b><small>SPOT ödəniş və komissiya götürmür</small></div>
+  </div>
+
+  <!-- ===================================================== phone -->
+  <div class="phone" id="phone">
+    <div class="screen">
+      <div class="ui" id="ui">
+        <div class="island"></div>
+        <div class="statusbar" id="sbar">
+          <div class="time">9:41</div>
+          <div class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"/><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5 L5.6 8.9 A3.4 3.4 0 0 1 10.4 8.9 Z" fill="currentColor"/><path d="M3.4 6.6 A6.6 6.6 0 0 1 12.6 6.6" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/><path d="M1.2 4.2 A9.8 9.8 0 0 1 14.8 4.2" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" stroke="currentColor" stroke-opacity="0.4" fill="none"/><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.6" height="4" rx="0.8" fill="currentColor" fill-opacity="0.45"/></svg>
+          </div>
+        </div>
+
+        <!-- ============ Kəşf -->
+        <div class="scr" id="sDiscover">
+          <div style="height:54px"></div>
+          <div class="lh"><div class="r">
+            <div class="largeTitle">Kəşf</div>
+            <div class="acts">
+              <div class="hicon"><i data-i="bell" data-s="25"></i></div>
+              <div class="hicon"><i data-i="msg" data-s="25"></i><div class="badge">2</div></div>
+              <div class="hicon" id="dMapBtn"><i data-i="pin" data-s="25"></i></div>
+            </div>
+          </div></div>
+          <div style="padding:0 20px 10px">
+            <div class="search" id="dSearch"><i data-i="search" data-s="17" data-c="#888888"></i>
+              <span class="ph" id="dPh">Zal, rayon axtar</span><span class="val" id="dVal"></span><span class="caret" id="dCaret" style="opacity:0"></span>
+            </div>
+            <div style="margin-top:12px">
+              <div class="seg" id="dSeg">
+                <div class="thumb" style="width:calc((100% - 4px)/3)"></div>
+                <div class="it on">Zallar</div><div class="it">Müəllimlər</div><div class="it">Yoldaşlar</div>
+              </div>
+            </div>
+          </div>
+          <div style="position:absolute; left:0; right:0; top:194px; bottom:102px; overflow:hidden">
+            <!-- page: Zallar -->
+            <div class="scroll" id="pGyms" style="width:393px">
+              <div style="padding-top:14px">
+                <div class="chips" style="margin-bottom:14px">
+                  <div class="chip"><i data-i="pin" data-s="13"></i>Xəritə</div>
+                  <div class="chip"><i data-i="sliders" data-s="13"></i>Filtr</div>
+                  <div class="chip">2 km-ə qədər</div>
+                  <div class="chip">50 ₼-dək</div>
+                  <div class="chip">24 saat</div>
+                </div>
+              </div>
+              <div style="position:relative; padding:0 20px">
+                <!-- default list -->
+                <div id="listA">
+                  <div class="row" style="gap:7px; margin-bottom:10px"><span class="livedot"></span><span style="font-size:13px; font-weight:600; color:var(--voltText)">İndi zalda 12 nəfər · Kinetik Gym</span></div>
+                  <div class="gcard">
+                    <div class="gcover" data-gym="Kinetik Gym" data-tone="#1F2A24,#3A4A3F">
+                      <div class="badges"><div class="rbadge"><i data-i="star" data-s="11" data-c="#C5FE01" data-w="1.6"></i>4,8</div><div class="lbadge">12 nəfər burada</div></div>
+                      <div class="bmk"><i data-i="bookmark" data-s="20" data-c="#FAFAFA"></i></div>
+                    </div>
+                    <div class="gbody">
+                      <div class="row between"><div class="row" style="gap:6px"><span class="title3">Kinetik Gym</span><i data-i="verified" data-s="15" data-c="#0A84FF" data-w="1.4"></i></div><div class="price"><b>45 ₼</b><span>/ay</span></div></div>
+                      <div class="footnote c-cap" style="margin-top:5px">Nərimanov · 0,8 km · 06:00–24:00 · 214 üzv</div>
+                      <div class="tags" style="margin-top:11px"><span class="tag card">Sərbəst ağırlıq</span><span class="tag card">Kardio</span><span class="tag card">Duş</span><span class="tag card">Sauna</span></div>
+                    </div>
+                  </div>
+                  <div style="height:14px"></div>
+                  <div class="gcard">
+                    <div class="gcover" data-gym="Ritm Fitness" data-tone="#262330,#3E3846">
+                      <div class="badges"><div class="rbadge"><i data-i="star" data-s="11" data-c="#C5FE01" data-w="1.6"></i>4,7</div></div>
+                      <div class="bmk"><i data-i="bookmark" data-s="20" data-c="#FAFAFA"></i></div>
+                    </div>
+                    <div class="gbody">
+                      <div class="row between"><div class="row" style="gap:6px"><span class="title3">Ritm Fitness</span><i data-i="verified" data-s="15" data-c="#0A84FF" data-w="1.4"></i></div><div class="price"><b>60 ₼</b><span>/ay</span></div></div>
+                      <div class="footnote c-cap" style="margin-top:5px">Yasamal · 3,2 km · 24 saat · 380 üzv</div>
+                      <div class="tags" style="margin-top:11px"><span class="tag card">Funksional</span><span class="tag card">CrossFit</span><span class="tag card">Park</span></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- filtered: Nərimanov -->
+                <div id="listB" style="position:absolute; left:20px; right:20px; top:0; opacity:0">
+                  <div class="gcard" id="gKinetik">
+                    <div class="gcover" data-gym="Kinetik Gym" data-tone="#1F2A24,#3A4A3F">
+                      <div class="badges"><div class="rbadge"><i data-i="star" data-s="11" data-c="#C5FE01" data-w="1.6"></i>4,8</div><div class="lbadge">12 nəfər burada</div></div>
+                      <div class="bmk"><i data-i="bookmark" data-s="20" data-c="#FAFAFA"></i></div>
+                    </div>
+                    <div class="gbody">
+                      <div class="row between"><div class="row" style="gap:6px"><span class="title3">Kinetik Gym</span><i data-i="verified" data-s="15" data-c="#0A84FF" data-w="1.4"></i></div><div class="price" id="priceK"><b>45 ₼</b><span>/ay</span></div></div>
+                      <div class="footnote c-cap" style="margin-top:5px">Nərimanov · 0,8 km · 06:00–24:00 · 214 üzv</div>
+                      <div class="tags" style="margin-top:11px"><span class="tag card">Sərbəst ağırlıq</span><span class="tag card">Kardio</span><span class="tag card">Duş</span><span class="tag card">Sauna</span></div>
+                    </div>
+                  </div>
+                  <div style="height:14px"></div>
+                  <div class="gcard">
+                    <div class="gcover" data-gym="Forma Club" data-tone="#22272E,#39434E">
+                      <div class="badges"><div class="rbadge"><i data-i="star" data-s="11" data-c="#C5FE01" data-w="1.6"></i>4,6</div><div class="lbadge">5 nəfər burada</div></div>
+                      <div class="bmk"><i data-i="bookmark" data-s="20" data-c="#FAFAFA"></i></div>
+                    </div>
+                    <div class="gbody">
+                      <div class="row between"><div class="row" style="gap:6px"><span class="title3">Forma Club</span><i data-i="verified" data-s="15" data-c="#0A84FF" data-w="1.4"></i></div><div class="price"><b>39 ₼</b><span>/ay</span></div></div>
+                      <div class="footnote c-cap" style="margin-top:5px">Nərimanov · 1,2 km · 07:00–23:00 · 156 üzv</div>
+                      <div class="tags" style="margin-top:11px"><span class="tag card">Sərbəst ağırlıq</span><span class="tag card">Qadınlar zalı</span><span class="tag card">Duş</span></div>
+                    </div>
+                  </div>
+                  <div style="height:14px"></div>
+                  <div class="gcard">
+                    <div class="gcover" data-gym="Zirvə Fitness" data-tone="#2A2622,#443C34">
+                      <div class="badges"><div class="rbadge"><i data-i="star" data-s="11" data-c="#C5FE01" data-w="1.6"></i>4,5</div></div>
+                      <div class="bmk"><i data-i="bookmark" data-s="20" data-c="#FAFAFA"></i></div>
+                    </div>
+                    <div class="gbody">
+                      <div class="row between"><div class="row" style="gap:6px"><span class="title3">Zirvə Fitness</span></div><div class="price"><b>35 ₼</b><span>/ay</span></div></div>
+                      <div class="footnote c-cap" style="margin-top:5px">Nərimanov · 1,9 km · 08:00–22:00 · 98 üzv</div>
+                      <div class="tags" style="margin-top:11px"><span class="tag card">Kardio</span><span class="tag card">Boks</span><span class="tag card">Park</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- page: Müəllimlər -->
+            <div class="scroll" id="pTrainers" style="width:393px; padding:14px 20px 0">
+              <div id="tList">
+                <div class="trow" id="tElvin"><div data-av="Elvin Məmmədov" data-size="52" data-tone="#9BA8B4,#5E6B78"></div>
+                  <div class="flex1"><div class="row" style="gap:6px"><span class="headline">Elvin Məmmədov</span><i data-i="verified" data-s="15" data-c="#0A84FF" data-w="1.4"></i></div>
+                    <div class="footnote c-sec" style="margin-top:2px">Güc və bodibildinq</div>
+                    <div class="row" style="gap:3px; margin-top:5px"><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.6"></i><span style="font-size:12.5px; font-weight:600">4,9</span><span style="font-size:12.5px; color:var(--cap)">· 24 şagird · 30 ₼-dən</span></div></div>
+                  <i data-i="chevR" data-s="17" data-c="#C0C0C6"></i></div>
+                <div class="trow" id="tNigar"><div data-av="Nigar Əliyeva" data-size="52" data-tone="#B8C0C8,#7E8791"></div>
+                  <div class="flex1"><div class="row" style="gap:6px"><span class="headline">Nigar Əliyeva</span><i data-i="verified" data-s="15" data-c="#0A84FF" data-w="1.4"></i></div>
+                    <div class="footnote c-sec" style="margin-top:2px">Funksional məşq · arıqlama</div>
+                    <div class="row" style="gap:3px; margin-top:5px"><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.6"></i><span style="font-size:12.5px; font-weight:600">4,8</span><span style="font-size:12.5px; color:var(--cap)">· 18 şagird · 25 ₼-dən</span></div></div>
+                  <i data-i="chevR" data-s="17" data-c="#C0C0C6"></i></div>
+                <div class="trow" id="tRauf"><div data-av="Rauf İsmayılov" data-size="52" data-tone="#A3A7B0,#626873"></div>
+                  <div class="flex1"><div class="row" style="gap:6px"><span class="headline">Rauf İsmayılov</span><i data-i="verified" data-s="15" data-c="#0A84FF" data-w="1.4"></i></div>
+                    <div class="footnote c-sec" style="margin-top:2px">Güc məşqi · powerlifting</div>
+                    <div class="row" style="gap:3px; margin-top:5px"><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.6"></i><span style="font-size:12.5px; font-weight:600">4,9</span><span style="font-size:12.5px; color:var(--cap)">· 12 şagird · 35 ₼-dən</span></div></div>
+                  <i data-i="chevR" data-s="17" data-c="#C0C0C6"></i></div>
+                <div class="trow" id="tAysel"><div data-av="Aysel Quliyeva" data-size="52" data-tone="#AEB6BD,#737B84"></div>
+                  <div class="flex1"><div class="row" style="gap:6px"><span class="headline">Aysel Quliyeva</span><i data-i="verified" data-s="15" data-c="#0A84FF" data-w="1.4"></i></div>
+                    <div class="footnote c-sec" style="margin-top:2px">Yoga və mobillik</div>
+                    <div class="row" style="gap:3px; margin-top:5px"><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.6"></i><span style="font-size:12.5px; font-weight:600">4,7</span><span style="font-size:12.5px; color:var(--cap)">· 9 şagird · 20 ₼-dən</span></div></div>
+                  <i data-i="chevR" data-s="17" data-c="#C0C0C6"></i></div>
+                <div class="trow" id="tTural"><div style="opacity:.6"><div data-av="Tural Həsənov" data-size="52"></div></div>
+                  <div class="flex1"><div class="row" style="gap:6px"><span class="headline">Tural Həsənov</span><span class="unver">Doğrulanmayıb</span></div>
+                    <div class="footnote c-sec" style="margin-top:2px">Boks · kondisiya</div>
+                    <div class="row" style="gap:3px; margin-top:5px"><span style="font-size:12.5px; color:var(--cap)">Yeni müəllim · 20 ₼-dən</span></div></div>
+                  <i data-i="chevR" data-s="17" data-c="#C0C0C6"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="dim"></div>
+        </div>
+
+        <!-- ============ Map -->
+        <div class="scr" id="sMap" style="visibility:hidden">
+          <div style="height:54px"></div>
+          <div class="navbar"><div class="back"><i data-i="chevL" data-s="20"></i></div><div class="t headline">Zallar xəritəsi</div><div class="rt"></div></div>
+          <div style="padding:0 20px 10px"><div class="seg"><div class="thumb" style="width:calc((100% - 4px)/2)"></div><div class="it on">Xəritə</div><div class="it">Siyahı</div></div></div>
+          <div id="mapWrap" style="position:absolute; left:0; right:0; top:152px; bottom:102px; overflow:hidden; background:#F2F2EF">
+            <svg width="393" height="598" viewBox="0 0 393 598" style="position:absolute; left:0; top:0">
+              <rect width="393" height="598" fill="#F2F2EF"/>
+              <path d="M -10 520 C 80 500, 150 540, 230 515 S 360 470, 410 490 L 410 610 L -10 610 Z" fill="#D5E3EC"/>
+              <path d="M 40 80 l 70 -10 l 18 55 l -66 18 z" fill="#E1ECD9"/>
+              <path d="M 260 300 l 80 -8 l 6 62 l -84 10 z" fill="#E1ECD9"/>
+              <circle cx="150" cy="360" r="34" fill="#E1ECD9"/>
+              <g stroke="#E3E3DF" stroke-width="13" fill="none" stroke-linecap="round">
+                <path d="M -10 150 C 120 170, 250 120, 410 140"/><path d="M -10 330 C 100 300, 260 350, 410 300"/>
+                <path d="M 120 -10 C 110 150, 150 330, 120 610"/><path d="M 300 -10 C 280 200, 320 380, 290 610"/>
+                <path d="M -10 460 C 120 430, 260 470, 410 420"/>
+              </g>
+              <g stroke="#FFFFFF" stroke-width="10" fill="none" stroke-linecap="round">
+                <path d="M -10 150 C 120 170, 250 120, 410 140"/><path d="M -10 330 C 100 300, 260 350, 410 300"/>
+                <path d="M 120 -10 C 110 150, 150 330, 120 610"/><path d="M 300 -10 C 280 200, 320 380, 290 610"/>
+                <path d="M -10 460 C 120 430, 260 470, 410 420"/>
+              </g>
+              <g stroke="#FFFFFF" stroke-width="5" fill="none" stroke-linecap="round">
+                <path d="M 0 60 L 410 90"/><path d="M 0 240 L 410 220"/><path d="M 0 395 L 410 380"/>
+                <path d="M 40 -10 L 60 610"/><path d="M 210 -10 L 200 610"/><path d="M 360 -10 L 375 610"/>
+                <path d="M 60 30 L 260 270"/><path d="M 330 60 L 160 300"/>
+              </g>
+              <g font-family="Inter" font-size="10.5" font-weight="600" fill="#9A9A96" letter-spacing="0.6">
+                <text x="150" y="102">NƏRİMANOV</text><text x="28" y="290">NƏSİMİ</text><text x="250" y="268">NİZAMİ</text><text x="40" y="428">SƏBAİL</text><text x="232" y="452">XƏTAİ</text>
+              </g>
+              <text x="178" y="565" font-family="Inter" font-size="11" font-style="italic" fill="#8FA6B5">Bakı buxtası</text>
+            </svg>
+            <div class="mepulse" id="mePulse" style="left:186px; top:236px"></div>
+            <div class="me" style="left:186px; top:236px"></div>
+            <div class="pin" id="pin1" style="left:214px; top:186px"><i data-i="dumbbell" data-s="18" data-c="#FAFAFA" data-w="1.5"></i></div>
+            <div class="pin" id="pin2" style="left:92px; top:226px"><i data-i="dumbbell" data-s="18" data-c="#FAFAFA" data-w="1.5"></i></div>
+            <div class="pin" id="pin3" style="left:318px; top:118px"><i data-i="dumbbell" data-s="18" data-c="#FAFAFA" data-w="1.5"></i></div>
+            <div class="pin" id="pin4" style="left:262px; top:330px"><i data-i="dumbbell" data-s="18" data-c="#FAFAFA" data-w="1.5"></i></div>
+            <div class="pin" id="pin5" style="left:70px; top:372px"><i data-i="dumbbell" data-s="18" data-c="#FAFAFA" data-w="1.5"></i></div>
+            <div class="pin" id="pin6" style="left:168px; top:58px"><i data-i="dumbbell" data-s="18" data-c="#FAFAFA" data-w="1.5"></i></div>
+            <div class="pricepin" id="pp1" style="left:214px; top:186px">45 ₼</div>
+            <div class="pricepin" id="pp2" style="left:92px; top:226px">39 ₼</div>
+            <div class="pricepin" id="pp3" style="left:318px; top:118px">35 ₼</div>
+            <div class="pricepin" id="pp4" style="left:262px; top:330px">60 ₼</div>
+            <div class="pricepin" id="pp5" style="left:70px; top:372px">50 ₼</div>
+            <div class="pricepin" id="pp6" style="left:168px; top:58px">42 ₼</div>
+            <div class="mapcard" id="mapCard">
+              <div class="row" style="align-items:flex-start; gap:8px">
+                <div class="flex1"><div class="row" style="gap:6px"><span class="title3">Kinetik Gym</span><i data-i="verified" data-s="15" data-c="#0A84FF" data-w="1.4"></i></div>
+                  <div class="footnote c-cap" style="margin-top:4px">Nərimanov · 0,8 km · 06:00–24:00</div></div>
+                <div style="text-align:right"><div class="title3">45 ₼</div><div class="caption c-cap">aylıq</div></div>
+                <div class="close30" style="margin-left:4px"><i data-i="x" data-s="16" data-c="#6B6B6B"></i></div>
+              </div>
+              <div class="row" style="gap:7px; margin-top:10px"><span class="livedot"></span><span style="font-size:13px; font-weight:600; color:var(--voltText)">İndi zalda 12 nəfər</span></div>
+              <div class="btn" id="mapGo" style="margin-top:12px; height:46px">Zala bax</div>
+            </div>
+          </div>
+          <div class="dim"></div>
+        </div>
+
+        <!-- ============ Gym page -->
+        <div class="scr" id="sGym" style="visibility:hidden">
+          <div class="scroll" id="gymScroll">
+            <div class="gcover" data-gym="Kinetik Gym hero" data-tone="#1F2A24,#3A4A3F" data-gs="80" style="height:250px">
+              <div style="position:absolute; left:0; right:0; top:0; display:flex; justify-content:space-between; padding:60px 18px 0">
+                <div class="circ"><i data-i="chevL" data-s="20"></i></div>
+                <div class="row" style="gap:12px"><div class="circ"><i data-i="share" data-s="20"></i></div><div class="circ"><i data-i="bookmark" data-s="20"></i></div><div class="circ"><i data-i="more" data-s="20"></i></div></div>
+              </div>
+            </div>
+            <div style="background:var(--canvas); border-radius:20px 20px 0 0; margin-top:-20px; position:relative; padding:18px 20px 140px">
+              <div class="row" style="align-items:flex-start; gap:8px">
+                <div class="flex1">
+                  <div class="row" style="gap:7px"><span class="title">Kinetik Gym</span><i data-i="verified" data-s="20" data-c="#0A84FF" data-w="1.4"></i></div>
+                  <div class="row" style="gap:4px; margin-top:7px; flex-wrap:wrap"><i data-i="star" data-s="14" data-c="#FF6B35" data-w="1.6"></i><span style="font-size:13.5px; font-weight:600">4,8</span><span class="footnote c-cap">· 126 rəy · Nərimanov, 0,8 km</span></div>
+                </div>
+                <div style="text-align:right"><div class="title2">45 ₼</div><div class="caption c-cap">aylıq · məlumat</div></div>
+              </div>
+              <div class="row" style="gap:9px; margin-top:15px">
+                <div class="btn h46 flex1"><i data-i="pin" data-s="18"></i>Check-in et</div>
+                <div class="btn sec h46 flex1" id="gDayPass">1 günlük · 8 ₼</div>
+              </div>
+              <div class="caption c-cap" style="margin-top:8px; line-height:17px; font-weight:500">Üzvlük zalın özündə rəsmiləşir — SPOT ödəniş qəbul etmir, qiymətlər yalnız məlumat üçündür.</div>
+              <div class="row" style="gap:10px; background:var(--voltTint); border-radius:16px; padding:12px; margin-top:12px">
+                <div class="row"><div data-av="Leyla Məmmədli" data-size="28" style="border:2px solid #FEFEFE"></div><div data-av="Orxan Babayev" data-size="28" style="border:2px solid #FEFEFE; margin-left:-10px"></div><div data-av="Səbinə Qasımova" data-size="28" style="border:2px solid #FEFEFE; margin-left:-10px"></div>
+                  <div style="width:28px; height:28px; border-radius:14px; border:2px solid #FEFEFE; margin-left:-10px; background:var(--element); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700">+1</div></div>
+                <span style="flex:1; font-size:13px; font-weight:600; color:var(--voltText); line-height:18px">12 nəfər indi zalda · sənə uyğun olanlar: 4</span>
+                <i data-i="chevR" data-s="17" data-c="#527A01"></i>
+              </div>
+              <div style="margin-top:16px">
+                <div class="seg" id="gSeg"><div class="thumb" style="width:calc((100% - 4px)/4)"></div>
+                  <div class="it on">Haqqında</div><div class="it">Müəllimlər</div><div class="it">Üzvlər</div><div class="it">Rəylər</div></div>
+              </div>
+              <div style="position:relative; margin-top:16px">
+                <div id="gAbout">
+                  <div class="body15 c-t3" style="line-height:22px">İki mərtəbəli zal: sərbəst ağırlıq zonası, kardio və funksional məşq sahəsi. Səhər 7-dən axşam 10-a qədər növbətçi müəllim var.</div>
+                  <div class="row" style="gap:9px; margin-top:14px; align-items:stretch">
+                    <div class="info"><i data-i="clock" data-s="18" data-c="#6B6B6B"></i><div style="font-size:13.5px; font-weight:600; margin-top:8px">06:00–24:00</div><div style="font-size:11.5px; color:var(--cap); margin-top:3px">iş saatı</div></div>
+                    <div class="info"><i data-i="users" data-s="18" data-c="#6B6B6B"></i><div style="font-size:13.5px; font-weight:600; margin-top:8px">214 üzv</div><div style="font-size:11.5px; color:var(--cap); margin-top:3px">6 müəllim</div></div>
+                    <div class="info"><i data-i="pin" data-s="18" data-c="#6B6B6B"></i><div style="font-size:13.5px; font-weight:600; margin-top:8px">Nərimanov</div><div style="font-size:11.5px; font-weight:600; margin-top:3px">Yol göstər</div></div>
+                  </div>
+                  <div class="overline" style="margin-top:20px; margin-bottom:10px">Şəkillər · 8</div>
+                  <div class="row" style="gap:10px; overflow:hidden; margin-right:-20px">
+                    <div class="gcover photo" data-gym="p1" data-tone="#2B3A30,#4B5E50" data-gs="40"></div>
+                    <div class="gcover photo" data-gym="p2" data-tone="#30333A,#4E5562" data-glyph="users" data-gs="40"></div>
+                    <div class="gcover photo" data-gym="p3" data-tone="#3A322A,#5A4C3E" data-glyph="timer" data-gs="40"></div>
+                  </div>
+                  <div class="overline" style="margin-top:20px; margin-bottom:10px">İmkanlar</div>
+                  <div class="tags" style="gap:7px"><span class="tag">Sərbəst ağırlıq</span><span class="tag">Kardio zonası</span><span class="tag">Funksional</span><span class="tag">Duş</span><span class="tag">Soyunma otağı</span><span class="tag">Sauna</span><span class="tag">Park</span></div>
+                </div>
+                <div id="gReviews" style="position:absolute; left:0; right:0; top:0; opacity:0">
+                  <div class="row" style="gap:8px; background:var(--white); border-radius:16px; padding:12px; margin-bottom:10px">
+                    <i data-i="shield" data-s="18" data-c="#527A01"></i>
+                    <span class="footnote c-t3" style="flex:1; line-height:18px">Yalnız bu zalda ən azı 3 dəfə check-in edən rəy yaza bilər — saxta rəylərin qarşısını alır.</span>
+                  </div>
+                  <div class="review">
+                    <div class="row between"><div class="row" style="gap:10px"><div data-av="Leyla Məmmədli" data-size="32"></div><div><div class="headline" style="font-size:14.5px">Leyla M.</div><div class="stars" style="margin-top:3px"><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.8"></i><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.8"></i><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.8"></i><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.8"></i><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.8"></i></div></div></div><span class="caption c-cap">2 gün əvvəl</span></div>
+                    <div class="body15 c-t3" style="margin-top:10px; font-size:14px; line-height:20px">Səhər saatlarında rahatdır, avadanlıq təmiz saxlanılır. Növbətçi müəllim texnikamı düzəltdi.</div>
+                  </div>
+                  <div class="review">
+                    <div class="row between"><div class="row" style="gap:10px"><div data-av="Kamran Əliyev" data-size="32"></div><div><div class="headline" style="font-size:14.5px">Kamran Ə.</div><div class="stars" style="margin-top:3px"><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.8"></i><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.8"></i><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.8"></i><i data-i="star" data-s="12" data-c="#FF6B35" data-w="1.8"></i><i data-i="star" data-s="12" data-c="#C0C0C6" data-w="1.8"></i></div></div></div><span class="caption c-cap">1 həftə əvvəl</span></div>
+                    <div class="body15 c-t3" style="margin-top:10px; font-size:14px; line-height:20px">Axşam 7-dən sonra bir az sıx olur, amma qiymətinə görə ən yaxşı seçimdir.</div>
+                    <div class="reply"><div class="caption" style="font-weight:600">Kinetik Gym · rəsmi cavab</div><div class="footnote c-t3" style="margin-top:4px">Təşəkkür edirik! Axşamlar üçün ikinci kardio zonası açırıq.</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="gScrim" style="position:absolute; left:0; right:0; top:0; height:54px; background:var(--canvas); opacity:0; z-index:5"></div>
+          <div class="dim"></div>
+        </div>
+
+        <!-- ============ Trainer profile -->
+        <div class="scr" id="sTrainer" style="visibility:hidden">
+          <div style="height:54px"></div>
+          <div class="navbar"><div class="back"><i data-i="chevL" data-s="20"></i></div><div class="t"></div><div class="rt"><i data-i="more" data-s="25"></i></div></div>
+          <div style="position:absolute; left:0; right:0; top:106px; bottom:212px; overflow:hidden">
+            <div class="scroll" id="trScroll" style="padding:0 20px">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:10px; padding:12px 0">
+                <div data-av="Elvin Məmmədov" data-size="84" data-tone="#9BA8B4,#5E6B78"></div>
+                <div class="row" style="gap:7px"><span class="title">Elvin Məmmədov</span><i data-i="verified" data-s="20" data-c="#0A84FF" data-w="1.4"></i></div>
+                <div class="callout15 c-sec">Güc və bodibildinq</div>
+              </div>
+              <div class="row" style="background:var(--white); border-radius:16px; padding:16px 0; margin-top:8px">
+                <div style="flex:1; text-align:center"><div class="title3" id="trRating">4,9</div><div class="caption c-cap" style="margin-top:2px">reytinq</div></div>
+                <div style="width:1px; height:28px; background:var(--sep)"></div>
+                <div style="flex:1; text-align:center"><div class="title3">24</div><div class="caption c-cap" style="margin-top:2px">şagird</div></div>
+                <div style="width:1px; height:28px; background:var(--sep)"></div>
+                <div style="flex:1; text-align:center"><div class="title3">~1 saat</div><div class="caption c-cap" style="margin-top:2px">cavab vaxtı</div></div>
+              </div>
+              <div class="overline" style="margin-top:24px; margin-bottom:10px">Haqqında</div>
+              <div class="body15 c-t3" style="line-height:22px">8 il təcrübə. Başlanğıcdan güc proqramlarına qədər fərdi plan qururam. Kinetik Gym-də səhər və axşam saatlarında.</div>
+              <div class="overline" style="margin-top:24px; margin-bottom:10px">Sertifikatlar</div>
+              <div class="row" style="gap:10px; padding:8px 0"><i data-i="shield" data-s="17" data-c="#527A01"></i><span class="body15">Fərdi məşqçi sertifikatı</span></div>
+              <div class="row" style="gap:10px; padding:8px 0"><i data-i="shield" data-s="17" data-c="#527A01"></i><span class="body15">İdman qidalanması kursu</span></div>
+              <div class="caption c-cap" style="margin-top:24px; line-height:17px; font-weight:500">Qiymət yalnız məlumat üçündür — SPOT ödəniş qəbul etmir, razılaşma müəllimlə birbaşa olur.</div>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="caption c-cap" style="margin-bottom:8px; font-weight:500">Başlanğıc 30 ₼ · məlumat üçün</div>
+            <div class="row" style="gap:10px"><div class="btn sec flex1"><i data-i="msg" data-s="18"></i>Mesaj yaz</div><div class="btn flex1" id="trBook">Rezerv et</div></div>
+          </div>
+          <div class="dim"></div>
+        </div>
+
+        <!-- ============ Request -->
+        <div class="scr" id="sReq" style="visibility:hidden">
+          <div style="height:54px"></div>
+          <div class="navbar"><div class="back"><i data-i="chevL" data-s="20"></i></div><div class="t headline">Müəllimlə məşq</div><div class="rt"></div></div>
+          <div style="padding:0 20px">
+            <div class="row" style="gap:12px; background:var(--white); border-radius:16px; padding:14px">
+              <div data-av="Elvin Məmmədov" data-size="44" data-tone="#9BA8B4,#5E6B78"></div>
+              <div class="flex1"><div class="headline">Elvin Məmmədov</div><div class="footnote c-cap" style="margin-top:2px">Güc və bodibildinq</div></div>
+              <div style="text-align:right"><div class="title3">30 ₼</div><div class="caption c-cap">1 məşq · məlumat</div></div>
+            </div>
+            <div style="position:relative">
+              <div id="reqForm">
+                <div class="overline" style="margin-top:22px; margin-bottom:12px">Tarix</div>
+                <div class="row" style="gap:9px; margin-right:-20px; overflow:hidden">
+                  <div class="day"><span style="font-size:12px; font-weight:600; color:var(--cap)">Bu gün</span><span style="font-size:18px; font-weight:700; margin-top:4px">3</span></div>
+                  <div class="day"><span style="font-size:12px; font-weight:600; color:var(--cap)">Çər</span><span style="font-size:18px; font-weight:700; margin-top:4px">4</span></div>
+                  <div class="day" id="dayCa"><span style="font-size:12px; font-weight:600; color:var(--cap)" id="dayCaL">C.a</span><span style="font-size:18px; font-weight:700; margin-top:4px">5</span></div>
+                  <div class="day"><span style="font-size:12px; font-weight:600; color:var(--cap)">Cüm</span><span style="font-size:18px; font-weight:700; margin-top:4px">6</span></div>
+                  <div class="day"><span style="font-size:12px; font-weight:600; color:var(--cap)">Şən</span><span style="font-size:18px; font-weight:700; margin-top:4px">7</span></div>
+                  <div class="day"><span style="font-size:12px; font-weight:600; color:var(--cap)">Baz</span><span style="font-size:18px; font-weight:700; margin-top:4px">8</span></div>
+                </div>
+                <div class="overline" style="margin-top:22px; margin-bottom:12px">İstədiyin saat</div>
+                <div class="row" style="flex-wrap:wrap; gap:9px">
+                  <div class="slot">07:00</div><div class="slot">08:00</div><div class="slot">09:00</div><div class="slot">10:00</div>
+                  <div class="slot">17:00</div><div class="slot">18:00</div><div class="slot" id="slot19">19:00</div><div class="slot">20:00</div>
+                </div>
+                <div class="caption c-cap" style="margin-top:10px; line-height:17px; font-weight:500">Bu, istəyindir — müəllimin boş saatlarını görmürük. Son vaxt müəllim təsdiqləyəndən sonra dəqiqləşəcək.</div>
+                <div class="overline" style="margin-top:22px; margin-bottom:10px">Qeyd (məcburi deyil)</div>
+                <div style="min-height:80px; border-radius:16px; background:var(--white); padding:14px; font-size:15px; line-height:20px"><span id="noteTxt" class="c-cap">Məqsədin, təcrübən, travma varsa yaz…</span></div>
+              </div>
+              <div id="reqSent" style="position:absolute; left:0; right:0; top:0; opacity:0">
+                <div class="row" style="gap:12px; align-items:flex-start; background:var(--white); border-radius:16px; padding:16px; margin-top:18px">
+                  <div style="width:36px; height:36px; border-radius:18px; background:var(--voltTint); display:flex; align-items:center; justify-content:center; flex:none"><i data-i="clock" data-s="18" data-c="#527A01"></i></div>
+                  <div class="flex1"><div class="headline">Sorğu göndərildi</div>
+                    <div class="footnote c-sec" style="margin-top:4px; line-height:18px">Elvin Məmmədov sorğunu görür və cavab verəndə burada yenilənəcək.</div>
+                    <div class="footnote c-cap" style="margin-top:6px">İstədiyin vaxt: C.a, 5 noy · 19:00</div></div>
+                </div>
+                <div class="caption c-cap" style="margin-top:14px; line-height:17px; font-weight:500">SPOT ödəniş qəbul etmir. Qiymət və ödəniş şərtləri birbaşa müəllimlə razılaşdırılır.</div>
+              </div>
+            </div>
+          </div>
+          <div class="footer" style="padding-bottom:12px">
+            <div class="row" style="gap:14px" id="reqFoot">
+              <span class="footnote c-cap" id="reqWhen" style="white-space:nowrap">Vaxt seç</span>
+              <div class="btn flex1" id="reqSend"><span id="reqSendT">Sorğu göndər</span></div>
+            </div>
+            <div class="btn" id="reqMsg" style="position:absolute; left:20px; right:20px; top:12px; opacity:0"><i data-i="msg" data-s="18"></i>Müəllimə mesaj yaz</div>
+          </div>
+          <div class="dim"></div>
+        </div>
+
+        <div class="toast" id="toast" style="opacity:0; bottom:196px"><div class="td"><i data-i="check" data-s="13" data-c="#1A1A1A" data-w="2.2"></i></div>Sorğu müəllimə göndərildi</div>
+
+        <!-- tab bar -->
+        <div class="tabbar" id="tabbar"><div class="cap">
+          <div class="cell on" id="tabHome"><i data-i="homeFill" data-s="26" data-c="#527A01"></i></div>
+          <div class="cell"><i data-i="dumbbell" data-s="26" data-c="#888888"></i></div>
+          <div class="cell"><i data-i="qr" data-s="26" data-c="#888888"></i></div>
+          <div class="cell"><i data-i="play" data-s="26" data-c="#888888"></i></div>
+          <div class="cell"><i data-i="user" data-s="26" data-c="#888888"></i></div>
+        </div></div>
+        <div class="homeind"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================== type scenes -->
+  <div class="tscene dark" id="intro" style="justify-content:flex-start; padding-top:470px">
+    <div class="big" data-split id="iQ">Zal<br>axtarırsan?</div>
+    <div class="bubble" id="b1" style="left:96px; top:1010px">Aylıq neçəyədir?</div>
+    <div class="bubble r" id="b2" style="left:360px; top:1175px">Saat neçədə açılır?</div>
+    <div class="bubble" id="b3" style="left:150px; top:1340px">Müəllim var?<span class="seen" id="seen">Görüldü</span></div>
+    <div class="big" data-split id="iA" style="position:absolute; left:90px; top:780px">Hamısı<br><span class="v">bir yerdə.</span></div>
+  </div>
+  <div id="wipe" style="position:absolute; left:540px; top:960px; width:10px; height:10px; margin:-5px 0 0 -5px; border-radius:50%; background:#C5FE01; z-index:70; transform:scale(0)"></div>
+
+  <div class="tscene dark" id="outro" style="visibility:hidden; align-items:flex-start">
+    <div class="mark" id="oMark"></div>
+    <div class="big" data-split id="oT" style="margin-top:70px">Zalını tap.<br><span class="v">Müəllimini seç.</span></div>
+    <div id="oS" style="margin-top:46px; font-size:38px; color:rgba(250,250,250,.6); letter-spacing:-0.5px; line-height:1.35">SPOT — Azərbaycanın fitnes icması.<br>Pulsuz · az / ru / en</div>
+  </div>
+</div>
+
+<script src="../vendor/gsap.min.js"></script>
+<script src="../lib/icons.js"></script>
+<script src="../lib/kit.js"></script>
+<script>
+__boot(() => {
+  const $ = (s) => document.querySelector(s);
+  const tl = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } });
+  const ui = $('#ui');
+  const T = K.makeTouch(ui);
+
+  // ---- measure tap targets in their resting layout (before any tween)
+  const B = {
+    search: K.box('#dSearch'), mapBtn: K.box('#dMapBtn'),
+    segT: K.box('#dSeg .it:nth-child(3)'),
+    pin1: K.box('#pin1'), mapGo: K.box('#mapGo'),
+    gDay: K.box('#gDayPass'), gRev: K.box('#gSeg .it:nth-child(5)'), tabHome: K.box('#tabHome'),
+    tElvin: K.box('#tElvin'), trBook: K.box('#trBook'),
+    dayCa: K.box('#dayCa'), slot19: K.box('#slot19'), reqSend: K.box('#reqSend'),
+    listB: K.box('#gKinetik'),
+  };
+
+  const sD = $('#sDiscover'), sM = $('#sMap'), sG = $('#sGym'), sT = $('#sTrainer'), sR = $('#sReq');
+  const phone = $('#phone');
+
+  // ---------------------------------------------------------------- initial state
+  gsap.set(phone, { y: 1500 });
+  gsap.set('#sw1', { strokeDasharray: 2600, strokeDashoffset: 2600 });
+  gsap.set(['#b1', '#b2', '#b3'], { opacity: 0, scale: 0.6, transformOrigin: '0% 100%' });
+  gsap.set('#seen', { opacity: 0 });
+  gsap.set('#iA .line > span', { yPercent: 110 });
+  gsap.set('#iQ .line > span', { yPercent: 110 });
+  gsap.set('#pTrainers', { xPercent: 100 });
+  ['#pin1','#pin2','#pin3','#pin4','#pin5','#pin6'].forEach((p) => gsap.set(p, { scale: 0, opacity: 0 }));
+  gsap.set('.pricepin', { opacity: 0, y: 6 });
+  gsap.set('#mapCard', { yPercent: 130 });
+
+  // ================================================================ 0. intro (dark)
+  tl.to('#iQ .line > span', { yPercent: 0, duration: 0.8, ease: 'power4.out', stagger: 0.1 }, 0.25);
+  [['#b1', 1.15], ['#b2', 1.5], ['#b3', 1.85]].forEach(([b, t]) => {
+    tl.to(b, { opacity: 1, scale: 1, duration: 0.45, ease: 'back.out(1.8)' }, t);
+    window.SFX.push({ t, s: 'pop' });
+  });
+  tl.to('#seen', { opacity: 1, duration: 0.3 }, 2.45);
+  tl.to(['#iQ', '#b1', '#b2', '#b3'], { y: -140, opacity: 0, duration: 0.5, ease: 'power3.in', stagger: 0.04 }, 3.05);
+  tl.to('#iA .line > span', { yPercent: 0, duration: 0.75, ease: 'power4.out', stagger: 0.1 }, 3.45);
+  // volt wipe → light stage
+  tl.to('#wipe', { scale: 460, duration: 0.7, ease: 'power3.in' }, 4.35);
+  tl.set('#intro', { visibility: 'hidden' }, 5.05);
+  tl.fromTo('#wipe', { opacity: 1 }, { opacity: 0, duration: 0.45, ease: 'power2.out', immediateRender: false }, 5.06);
+
+  // ================================================================ A. Kəşf + search
+  let t = 5.0;
+  tl.to('#sw1', { strokeDashoffset: 0, duration: 1.6, ease: 'power2.inOut' }, t);
+  K.copyIn(tl, $('#cA'), t + 0.05);
+  tl.to(phone, { y: 0, duration: 1.1, ease: 'expo.out' }, t + 0.1);
+
+  t = 6.6;
+  K.tap(tl, T, B.search.cx - 60, B.search.cy, t, { target: '#dSearch', hide: true });
+  tl.set('#dPh', { display: 'none' }, t + 0.1);
+  tl.set('#dCaret', { opacity: 1 }, t + 0.1);
+  K.typeText(tl, '#dVal', 'Nərimanov', t + 0.25, 0.7);
+  tl.to('#listA', { opacity: 0, y: 12, duration: 0.3, ease: 'power2.in' }, t + 1.0);
+  tl.fromTo('#listB', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, immediateRender: false }, t + 1.15);
+  tl.set('#dCaret', { opacity: 0 }, t + 1.3);
+  // price callout + push-in on the first card's price
+  K.calloutIn(tl, $('#k1'), t + 1.55);
+  tl.to(phone, { scale: 1.06, y: -20, duration: 1.2, ease: 'power2.inOut' }, t + 1.4);
+  // scroll the list
+  K.drag(tl, T, 250, 640, 380, t + 2.1, 0.9);
+  tl.to('#pGyms', { y: -255, duration: 1.0, ease: 'power2.inOut' }, t + 2.1);
+  tl.to(phone, { scale: 1, y: 0, duration: 0.9, ease: 'power2.inOut' }, t + 2.9);
+  K.calloutOut(tl, $('#k1'), t + 3.0);
+
+  // ---- → map
+  t = 10.15;
+  K.copyOut(tl, $('#cA'), t - 0.35);
+  K.tap(tl, T, B.mapBtn.cx, B.mapBtn.cy, t, { target: '#dMapBtn' });
+  K.push(tl, sD, sM, t + 0.1);
+  K.copyIn(tl, $('#cB'), t + 0.25);
+  ['#pin1','#pin2','#pin3','#pin4','#pin5','#pin6'].forEach((p, i) => {
+    tl.to(p, { scale: 1, opacity: 1, duration: 0.45, ease: 'back.out(2.2)' }, t + 0.6 + i * 0.09);
+    tl.to('#pp' + (i + 1), { opacity: 1, y: 0, duration: 0.35 }, t + 0.75 + i * 0.09);
+  });
+  tl.fromTo('#mePulse', { scale: 1, opacity: 0.9 }, { scale: 3.2, opacity: 0, duration: 1.4, ease: 'power1.out', repeat: 3, immediateRender: false }, t + 0.5);
+
+  t = 12.0;
+  K.tap(tl, T, B.pin1.cx, B.pin1.cy, t, { target: '#pin1' });
+  K.cls(tl, '#pin1', 'sel', t + 0.05);
+  tl.set('#pin1 svg', { color: '#1A1A1A' }, t + 0.05);
+  tl.to('#pin1', { scale: 1.25, duration: 0.3, ease: 'back.out(2)' }, t + 0.12);
+  tl.to('#mapCard', { yPercent: 0, duration: 0.55, ease: 'power3.out' }, t + 0.15);
+  K.calloutIn(tl, $('#k2'), t + 0.6, { from: 'left' });
+  K.calloutOut(tl, $('#k2'), t + 2.1);
+
+  // ---- → gym page
+  t = 14.45;
+  K.copyOut(tl, $('#cB'), t - 0.3);
+  K.tap(tl, T, B.mapGo.cx, B.mapGo.cy, t, { target: '#mapGo' });
+  K.push(tl, sM, sG, t + 0.1);
+  tl.to('#sbar', { color: '#FAFAFA', duration: 0.2 }, t + 0.2);
+  K.copyIn(tl, $('#cC'), t + 0.25);
+  K.calloutIn(tl, $('#k3'), t + 0.95);
+  tl.to(phone, { scale: 1.05, duration: 1.4, ease: 'power2.inOut' }, t + 0.8);
+  K.calloutOut(tl, $('#k3'), t + 2.35);
+  tl.to(phone, { scale: 1, duration: 0.8, ease: 'power2.inOut' }, t + 2.3);
+  // scroll down through about/info/photos
+  K.drag(tl, T, 250, 640, 330, t + 2.5, 1.1);
+  tl.to('#gymScroll', { y: -330, duration: 1.2, ease: 'power2.inOut' }, t + 2.5);
+  tl.to('#sbar', { color: '#1A1A1A', duration: 0.2 }, t + 2.75);
+  tl.to('#gScrim', { opacity: 1, duration: 0.25 }, t + 2.7);
+  // tap «Rəylər»
+  t = 18.0;
+  K.tap(tl, T, B.gRev.cx, B.gRev.cy - 330, t);
+  tl.to('#gSeg .thumb', { x: (B.gRev.w) * 3, duration: 0.3, ease: 'power3.out' }, t + 0.05);
+  K.cls(tl, '#gSeg .it:nth-child(2)', 'on', t + 0.1, false);
+  K.cls(tl, '#gSeg .it:nth-child(5)', 'on', t + 0.1);
+  tl.to('#gAbout', { opacity: 0, x: -40, duration: 0.3, ease: 'power2.in' }, t + 0.05);
+  tl.fromTo('#gReviews', { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.45, immediateRender: false }, t + 0.25);
+  K.calloutIn(tl, $('#k4'), t + 0.75, { from: 'left' });
+  tl.to('#gymScroll', { y: -420, duration: 1.4, ease: 'power2.inOut' }, t + 1.0);
+  K.calloutOut(tl, $('#k4'), t + 2.45);
+
+  // ---- back to Kəşf (tab tap pops to root) → Müəllimlər
+  t = 21.0;
+  K.copyOut(tl, $('#cC'), t - 0.3);
+  K.tap(tl, T, B.tabHome.cx, B.tabHome.cy, t, { target: '#tabHome' });
+  // reset the search under the hidden screen
+  K.text(tl, '#dVal', 'Nərimanov', '', t);
+  tl.set('#dPh', { display: 'inline' }, t);
+  tl.set(sM, { visibility: 'hidden' }, t);
+  tl.set(sD, { xPercent: -28 }, t);
+  K.pop(tl, sG, sD, t + 0.1);
+  K.copyIn(tl, $('#cD'), t + 0.3);
+
+  t = 22.2;
+  K.tap(tl, T, B.segT.cx, B.segT.cy, t);
+  tl.to('#dSeg .thumb', { x: B.segT.w, duration: 0.35, ease: 'power3.out' }, t + 0.05);
+  K.cls(tl, '#dSeg .it:nth-child(2)', 'on', t + 0.1, false);
+  K.cls(tl, '#dSeg .it:nth-child(3)', 'on', t + 0.1);
+  K.text(tl, '#dPh', 'Zal, rayon axtar', 'Müəllim, ixtisas axtar', t + 0.1);
+  tl.to('#pGyms', { xPercent: -100, duration: 0.5, ease: 'power3.out' }, t + 0.05);
+  tl.to('#pTrainers', { xPercent: 0, duration: 0.5, ease: 'power3.out' }, t + 0.05);
+  tl.set('#tList .trow', { opacity: 0, x: 30 }, t);
+  tl.to('#tList .trow', { opacity: 1, x: 0, duration: 0.4, stagger: 0.05 }, t + 0.2);
+
+  t = 23.5;
+  K.tap(tl, T, B.search.cx - 60, B.search.cy, t, { target: '#dSearch' });
+  tl.set('#dPh', { display: 'none' }, t + 0.1);
+  tl.set('#dCaret', { opacity: 1 }, t + 0.1);
+  K.typeText(tl, '#dVal', 'güc', t + 0.25, 0.35);
+  tl.to(['#tNigar', '#tAysel', '#tTural'], { opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0, duration: 0.45, ease: 'power2.inOut' }, t + 0.7);
+  tl.set('#dCaret', { opacity: 0 }, t + 1.0);
+  K.calloutIn(tl, $('#k5'), t + 1.1);
+  K.calloutOut(tl, $('#k5'), t + 2.5);
+
+  // ---- → trainer profile
+  t = 26.2;
+  K.tap(tl, T, B.tElvin.cx, B.tElvin.cy, t, { target: '#tElvin' });
+  K.push(tl, sD, sT, t + 0.1);
+  K.count(tl, '#trRating', 0, 4.9, t + 0.35, 0.9, K.az1);
+  tl.to('#trScroll', { y: -110, duration: 1.1, ease: 'power2.inOut' }, t + 1.0);
+
+  // ---- → request
+  t = 28.3;
+  K.copyOut(tl, $('#cD'), t - 0.3);
+  K.tap(tl, T, B.trBook.cx, B.trBook.cy, t, { target: '#trBook' });
+  K.push(tl, sT, sR, t + 0.1);
+  K.copyIn(tl, $('#cE'), t + 0.25);
+  t = 29.5;
+  K.tap(tl, T, B.dayCa.cx, B.dayCa.cy, t, { target: '#dayCa' });
+  K.cls(tl, '#dayCa', 'on', t + 0.05);
+  tl.set('#dayCaL', { color: '#1A1A1A' }, t + 0.05);
+  t = 30.25;
+  K.tap(tl, T, B.slot19.cx, B.slot19.cy, t, { target: '#slot19' });
+  K.cls(tl, '#slot19', 'on', t + 0.05);
+  K.text(tl, '#reqWhen', 'Vaxt seç', 'C.a · 19:00', t + 0.05);
+  tl.set('#reqWhen', { color: '#1A1A1A', fontWeight: 600 }, t + 0.05);
+  t = 31.1;
+  K.tap(tl, T, B.reqSend.cx, B.reqSend.cy, t, { target: '#reqSend' });
+  K.text(tl, '#reqSendT', 'Sorğu göndər', 'Göndərilir…', t + 0.05);
+  tl.to('#reqForm', { opacity: 0, y: -10, duration: 0.3 }, t + 0.5);
+  tl.fromTo('#reqSent', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, immediateRender: false }, t + 0.65);
+  tl.to('#reqFoot', { opacity: 0, duration: 0.2 }, t + 0.6);
+  tl.to('#reqMsg', { opacity: 1, duration: 0.3 }, t + 0.7);
+  tl.fromTo('#toast', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: 'back.out(1.6)', immediateRender: false }, t + 0.6);
+  window.SFX.push({ t: t + 0.6, s: 'success' });
+  tl.to(phone, { scale: 1.04, duration: 1.2, ease: 'power2.inOut' }, t + 0.5);
+  K.calloutIn(tl, $('#k6'), t + 1.1, { from: 'left' });
+  tl.to('#toast', { opacity: 0, duration: 0.3 }, t + 2.6);
+
+  // ================================================================ outro
+  t = 34.6;
+  K.calloutOut(tl, $('#k6'), t - 0.3);
+  K.copyOut(tl, $('#cE'), t - 0.3);
+  tl.to(phone, { y: 1600, duration: 0.8, ease: 'power3.in' }, t - 0.2);
+  tl.set('#wipe', { opacity: 1, scale: 0 }, t + 0.2);
+  tl.to('#wipe', { scale: 460, duration: 0.6, ease: 'power3.in' }, t + 0.2);
+  tl.set('#outro', { visibility: 'visible' }, t + 0.8);
+  tl.to('#wipe', { opacity: 0, duration: 0.4 }, t + 0.82);
+  tl.fromTo('#oMark', { scale: 0, rotation: -40 }, { scale: 1, rotation: 0, duration: 0.8, ease: 'back.out(1.7)', immediateRender: false }, t + 0.95);
+  tl.fromTo('#oT .line > span', { yPercent: 110 }, { yPercent: 0, duration: 0.8, ease: 'power4.out', stagger: 0.12, immediateRender: false }, t + 1.15);
+  tl.fromTo('#oS', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, immediateRender: false }, t + 1.6);
+  tl.to({}, { duration: 2.2 }, t + 1.9); // hold
+  return tl;
+});
+</script>
+</body>
+</html>
