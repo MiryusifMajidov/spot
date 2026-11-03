@@ -132,7 +132,7 @@ function Cover({ gym, height, children }: { gym: Gym; height: number; children?:
   }
   return (
     <View style={{ height, backgroundColor: palette.element }}>
-      <Image source={{ uri: gym.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+      <Image source={{ uri: gym.imageUrl }} recyclingKey={gym.imageUrl} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
       {children ? <LinearGradient colors={['rgba(11,11,14,0.35)', 'transparent']} style={styles.scrim} /> : null}
       {children}
     </View>

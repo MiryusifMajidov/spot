@@ -46,7 +46,7 @@ export function Avatar({
     <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }}>
       <LinearGradient colors={pair} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       {photo ? (
-        <Image source={{ uri: photo }} style={StyleSheet.absoluteFill} contentFit="cover" transition={160} />
+        <Image source={{ uri: photo }} recyclingKey={photo} style={StyleSheet.absoluteFill} contentFit="cover" transition={160} />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.center]}>
           <AppText style={{ color: palette.onDark, fontWeight: '700', fontSize: size * 0.36 }}>{initials}</AppText>

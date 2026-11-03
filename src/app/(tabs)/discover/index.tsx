@@ -1,5 +1,6 @@
+import { FlashList, ListRenderItem } from '@shopify/flash-list';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { ReactNode, useCallback, useMemo, useState } from 'react';
+import { memo, ReactNode, useCallback, useMemo, useState } from 'react';
 import { useSharedValue } from 'react-native-reanimated';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
@@ -16,7 +17,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
 import { SwipePager } from '@/components/ui/SwipePager';
-import { Partner } from '@/data/types';
+import { Gym, Partner, Trainer } from '@/data/types';
 import { getPartner } from '@/lib/api';
 import { useFetchPhase } from '@/lib/focusFetch';
 import { useGyms, useGymsPhase, usePartnersForGym, useTrainers } from '@/lib/hooks';
@@ -168,7 +169,11 @@ export default function Discover() {
 
   // The hero slot means "your gym" — it stays empty until the user actually picks one.
   const homeGym = homeGymId ? visibleGyms.find((g) => g.id === homeGymId) ?? null : null;
-  const otherGyms = homeGym ? visibleGyms.filter((g) => g.id !== homeGym.id) : visibleGyms;
+  const homeGymShownId = homeGym?.id;
+  const otherGyms = useMemo(
+    () => (homeGymShownId ? visibleGyms.filter((g) => g.id !== homeGymShownId) : visibleGyms),
+    [visibleGyms, homeGymShownId]
+  );
   const filterN = gymFilterCount(gymFilter);
   const partnerFilterN = partnerFilterCount(partnerFilter, isWoman);
   const weeklyCount = Math.min(3, filteredPartners.length);
@@ -266,9 +271,16 @@ export default function Discover() {
       {/* Three lists side by side: a sideways swipe moves between them and the
           segment's thumb follows the finger (components/ui/SwipePager). They used
           to be one list whose contents a tap swapped — a swipe did nothing. Each
-          page scrolls on its own, and its filter chips travel with it. */}
+          page scrolls on its own, and its filter chips travel with it.
+          Each is a FlashList because all three stay mounted: as plain ScrollViews
+          they built every row at once, and with 50 gyms and 200 coaches this screen
+          scrolled at 10 fps on a Galaxy A56, against 100+ on the screens around it. */}
       <SwipePager index={segment} onIndexChange={setSegment} progress={pageProgress}>
-        <Page>
+        <ListPage
+          data={visibleGyms.length === 0 ? NO_GYMS : otherGyms}
+          renderItem={renderGym}
+          keyExtractor={gymKey}
+          header={<>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -387,20 +399,15 @@ export default function Discover() {
                             <Icon name="chevR" size={17} color={palette.chevron} />
                           </PressableScale>
                         ) : null}
-                        {otherGyms.map((g) => (
-                          <View key={g.id} style={{ marginBottom: 12 }}>
-                            <GymCard
-                              gym={g}
-                              variant="compact"
-                              onPress={() => router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: g.id } })}
-                            />
-                          </View>
-                        ))}
                       </>
                     ))}
-        </Page>
-        <Page>
-          {(visibleTrainers.length === 0 ? (
+          </>}
+        />
+        <ListPage
+          data={visibleTrainers}
+          renderItem={renderTrainer}
+          keyExtractor={trainerKey}
+          header={visibleTrainers.length === 0 ? (
                       /* A read that never reached the server is not «there are none» —
                          see lib/focusFetch. Without this the app states a fact about the
                          world every time the connection wobbles. */
@@ -414,19 +421,15 @@ export default function Discover() {
                               : t('Hələ müəllim yoxdur. Zalını seç — müəllimlər orada görünəcək.')
                         }
                       />
-                    ) : (
-                      visibleTrainers.map((t) => (
-                        <TrainerRow
-                          key={t.id}
-                          trainer={t}
-                          onPress={() => router.push({ pathname: '/(tabs)/discover/trainer/[id]', params: { id: t.id } })}
-                        />
-                      ))
-                    ))}
-        </Page>
+                    ) : null}
+        />
         {/* A guest has no Yoldaşlar — see the segment above. */}
         {guest ? null : (
-          <Page>
+          <ListPage
+            data={homeGymId ? visiblePartners : NO_PARTNERS}
+            renderItem={renderPartner}
+            keyExtractor={partnerKey}
+            header={<>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -521,39 +524,88 @@ export default function Discover() {
                               : t('Bu zalda hələ uyğun yoldaş yoxdur. Başqa zal seç və ya profilini tamamla.')
                       }
                     />
-                  ) : (
-                    visiblePartners.map((p) => (
-                      <PartnerRow
-                        key={p.id}
-                        partner={p}
-                        onPress={() => router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: p.id } })}
-                      />
-                    ))
-                  )}
+                  ) : null}
                 </>
               )}
             </>
-          </Page>
+            </>}
+          />
         )}
       </SwipePager>
     </Screen>
   );
 }
 
-/* One page of the Kəşf pager: its own vertical list.
+const NO_GYMS: Gym[] = [];
+const NO_PARTNERS: Partner[] = [];
+
+/* The rows are memoised so typing in the search box redraws none of them, and
+   their callbacks live out here so FlashList is handed the same ones every render. */
+const GymListRow = memo(function GymListRow({ gym }: { gym: Gym }) {
+  const router = useRouter();
+  return (
+    <View style={{ marginBottom: 12 }}>
+      <GymCard
+        gym={gym}
+        variant="compact"
+        onPress={() => router.push({ pathname: '/(tabs)/discover/gym/[id]', params: { id: gym.id } })}
+      />
+    </View>
+  );
+});
+const TrainerListRow = memo(function TrainerListRow({ trainer }: { trainer: Trainer }) {
+  const router = useRouter();
+  return (
+    <TrainerRow
+      trainer={trainer}
+      onPress={() => router.push({ pathname: '/(tabs)/discover/trainer/[id]', params: { id: trainer.id } })}
+    />
+  );
+});
+const PartnerListRow = memo(function PartnerListRow({ partner }: { partner: Partner }) {
+  const router = useRouter();
+  return (
+    <PartnerRow
+      partner={partner}
+      onPress={() => router.push({ pathname: '/(tabs)/discover/partner/[id]', params: { id: partner.id } })}
+    />
+  );
+});
+const renderGym: ListRenderItem<Gym> = ({ item }) => <GymListRow gym={item} />;
+const renderTrainer: ListRenderItem<Trainer> = ({ item }) => <TrainerListRow trainer={item} />;
+const renderPartner: ListRenderItem<Partner> = ({ item }) => <PartnerListRow partner={item} />;
+const gymKey = (g: Gym) => g.id;
+const trainerKey = (t: Trainer) => t.id;
+const partnerKey = (p: Partner) => p.id;
+
+/* One page of the Kəşf pager: its own vertical list, everything above the rows in
+   `header`.
    iOS 26: the Liquid Glass tab bar floats over it, and at RN's default («never»)
    the last card ended under the glass. «automatic» lets UIKit add the tab bar's
    safe area at the bottom. Nothing is added at the top: the page starts below the
    header. iOS-only prop; Android's bar reserves its own space. */
-function Page({ children }: { children: ReactNode }) {
+function ListPage<T>({
+  data,
+  renderItem,
+  keyExtractor,
+  header,
+}: {
+  data: readonly T[];
+  renderItem: ListRenderItem<T>;
+  keyExtractor: (item: T) => string;
+  header: ReactNode;
+}) {
   return (
-    <ScrollView
+    <FlashList
+      data={data}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+      ListHeaderComponent={<>{header}</>}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled">
-      {children}
-    </ScrollView>
+      keyboardShouldPersistTaps="handled"
+    />
   );
 }
 
