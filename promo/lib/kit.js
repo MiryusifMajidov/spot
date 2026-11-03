@@ -51,12 +51,12 @@
   }
 
   /* ---------- text & numbers written from progress */
-  function typeText(tl, el, text, at, dur, { caret } = {}) {
+  function typeText(tl, el, text, at, dur, { empty = '' } = {}) {
     if (typeof el === 'string') el = document.querySelector(el);
     const o = { n: 0 };
     tl.to(o, {
       n: text.length, duration: dur, ease: 'none',
-      onUpdate: () => { el.textContent = text.slice(0, Math.round(o.n)); },
+      onUpdate: () => { const s = text.slice(0, Math.round(o.n)); el.textContent = s || empty; },
     }, at);
     return at + dur;
   }
@@ -105,7 +105,7 @@
     }
     tl.to(T.t, { scale: 0.78, duration: 0.1, ease: 'power2.out' }, at);
     tl.to(T.t, { scale: 1, duration: 0.18, ease: 'power2.out' }, at + hold);
-    tl.fromTo(T.r, { x, y, scale: 0.7, opacity: 0.9 }, { scale: 2.1, opacity: 0, duration: 0.5, ease: 'power2.out', immediateRender: false }, at + 0.02);
+    tl.fromTo(T.r, { x, y, scale: 0.7, opacity: 0.9 }, { x, y, scale: 2.1, opacity: 0, duration: 0.5, ease: 'power2.out', immediateRender: false }, at + 0.02);
     if (target) {
       const els = typeof target === 'string' ? document.querySelectorAll(target) : target;
       tl.to(els, { scale: 0.96, duration: 0.1, ease: 'power2.out' }, at);

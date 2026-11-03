@@ -31,6 +31,7 @@ async function open() {
   await p.goto(pathToFileURL(page).href);
   await p.waitForFunction(() => window.__ready === true, null, { timeout: 30000 });
   await p.evaluate(() => document.fonts.ready);
+  await p.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 30000 });
   return p;
 }
 
@@ -69,16 +70,20 @@ await browser.close();
 
 // audio: the app's tap/success sounds placed on the timeline
 const snd = { tap: 'assets/sounds/tap.wav', pop: 'assets/sounds/tap.wav', success: 'assets/sounds/success.wav' };
-const vol = { tap: 0.55, pop: 0.3, success: 0.6 };
+const vol = { tap: 0.35, pop: 0.18, success: 0.4 };
 const repo = path.resolve(root, '..');
-const inputs = ['-framerate', String(fps), '-i', path.join(frames, '%05d.jpg'), '-f', 'lavfi', '-t', String(duration), '-i', 'anullsrc=r=48000:cl=stereo'];
+const music = opt('music', null);
+const inputs = ['-framerate', String(fps), '-i', path.join(frames, '%05d.jpg')];
+if (music) inputs.push('-i', path.resolve(music));
+else inputs.push('-f', 'lavfi', '-t', String(duration), '-i', 'anullsrc=r=48000:cl=stereo');
 const filters = [];
 sfx.forEach((s, k) => {
   inputs.push('-i', path.join(repo, snd[s.s] || snd.tap));
   const ms = Math.max(0, Math.round(s.t * 1000));
   filters.push(`[${k + 2}:a]aresample=48000,aformat=channel_layouts=stereo,volume=${vol[s.s] ?? 0.5},adelay=${ms}|${ms}[a${k}]`);
 });
-const mixIn = ['[1:a]', ...sfx.map((_, k) => `[a${k}]`)].join('');
+filters.unshift(`[1:a]aresample=48000,aformat=channel_layouts=stereo,volume=${music ? 1 : 0}[bed]`);
+const mixIn = ['[bed]', ...sfx.map((_, k) => `[a${k}]`)].join('');
 filters.push(`${mixIn}amix=inputs=${sfx.length + 1}:normalize=0:duration=first[aout]`);
 const ff = spawnSync('ffmpeg', [
   '-y', '-loglevel', 'error', ...inputs,

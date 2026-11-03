@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<title>SPOT — Proqram və müəllimsiz məşq</title>
+<link rel="stylesheet" href="../lib/kit.css">
+<link rel="stylesheet" href="../lib/stage.css">
+<link rel="stylesheet" href="../lib/screens.css">
+<style>
+  .bg.pic img { transform-origin: 50% 50%; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg pic"><img id="photo" src="../assets/intro-bg.jpg" style="object-position:30% 50%"></div>
+  <div class="bg dark"></div>
+  <div class="bg volt"></div>
+  <div class="bg light"></div>
+
+  <div class="stmt" id="st1" style="top:560px">
+    <span class="w"><span>Zala</span></span><span class="w"><span>gəldin.</span></span><span class="w"><span class="v">Bəs indi?</span></span>
+  </div>
+  <div id="q" style="position:absolute; inset:0; z-index:21">
+    <div id="qdot" style="position:absolute; left:540px; top:860px; width:56px; height:56px; margin:-28px 0 0 -28px; border-radius:50%; background:var(--volt)"></div>
+    <div id="qring" style="position:absolute; left:540px; top:860px; width:150px; height:150px; margin:-75px 0 0 -75px; border-radius:50%; border:6px solid var(--volt)"></div>
+    <div id="qtxt" style="position:absolute; left:0; right:0; top:1110px; text-align:center; font-size:48px; font-weight:700; letter-spacing:-1.2px; color:#FAFAFA">Müəllimin yoxdursa?</div>
+  </div>
+  <div class="stmt ink" id="st2" style="top:300px">
+    <span class="w"><span>Proqram</span></span><span class="w"><span>yol</span></span><span class="w"><span>göstərir.</span></span>
+    <div class="minilogo" id="mini" style="margin-top:46px"><div class="ring inv" style="width:70px; height:70px"></div>SPOT</div>
+  </div>
+
+  <div class="head" data-split id="hA">Bugünkü məşqin<br><span class="v">hazırdır.</span></div>
+  <div class="head ink" data-split id="hB">Hazır proqram.<br>Tam pulsuz.</div>
+  <div class="head" data-split id="hC">Hər seti<br><span class="v">qeyd et.</span></div>
+  <div class="head ink" data-split id="hD">Texnikanı<br>yoxla.</div>
+  <div class="head ink" data-split id="hE">Hər məşqin<br>sayılır.</div>
+  <div class="head" data-split id="hF">Seriyanı<br><span class="v">qırma.</span></div>
+
+  <div class="badge-dark" id="bVol" style="left:620px; top:1180px"><div class="l">Bu həftə</div><div class="n">27,8 t</div><div class="s">qaldırdığın həcm</div></div>
+  <div class="badge-dark" id="bFree" style="left:640px; top:1080px"><div class="l">Proqramlar</div><div class="n">0 ₼</div><div class="s">hamısı pulsuz</div></div>
+  <div class="badge-dark" id="bPlus" style="left:40px; top:1180px"><div class="l">SPOT təklifi</div><div class="n">+2,5 kq</div><div class="s">keçən dəfə hədəfi vurdun</div></div>
+  <div class="pill-white" id="bMist" style="left:470px; top:1420px"><i data-i="shield" data-s="46" data-c="#FF6B35" data-w="1.6"></i><div>Ən çox edilən səhv<small>və əvəzedici hərəkətlər</small></div></div>
+  <div class="badge-dark" id="bPR" style="left:610px; top:820px"><div class="l">Bench press</div><div class="n">82,5 kq</div><div class="s">Şəxsi rekord</div></div>
+  <div class="pill-white" id="bStreak" style="left:40px; top:1330px"><i data-i="flame" data-s="50" data-c="#FF6B35" data-w="1.6"></i><div>12 gün<small>ardıcıl seriya</small></div></div>
+
+  <!-- ===================================================== phone -->
+  <div class="phone" id="phone">
+    <div class="screen">
+      <div class="ui" id="ui">
+        <div class="island"></div>
+        <div class="statusbar" id="sbar">
+          <div class="time" id="sbTime">09:41</div>
+          <div class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"/><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" stroke="currentColor" stroke-opacity="0.4" fill="none"/><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.6" height="4" rx="0.8" fill="currentColor" fill-opacity="0.45"/></svg>
+          </div>
+        </div>
+
+        <div class="home" id="home">
+          <div class="grid">
+            <div class="app"></div><div class="app"></div><div class="app"></div><div class="app"></div>
+            <div class="app"></div><div class="app"></div><div class="app"></div><div class="app"></div>
+            <div class="app"></div><div class="app"></div><div class="app"></div><div class="app"></div>
+            <div class="app"></div><div class="app spoticon" id="spotIcon"><div class="ring"></div><span class="lbl">SPOT</span></div><div class="app"></div><div class="app"></div>
+            <div class="app"></div><div class="app"></div><div class="app"></div><div class="app"></div>
+          </div>
+          <div class="dock"></div>
+        </div>
+
+        <!-- ============ Məşq tab -->
+        <div class="scr" id="sWorkout" style="visibility:hidden">
+          <div style="height:54px"></div>
+          <div style="padding:8px 20px 0">
+            <div class="row" style="align-items:flex-end; padding-bottom:18px">
+              <div class="flex1"><div class="subhead c-sec" id="wDate">Çərşənbə axşamı, 3 noyabr</div><div class="largeTitle" style="margin-top:2px">Məşq</div></div>
+              <div class="hicon" style="margin-right:-10px"><i data-i="msg" data-s="25"></i></div>
+            </div>
+            <div class="today">
+              <div class="row" style="gap:7px; margin-bottom:12px"><span class="tdot"></span><span style="font-size:13px; font-weight:600; color:var(--voltText)" id="wLbl">Bugünkü məşq · Gün 1/3</span></div>
+              <div style="font-size:22px; line-height:25px; font-weight:700; letter-spacing:-0.4px" id="wDay">Gün 1 · Push</div>
+              <div class="body15 c-sec" style="margin-top:6px" id="wMeta">5 hərəkət · ~45 dəq · Push Pull Legs</div>
+              <div class="btn" style="margin-top:16px"><i data-i="play" data-s="18"></i>Məşqə başla</div>
+            </div>
+            <div class="week">
+              <div class="wstat flex1"><div class="v" id="wN">5</div><div class="k">məşq</div></div><div class="vd"></div>
+              <div class="wstat flex1"><div class="v"><span id="wT">27,8</span> t</div><div class="k">həcm</div></div><div class="vd"></div>
+              <div class="wstat flex1"><div class="v"><span id="wH">4,7</span> saat</div><div class="k">məşq vaxtı</div></div>
+            </div>
+            <div class="footnote c-cap" style="margin-top:8px">Bu həftə</div>
+            <div class="row between" style="margin-top:26px; margin-bottom:2px"><span class="title3">Proqramlar</span><span class="subhead" style="font-weight:600">Hamısı</span></div>
+            <div class="prow" id="progRow"><div class="rowicon"><i data-i="dumbbell" data-s="20" data-c="#6B6B6B"></i></div><div class="flex1"><div style="font-size:14.5px; font-weight:500">Push Pull Legs</div><div class="footnote c-cap" style="margin-top:2px">Kamran Əliyev · 3 gün</div></div><i data-i="chevR" data-s="17" data-c="#C0C0C6"></i></div>
+            <div class="prow"><div class="rowicon"><i data-i="plus" data-s="20" data-c="#6B6B6B"></i></div><div class="flex1"><div style="font-size:14.5px; font-weight:500">Proqram yarat</div><div class="footnote c-cap" style="margin-top:2px">Günləri yaz, hərəkətləri seç — istəsən paylaş</div></div><i data-i="chevR" data-s="17" data-c="#C0C0C6"></i></div>
+            <div class="prow"><div class="rowicon"><i data-i="grid" data-s="20" data-c="#6B6B6B"></i></div><div class="flex1"><div style="font-size:14.5px; font-weight:500">Hərəkət kitabxanası</div><div class="footnote c-cap" style="margin-top:2px">34 hərəkət · texnika və səhvlər</div></div><i data-i="chevR" data-s="17" data-c="#C0C0C6"></i></div>
+          </div>
+          <div class="dim"></div>
+        </div>
+
+        <!-- ============ Program -->
+        <div class="scr" id="sProgram" style="visibility:hidden">
+          <div style="height:54px"></div>
+          <div class="navbar"><div class="back"><i data-i="chevL" data-s="20"></i></div><div class="t"></div><div class="rt" style="gap:14px"><i data-i="bookmark" data-s="25"></i><i data-i="more" data-s="25"></i></div></div>
+          <div style="padding:0 20px">
+            <div class="title" style="margin-top:4px">Push Pull Legs</div>
+            <div class="row" style="gap:6px; margin-top:6px"><span style="width:8px; height:8px; border-radius:4px; background:var(--voltText)"></span><span class="footnote" style="color:var(--voltText); font-weight:600">Aktiv proqram · növbəti: Gün 1</span></div>
+            <div class="body15 c-sec" style="margin-top:8px; line-height:21px">Həftədə 3 gün: itələmə, dartma və ayaq. Hər məşqdə çəki tədricən artır.</div>
+            <div style="background:var(--white); border-radius:14px; padding:14px; margin-top:14px" class="row">
+              <div data-av="Kamran Əliyev" data-size="28"></div>
+              <span style="font-size:14px; font-weight:600; margin-left:8px">Kamran Əliyev</span>
+              <span class="vtag" style="margin-left:8px">Doğrulanmış müəllim</span>
+            </div>
+            <div class="tags" style="gap:7px; margin-top:14px" id="pTags"><span class="tag">8 həftə</span><span class="tag">3 gün</span><span class="tag">~45 dəq</span><span class="tag">Orta</span><span class="tag">Kütlə yığmaq</span></div>
+            <div class="row" style="gap:12px; margin-top:16px">
+              <div class="row" style="gap:5px"><i data-i="star" data-s="14" data-c="#FF6B35" data-w="1.6"></i><span class="headline">4,7</span></div>
+              <div style="width:0.5px; height:16px; background:var(--sep)"></div>
+              <span class="subhead c-sec">1 240 nəfər edir</span>
+            </div>
+            <div class="overline" style="margin-top:24px; margin-bottom:12px">Proqram günləri</div>
+            <div id="pDays">
+              <div class="dayrow"><div class="dayidx">1</div><div class="flex1"><div class="headline">Gün 1 · Push</div><div class="footnote c-cap" style="margin-top:2px">Sinə, çiyin, triseps · 5 hərəkət · ~45 dəq</div></div><i data-i="chevR" data-s="17" data-c="#C0C0C6"></i></div>
+              <div class="dayrow"><div class="dayidx">2</div><div class="flex1"><div class="headline">Gün 2 · Pull</div><div class="footnote c-cap" style="margin-top:2px">Kürək, biseps · 5 hərəkət · ~40 dəq</div></div><i data-i="chevR" data-s="17" data-c="#C0C0C6"></i></div>
+              <div class="dayrow"><div class="dayidx">3</div><div class="flex1"><div class="headline">Gün 3 · Legs</div><div class="footnote c-cap" style="margin-top:2px">Ayaq, gluteus · 4 hərəkət · ~36 dəq</div></div><i data-i="chevR" data-s="17" data-c="#C0C0C6"></i></div>
+            </div>
+          </div>
+          <div class="footer"><div class="btn" id="pStart"><i data-i="play" data-s="18"></i>Başla — Gün 1</div></div>
+          <div class="dim"></div>
+        </div>
+
+        <!-- ============ Session -->
+        <div class="scr" id="sSession" style="visibility:hidden">
+          <div style="height:54px"></div>
+          <div class="row between" style="padding:0 20px; height:48px">
+            <div style="width:44px" id="xClose"><i data-i="x" data-s="25"></i></div>
+            <div style="flex:1; text-align:center; margin:0 8px"><div style="font-size:15px; font-weight:600">Gün 1 · Push</div><div style="font-size:12px; color:var(--cap); margin-top:2px">Hərəkət 1 / 5</div></div>
+            <div class="row" style="gap:5px; background:var(--white); border-radius:999px; padding:7px 12px"><i data-i="timer" data-s="14" data-c="#527A01" data-w="1.5"></i><span class="tnum" style="font-size:13px; font-weight:600" id="sTimer">0:00</span></div>
+          </div>
+          <div class="row" style="gap:14px; padding:16px 20px">
+            <div style="width:56px; height:56px; border-radius:14px; background:var(--white); display:flex; align-items:center; justify-content:center; flex:none" id="sThumb"><i data-i="target" data-s="22" data-c="#527A01" data-w="1.4"></i></div>
+            <div class="flex1"><div style="font-size:20px; font-weight:700; letter-spacing:-0.4px">Ştanqla bench press</div><div style="font-size:13.5px; color:var(--sec); margin-top:4px">4 set · 6–8 təkrar · Sinə</div></div>
+          </div>
+          <div style="margin:0 20px 14px; background:var(--voltTint); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:10px">
+            <div class="row" style="gap:8px; align-items:flex-start"><i data-i="target" data-s="15" data-c="#527A01" data-w="1.4"></i><span style="color:var(--sec); font-size:12.5px; line-height:17px; flex:1">Keçən dəfə: 80×8. Keçən dəfə 80 kq × 8 — bütün setlər hədəfi vurdu, +2,5 kq artır</span></div>
+            <div id="acceptW" style="overflow:hidden"><div class="row" id="accept" style="justify-content:center; gap:7px; height:38px; border-radius:11px; background:var(--volt)"><i data-i="check" data-s="15" data-c="#1A1A1A" data-w="1.8"></i><span style="font-size:13px; font-weight:600">Təklifi qəbul et — 82,5 kq</span></div></div>
+          </div>
+          <div class="row" style="gap:8px; padding:0 20px 10px; font-size:11.5px; font-weight:500; color:var(--cap)"><span style="width:34px">Set</span><span class="flex1">Əvvəlki</span><span style="width:64px; text-align:center">kq</span><span style="width:64px; text-align:center">Təkrar</span><span style="width:40px"></span></div>
+          <div style="padding:0 20px">
+            <div class="setrow" id="r1"><span class="si">1</span><span class="pv">80×8</span><span class="in ph kq">—</span><span class="in ph rp" id="rp1">6</span><span class="chk" id="c1"><i data-i="check" data-s="17" data-c="#C0C0C6" data-w="1.5"></i></span></div>
+            <div class="setrow" id="r2"><span class="si">2</span><span class="pv">80×8</span><span class="in ph kq">—</span><span class="in ph rp" id="rp2">6</span><span class="chk" id="c2"><i data-i="check" data-s="17" data-c="#C0C0C6" data-w="1.5"></i></span></div>
+            <div class="setrow"><span class="si">3</span><span class="pv">80×8</span><span class="in ph kq">—</span><span class="in ph rp">6</span><span class="chk"><i data-i="check" data-s="17" data-c="#C0C0C6" data-w="1.5"></i></span></div>
+            <div class="setrow"><span class="si">4</span><span class="pv">80×7</span><span class="in ph kq">—</span><span class="in ph rp">6</span><span class="chk"><i data-i="check" data-s="17" data-c="#C0C0C6" data-w="1.5"></i></span></div>
+            <div class="row between" style="padding-left:12px; margin-top:4px"><span style="color:var(--sec); font-size:13.5px; font-weight:600">Setlər</span>
+              <div class="row" style="background:var(--white); border-radius:14px; padding:4px"><span style="width:44px; height:44px; border-radius:11px; background:var(--canvas); display:flex; align-items:center; justify-content:center; font-size:22px">−</span><span style="min-width:40px; text-align:center; font-size:17px; font-weight:700">4</span><span style="width:44px; height:44px; border-radius:11px; background:var(--canvas); display:flex; align-items:center; justify-content:center"><i data-i="plus" data-s="20"></i></span></div></div>
+          </div>
+          <div class="restbar" id="rest" style="bottom:170px"><span class="tnum" style="font-size:15px; font-weight:700">Fasilə <span id="restT">1:30</span></span><div class="row" style="gap:6px"><span class="rbtn">−30</span><span class="rbtn">+30</span><span class="rbtn" style="background:var(--volt)">Keç</span></div></div>
+          <div class="row" style="gap:10px; padding:0 20px; position:absolute; left:0; right:0; bottom:110px">
+            <div class="navbtn"><i data-i="chevL" data-s="20"></i></div>
+            <div class="btn sec flex1">Növbəti hərəkət</div>
+            <div class="navbtn" id="sFinish"><i data-i="check" data-s="20" data-c="#527A01" data-w="1.5"></i></div>
+          </div>
+          <div class="dim"></div>
+        </div>
+
+        <!-- ============ Exercise -->
+        <div class="scr" id="sExercise" style="visibility:hidden">
+          <div style="height:58px"></div>
+          <div class="row between" style="padding:0 16px 4px"><div class="circ" id="eClose"><i data-i="x" data-s="20"></i></div><div class="circ"><i data-i="share" data-s="20"></i></div></div>
+          <div style="padding:6px 20px 0">
+            <div style="font-size:22px; font-weight:700; letter-spacing:-0.5px">Ştanqla bench press</div>
+            <div class="row" style="gap:8px; margin-top:9px"><span style="font-size:12.5px; color:var(--sec)">4 set × 6–8 · Sinə · Ştanq</span><span style="background:var(--volt); border-radius:6px; padding:2px 7px; font-size:10.5px; font-weight:700">Əsas</span></div>
+            <div class="mistake" id="eMist"><i data-i="shield" data-s="18" data-c="#FF6B35" data-w="1.5"></i><div class="flex1"><div style="color:var(--streakText); font-size:13px; font-weight:600">Ən çox edilən səhv</div><div style="color:var(--sec); font-size:13px; line-height:20px; margin-top:5px">Dirsəkləri 90° açmaq — çiyinə yük düşür. ~45° saxla.</div></div></div>
+            <div style="color:var(--ink); font-size:15px; font-weight:600; margin-top:18px; margin-bottom:11px">Əvəzedici hərəkətlər</div>
+            <div class="row" style="gap:10px; flex-wrap:wrap" id="eSubs"><span class="subcard">Dumbbell press</span><span class="subcard">Maşında press</span></div>
+          </div>
+          <div class="dim"></div>
+        </div>
+
+        <!-- ============ Summary -->
+        <div class="scr" id="sSummary" style="visibility:hidden">
+          <div style="height:54px"></div>
+          <div style="padding:0 20px">
+            <div style="display:flex; flex-direction:column; align-items:center; padding-top:20px">
+              <div id="disc" style="width:76px; height:76px; border-radius:22px; background:var(--volt); display:flex; align-items:center; justify-content:center"><i data-i="check" data-s="38" data-c="#1A1A1A" data-w="1.6"></i></div>
+              <div class="title" style="margin-top:20px">Məşq bitdi</div>
+              <div class="body15 c-sec" style="margin-top:6px">Gün 1 · Push · 48 dəqiqə</div>
+            </div>
+            <div class="row" style="gap:10px; margin-top:28px">
+              <div class="sstat"><div class="title2" id="smMin">48d</div><div class="caption c-cap" style="margin-top:4px">müddət</div></div>
+              <div class="sstat"><div class="title2"><span id="smVol">7,9</span> t</div><div class="caption c-cap" style="margin-top:4px">həcm</div></div>
+              <div class="sstat"><div class="title2" id="smSet">18</div><div class="caption c-cap" style="margin-top:4px">set</div></div>
+            </div>
+            <div class="row" style="gap:12px; background:var(--white); border-radius:16px; padding:14px; margin-top:12px">
+              <div style="width:40px; height:40px; border-radius:12px; background:var(--streakTint); display:flex; align-items:center; justify-content:center"><i data-i="flame" data-s="18" data-c="#FF6B35" data-w="1.5"></i></div>
+              <div class="flex1"><div class="callout15">12 günlük seriya</div><div class="footnote c-sec" style="margin-top:2px">Ümumi 46 məşq qeyd olunub</div></div>
+            </div>
+            <div class="row" style="gap:13px; background:var(--element); border-radius:18px; padding:16px; margin-top:12px">
+              <div style="width:44px; height:44px; border-radius:12px; background:rgba(197,254,1,0.2); display:flex; align-items:center; justify-content:center"><i data-i="trophy" data-s="22" data-c="#527A01" data-w="1.5"></i></div>
+              <div class="flex1"><div class="callout15">Bu məşqin ən ağır seti</div><div class="footnote c-sec" style="margin-top:2px">82,5 kq</div></div>
+            </div>
+            <div class="overline" style="margin-top:24px; margin-bottom:12px">Necə keçdi?</div>
+            <div class="row" style="gap:10px"><div class="rpe" id="rpeEasy">Asan</div><div class="rpe">Normal</div><div class="rpe">Ağır</div></div>
+            <div class="footnote" id="rpeNote" style="margin-top:10px; padding:0 4px; line-height:18px; color:var(--voltText); opacity:0">Qeyd olundu — növbəti dəfə çəki artırılmış təklif olunacaq: üst bədən +2,5 kq, ayaq +5 kq.</div>
+          </div>
+          <div class="footer"><div class="btn">Bitir</div></div>
+          <div class="dim"></div>
+        </div>
+
+        <!-- ============ Lock screen -->
+        <div class="lock" id="sLock" style="visibility:hidden">
+          <div class="date">Çərşənbə, 4 noyabr</div>
+          <div class="clock">18:00</div>
+          <div class="notif" id="n1" style="top:250px"><div class="ni"><div class="ring"></div></div><div><b>Məşq vaxtıdır</b><span>Bugünkü məşqin hazırdır — SPOT-u aç və başla.</span></div><em>indi</em></div>
+        </div>
+
+        <div class="tabbar" id="tabbar"><div class="cap">
+          <div class="cell"><i data-i="home" data-s="26" data-c="#888888"></i></div>
+          <div class="cell on"><i data-i="dumbbellFill" data-s="26" data-c="#527A01"></i></div>
+          <div class="cell"><i data-i="qr" data-s="26" data-c="#888888"></i></div>
+          <div class="cell"><i data-i="play" data-s="26" data-c="#888888"></i></div>
+          <div class="cell"><i data-i="user" data-s="26" data-c="#888888"></i></div>
+        </div></div>
+        <div class="homeind" id="homeind"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="montage" id="mont"><div class="gridm"></div><div class="tint" id="mTint"></div>
+    <div class="word" id="w1" style="color:var(--volt)">Proqram.</div>
+    <div class="word" id="w2" style="color:#1A1A1A">Texnika.</div>
+    <div class="word" id="w3" style="color:var(--volt)">Dəftər.</div>
+    <div class="word" id="w4" style="color:#1A1A1A">Təklif.</div>
+    <div class="word" id="w5" style="color:var(--volt)">Rekord.</div>
+    <div class="word" id="w6" style="color:#1A1A1A">Seriya.</div>
+    <div class="word" id="w7" style="color:#FAFAFA; font-size:118px; letter-spacing:-4.5px; line-height:1.02">Hamısı<br><span style="color:var(--volt)">bir tətbiqdə.</span></div>
+  </div>
+
+  <div class="endcard" id="end">
+    <div class="ring" id="eRing"></div>
+    <div class="word" id="eWord">SPOT</div>
+    <div class="etag" id="eTag">Tək məşq etmə.</div>
+    <div class="cta" id="eCta">İndi yüklə</div>
+    <div class="stores" id="eStores"><span>App Store</span><span>Google Play</span></div>
+    <div class="fine" id="eFine">Ekran görüntüləri nümayiş məqsədlidir.</div>
+  </div>
+</div>
+
+<script src="../vendor/gsap.min.js"></script>
+<script src="../lib/icons.js"></script>
+<script src="../lib/kit.js"></script>
+<script src="../lib/stage.js"></script>
+<script>
+__boot(() => {
+  const $ = (s) => document.querySelector(s);
+  const tl = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } });
+  const T = K.makeTouch($('#ui'));
+  S.makeRings();
+  S.buildMontage('#mont', ['sWorkout', 'sProgram', 'sSession', 'sExercise', 'sSummary']);
+
+  const B = {
+    icon: K.box('#spotIcon'), prog: K.box('#progRow'), start: K.box('#pStart'), accept: K.box('#accept'),
+    rp1: K.box('#rp1'), c1: K.box('#c1'), rp2: K.box('#rp2'), c2: K.box('#c2'), thumb: K.box('#sThumb'),
+    eClose: K.box('#eClose'), finish: K.box('#sFinish'), easy: K.box('#rpeEasy'), n1: K.box('#n1'),
+  };
+  const sW = $('#sWorkout'), sP = $('#sProgram'), sS = $('#sSession'), sE = $('#sExercise'), sM = $('#sSummary');
+  const mmss = (v) => { const s = Math.max(0, Math.round(v)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+
+  // ---- initial state
+  gsap.set('#phone', { y: 1500, transformPerspective: 2200 });
+  gsap.set('.stmt .w > span', { yPercent: 105 });
+  gsap.set('#mini', { opacity: 0, y: 20 });
+  gsap.set(['#qdot', '#qring', '#qtxt'], { opacity: 0 });
+  gsap.set('#rest', { yPercent: 160, opacity: 0 });
+  gsap.set(['#n1'], { opacity: 0, y: -30, scale: 0.96 });
+  gsap.set(['#eRing', '#eWord', '#eTag', '#eCta', '#eStores', '#eFine'], { opacity: 0 });
+  gsap.set('#sbar', { color: '#FAFAFA' });
+  gsap.set('#homeind', { background: '#FAFAFA' });
+  S.ground(tl, 'pic', 0);
+
+  // ================================================================ 0 – 2.3  photo
+  tl.fromTo('#photo', { scale: 1.16 }, { scale: 1.03, duration: 2.4, ease: 'none', immediateRender: false }, 0);
+  const w1 = document.querySelectorAll('#st1 .w > span');
+  [0.05, 0.55, 1.05].forEach((t, i) => tl.to(w1[i], { yPercent: 0, duration: 0.45, ease: 'power4.out' }, t));
+  tl.set('#st1', { visibility: 'hidden' }, 2.3);
+
+  // ================================================================ 2.3 – 4.0  quiet beat
+  S.ground(tl, 'dark', 2.3);
+  tl.set('#rings', { opacity: 0 }, 2.3);
+  tl.fromTo('#qdot', { scale: 0, opacity: 1 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(2)', immediateRender: false }, 2.4);
+  tl.fromTo('#qtxt', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, immediateRender: false }, 2.55);
+  tl.fromTo('#qring', { scale: 0.3, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'power3.out', immediateRender: false }, 2.95);
+  tl.to('#qring', { scale: 1.4, opacity: 0, duration: 0.45, ease: 'power2.in' }, 3.5);
+  tl.set('#q', { visibility: 'hidden' }, 4.0);
+
+  // ================================================================ 4.0 – 6.0  volt statement
+  S.ground(tl, 'volt', 4.0);
+  tl.set('#rings', { opacity: 0 }, 4.0);
+  const w2 = document.querySelectorAll('#st2 .w > span');
+  [4.0, 4.5, 5.0].forEach((t, i) => tl.to(w2[i], { yPercent: 0, duration: 0.42, ease: 'power4.out' }, t));
+  tl.to('#mini', { opacity: 1, y: 0, duration: 0.4 }, 5.0);
+  tl.fromTo('#phone', { y: 1500, rotationX: 30 }, { y: 640, rotationX: 12, duration: 0.6, ease: 'power3.out', immediateRender: false }, 5.4);
+  tl.set('#st2', { visibility: 'hidden' }, 6.0);
+
+  // ================================================================ 6.0 – 10.0  dark · Məşq tab
+  S.ground(tl, 'dark', 6.0);
+  tl.set('#phone', { y: 0, rotationX: 0 }, 6.0);
+  tl.fromTo('#phone', { scale: 0.92 }, { scale: 1, duration: 0.6, ease: 'power3.out', immediateRender: false }, 6.0);
+  S.ringPulse(tl, 6.0, 28.0);
+  K.tap(tl, T, B.icon.cx, B.icon.cy, 6.35);
+  S.launch(tl, 6.4, '#spotIcon', sW);
+  tl.set('#sbar', { color: '#1A1A1A' }, 6.95);
+  tl.set('#homeind', { background: '#1A1A1A' }, 6.95);
+  S.headIn(tl, '#hA', 6.5);
+  K.count(tl, '#wN', 0, 5, 7.0, 0.9);
+  K.count(tl, '#wT', 0, 27.8, 7.0, 0.9, K.az1);
+  K.count(tl, '#wH', 0, 4.7, 7.0, 0.9, K.az1);
+  S.pop(tl, '#bVol', 7.6, { rot: 4 });
+  S.phoneTo(tl, 7.6, { rotationY: -10, rotationX: 6, x: -30, duration: 1.3, ease: 'power2.inOut' });
+  S.unpop(tl, '#bVol', 8.9);
+  S.phoneTo(tl, 8.95, { rotationY: 0, rotationX: 0, x: 0, duration: 0.5 });
+  K.tap(tl, T, B.prog.cx, B.prog.cy, 9.25, { target: '#progRow' });
+  K.push(tl, sW, sP, 9.35);
+  S.headOut(tl, '#hA', 10.0);
+
+  // ================================================================ 10.0 – 14.0  volt · program
+  S.ground(tl, 'volt', 10.0);
+  S.headIn(tl, '#hB', 10.05);
+  tl.fromTo('#pTags .tag', { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.06, immediateRender: false }, 10.1);
+  tl.fromTo('#pDays .dayrow', { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.35, stagger: 0.08, immediateRender: false }, 10.35);
+  S.pop(tl, '#bFree', 11.0, { rot: 4 });
+  S.phoneTo(tl, 11.0, { rotationY: -9, rotationX: 5, x: -30, duration: 1.3, ease: 'power2.inOut' });
+  S.unpop(tl, '#bFree', 12.6);
+  S.phoneTo(tl, 12.6, { rotationY: 0, rotationX: 0, x: 0, duration: 0.5 });
+  K.tap(tl, T, B.start.cx, B.start.cy, 13.3, { target: '#pStart' });
+  S.headOut(tl, '#hB', 13.5);
+  S.phoneTo(tl, 13.45, { rotationX: 52, rotationZ: -28, scale: 0.78, y: 40, duration: 0.5, ease: 'power3.in' });
+  tl.set([sW, sP], { visibility: 'hidden' }, 13.95);
+  tl.set(sS, { visibility: 'visible' }, 13.95);
+
+  // ================================================================ 14.0 – 19.0  dark · session
+  S.ground(tl, 'dark', 14.0);
+  S.phoneTo(tl, 14.0, { rotationX: 0, rotationZ: 0, scale: 1, y: 0, duration: 0.7, ease: 'power3.out' });
+  S.headIn(tl, '#hC', 14.05);
+  K.count(tl, '#sTimer', 0, 5, 14.0, 5, mmss, 'none');
+  K.tap(tl, T, B.accept.cx, B.accept.cy, 14.8, { target: '#accept' });
+  document.querySelectorAll('#sSession .kq').forEach((el, i) => {
+    K.text(tl, el, '—', '82,5', 14.9 + i * 0.07);
+    K.cls(tl, el, 'ph', 14.9 + i * 0.07, false);
+    tl.fromTo(el, { scale: 1.25 }, { scale: 1, duration: 0.25, immediateRender: false }, 14.9 + i * 0.07);
+  });
+  tl.to('#acceptW', { height: 0, opacity: 0, duration: 0.35, ease: 'power3.inOut' }, 15.1);
+  K.tap(tl, T, B.rp1.cx, B.rp1.cy - 38, 15.55);
+  K.text(tl, '#rp1', '6', '8', 15.65); K.cls(tl, '#rp1', 'ph', 15.65, false);
+  K.tap(tl, T, B.c1.cx, B.c1.cy - 38, 15.95, { target: '#c1' });
+  K.cls(tl, '#r1', 'done', 16.0);
+  tl.set('#c1 svg', { color: '#1A1A1A' }, 16.0);
+  tl.to('#rest', { yPercent: 0, opacity: 1, duration: 0.4, ease: 'back.out(1.4)' }, 16.05);
+  K.count(tl, '#restT', 90, 89, 16.05, 1.15, mmss, 'none');
+  S.pop(tl, '#bPlus', 16.2, { rot: -4 });
+  K.tap(tl, T, B.rp2.cx, B.rp2.cy - 38, 16.75);
+  K.text(tl, '#rp2', '6', '8', 16.85); K.cls(tl, '#rp2', 'ph', 16.85, false);
+  K.tap(tl, T, B.c2.cx, B.c2.cy - 38, 17.15, { target: '#c2' });
+  K.cls(tl, '#r2', 'done', 17.2);
+  tl.set('#c2 svg', { color: '#1A1A1A' }, 17.2);
+  K.count(tl, '#restT', 90, 88, 17.2, 2.0, mmss, 'none');
+  S.unpop(tl, '#bPlus', 17.75);
+  K.tap(tl, T, B.thumb.cx, B.thumb.cy, 18.35, { target: '#sThumb' });
+  K.push(tl, sS, sE, 18.45);
+  S.headOut(tl, '#hC', 19.0);
+
+  // ================================================================ 19.0 – 22.0  light · exercise
+  S.ground(tl, 'light', 19.0);
+  S.headIn(tl, '#hD', 19.05);
+  tl.fromTo('#eMist', { scale: 0.96 }, { scale: 1, duration: 0.5, ease: 'back.out(2)', immediateRender: false }, 19.3);
+  S.pop(tl, '#bMist', 19.5, { rot: 3 });
+  S.phoneTo(tl, 19.2, { scale: 1.22, y: 190, rotationY: 7, rotationX: 3, duration: 1.0, ease: 'power3.inOut' });
+  S.unpop(tl, '#bMist', 20.65);
+  S.phoneTo(tl, 20.55, { scale: 1, y: 0, rotationY: 0, rotationX: 0, duration: 0.4 });
+  K.tap(tl, T, B.eClose.cx, B.eClose.cy, 20.85, { target: '#eClose' });
+  tl.set(sS, { visibility: 'visible', xPercent: -28 }, 20.9);
+  K.pop(tl, sE, sS, 20.9, 0.4);
+  K.tap(tl, T, B.finish.cx, B.finish.cy, 21.45, { target: '#sFinish' });
+  K.push(tl, sS, sM, 21.55);
+  S.headOut(tl, '#hD', 22.0);
+
+  // ================================================================ 22.0 – 26.0  volt · summary
+  S.ground(tl, 'volt', 22.0);
+  S.headIn(tl, '#hE', 22.05);
+  tl.fromTo('#disc', { scale: 0, rotation: -30 }, { scale: 1, rotation: 0, duration: 0.55, ease: 'back.out(2)', immediateRender: false }, 22.05);
+  window.SFX.push({ t: 22.1, s: 'success' });
+  K.count(tl, '#smMin', 0, 48, 22.25, 0.8, (v) => Math.round(v) + 'd');
+  K.count(tl, '#smVol', 0, 7.9, 22.25, 0.8, K.az1);
+  K.count(tl, '#smSet', 0, 18, 22.25, 0.8);
+  S.confetti(tl, 540, 760, 22.2, { n: 60, seed: 5 });
+  S.pop(tl, '#bPR', 22.8, { rot: 5 });
+  S.pop(tl, '#bStreak', 23.3, { rot: -4 });
+  S.phoneTo(tl, 22.6, { rotationY: -8, rotationX: 4, scale: 1.02, duration: 1.6, ease: 'power2.inOut' });
+  K.tap(tl, T, B.easy.cx, B.easy.cy, 24.6, { target: '#rpeEasy' });
+  K.cls(tl, '#rpeEasy', 'on', 24.65);
+  tl.to('#rpeNote', { opacity: 1, duration: 0.3 }, 24.7);
+  S.unpop(tl, '#bPR', 25.5); S.unpop(tl, '#bStreak', 25.5);
+  S.phoneTo(tl, 25.5, { rotationY: 0, rotationX: 0, scale: 1, duration: 0.5 });
+  S.headOut(tl, '#hE', 26.0);
+
+  // ================================================================ 26.0 – 28.0  dark · reminder → next day
+  S.ground(tl, 'dark', 26.0);
+  tl.set('#sLock', { visibility: 'visible' }, 26.0);
+  tl.set(['#tabbar', '#sbTime'], { visibility: 'hidden' }, 26.0);
+  tl.set('#sbar', { color: '#FAFAFA' }, 26.0);
+  tl.set('#homeind', { background: '#FAFAFA' }, 26.0);
+  tl.set(sM, { visibility: 'hidden' }, 26.0);
+  S.headIn(tl, '#hF', 26.05);
+  tl.to('#n1', { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: 'back.out(1.6)' }, 26.3);
+  window.SFX.push({ t: 26.3, s: 'success' });
+  K.tap(tl, T, B.n1.cx, B.n1.cy, 27.0, { target: '#n1' });
+  // the next day's workout
+  K.text(tl, '#wDate', 'Çərşənbə axşamı, 3 noyabr', 'Çərşənbə, 4 noyabr', 27.05);
+  K.text(tl, '#wLbl', 'Bugünkü məşq · Gün 1/3', 'Bugünkü məşq · Gün 2/3', 27.05);
+  K.text(tl, '#wDay', 'Gün 1 · Push', 'Gün 2 · Pull', 27.05);
+  K.text(tl, '#wMeta', '5 hərəkət · ~45 dəq · Push Pull Legs', '5 hərəkət · ~40 dəq · Push Pull Legs', 27.05);
+  K.text(tl, '#wN', '5', '6', 27.05);
+  tl.set(sW, { visibility: 'visible', xPercent: 0 }, 27.1);
+  tl.fromTo(sW, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'power3.out', immediateRender: false }, 27.1);
+  tl.set(['#tabbar', '#sbTime'], { visibility: 'visible' }, 27.1);
+  tl.set('#sbar', { color: '#1A1A1A' }, 27.1);
+  tl.set('#homeind', { background: '#1A1A1A' }, 27.1);
+  tl.set('#sLock', { visibility: 'hidden' }, 27.5);
+  S.headOut(tl, '#hF', 28.0);
+
+  // ================================================================ 28.0 – 32.0  montage
+  tl.set('#mont', { visibility: 'visible' }, 28.0);
+  tl.fromTo('#mont .gridm', { yPercent: -46 }, { yPercent: -54, duration: 4, ease: 'none', immediateRender: false }, 28.0);
+  const words = ['#w1', '#w2', '#w3', '#w4', '#w5', '#w6'];
+  words.forEach((w, i) => {
+    const t = 28.0 + i * 0.5;
+    tl.set('#mTint', { background: i % 2 ? 'rgba(197,254,1,0.86)' : 'rgba(20,20,22,0.84)' }, t);
+    tl.set(words, { visibility: 'hidden' }, t);
+    tl.set(w, { visibility: 'visible' }, t);
+    tl.fromTo(w, { scale: 1.12 }, { scale: 1, duration: 0.45, ease: 'power3.out', immediateRender: false }, t);
+  });
+  tl.set(words, { visibility: 'hidden' }, 31.0);
+  tl.set('#mTint', { background: 'rgba(20,20,22,0.86)' }, 31.0);
+  tl.set('#w7', { visibility: 'visible' }, 31.0);
+  tl.fromTo('#w7', { scale: 1.08, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, immediateRender: false }, 31.0);
+
+  // ================================================================ 32.0 – 36.0  end card
+  tl.set('#end', { visibility: 'visible' }, 32.0);
+  tl.set('#mont', { visibility: 'hidden' }, 32.0);
+  tl.fromTo('#eRing', { opacity: 1, scale: 5.2 }, { opacity: 1, scale: 1, duration: 0.55, ease: 'power3.out', immediateRender: false }, 32.0);
+  tl.fromTo('#eWord', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, immediateRender: false }, 32.35);
+  tl.fromTo('#eTag', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, immediateRender: false }, 32.85);
+  tl.fromTo('#eCta', { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.8)', immediateRender: false }, 33.6);
+  tl.fromTo('#eStores', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, immediateRender: false }, 34.1);
+  tl.fromTo('#eFine', { opacity: 0 }, { opacity: 1, duration: 0.4, immediateRender: false }, 34.3);
+  tl.to({}, { duration: 0.01 }, 35.99);
+  return tl;
+});
+</script>
+</body>
+</html>

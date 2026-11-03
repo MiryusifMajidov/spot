@@ -1,0 +1,53 @@
+/* Screen-level pieces shared by both promo videos (copied from the screens'
+   StyleSheets in src/app/**). Classes only — the montage clones screens and
+   drops their ids. */
+.gcover img, .photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.avimg { border-radius: 50%; object-fit: cover; flex: none; display: block; }
+.circ { width: 40px; height: 40px; border-radius: 20px; background: var(--white); display: flex; align-items: center; justify-content: center; }
+.info { flex: 1; background: var(--white); border-radius: 16px; padding: 13px; }
+.photo { width: 148px; height: 106px; border-radius: 14px; overflow: hidden; position: relative; flex: none; }
+.trow { display: flex; align-items: center; gap: 12px; padding: 10px 0; overflow: hidden; }
+.day { width: 62px; height: 70px; border-radius: 14px; background: var(--white); display: flex; flex-direction: column; align-items: center; justify-content: center; flex: none; }
+.day .dl { font-size: 12px; font-weight: 600; color: var(--cap); }
+.day .dn { font-size: 18px; font-weight: 700; margin-top: 4px; }
+.day.on { background: var(--element); }
+.day.on .dl { color: var(--ink); }
+.slot { width: 22%; height: 46px; border-radius: 13px; background: var(--white); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; }
+.slot.on { background: var(--element); }
+.footer { position: absolute; left: 0; right: 0; bottom: 102px; padding: 12px 20px; border-top: 0.5px solid var(--sep); background: var(--canvas); }
+.selpin { position: absolute; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 25px; border: 3px solid var(--volt); box-shadow: 0 0 0 4px rgba(197, 254, 1, 0.25); }
+.mapcard { position: absolute; left: 12px; right: 12px; bottom: 12px; background: var(--white); border-radius: 18px; padding: 15px; }
+.close30 { width: 30px; height: 30px; border-radius: 15px; background: var(--canvas); display: flex; align-items: center; justify-content: center; }
+.bub { max-width: 82%; width: fit-content; border-radius: 18px; padding: 10px 14px; font-size: 15px; line-height: 20px; }
+.bub.theirs { background: var(--white); border-bottom-left-radius: 5px; }
+.bub.mine { background: var(--element); border-bottom-right-radius: 5px; margin-left: auto; }
+.meta { font-size: 11.5px; color: var(--cap); margin: 4px 4px 10px; }
+.qchip { background: var(--white); border-radius: 999px; padding: 8px 12px; border: 1px solid var(--sep); font-size: 13px; font-weight: 600; white-space: nowrap; }
+
+/* workout (src/app/(tabs)/workout/*) */
+.today { background: var(--element); border-radius: 20px; padding: 18px; }
+.tdot { width: 6px; height: 6px; border-radius: 3px; background: var(--volt); }
+.week { display: flex; align-items: flex-start; background: var(--white); border-radius: 16px; padding: 16px; margin-top: 20px; }
+.week .vd { width: 0.5px; align-self: stretch; background: var(--sep); margin: 0 14px; }
+.wstat .v { font-size: 20px; line-height: 26px; font-weight: 700; letter-spacing: -0.4px; }
+.wstat .k { font-size: 13px; color: var(--cap); margin-top: 2px; }
+.prow { display: flex; align-items: center; gap: 12px; background: var(--white); border-radius: 16px; padding: 14px; margin-top: 10px; }
+.dayrow { display: flex; align-items: center; gap: 13px; background: var(--white); border-radius: 16px; padding: 14px; margin-bottom: 10px; }
+.dayidx { width: 42px; height: 42px; border-radius: 11px; background: var(--canvas); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex: none; }
+.setrow { display: flex; align-items: center; gap: 8px; background: var(--white); border-radius: 14px; border: 1px solid transparent; padding: 0 12px; height: 52px; margin-bottom: 8px; }
+.setrow.done { background: var(--voltTint); border-color: rgba(197, 254, 1, 0.3); }
+.setrow .si { width: 34px; font-size: 15px; font-weight: 700; }
+.setrow .pv { flex: 1; color: var(--cap); font-size: 13px; }
+.setrow .in { width: 64px; height: 38px; border-radius: 10px; background: var(--canvas); text-align: center; font-size: 15px; font-weight: 600; line-height: 38px; }
+.setrow .in.ph { color: var(--cap); }
+.chk { width: 40px; height: 40px; border-radius: 20px; border: 1.5px solid rgba(26, 26, 26, 0.3); display: flex; align-items: center; justify-content: center; flex: none; }
+.setrow.done .chk { background: var(--volt); border-color: var(--volt); }
+.restbar { position: absolute; left: 16px; right: 16px; display: flex; align-items: center; justify-content: space-between; background: var(--glass); border: 0.5px solid var(--sep); border-radius: 20px; padding: 6px 6px 6px 18px; }
+.rbtn { min-width: 52px; height: 44px; border-radius: 11px; background: var(--element); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; padding: 0 10px; }
+.navbtn { width: 50px; height: 50px; border-radius: 16px; background: var(--element); display: flex; align-items: center; justify-content: center; flex: none; }
+.mistake { display: flex; gap: 11px; background: var(--streakTint); border-radius: 16px; padding: 14px; margin-top: 16px; }
+.subcard { background: var(--white); border-radius: 14px; padding: 12px 14px; font-size: 13px; font-weight: 600; }
+.sstat { flex: 1; background: var(--white); border-radius: 16px; padding: 18px 0; text-align: center; }
+.rpe { flex: 1; height: 52px; border-radius: 14px; background: var(--white); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: var(--sec); }
+.rpe.on { background: var(--element); color: var(--ink); }
+.vtag { background: rgba(10, 132, 255, 0.12); color: var(--verified); border-radius: 6px; padding: 3px 7px; font-size: 11px; font-weight: 600; }
